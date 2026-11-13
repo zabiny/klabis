@@ -1,19 +1,19 @@
 # Tasks
 
-## 1. Slice: member opens their own fee level history from the profile
+## 1. Slice: member opens their own "Členské příspěvky" page from the profile
 
-- [ ] 1.1 API spec: add `yearlyFee` (number) to `FeeAssignmentResponse` and a `member` link (`operation: getMember`) to the `getFeeHistory` response `x-hal-links` in `docs/openapi/spec/membershipfees.yaml`. Document the `feeHistory` link (`operation: getFeeHistory`, "present for the member themselves or MEMBERS:MANAGE") in `members.yaml` `getMember` `x-hal-links`. Run `./gradlew openapiBundle` in `backend/` and `npm run openapi` in `frontend/`. Verify that both succeed and that `GetFeeHistoryResource` / `GetMemberRels` in `halTypes.ts` contain `member` / `feeHistory`.
-- [ ] 1.2 Red-Green: in `MemberFeeHistoryServiceTest`, add a test that each history entry carries its fee group's yearly fee snapshot. Then extend `MemberFeeHistoryPort.LevelAssignment` and `MemberFeeHistoryService.toAssignment` and map the field in `MembershipFeesResponseMapper`. Verify that `MemberFeeHistoryServiceTest` passes.
-- [ ] 1.3 Red-Green: in `MemberFeeSummaryControllerTest` (`GetFeeHistoryTests`, with `.accept(MediaTypes.HAL_FORMS_JSON)`), assert `assignments[0].yearlyFee` and the `_links.member.href` of the member. Then add the `member` link in `MemberFeeHistoryDetailsPostprocessor`. Verify that the test passes.
-- [ ] 1.4 Red-Green: add a `@WebMvcTest` slice test for a new `MemberFeeHistoryLinkProcessor` (membershipfees `infrastructure/restapi`) using `@WithKlabisMockUser`. It checks that `feeHistory` is present on the member detail when the caller views their own profile and absent when an ordinary member views someone else. Then implement the processor with `klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(id, null))`. If it injects a new port, add it to `MembershipFeesWebMvcMockitoBeans`. Verify that the test passes.
-- [ ] 1.5 Red-Green (frontend): write `MemberFeeHistoryPage.test.tsx` and implement `frontend/src/pages/membership-fees/MemberFeeHistoryPage.tsx` using `useHalPageData<GetFeeHistoryResource>()` and `KlabisTable` fed through `data`. The tests check:
-  - rows newest first, with year, tier name, yearly fee in Kč and source label ("Vlastní volba" / "Přiřazeno adminem");
+- [ ] 1.1 API spec: add a `member` link (`operation: getMember`) to the `getFeeHistory` response `x-hal-links` in `docs/openapi/spec/membershipfees.yaml`. Add a `feeSummary` link (`operation: getFeeSummary`, "present for the member themselves only") to the same response. Document the `feeHistory` link (`operation: getFeeHistory`, "present for the member themselves, MEMBERS:MANAGE or a legal guardian") in `members.yaml` `getMember` `x-hal-links` and remove its `feeSummary` entry. Run `./gradlew openapiBundle` in `backend/` and `npm run openapi` in `frontend/`. Verify that both succeed and that `GetFeeHistoryResource` / `GetMemberRels` in `halTypes.ts` contain `member` / `feeSummary` and `feeHistory` (and that `GetMemberRels` no longer has `feeSummary`).
+- [ ] 1.2 Red-Green: in `MemberFeeSummaryControllerTest` (`GetFeeHistoryTests`, with `.accept(MediaTypes.HAL_FORMS_JSON)`), assert the `_links.member.href` of the member, and that `_links.feeSummary` is present for the owner and absent for others. Then add both links in `MemberFeeHistoryDetailsPostprocessor`, taking the year from `FeeSelectionCampaignManagementPort.relevantFeeYear` (add it to `MembershipFeesWebMvcMockitoBeans` if needed). Move the cases of the `feeSummary link on GET /api/members/{id}` tests (`MemberFeeSummaryControllerTest`) and `MemberFeeSummaryLinkProcessorTest` here, then delete `MemberFeeSummaryLinkProcessor`, its test and the mention in `MembershipFeesWebMvcTest`. Verify that the tests pass.
+- [ ] 1.3 Red-Green: add a `@WebMvcTest` slice test for a new `MemberFeeHistoryLinkProcessor` (membershipfees `infrastructure/restapi`) using `@WithKlabisMockUser`. It checks that `feeHistory` is present on the member detail when the caller views their own profile and absent when an ordinary member views someone else. Then implement the processor with `klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(id, null))`. If it injects a new port, add it to `MembershipFeesWebMvcMockitoBeans`. Verify that the test passes.
+- [ ] 1.4 Red-Green (frontend): write `MemberFeeHistoryPage.test.tsx` and implement `frontend/src/pages/membership-fees/MemberFeeHistoryPage.tsx` (title "Členské příspěvky") using `useHalPageData<GetFeeHistoryResource>()` and `KlabisTable` fed through `data`. Move `MemberFeeSection` (and its test) from `pages/members/` next to it. The page renders the section only when the history resource has `_links.feeSummary`. The tests check:
+  - history rows newest first, with year, level name and source label ("Vlastní volba" / "Přiřazeno adminem");
   - the empty-state message when there are no assignments;
-  - a back link whose target is taken from `_links.member`.
+  - a back link whose target is taken from `_links.member`;
+  - the current level section is shown when the history resource has `feeSummary` and absent when it has not.
 
-  Add the labels to `labels.memberFee`. Verify that the Vitest file passes.
-- [ ] 1.6 Register the route `/members/:memberId/fee-history` → `MemberFeeHistoryPage` in `frontend/src/App.tsx`, next to the `fee-choice` routes. Verify that a test or a manual check on `http://localhost:3000` renders the page instead of `GenericHalPage`.
-- [ ] 1.7 Red-Green (frontend): in `MemberFeeSection.test.tsx`, replace the dormant `summary._links.feeHistory` tests with tests that the "Zobrazit historii příspěvků" link is driven by a `feeHistoryHref` prop and navigates to `extractNavigationPath(href)`. Update `MemberFeeSection` and `MemberDetailPage` to pass `_links.feeHistory` from the member resource. Remove `feeHistory` from `FeeSummaryLinks` in `memberFeeTypes.ts`. Verify that the `MemberFeeSection` and `MemberDetailPage` tests pass and `npm run build` succeeds.
+  Add the labels to `labels.memberFee`. Verify that the Vitest files pass.
+- [ ] 1.5 Register the route `/members/:memberId/fee-history` → `MemberFeeHistoryPage` in `frontend/src/App.tsx`, next to the `fee-choice` routes. Verify that a test or a manual check on `http://localhost:3000` renders the page instead of `GenericHalPage`.
+- [ ] 1.6 Red-Green (frontend): in `MemberDetailPage.test.tsx`, replace the fee section tests with tests that a "Členské příspěvky" button is shown when the member resource has `_links.feeHistory` and active is not false, and navigates to `extractNavigationPath(href)`; no button without the link or for an inactive member. Replace `MemberFeeSection` in `MemberDetailPage` with the button. Remove `feeHistory` from `FeeSummaryLinks` in `memberFeeTypes.ts` and the dormant "Zobrazit historii příspěvků" link. Verify that the `MemberDetailPage` tests pass and `npm run build` succeeds.
 
 ## 2. Slice: membership administrator opens any member's fee level history
 
@@ -26,7 +26,7 @@
   - an ordinary member gets forbidden for another member's history.
 
   Verify that the test passes.
-- [ ] 2.5 Red-Green (frontend): rewrite the `MemberDetailPage.test.tsx` case "does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)". With only a `feeHistory` link, the fee section shows only the history link and no summary. With neither link, there is no section. Adjust the `MemberDetailPage` render condition. Verify that the tests pass.
+- [ ] 2.5 Red-Green (frontend): rewrite the `MemberDetailPage.test.tsx` case "does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)": an admin on another member sees the "Členské příspěvky" button (link `feeHistory` only). In the `MemberFeeHistoryPage` test, a history resource without `feeSummary` shows the history and no current level section. Verify that the tests pass.
 - [ ] 2.6 Update `.claude/skills/klabis-api-spec/references/field-security.md`, which says "MemberFeeChoice's and MemberFeeSummary's 5 operations" are owner-only, to reflect the `getFeeHistory` exception. Verify with a grep that no other doc claims 5 owner-only operations.
 
 ## 3. Slice: legal guardian opens the fee level history of their minor
@@ -45,20 +45,21 @@
   - the same guardian gets forbidden for a different member's history.
 
   Cover both a member guardian and a non-member guardian if test data setup allows. Verify that the test passes.
-- [ ] 3.5 Red-Green (frontend): add a `MemberDetailPage.test.tsx` case. On a minor's detail with only a `feeHistory` link (the guardian case), the fee section shows only the history link. This is the same rendering as in 2.5, so verify that the test passes without further production changes.
+- [ ] 3.5 Red-Green (frontend): add a `MemberDetailPage.test.tsx` case. On a minor's detail with only a `feeHistory` link (the guardian case), the "Členské příspěvky" button is shown. This is the same rendering as in 2.5, so verify that the test passes without further production changes.
 - [ ] 3.6 Update `.claude/skills/klabis-api-spec/references/field-security.md` (task 2.6) to name the guardian alternative (`MEMBERS_EDIT_PROFILE`) of `getFeeHistory` as well. Verify with a grep.
 
-## 4. Slice: E2E scenarios use the history page
+## 4. Slice: E2E scenarios use the "Členské příspěvky" page
 
-- [ ] 4.1 Rewrite the scenario "Past assignments remain available" in `frontend/e2e/features/membership-fees.feature`: admin, closed campaign with the member assigned, then open the member list, open member "ZBM9500", click "Zobrazit historii příspěvků", and see the tier name and the scenario year. Reuse existing steps (`I click`, `I open the list row`, `I see`). Add a step to `steps/*.ts` only if one is missing, and document any new step in the step vocabulary of `frontend/e2e/README.md`. Verify with `npm run test:e2e -- --grep "Past assignments remain available"` against `./runLocalEnvironment.sh`.
-- [ ] 4.2 Add E2E scenarios with spec-verbatim titles:
-  - "Member opens their fee level history from the profile" (member chooses a tier, opens their profile, opens the history and sees the tier and "Vlastní volba");
-  - "Member cannot open another member's fee level history" (member opens another member's detail; assert a positive anchor first, then "I do not see" the link).
+- [ ] 4.1 Rewrite the scenario "Past assignments remain available" in `frontend/e2e/features/membership-fee-assignments.feature`: admin, closed campaign with the member assigned, then open the member list, open member "ZBM9500", click "Členské příspěvky", and see the tier name and the scenario year. Reuse existing steps (`I click`, `I open the list row`, `I see`). Add a step to `steps/*.ts` only if one is missing, and document any new step in the step vocabulary of `frontend/e2e/README.md`. Verify with `npm run test:e2e -- --grep "Past assignments remain available"` against `./runLocalEnvironment.sh`.
+- [ ] 4.2 Move the current-level E2E steps in `frontend/e2e/steps/membership-fee-choice.steps.ts` (`openProfile` and the steps "profile shows fee level ...", "as locked", "prompts to choose a fee level", choose/change on the profile) to go through the profile's "Členské příspěvky" button to the new page. Keep scenario wording unless it names the profile as the location; adjust `frontend/e2e/README.md` if the step vocabulary changes. Verify with the membership-fee-choice feature.
+- [ ] 4.3 Add E2E scenarios with spec-verbatim titles:
+  - "Member opens their fee level history from the profile" (member chooses a tier, opens their profile, clicks "Členské příspěvky" and sees the tier and "Vlastní volba");
+  - "Member cannot open another member's fee page" (member opens another member's detail; assert a positive anchor first, then "I do not see" the button).
 
   Verify that both pass in an E2E run.
-- [ ] 4.3 Add guardian E2E scenarios. In the `example-data` profile, the `member` role (`ZBM9500`, Eva Svobodová) is the member legal guardian of the minor Sofie Svobodová (`MembersDataBootstrap.createLegalGuardianScenarios`). The non-member guardians `EXT0001`/`EXT0002` are pending activation and have no password, so they are not usable. The scenarios:
-  - "Legal guardian sees the fee level history of their minor": an active campaign; a new `Given` step "the administrator has assigned member {text} to tier {text}", which resolves the member by name through the admin API; the campaign is closed. Then, as `member`, open the member list, open the row "Sofie", click "Zobrazit historii příspěvků", and see the tier.
-  - "Legal guardian cannot open the history of a member who is not their minor": as `member`, open the detail of a non-ward adult (e.g. "Petra Nováčková"); a positive anchor; then `I do not see "Zobrazit historii příspěvků"`.
+- [ ] 4.4 Add guardian E2E scenarios. In the `example-data` profile, the `member` role (`ZBM9500`, Eva Svobodová) is the member legal guardian of the minor Sofie Svobodová (`MembersDataBootstrap.createLegalGuardianScenarios`). The non-member guardians `EXT0001`/`EXT0002` are pending activation and have no password, so they are not usable. The scenarios:
+  - "Legal guardian sees the fee level history of their minor": an active campaign; a new `Given` step "the administrator has assigned member {text} to tier {text}", which resolves the member by name through the admin API; the campaign is closed. Then, as `member`, open the member list, open the row "Sofie", click "Členské příspěvky", and see the tier.
+  - "Legal guardian cannot open the fee page of a member who is not their minor": as `member`, open the detail of a non-ward adult (e.g. "Petra Nováčková"); a positive anchor; then `I do not see "Členské příspěvky"`.
 
   Document the new step and the guardian relationship of the `member` role in `frontend/e2e/README.md`. Verify that both scenarios pass.
 
