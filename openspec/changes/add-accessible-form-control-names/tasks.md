@@ -27,8 +27,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 5. Page-level label parity
 
-- [ ] 5.1 In `EventDetailPage.test.tsx` add a test that switches a draft event to inline edit mode and finds the location and date fields by `getByLabelText(labels.fields.location)` / `getByLabelText(labels.fields.eventDate)` — the same texts shown in the `DetailRow`; fix any divergent caller found
-- [ ] 5.2 In `KlabisFieldsFactory.test.tsx` add `input`-mode tests for a composite field and the license field asserting each sub-field is found by its `DetailRow` label (e.g. "Stupeň", "Platnost"); verify `LegalGuardianInputField.integration.test.tsx` still passes and the member picker is reachable by its label
+- [x] 5.1 In `EventDetailPage.test.tsx` add a test that switches a draft event to inline edit mode and finds the location and date fields by `getByLabelText(labels.fields.location)` / `getByLabelText(labels.fields.eventDate)` — the same texts shown in the `DetailRow`; fix any divergent caller found
+- [x] 5.2 In `KlabisFieldsFactory.test.tsx` add `input`-mode tests for a composite field and the license field asserting each sub-field is found by its `DetailRow` label (e.g. "Stupeň", "Platnost"); verify `LegalGuardianInputField.integration.test.tsx` still passes and the member picker is reachable by its label
 
 ## 6. E2E without accessibility workarounds
 

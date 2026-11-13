@@ -5,6 +5,7 @@ import {vi} from 'vitest';
 import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../HalNavigator2/halforms/HalFormsForm.tsx';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory';
+import {labels} from '../../localization';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn((_url: string, options?: {select?: (data: unknown) => unknown}) => {
@@ -53,6 +54,12 @@ describe('legalGuardians collection in HAL-FORMS (integration)', () => {
         await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({legalGuardians: [{userId: 'user-1'}]}));
+    });
+
+    it('names the existing-guardian picker by its visible label', () => {
+        renderForm({legalGuardians: [{userId: 'user-1'}]});
+
+        expect(screen.getByRole('combobox', {name: labels.ui.legalGuardianPickExisting})).toHaveValue('user-1');
     });
 
     it('adds an existing candidate by picking from options', async () => {

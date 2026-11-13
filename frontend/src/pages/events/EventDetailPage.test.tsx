@@ -492,6 +492,19 @@ describe('EventDetailPage', () => {
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
+        it('in edit mode location and date fields are named by the same labels as their detail rows', () => {
+            renderPage(createMockPageData(mockEventDetailData({_templates: {updateEvent: updateEventTemplate}})));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            const location = screen.getByLabelText(labels.fields.location);
+            const eventDate = screen.getByLabelText(labels.fields.eventDate);
+            expect(location.tagName).toBe('INPUT');
+            expect(location).toHaveValue('Brno - Bystrc');
+            expect(eventDate.tagName).toBe('INPUT');
+            expect(eventDate).toHaveValue('2025-04-15');
+        });
+
         it('in edit mode the action buttons are hidden', () => {
             const data = mockEventDetailData({
                 _templates: {
