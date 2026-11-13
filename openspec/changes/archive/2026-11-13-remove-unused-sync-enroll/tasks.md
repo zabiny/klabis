@@ -6,4 +6,4 @@
 
 ## 2. Finish
 
-- [ ] 2.1 Full backend test suite, code review, commit
+- [x] 2.1 Full backend test suite, code review, commit
