@@ -4,7 +4,7 @@
 
 The system SHALL allow a member to see their currently assigned fee level for the relevant year. The member's detail SHALL offer a "Členské příspěvky" button, and the page it opens SHALL display the member's current level. The relevant year is the year of the active campaign; when no campaign is active, it is the latest campaign year that is not in the past; otherwise it is the current calendar year.
 
-#### Scenario: Member sees the assigned level on the fee page
+#### Scenario: Member sees the assigned level on the profile
 
 - **WHEN** a member opens their profile and clicks "Členské příspěvky"
 - **THEN** the page shows the member's currently assigned fee level

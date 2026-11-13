@@ -65,10 +65,10 @@
 
 ## 5. Final verification
 
-- [ ] 5.1 Run the backend `membershipfees` and `members` module tests and the frontend unit tests through the test-runner, then the full suite once (sequentially, not in parallel). Verify that there are no new failures apart from the known pre-existing ones.
-- [ ] 5.2 Manual QA on `http://localhost:3000`:
+- [x] 5.1 Run the backend `membershipfees` and `members` module tests and the frontend unit tests through the test-runner, then the full suite once (sequentially, not in parallel). Verify that there are no new failures apart from the known pre-existing ones.
+- [x] 5.2 Manual QA on `http://localhost:3000`:
   - as `ZBM9500`: own history, and the history of Sofie Svobodová as guardian; no link on a non-ward;
   - as `ZBM9000`: another member's history; an inactive member shows no link.
 
   Verify the behavior against the spec scenarios.
-- [ ] 5.3 Run `openspec validate add-member-fee-history-page --strict` and verify that it passes.
+- [x] 5.3 Run `openspec validate add-member-fee-history-page --strict` and verify that it passes.
