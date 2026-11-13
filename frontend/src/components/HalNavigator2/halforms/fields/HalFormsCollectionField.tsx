@@ -3,7 +3,8 @@ import {useField} from 'formik'
 import {useRef} from 'react'
 import {Button} from '../../../UI'
 import {type HalFormFieldFactory, type HalFormsInputProps, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from '../types.ts'
-import {getFieldLabel, labels} from '../../../../localization/labels.ts'
+import {fieldLabel} from './fieldLabel.ts'
+import {labels} from '../../../../localization/labels.ts'
 
 function emptyValueForType(type: string): unknown {
     return SIMPLE_FIELD_TYPES.has(type) ? '' : {}
@@ -90,7 +91,7 @@ export const HalFormsCollectionField = ({
     return (
         <div className="space-y-2">
             {renderMode === 'field' && (
-                <span className="block text-sm font-medium text-text-primary">{prop.prompt || getFieldLabel(prop.name)}</span>
+                <span className="block text-sm font-medium text-text-primary">{fieldLabel(prop)}</span>
             )}
 
             {items.map((_, index) => (

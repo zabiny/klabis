@@ -3,12 +3,13 @@ import {Form, Formik, type FormikErrors, getIn, setIn, useFormikContext} from "f
 import React, {type ReactElement, type ReactNode, useContext, useEffect, useMemo} from "react";
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from "./types.ts";
+import {fieldLabel} from "./fields/fieldLabel.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
 import {isMultipleProperty, sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
 import {FieldWrapper} from "../../UI/forms";
-import {describeError, getFieldLabel} from "../../../localization";
+import {describeError} from "../../../localization";
 import type {ApiError} from "../../../api/apiError.ts";
 import {UI_MESSAGES, VALIDATION_MESSAGES} from "../../../constants/messages.ts";
 
@@ -143,7 +144,7 @@ export const ReadOnlyDisplay: React.FC<{ label?: string, value: ReactNode, rende
 const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-    return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={formatReadOnlyValue(rawValue)} renderMode="field" />;
+    return <ReadOnlyDisplay label={fieldLabel(prop)} value={formatReadOnlyValue(rawValue)} renderMode="field" />;
 };
 
 const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
