@@ -71,12 +71,10 @@ const chooseExistingGuardian = async (page: Page, lastName: string) => {
 const addNewGuardian = async (page: Page, lastName: string) => {
     const row = await addGuardianRow(page);
     await row.getByRole('button', {name: 'Založit nového zástupce'}).click();
-    // The inputs of a new guardian have no accessible names yet (a11y follow-up); they come in the order of the form.
-    const [firstName, surname, email, phone] = await row.getByRole('textbox').all();
-    await firstName.fill(REGISTERED_FIRST_NAME);
-    await surname.fill(lastName);
-    await email.fill(guardianEmail(lastName));
-    await phone.fill('+420 777 333 444');
+    await row.getByRole('textbox', {name: 'Jméno', exact: true}).fill(REGISTERED_FIRST_NAME);
+    await row.getByRole('textbox', {name: 'Příjmení', exact: true}).fill(lastName);
+    await row.getByRole('textbox', {name: 'E-mail', exact: true}).fill(guardianEmail(lastName));
+    await row.getByRole('textbox', {name: 'Telefon', exact: true}).fill('+420 777 333 444');
 };
 
 export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {

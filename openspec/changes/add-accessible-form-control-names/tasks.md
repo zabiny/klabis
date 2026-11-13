@@ -32,8 +32,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 6. E2E without accessibility workarounds
 
-- [ ] 6.1 In `frontend/e2e/steps/form.steps.ts` reduce `field()` to `page.getByLabel(label, {exact: true})` and `I click` to `getByRole('button', {name: label, exact: true})` or link; delete the two workaround comments
-- [ ] 6.2 Start the app (`./runLocalEnvironment.sh`, after checking ports 8443/3000) and run `cd frontend && npm run test:e2e`; verify all scenarios pass. A failure means a control still lacks a name — fix it in the matching group with a unit test first
+- [x] 6.1 In `frontend/e2e/support/ui.ts` reduce `field()` to `page.getByLabel(label, {exact: true})` and `I click` to `getByRole('button', {name: label, exact: true})` or link; delete the two workaround comments
+- [x] 6.2 Start the app (`./runLocalEnvironment.sh`, after checking ports 8443/3000) and run `cd frontend && npm run test:e2e`; verify all scenarios pass. A failure means a control still lacks a name — fix it in the matching group with a unit test first
 
 ## Workflow follow-up
 

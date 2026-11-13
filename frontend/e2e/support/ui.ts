@@ -4,19 +4,12 @@ import {toDisplayDate} from './dates';
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Form labels are rendered as <dt> next to the control, not as <label for>.
-// Required fields append "*" to the accessible label.
-const field = (page: Page, label: string) =>
-    page.getByLabel(new RegExp(`^${escapeRegExp(label)}\\*?$`))
-        .or(page.locator('dt', {hasText: new RegExp(`^${escapeRegExp(label)}( \\*)?$`)}).locator('xpath=following-sibling::dd').locator('input, select, textarea'))
-        .first();
+// Required fields append a "*" marker to their accessible name.
+const field = (page: Page, label: string) => page.getByLabel(new RegExp(`^${escapeRegExp(label)} ?\\*?$`));
 
-// Action buttons may carry the aria-label "Select <label> form" (HalFormTemplateButton; a11y follow-up).
-export const action = (scope: Page | Locator, label: string) => {
-    const escaped = escapeRegExp(label);
-    return scope.getByRole('button', {name: new RegExp(`^(${escaped}|Select ${escaped} form)$`)})
+export const action = (scope: Page | Locator, label: string) =>
+    scope.getByRole('button', {name: label, exact: true})
         .or(scope.getByRole('link', {name: label, exact: true}));
-};
 
 export const click = (page: Page, label: string) => action(page, label).first().click();
 
@@ -24,12 +17,10 @@ export const fill = (page: Page, label: string, value: string) => field(page, la
 
 export const select = (page: Page, label: string, option: string) => field(page, label).selectOption({label: option});
 
-// The multi-select combobox has no accessible name yet, so it is located through the wrapper holding the field label.
 export const pick = async (page: Page, label: string, option: string) => {
-    const wrapper = page.locator('label', {hasText: new RegExp(`^${escapeRegExp(label)}\\*?$`)}).locator('xpath=..');
-    await wrapper.getByRole('combobox').fill(option);
-    await wrapper.getByRole('option', {name: option, exact: true}).click();
-    await expect(wrapper.getByRole('button', {name: `Odebrat ${option}`})).toBeVisible();
+    await field(page, label).fill(option);
+    await page.getByRole('option', {name: option, exact: true}).click();
+    await expect(page.getByRole('button', {name: `Odebrat ${option}`})).toBeVisible();
 };
 
 // Waits for the backend answer to the submitted form, so a following step neither aborts the request by navigating

@@ -141,7 +141,7 @@ export const HalFormsMultiSelect = ({prop, errorText, renderMode = 'field'}: Hal
                         aria-expanded={isOpen}
                         aria-controls={listboxId}
                         aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
-                        aria-label={renderMode === 'input' ? fieldLabel(prop) : undefined}
+                        aria-label={fieldLabel(prop)}
                         value={query}
                         disabled={isLoading}
                         placeholder={isLoading ? 'Načítání...' : 'Vyhledat a přidat...'}

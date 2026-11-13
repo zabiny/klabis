@@ -55,6 +55,12 @@ describe('HalFormsMultiSelect keyboard interaction', () => {
         mockOptions.mockReturnValue(defaultMockOptions);
     });
 
+    it('names the combobox by the field label in field render mode', () => {
+        renderWithFormik({disciplineIds: []});
+
+        expect(screen.getByRole('combobox', {name: 'ORIS disciplíny'})).toBeInTheDocument();
+    });
+
     it('exposes combobox/listbox ARIA wiring when open', async () => {
         const user = userEvent.setup();
         renderWithFormik({disciplineIds: []});
