@@ -6,6 +6,7 @@ import {vi} from 'vitest';
 import {HalFormsTextArea} from './HalFormsTextArea.tsx';
 import type {HalFormsProperty} from '../../../../api';
 import type {HalFormsInputProps} from '../types.ts';
+import {getFieldLabel} from '../../../../localization';
 
 const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty => ({
     name: 'reason',
@@ -15,11 +16,12 @@ const createProp = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty
     ...overrides,
 });
 
-const renderWithFormik = (prop: HalFormsProperty, initialValue = '') => {
+const renderWithFormik = (prop: HalFormsProperty, initialValue = '', renderMode?: HalFormsInputProps['renderMode']) => {
     const fieldProps: HalFormsInputProps = {
         prop,
         errorText: undefined,
         subElementProps: vi.fn(),
+        renderMode,
     };
     return render(
         <Formik initialValues={{[prop.name]: initialValue}} onSubmit={vi.fn()}>
@@ -31,6 +33,16 @@ const renderWithFormik = (prop: HalFormsProperty, initialValue = '') => {
 };
 
 describe('HalFormsTextArea', () => {
+    it('names the control by the localized field label in input mode', () => {
+        renderWithFormik(createProp({name: 'location', prompt: undefined}), '', 'input');
+        expect(screen.getByRole('textbox', {name: getFieldLabel('location')})).toBeInTheDocument();
+    });
+
+    it('prefers prompt over the localized label in input mode', () => {
+        renderWithFormik(createProp(), '', 'input');
+        expect(screen.getByRole('textbox', {name: 'Důvod'})).toBeInTheDocument();
+    });
+
     it('renders textarea with label', () => {
         renderWithFormik(createProp());
         expect(screen.getByText('Důvod')).toBeInTheDocument();

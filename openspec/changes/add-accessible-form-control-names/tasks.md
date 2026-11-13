@@ -12,8 +12,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 2. Shared field label and text inputs (HalFormsInput, HalFormsTextArea, HalFormsDateTime)
 
-- [ ] 2.1 Add failing tests rendering each component with `renderMode="input"` and asserting `getByRole('textbox', {name: <getFieldLabel(name)>})` (DateTime: `getByLabelText`), plus a case where `prop.prompt` wins over the localized label; extend the existing `HalFormsTextArea.test.tsx` / `HalFormsDateTime.test.tsx`, create `HalFormsInput.test.tsx`
-- [ ] 2.2 Introduce one shared field-label helper (`prop.prompt || getFieldLabel(prop.name)`) beside the field components and use it for the visible label in `field` mode and for `aria-label` in `input` mode in all three components (DateTime switches from raw `prop.name` to the localized label); refactor HalFormsMultiSelect to the same helper; verify 2.1 tests and the existing MultiSelect tests pass
+- [x] 2.1 Add failing tests rendering each component with `renderMode="input"` and asserting `getByRole('textbox', {name: <getFieldLabel(name)>})` (DateTime: `getByLabelText`), plus a case where `prop.prompt` wins over the localized label; extend the existing `HalFormsTextArea.test.tsx` / `HalFormsDateTime.test.tsx`, create `HalFormsInput.test.tsx`
+- [x] 2.2 Introduce one shared field-label helper (`prop.prompt || getFieldLabel(prop.name)`) beside the field components and use it for the visible label in `field` mode and for `aria-label` in `input` mode in all three components (DateTime switches from raw `prop.name` to the localized label); refactor HalFormsMultiSelect to the same helper; verify 2.1 tests and the existing MultiSelect tests pass
 
 ## 3. Selection fields (HalFormsSelect, HalFormsMemberId, HalFormsCheckbox)
 

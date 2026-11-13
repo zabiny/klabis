@@ -5,7 +5,7 @@ import {FieldWrapper} from '../../../UI/forms'
 import type {SelectOption} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {fieldLabel} from './fieldLabel.ts'
 import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
 import {normalizeArrayValue} from './normalizeArrayValue.ts'
 import {needsNormalization, toSubmitValue} from './multiValueSubmit.ts'
@@ -105,10 +105,10 @@ export const HalFormsMultiSelect = ({prop, errorText, renderMode = 'field'}: Hal
         const display = selectedOptions.length > 0
             ? selectedOptions.map(o => o.label).join(', ')
             : (isLoading ? 'Načítání...' : '—');
-        return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={display} renderMode={renderMode} />;
+        return <ReadOnlyDisplay label={fieldLabel(prop)} value={display} renderMode={renderMode} />;
     }
 
-    const label = renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined;
+    const label = renderMode === 'field' ? fieldLabel(prop) : undefined;
 
     return (
         <FieldWrapper label={label} error={errorText} required={prop.required}>
@@ -141,7 +141,7 @@ export const HalFormsMultiSelect = ({prop, errorText, renderMode = 'field'}: Hal
                         aria-expanded={isOpen}
                         aria-controls={listboxId}
                         aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
-                        aria-label={renderMode === 'input' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+                        aria-label={renderMode === 'input' ? fieldLabel(prop) : undefined}
                         value={query}
                         disabled={isLoading}
                         placeholder={isLoading ? 'Načítání...' : 'Vyhledat a přidat...'}

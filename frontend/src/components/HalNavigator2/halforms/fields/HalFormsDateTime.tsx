@@ -3,7 +3,7 @@ import type {FieldProps} from 'formik'
 import {Field} from 'formik'
 import {TextField} from '../../../UI/forms'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {fieldLabel} from './fieldLabel.ts'
 
 /**
  * Gets the local timezone offset in the format +HH:mm or -HH:mm
@@ -103,7 +103,8 @@ export const HalFormsDateTime = ({
                         value={convertedValue}
                         onChange={handleChange}
                         type="datetime-local"
-                        label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+                        label={renderMode === 'field' ? fieldLabel(prop) : undefined}
+                        aria-label={renderMode === 'input' ? fieldLabel(prop) : undefined}
                         disabled={prop.readOnly || false}
                         required={prop.required}
                         error={errorText}

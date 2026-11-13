@@ -3,7 +3,7 @@ import type {FieldProps} from 'formik'
 import {Field} from 'formik'
 import {TextField} from '../../../UI/forms'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {fieldLabel} from './fieldLabel.ts'
 
 /**
  * HalFormsInput component - text input for HAL+Forms
@@ -24,7 +24,8 @@ export const HalFormsInput = ({
                         {...field}
                         value={fieldValue}
                         type={(prop.type as 'text' | 'email' | 'password' | 'number' | 'date' | 'datetime-local' | 'url' | 'tel') || 'text'}
-                        label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+                        label={renderMode === 'field' ? fieldLabel(prop) : undefined}
+                        aria-label={renderMode === 'input' ? fieldLabel(prop) : undefined}
                         disabled={prop.readOnly || false}
                         required={prop.required}
                         error={errorText}

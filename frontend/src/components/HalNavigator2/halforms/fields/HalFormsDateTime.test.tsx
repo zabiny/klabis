@@ -20,12 +20,14 @@ describe('HalFormsDateTime Component', () => {
 
     const renderWithFormik = (
         prop: HalFormsProperty,
-        initialValue: unknown = ''
+        initialValue: unknown = '',
+        renderMode?: HalFormsInputProps['renderMode']
     ) => {
         const fieldProps: HalFormsInputProps = {
             prop,
             errorText: undefined,
             subElementProps: vi.fn(),
+            renderMode,
         };
 
         return render(
@@ -39,6 +41,18 @@ describe('HalFormsDateTime Component', () => {
             </Formik>
         );
     };
+
+    describe('Accessible name in input mode', () => {
+        it('names the control by the localized field label', () => {
+            renderWithFormik(createHalFormsProperty({name: 'votingDeadline', prompt: undefined}), '', 'input');
+            expect(screen.getByLabelText('Uzávěrka hlasování')).toBeInTheDocument();
+        });
+
+        it('prefers prompt over the localized label', () => {
+            renderWithFormik(createHalFormsProperty({name: 'votingDeadline'}), '', 'input');
+            expect(screen.getByLabelText('Event Date and Time')).toBeInTheDocument();
+        });
+    });
 
     describe('Rendering', () => {
         it('falls back to the localized field label when prompt is missing', () => {
