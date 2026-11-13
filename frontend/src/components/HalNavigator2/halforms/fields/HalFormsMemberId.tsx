@@ -4,9 +4,10 @@ import {Field, useField} from 'formik'
 import {SelectField, TextField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel, labels} from '../../../../localization'
+import {labels} from '../../../../localization'
 import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
 import {ClearSelectionButton} from './ClearSelectionButton.tsx'
+import {fieldLabel} from './fieldLabel.ts'
 
 interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** Member IDs to exclude from the picker options */
@@ -49,7 +50,7 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
         const selectedLabel = fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
             ? (options.find(opt => opt.value === String(fieldValue))?.label ?? (isLoading ? 'Načítání...' : '—'))
             : '—';
-        return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={selectedLabel} renderMode={renderMode} />;
+        return <ReadOnlyDisplay label={fieldLabel(prop)} value={selectedLabel} renderMode={renderMode} />;
     }
 
     return (
@@ -85,7 +86,8 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                             {...field}
                             id={`field-${prop.name}`}
                             value={selectValue}
-                            label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+                            label={renderMode === 'field' ? fieldLabel(prop) : undefined}
+                            aria-label={renderMode === 'input' ? fieldLabel(prop) : undefined}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
                             disabled={isLoading}
                             required={prop.required}

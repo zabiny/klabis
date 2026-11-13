@@ -17,8 +17,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 3. Selection fields (HalFormsSelect, HalFormsMemberId, HalFormsCheckbox)
 
-- [ ] 3.1 Add failing `input`-mode tests: HalFormsSelect → `getByRole('combobox', {name: <label>})`; HalFormsMemberId → `getByRole('combobox', {name: <label>})` while the search box keeps its `labels.ui.optionSearch` name (extend `HalFormsMemberId.test.tsx`); HalFormsCheckbox → `getByRole('checkbox', {name: <label>})`
-- [ ] 3.2 Apply the shared helper to the three components (`field` mode of HalFormsSelect switches from raw `prop.name` to the localized label); verify 3.1 tests pass
+- [x] 3.1 Add failing `input`-mode tests: HalFormsSelect → `getByRole('combobox', {name: <label>})`; HalFormsMemberId → `getByRole('combobox', {name: <label>})` while the search box keeps its `labels.ui.optionSearch` name (extend `HalFormsMemberId.test.tsx`); HalFormsCheckbox → `getByRole('checkbox', {name: <label>})`
+- [x] 3.2 Apply the shared helper to the three components (`field` mode of HalFormsSelect switches from raw `prop.name` to the localized label); verify 3.1 tests pass
 
 ## 4. Option groups (HalFormsRadio, HalFormsCheckboxGroup)
 

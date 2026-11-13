@@ -5,6 +5,7 @@ import * as Yup from 'yup';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormsMemberId} from './HalFormsMemberId.tsx';
 import type {HalFormsInputProps} from '../types.ts';
+import {labels} from '../../../../localization';
 
 // Mock useHalFormOptions at module level to provide test member data
 vi.mock('../../../../hooks/useHalFormOptions', () => ({
@@ -261,5 +262,29 @@ describe('HalFormsMemberId', () => {
         // Assert - field should be present with correct label
         const field = screen.getByLabelText('Vedoucí');
         expect(field).toBeInTheDocument();
+    });
+
+    describe('input render mode', () => {
+        const renderInputMode = () =>
+            render(
+                <QueryClientProvider client={new QueryClient()}>
+                    <Formik initialValues={{coordinator: ''}} onSubmit={vi.fn()}>
+                        <Form>
+                            <HalFormsMemberId
+                                prop={{name: 'coordinator', prompt: 'Vedoucí', type: 'MemberId'}}
+                                subElementProps={vi.fn()}
+                                renderMode="input"
+                            />
+                        </Form>
+                    </Formik>
+                </QueryClientProvider>
+            );
+
+        it('names the select by the field label while the search box keeps its own name', () => {
+            renderInputMode();
+
+            expect(screen.getByRole('combobox', {name: 'Vedoucí'})).toBeInTheDocument();
+            expect(screen.getByRole('textbox', {name: labels.ui.optionSearch})).toBeInTheDocument();
+        });
     });
 });
