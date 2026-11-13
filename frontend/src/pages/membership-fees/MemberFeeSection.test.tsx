@@ -218,37 +218,4 @@ describe('MemberFeeSection', () => {
             expect(screen.queryByRole('link', {name: /Zvolit tier/i})).not.toBeInTheDocument();
         });
     });
-
-    describe('history link', () => {
-        it('shows history link when fee-history link exists in summary', () => {
-            mockFeeSummary({
-                currentGroup: null,
-                votingOpen: true,
-                recommendedGroupId: null,
-                _links: {
-                    self: {href: '/api/members/member-1/fee-summary/2026'},
-                    feeHistory: {href: '/api/members/member-1/fee-history'},
-                },
-            });
-
-            renderSection();
-
-            expect(screen.getByRole('link', {name: /Zobrazit historii příspěvků/i})).toBeInTheDocument();
-        });
-
-        it('does not show history link when fee-history link absent', () => {
-            mockFeeSummary({
-                currentGroup: null,
-                votingOpen: true,
-                recommendedGroupId: null,
-                _links: {
-                    self: {href: '/api/members/member-1/fee-summary/2026'},
-                },
-            });
-
-            renderSection();
-
-            expect(screen.queryByRole('link', {name: /Zobrazit historii příspěvků/i})).not.toBeInTheDocument();
-        });
-    });
 });

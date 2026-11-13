@@ -11,7 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
-import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX} from "lucide-react";
+import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX, Wallet} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
 import {isCzNationality} from "./isCzNationality";
@@ -21,7 +21,6 @@ import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
-import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 import {LegalGuardiansSection} from "../../components/legal-guardians/LegalGuardiansSection.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
@@ -129,15 +128,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
     const showDeactivation = member.active === false;
     const setGuardiansTemplate = resourceData._templates?.setMemberLegalGuardians ?? null;
     const showGuardiansSection = !!resourceData._links?.legalGuardians || setGuardiansTemplate !== null;
-
-    const extractLinkHref = (link: unknown): string | null => {
-        if (!link) return null;
-        return Array.isArray(link) ? (link[0] as {href: string}).href : (link as {href: string}).href;
-    };
-
-    const selfHref = extractLinkHref(resourceData._links?.self);
-    const selfMemberId = selfHref?.split('/').pop() ?? '';
-    const feeSummaryHref = extractLinkHref(resourceData._links?.feeSummary);
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
@@ -333,6 +323,15 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                                     {labels.finance.openMemberAccount}
                                 </Button>
                             )}
+                            {member.active !== false && resourceData._links?.[memberRel('feeHistory')] && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => navigateToResource(getResourceLink(memberRel('feeHistory'))!)}
+                                    startIcon={<Wallet className="w-4 h-4"/>}
+                                >
+                                    {labels.memberFee.pageTitle}
+                                </Button>
+                            )}
                             {resourceData._links?.[memberRel('trainingGroup')] && (
                                 <Button
                                     variant="secondary"
@@ -429,13 +428,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
 
                 {!isEditing && icalTokenHref && (
                     <CalendarFeedSection icalTokenHref={icalTokenHref}/>
-                )}
-
-                {!isEditing && member.active !== false && feeSummaryHref && (
-                    <MemberFeeSection
-                        feeSummaryHref={feeSummaryHref}
-                        memberId={selfMemberId}
-                    />
                 )}
 
                 {isEditing && (

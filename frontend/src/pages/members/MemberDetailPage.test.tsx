@@ -1002,52 +1002,65 @@ describe('MemberDetailPage', () => {
         });
     });
 
-    describe('fee section', () => {
-        it('shows MemberFeeSection when feeSummary link is present and member is active', () => {
+    describe('fee history button', () => {
+        const feeHistoryHref = '/api/members/123/fee-history';
+
+        it('shows "Členské příspěvky" button when feeHistory link is present and member is active', () => {
             const data = mockMemberDetailData({
                 active: true,
                 _links: {
                     self: {href: '/api/members/123'},
-                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                    feeHistory: {href: feeHistoryHref},
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Členské příspěvky'})).toBeInTheDocument();
         });
 
-        it('does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)', () => {
-            const data = mockMemberDetailData({
-                active: true,
-                _links: {
-                    self: {href: '/api/members/123'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
-        });
-
-        it('does NOT show MemberFeeSection when member is inactive even with feeSummary link', () => {
-            const data = mockMemberDetailData({
-                active: false,
-                _links: {
-                    self: {href: '/api/members/123'},
-                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
-        });
-
-        it('shows MemberFeeSection for regular user without MEMBERS_MANAGE (active absent from response) when feeSummary link is present', () => {
+        it('shows the button when active is absent from response', () => {
             const data = mockMemberDetailData({
                 _links: {
                     self: {href: '/api/members/123'},
-                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                    feeHistory: {href: feeHistoryHref},
                 },
             });
             delete (data as Record<string, unknown>).active;
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Členské příspěvky'})).toBeInTheDocument();
+        });
+
+        it('does NOT show the button without feeHistory link', () => {
+            renderPage(createMockPageData(mockMemberDetailData({active: true})));
+            expect(screen.queryByRole('button', {name: 'Členské příspěvky'})).not.toBeInTheDocument();
+        });
+
+        it('does NOT show the button for inactive member even with feeHistory link', () => {
+            const data = mockMemberDetailData({
+                active: false,
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeHistory: {href: feeHistoryHref},
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('button', {name: 'Členské příspěvky'})).not.toBeInTheDocument();
+        });
+
+        it('navigates to the fee history resource when clicked', async () => {
+            const feeHistoryLink = {href: feeHistoryHref};
+            const data = mockMemberDetailData({
+                active: true,
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeHistory: feeHistoryLink,
+                },
+            });
+            const pageData = createMockPageData(data, {
+                getResourceLink: vi.fn().mockReturnValue(feeHistoryLink),
+            });
+            renderPage(pageData);
+            await userEvent.click(screen.getByRole('button', {name: 'Členské příspěvky'}));
+            expect(pageData.navigateToResource).toHaveBeenCalledWith(feeHistoryLink);
         });
     });
 

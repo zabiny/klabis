@@ -280,8 +280,9 @@ paths:
               description: Member's permissions (requires MEMBERS:PERMISSIONS)
             account:
               description: Member's finance account (requires FINANCE:MANAGE or ownership)
-            feeSummary:
-              description: Membership fee summary for the current year
+            feeHistory:
+              operation: getFeeHistory
+              description: Fee level history page, present for the member themselves, MEMBERS:MANAGE or a legal guardian
             legalGuardianGroup:
               description: Legal guardian group of a minor member, present only for callers with MEMBERS:MANAGE
             legalGuardians:

@@ -263,6 +263,50 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
+        @DisplayName("should link back to the member")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
+        void shouldLinkToMember() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.member.href").value(
+                            org.hamcrest.Matchers.endsWith("/api/members/" + MEMBER_UUID)));
+        }
+
+        @Test
+        @DisplayName("should point feeSummary to the campaign year for the owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldPointFeeSummaryToCampaignYear() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2027);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary.href").value(
+                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/2027")));
+        }
+
+        @Test
+        @DisplayName("should point feeSummary to the current year when no campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldPointFeeSummaryToCurrentYear() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary.href").value(
+                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/2026")));
+        }
+
+        @Test
         @DisplayName("should return 403 when member accesses another member's history")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturn403WhenAccessingOtherMember() throws Exception {
@@ -280,66 +324,6 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
-        }
-    }
-
-    @Nested
-    @DisplayName("feeSummary link on GET /api/members/{id}")
-    class FeeSummaryLinkOnMemberDetailTests {
-
-        private static final int CAMPAIGN_YEAR = 2027;
-        private static final int CURRENT_YEAR = 2026;
-
-        @BeforeEach
-        void stubMember() {
-            when(memberManagementPort.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
-                    .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
-        }
-
-        @Test
-        @DisplayName("should point to campaign year when viewing own profile and campaign is active")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
-        void shouldPointToCampaignYear() throws Exception {
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CAMPAIGN_YEAR);
-
-            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.feeSummary.href").value(
-                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/" + CAMPAIGN_YEAR)));
-        }
-
-        @Test
-        @DisplayName("should point to current year when viewing own profile and no campaign is active")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
-        void shouldPointToCurrentYear() throws Exception {
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
-
-            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.feeSummary.href").value(
-                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/" + CURRENT_YEAR)));
-        }
-
-        @Test
-        @DisplayName("should NOT add the link when viewing another member's profile")
-        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ})
-        void shouldNotAddLinkForOtherMember() throws Exception {
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
-
-            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("should NOT add the link for a user without member profile")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
-        void shouldNotAddLinkWithoutMemberProfile() throws Exception {
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
-
-            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
         }
     }
 }

@@ -35,6 +35,7 @@ import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFee
 import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
 import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
+import {MemberFeeHistoryPage} from "./pages/membership-fees/MemberFeeHistoryPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 import {TokenRenewalOverlay} from "./components/UI/TokenRenewalOverlay.tsx";
@@ -106,6 +107,7 @@ function App() {
                                 <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                 <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
                                 <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
+                                <Route path="/members/:memberId/fee-history" element={<MemberFeeHistoryPage/>}/>
                                 <Route path="/events" element={<EventsPage/>}/>
                                 <Route path="/events/:id" element={<EventDetailPage/>}/>
                                 <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>

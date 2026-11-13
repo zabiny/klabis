@@ -16,7 +16,7 @@ import java.lang.annotation.*;
  * Single shared {@code @WebMvcTest} context for all REST adapter tests of the membershipfees module.
  * <p>
  * STANDALONE slicing loads membershipfees and shared {@code common}; {@code members} is included because
- * {@code MemberFeeSummaryLinkProcessor} adds the {@code feeSummary} link to member responses and the
+ * {@code MemberFeeHistoryLinkProcessor} adds the {@code feeHistory} link to member responses and the
  * {@code @ActingMember} argument resolver lives there. {@code sync} is included because the members postprocessors
  * use the {@code SyncLinks} bean. Every collaborator is a primary port mocked through the per-module
  * {@code *WebMvcMockitoBeans}.

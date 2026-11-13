@@ -7,6 +7,7 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -16,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,10 +74,25 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
 @MvcComponent
 class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberFeeHistoryResponse, UUID> {
 
+    private final FeeSelectionCampaignManagementPort campaignManagementPort;
+    private final Clock clock;
+
+    MemberFeeHistoryDetailsPostprocessor(FeeSelectionCampaignManagementPort campaignManagementPort, Clock clock) {
+        this.campaignManagementPort = campaignManagementPort;
+        this.clock = clock;
+    }
+
     @Override
     public void process(EntityModel<MemberFeeHistoryResponse> dtoModel, UUID memberId) {
         klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(memberId, null))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
+
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null))
+                .ifPresent(link -> dtoModel.add(link.withRel("member")));
+
+        int year = campaignManagementPort.relevantFeeYear(LocalDate.now(clock));
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year, null))
+                .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
     }
 }
 

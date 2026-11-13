@@ -1098,6 +1098,12 @@ paths:
           x-hal-links:
             self:
               description: This fee history
+            member:
+              operation: getMember
+              description: The member whose fee history this is
+            feeSummary:
+              operation: getFeeSummary
+              description: Current fee level summary, present for the member themselves only
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

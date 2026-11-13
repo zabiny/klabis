@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
-import {Section} from './MemberSection';
+import {Section} from '../members/MemberSection';
 import {labels} from '../../localization';
 import {toHref} from '../../api/hateoas.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -74,14 +74,6 @@ function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactE
                 </Link>
             )}
 
-            {summary._links?.feeHistory && (
-                <Link
-                    to={`/members/${memberId}/fee-history`}
-                    className="text-sm text-text-secondary hover:text-text-primary underline self-start"
-                >
-                    {l.viewHistory}
-                </Link>
-            )}
         </div>
     );
 }
