@@ -14,6 +14,7 @@ export const RadioGroup = ({
                                disabled,
                                className,
                                name,
+                               groupAriaLabel,
                                options,
                                value,
                                onChange,
@@ -36,7 +37,7 @@ export const RadioGroup = ({
             helpText={helpText}
             className={className}
         >
-            <div className={containerClasses} role="group" aria-labelledby={label ? `${name}-label` : undefined}>
+            <div className={containerClasses} role="group" aria-labelledby={label ? `${name}-label` : undefined} aria-label={label ? undefined : groupAriaLabel}>
                 {options.map((option) => (
                     <label
                         key={`${option.value}`}

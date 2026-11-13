@@ -76,6 +76,7 @@ export const CheckboxGroup = ({
                                   disabled,
                                   className,
                                   name,
+                                  groupAriaLabel,
                                   options,
                                   value = [],
                                   onChange,
@@ -101,7 +102,7 @@ export const CheckboxGroup = ({
             helpText={helpText}
             className={className}
         >
-            <div className={containerClasses} role="group" aria-labelledby={label ? `${name}-label` : undefined}>
+            <div className={containerClasses} role="group" aria-labelledby={label ? `${name}-label` : undefined} aria-label={label ? undefined : groupAriaLabel}>
                 {options.map((option) => (
                     <label
                         key={`${option.value}`}

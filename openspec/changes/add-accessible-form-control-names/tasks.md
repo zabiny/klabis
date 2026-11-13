@@ -22,8 +22,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 4. Option groups (HalFormsRadio, HalFormsCheckboxGroup)
 
-- [ ] 4.1 Add failing `input`-mode tests asserting `getByRole('group', {name: <label>})` for HalFormsRadio (new test file) and HalFormsCheckboxGroup (extend `HalFormsCheckboxGroup.test.tsx`)
-- [ ] 4.2 Add an optional group-name prop to `RadioGroup` and the group mode of `CheckboxField` (applied to the `role="group"` container only when no visible label is rendered) and pass the shared field label from both HAL-FORMS components in `input` mode (HalFormsRadio `field` mode switches to the localized label); verify 4.1 tests and existing group tests pass
+- [x] 4.1 Add failing `input`-mode tests asserting `getByRole('group', {name: <label>})` for HalFormsRadio (new test file) and HalFormsCheckboxGroup (extend `HalFormsCheckboxGroup.test.tsx`)
+- [x] 4.2 Add an optional group-name prop to `RadioGroup` and the group mode of `CheckboxField` (applied to the `role="group"` container only when no visible label is rendered) and pass the shared field label from both HAL-FORMS components in `input` mode (HalFormsRadio `field` mode switches to the localized label); verify 4.1 tests and existing group tests pass
 
 ## 5. Page-level label parity
 

@@ -4,7 +4,7 @@ import {Field} from 'formik'
 import {RadioGroup} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {fieldLabel} from './fieldLabel.ts'
 
 /**
  * HalFormsRadio component - radio group selection for HAL+Forms
@@ -22,7 +22,8 @@ export const HalFormsRadio = ({prop, errorText, renderMode = 'field'}: HalFormsI
                 const fieldValue = field.value as string | number | undefined;
                 return (
                     <RadioGroup
-                        label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+                        label={renderMode === 'field' ? fieldLabel(prop) : undefined}
+                        groupAriaLabel={renderMode === 'input' ? fieldLabel(prop) : undefined}
                         name={prop.name}
                         required={prop.required}
                         disabled={prop.readOnly || isLoading || false}

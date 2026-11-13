@@ -51,6 +51,7 @@ export interface SelectFieldProps extends FieldWrapperProps, Omit<SelectHTMLAttr
  */
 export interface RadioGroupProps extends FieldWrapperProps {
     name: string
+    groupAriaLabel?: string
     options: SelectOption[]
     value?: string | number
     onChange?: (value: string | number) => void
@@ -62,6 +63,7 @@ export interface RadioGroupProps extends FieldWrapperProps {
  */
 export interface CheckboxGroupProps extends FieldWrapperProps {
     name: string
+    groupAriaLabel?: string
     options: SelectOption[]
     value?: (string | number)[]
     onChange?: (value: (string | number)[]) => void

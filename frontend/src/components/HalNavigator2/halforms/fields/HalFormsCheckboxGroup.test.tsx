@@ -4,6 +4,7 @@ import {Form, Formik} from 'formik';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormsCheckboxGroup} from './HalFormsCheckboxGroup.tsx';
 import type {HalFormsInputProps} from '../types.ts';
+import {labels} from '../../../../localization';
 
 const defaultMockOptions = {
     options: [
@@ -262,6 +263,30 @@ describe('HalFormsCheckboxGroup', () => {
                     expect.anything()
                 );
             });
+        });
+    });
+
+    describe('input render mode', () => {
+        const renderInputMode = (prop: HalFormsInputProps['prop']) =>
+            render(
+                <QueryClientProvider client={new QueryClient()}>
+                    <Formik initialValues={{[prop.name]: []}} onSubmit={vi.fn()}>
+                        <Form>
+                            <HalFormsCheckboxGroup prop={prop} errorText={undefined} subElementProps={vi.fn()}
+                                                   renderMode="input"/>
+                        </Form>
+                    </Formik>
+                </QueryClientProvider>
+            );
+
+        it('names the group by the localized field label', () => {
+            renderInputMode({name: 'ruleType', type: 'List', options: {link: {href: '/members/options'}}});
+            expect(screen.getByRole('group', {name: labels.fields.ruleType})).toBeInTheDocument();
+        });
+
+        it('names the group by prompt when provided', () => {
+            renderInputMode(trainersProp);
+            expect(screen.getByRole('group', {name: 'Trenéři'})).toBeInTheDocument();
         });
     });
 });

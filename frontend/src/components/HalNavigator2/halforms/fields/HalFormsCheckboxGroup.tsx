@@ -3,7 +3,7 @@ import {Field, useFormikContext} from 'formik'
 import {CheckboxGroup} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {fieldLabel} from './fieldLabel.ts'
 import {normalizeArrayValue} from './normalizeArrayValue.ts'
 import {needsNormalization, toSubmitValue} from './multiValueSubmit.ts'
 
@@ -33,7 +33,8 @@ const CheckboxGroupField = ({prop, errorText, renderMode, options, isLoading}: C
 
     return (
         <CheckboxGroup
-            label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
+            label={renderMode === 'field' ? fieldLabel(prop) : undefined}
+            groupAriaLabel={renderMode === 'input' ? fieldLabel(prop) : undefined}
             name={prop.name}
             required={prop.required}
             disabled={prop.readOnly || isLoading || false}
