@@ -7,8 +7,8 @@ Conventions for every group (see frontend/CLAUDE.md):
 
 ## 1. Action buttons announced by their visible text
 
-- [ ] 1.1 Rewrite "should have proper aria-label" in `frontend/src/components/HalNavigator2/HalFormButton.test.tsx` to assert `getByRole('button', {name: 'Create Member'})` and absence of an `aria-label` attribute; add a case for `hideLabel` asserting the icon-only button is found by `getByRole('button', {name: 'Create Member'})`; verify the first case fails (red)
-- [ ] 1.2 In `HalFormTemplateButton.tsx` set `aria-label` only when `hideLabel` is true (value `displayText`); verify both 1.1 tests pass and `grep -rn "Select .* form" frontend/src` returns no hits outside `e2e/`
+- [x] 1.1 Rewrite "should have proper aria-label" in `frontend/src/components/HalNavigator2/HalFormButton.test.tsx` to assert `getByRole('button', {name: 'Create Member'})` and absence of an `aria-label` attribute; add a case for `hideLabel` asserting the icon-only button is found by `getByRole('button', {name: 'Create Member'})`; verify the first case fails (red)
+- [x] 1.2 In `HalFormTemplateButton.tsx` set `aria-label` only when `hideLabel` is true (value `displayText`); verify both 1.1 tests pass and `grep -rn "Select .* form" frontend/src` returns no hits outside `e2e/`
 
 ## 2. Shared field label and text inputs (HalFormsInput, HalFormsTextArea, HalFormsDateTime)
 

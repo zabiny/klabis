@@ -210,7 +210,7 @@ describe('HalFormButton Component', () => {
             expect(screen.getByText('create')).toBeInTheDocument();
         });
 
-        it('should have proper aria-label', () => {
+        it('should be named by its visible text without aria-label', () => {
             const resourceData: HalResponse = {
                 id: 1,
                 _templates: {
@@ -221,8 +221,22 @@ describe('HalFormButton Component', () => {
                 <HalFormButton name="create" modal={true}/>,
                 createMockPageData(resourceData)
             );
-            const button = screen.getByRole('button');
-            expect(button).toHaveAttribute('aria-label', 'Select Create Member form');
+            const button = screen.getByRole('button', {name: 'Create Member'});
+            expect(button).not.toHaveAttribute('aria-label');
+        });
+
+        it('should name icon-only button by the template label', () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create Member'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="create" modal={true} hideLabel icon={<svg/>}/>,
+                createMockPageData(resourceData)
+            );
+            expect(screen.getByRole('button', {name: 'Create Member'})).toBeInTheDocument();
         });
 
         it('should have data-testid attribute', () => {

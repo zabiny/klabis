@@ -64,7 +64,7 @@ export function HalFormTemplateButton({
             size="sm"
             className={className}
             title={displayText}
-            aria-label={`Select ${displayText} form`}
+            aria-label={hideLabel ? displayText : undefined}
             data-testid={`form-template-button-${templateName}`}
         >
             {icon && <span className="inline-flex">{icon}</span>}
