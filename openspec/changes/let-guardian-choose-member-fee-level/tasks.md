@@ -9,11 +9,11 @@
 
 ## 2. Guardian chooses, changes and withdraws (vertical slice)
 
-- [ ] 2.1 Write failing integration test: guardian (member and non-member) can `chooseTier` and `removeChoice` for the minor, administrator and unrelated guardian get 403, affordances absent for administrator
-- [ ] 2.2 In `membershipfees.yaml` set `x-klabis-authority: [MEMBERS_EDIT_PROFILE]` and `x-klabis-target-id: MEMBER` on `chooseTier` and `removeChoice`, remove `x-spring-provide-args`; regenerate; test 2.1 passes
-- [ ] 2.3 Frontend: render choose/change links only when the summary has the `chooseTier` affordance; `MemberFeeChoicePage` works for a guardian; update `MemberFeeSection.test.tsx` and `MemberFeeChoicePage.test.tsx`; `npm run build` passes
-- [ ] 2.4 E2E: guardian Eva chooses a level for Sofie (`membership-fee-history.feature` or `membership-fee-choice.feature`), administrator Jan sees no choice controls; `npm run test:e2e` for these features passes
-- [ ] 2.5 Update `references/field-security.md` and the module API notes that call these operations owner-only; grep finds no remaining "owner-only" claim for the four operations
+- [x] 2.1 Write failing integration test: guardian (member and non-member) can `chooseTier` and `removeChoice` for the minor, administrator and unrelated guardian get 403, affordances absent for administrator
+- [x] 2.2 In `membershipfees.yaml` set `x-klabis-authority: [MEMBERS_EDIT_PROFILE]` and `x-klabis-target-id: MEMBER` on `chooseTier` and `removeChoice`, remove `x-spring-provide-args`; regenerate; test 2.1 passes
+- [x] 2.3 Frontend: render choose/change links only when the summary has the `chooseTier` affordance; `MemberFeeChoicePage` works for a guardian; update `MemberFeeSection.test.tsx` and `MemberFeeChoicePage.test.tsx`; `npm run build` passes
+- [x] 2.4 E2E: guardian Eva chooses a level for Sofie (`membership-fee-history.feature` or `membership-fee-choice.feature`), administrator Jan sees no choice controls; `npm run test:e2e` for these features passes
+- [x] 2.5 Update `references/field-security.md` and the module API notes that call these operations owner-only; grep finds no remaining "owner-only" claim for the four operations
 
 ## 3. Integration check
 

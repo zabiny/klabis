@@ -75,3 +75,10 @@ Feature: Member's fee level choice
       And the fee selection campaign is closed
       When Eva views the profile
       Then Eva's profile shows fee level "Plus" as locked
+
+  Rule: The legal guardian of a minor can choose the minor's level on the minor's behalf
+
+    Scenario: Legal guardian chooses a level for their minor
+      Given an active fee selection campaign offers levels "Basic" and "Plus"
+      When Eva chooses level "Plus" for member "Sofie Svobodová"
+      Then Eva sees fee level "Plus" on the fee page of member "Sofie Svobodová"

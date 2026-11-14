@@ -114,11 +114,11 @@ class MemberFeeSummaryDetailsPostprocessor
                                 .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
                                 .toList();
                         self = self.andAffordances(klabisAffordWithOptions(
-                                methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null, null),
+                                methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null),
                                 Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
                         if (info.groupId() != null) {
                             self = self.andAffordances(klabisAfford(
-                                    methodOn(MemberFeeChoiceApi.class).removeChoice(memberId, year, null)));
+                                    methodOn(MemberFeeChoiceApi.class).removeChoice(memberId, year)));
                         }
                     }
                     dtoModel.add(self);

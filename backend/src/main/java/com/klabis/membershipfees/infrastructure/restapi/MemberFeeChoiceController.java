@@ -3,7 +3,6 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
@@ -24,9 +23,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-// Authorization is declared in membershipfees.yaml and enforced on the generated interface. The
-// actingMember parameter of chooseTier/removeChoice is unused in the bodies but part of the
-// generated signature (group 2 of let-guardian-choose-member-fee-level removes it).
+// Authorization is declared in membershipfees.yaml and enforced on the generated interface.
 class MemberFeeChoiceController implements MemberFeeChoiceApi {
 
     private final MemberChoicePort memberChoicePort;
@@ -59,8 +56,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     public ResponseEntity<Void> chooseTier(
             UUID memberId,
             Integer year,
-            ChooseFeeChoiceRequest request,
-            @ActingMember MemberId actingMember) {
+            ChooseFeeChoiceRequest request) {
 
         memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
                 new MemberId(memberId),
@@ -73,8 +69,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     @Override
     public ResponseEntity<Void> removeChoice(
             UUID memberId,
-            Integer year,
-            @ActingMember MemberId actingMember) {
+            Integer year) {
 
         memberChoicePort.removeFeeChoice(new MemberId(memberId), year);
 
@@ -91,9 +86,9 @@ class MemberFeeChoiceDetailsPostprocessor
         klabisLinkTo(methodOn(MemberFeeChoiceApi.class).getChoice(view.memberId(), view.year()))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
-                                .chooseTier(view.memberId(), view.year(), null, null)))
+                                .chooseTier(view.memberId(), view.year(), null)))
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
-                                .removeChoice(view.memberId(), view.year(), null)))));
+                                .removeChoice(view.memberId(), view.year())))));
 
         view.currentChoice().ifPresent(groupId ->
                 klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(groupId.value()))

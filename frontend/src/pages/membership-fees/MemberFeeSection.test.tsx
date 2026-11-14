@@ -69,6 +69,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -82,6 +83,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -97,6 +99,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2099'}},
             });
 
@@ -113,6 +116,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -126,6 +130,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -141,6 +146,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
+                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -216,6 +222,37 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             expect(screen.queryByRole('link', {name: /Zvolit tier/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('votingOpen is true, chooseTier template absent', () => {
+        it('hides choose link and prompt when there is no choice', () => {
+            mockFeeSummary({
+                currentGroup: null,
+                votingOpen: true,
+                recommendedGroupId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+            });
+
+            renderSection();
+
+            expect(screen.queryByRole('link')).not.toBeInTheDocument();
+            expect(screen.queryByText(/Probíhá volba/i)).not.toBeInTheDocument();
+        });
+
+        it('shows current level read-only without change link or prompt', () => {
+            mockFeeSummary({
+                currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
+                votingOpen: true,
+                recommendedGroupId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+            });
+
+            renderSection();
+
+            expect(screen.getByText('Základ')).toBeInTheDocument();
+            expect(screen.queryByRole('link')).not.toBeInTheDocument();
+            expect(screen.queryByText(/Volbu je možné změnit/i)).not.toBeInTheDocument();
         });
     });
 

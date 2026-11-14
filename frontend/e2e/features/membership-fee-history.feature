@@ -1,7 +1,7 @@
 @spec:membership-fees
 # Spec scenarios intentionally not automated (covered by backend and frontend unit tests):
 # - "History entry shows year, level and how it was assigned" (only the member's own choice is checked in the first scenario)
-# - "Level assigned by an administrator is marked as such", "Administrator sees only the history of another member"
+# - "Level assigned by an administrator is marked as such"
 # - "Year without an assignment is not listed", "Fee page of an inactive member is not offered"
 # - "Member without any assignment sees an empty history", "Returning from the fee page"
 Feature: Member fee level history
@@ -33,3 +33,12 @@ Feature: Member fee level history
     Scenario: Legal guardian cannot open the fee page of a member who is not their minor
       When Eva opens the detail of club member "Petra Nováčková"
       Then Eva is not offered the fee level history of member "Petra Nováčková"
+
+  Rule: Administrators see the current level of a member but cannot choose it
+
+    Scenario: Administrator sees only the history of another member
+      Given an active fee selection campaign offers level "Basic"
+      And Jan has assigned member "Sofie Svobodová" to level "Basic"
+      When Jan opens the fee level history of member "Sofie Svobodová"
+      Then Jan sees fee level "Basic" on the fee page of member "Sofie Svobodová"
+      And Jan is not offered to choose or change the fee level of member "Sofie Svobodová"

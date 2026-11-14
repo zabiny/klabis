@@ -14,11 +14,10 @@
 #
 # MemberFeeChoice and MemberFeeSummary operations: getChoice, getFeeSummary and getFeeHistory
 # admit the member themselves, MEMBERS:MANAGE, and MEMBERS:EDIT_PROFILE held over the member
-# (a legal guardian — OR semantics with ownership). chooseTier and removeChoice stay restricted
-# to the member themselves, declared as x-klabis-owner-visible WITHOUT a paired
-# x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
-# is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
-# lone x-klabis-owner-visible narrows access to the owner rather than widening it.
+# (a legal guardian — OR semantics with ownership). chooseTier and removeChoice admit only the
+# member themselves and MEMBERS:EDIT_PROFILE held over the member (a legal guardian): MEMBERS:MANAGE
+# is deliberately not an alternative, so administrators cannot choose on a member's behalf.
+# MEMBERS:EDIT_PROFILE is SPECIFIC-grant only, so no holder has it globally.
 #
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
@@ -947,10 +946,8 @@ paths:
       description: Records the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      # See getChoice above — ONLY the member themselves.
+      x-klabis-authority: [MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -971,7 +968,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - members can only manage their own fee level choice
+          description: Forbidden - only the member or a legal guardian of the member can manage the fee level choice
           content:
             application/problem+json:
               schema:
@@ -990,10 +987,8 @@ paths:
       description: Removes the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      # See getChoice above — ONLY the member themselves.
+      x-klabis-authority: [MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -1007,7 +1002,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - members can only manage their own fee level choice
+          description: Forbidden - only the member or a legal guardian of the member can manage the fee level choice
           content:
             application/problem+json:
               schema:

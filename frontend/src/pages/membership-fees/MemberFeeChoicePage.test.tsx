@@ -217,6 +217,33 @@ describe('MemberFeeChoicePage', () => {
             expect(screen.getByText('Základ')).toBeInTheDocument();
         });
     });
+    describe('voting open without chooseTier template', () => {
+        it('offers no choose, change or withdraw controls', () => {
+            mockFeeSummary({
+                currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
+                votingOpen: true,
+                recommendedGroupId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+            });
+
+            renderPage();
+
+            expect(screen.getByText('Základ')).toBeInTheDocument();
+            expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Zvolit tier|Změnit tier|Zrušit volbu/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('opened for a member taken from the route', () => {
+        it('loads the summary of the route member', () => {
+            mockFeeSummary({currentGroup: null, votingOpen: false, _links: {}});
+
+            renderPage('minor-42', '2026');
+
+            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/members/minor-42/fee-summary/2026');
+        });
+    });
+
     describe('submitting', () => {
         const chooseTier = {
             method: 'POST',

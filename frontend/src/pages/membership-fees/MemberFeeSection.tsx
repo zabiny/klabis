@@ -30,14 +30,15 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
 function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactElement {
     const campaignYear = (summary._links?.self ? toHref(summary._links.self) : '').split('/').pop();
     const feeChoicePath = `/members/${memberId}/fee-choice/${campaignYear}`;
+    const canChoose = Boolean(summary._templates?.chooseTier);
 
     return (
         <div className="flex flex-col gap-3">
-            {summary.votingOpen && !summary.currentGroup && (
+            {summary.votingOpen && canChoose && !summary.currentGroup && (
                 <p className="text-sm text-text-secondary">{l.votingOpenNoChoice}</p>
             )}
 
-            {summary.votingOpen && summary.currentGroup && (
+            {summary.votingOpen && canChoose && summary.currentGroup && (
                 <p className="text-sm text-text-secondary">{l.votingOpenChoiceExists}</p>
             )}
 
@@ -56,7 +57,7 @@ function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactE
                 </div>
             )}
 
-            {summary.votingOpen && !summary.currentGroup && (
+            {summary.votingOpen && canChoose && !summary.currentGroup && (
                 <Link
                     to={feeChoicePath}
                     className="text-sm text-primary hover:text-primary-light underline self-start"
@@ -65,7 +66,7 @@ function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactE
                 </Link>
             )}
 
-            {summary.votingOpen && summary.currentGroup && (
+            {summary.votingOpen && canChoose && summary.currentGroup && (
                 <Link
                     to={feeChoicePath}
                     className="text-sm text-primary hover:text-primary-light underline self-start"

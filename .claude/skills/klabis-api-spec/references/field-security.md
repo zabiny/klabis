@@ -133,11 +133,11 @@ the codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTes
 declared there is nothing to OR against: `AuthorizationEvaluator.isAllowed` finds no authority in
 an empty list, leaving ownership the sole path to `proceed()`. A lone `x-klabis-owner-visible`
 therefore *narrows* access to the owner rather than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
-— `MemberFeeChoice`'s and `MemberFeeSummary`'s 4 owner-only operations use exactly this. The fifth, `getFeeHistory`, is the exception: it pairs `x-klabis-owner-visible` with `x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, so the owner, a `MEMBERS:MANAGE` holder OR a legal guardian (`MEMBERS:EDIT_PROFILE` over the member) may read it. It also drops `@ActingMember`, so a guardian without a member profile can call it. Do not reach for an
+— no fee operation uses it any more. The membershipfees reads (`getFeeHistory`, `getFeeSummary`, `getChoice`) pair `x-klabis-owner-visible` with `x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, so the owner, a `MEMBERS:MANAGE` holder OR a legal guardian (`MEMBERS:EDIT_PROFILE` over the member) may read them. The writes (`chooseTier`, `removeChoice`) pair it with `[MEMBERS_EDIT_PROFILE]` only: the member and their guardian, deliberately not `MEMBERS:MANAGE`. None of these takes `@ActingMember`, so a guardian without a member profile can call them. Do not reach for an
 imperative controller check for that case.
 
 Such operations need a test asserting that a caller holding the module's MANAGE authority is still
-`403` (see `MemberFeeChoiceControllerTest`). Nothing else in the suite distinguishes owner-only from
+`403` (see `MemberFeeChoiceGuardianAccessIntegrationTest`, which does this for `chooseTier` and `removeChoice`). Nothing else in the suite distinguishes owner-only from
 owner-OR-MANAGE, so pairing an authority in later would widen access silently.
 
 **Nothing requires an operation to declare an authority.** A missing `x-klabis-authority` generates
