@@ -102,7 +102,7 @@ The system SHALL allow a membership administrator to change the voting deadline 
 
 ### Requirement: Member Chooses a Fee Level for the Upcoming Year
 
-The system SHALL allow each member to choose, before the voting deadline, one published fee level for the upcoming calendar year. The choice SHALL be an explicit action by the member. Until the voting deadline a member MAY change their choice any number of times or withdraw their current level, including a level assigned by an administrator. After the voting deadline, or once the campaign is closed, the choice is locked and the member can neither change nor withdraw it.
+The system SHALL allow each member, and the legal guardian of a minor member on the minor's behalf, to choose, before the voting deadline, one published fee level for the upcoming calendar year. The choice SHALL be an explicit action by the member or the guardian. Until the voting deadline the member or the guardian MAY change the choice any number of times or withdraw the current level, including a level assigned by an administrator. A membership administrator who is neither the member nor their guardian cannot choose or withdraw a level. After the voting deadline, or once the campaign is closed, the choice is locked and neither the member nor the guardian can change or withdraw it.
 
 #### Scenario: Member chooses a level
 
@@ -143,6 +143,34 @@ The system SHALL allow each member to choose, before the voting deadline, one pu
 - **WHEN** a member with an assigned level opens the choice form after the voting deadline or after the campaign has been closed
 - **THEN** the form shows the level as locked
 - **AND** the option to withdraw the choice is not offered
+
+#### Scenario: Legal guardian chooses a level for their minor
+
+- **GIVEN** voting is open and the minor has not chosen a level
+- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page and selects one of the published levels
+- **THEN** the minor becomes assigned to that level for that year
+
+#### Scenario: Non-member legal guardian chooses a level for their minor
+
+- **GIVEN** voting is open and the legal guardian is not a club member
+- **WHEN** the guardian selects a published level for the minor on the minor's "Členské příspěvky" page
+- **THEN** the minor becomes assigned to that level for that year
+
+#### Scenario: Legal guardian withdraws or changes the minor's choice before the deadline
+
+- **GIVEN** voting is open and the minor has a level for the upcoming year
+- **WHEN** the minor's legal guardian changes the level or withdraws it
+- **THEN** the minor's assignment moves to the new level or the minor is no longer assigned to any level
+
+#### Scenario: Administrator cannot choose a level for a member
+
+- **WHEN** a membership administrator who is not the member's legal guardian opens the member's "Členské příspěvky" page while voting is open
+- **THEN** the page offers no control for choosing, changing or withdrawing the level
+
+#### Scenario: Legal guardian cannot choose for a member who is not their minor
+
+- **WHEN** a legal guardian attempts to choose a level for a member who is not their minor
+- **THEN** the system rejects the request as forbidden
 
 ### Requirement: Emergency Assignment by Administrator
 
@@ -223,7 +251,7 @@ The system SHALL post the yearly membership fee to each member's financial accou
 
 ### Requirement: Member Sees Their Current Fee Level
 
-The system SHALL allow a member to see their currently assigned fee level for the relevant year. The member's detail SHALL offer a "Členské příspěvky" button, and the page it opens SHALL display the member's current level. The relevant year is the year of the active campaign; when no campaign is active, it is the latest campaign year that is not in the past; otherwise it is the current calendar year.
+The system SHALL allow a member, a membership administrator and a legal guardian of the member to see the member's currently assigned fee level for the relevant year. The member's detail SHALL offer a "Členské příspěvky" button, and the page it opens SHALL display the member's current level. The choice controls are offered only to the member and their legal guardian. The relevant year is the year of the active campaign; when no campaign is active, it is the latest campaign year that is not in the past; otherwise it is the current calendar year.
 
 #### Scenario: Member sees the assigned level on the profile
 
@@ -242,9 +270,22 @@ The system SHALL allow a member to see their currently assigned fee level for th
 - **THEN** the page still shows the chosen level for the campaign year
 - **AND** the page indicates that the choice is locked
 
+#### Scenario: Legal guardian sees the current level of their minor
+
+- **GIVEN** voting is open and the minor has chosen a level
+- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page
+- **THEN** the page shows the minor's currently assigned fee level
+- **AND** the page offers to change or withdraw it
+
+#### Scenario: Legal guardian is prompted to choose for a minor without a level
+
+- **GIVEN** voting is open and the minor has not chosen a level
+- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page
+- **THEN** the page prompts the guardian to choose a level
+
 ### Requirement: Audit Trail of Level Assignments
 
-The system SHALL keep a record of the level each member was assigned in each year, for accounting purposes. The "Členské příspěvky" page SHALL show a member's fee level history, with one entry per year in which the member had a level. Each entry shows the year, the level name and how the level was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page, and the button leading to it is shown only to them and only for an active member. Years without an assignment are not listed. The current level section of the page is shown only to the member themselves.
+The system SHALL keep a record of the level each member was assigned in each year, for accounting purposes. The "Členské příspěvky" page SHALL show a member's fee level history, with one entry per year in which the member had a level. Each entry shows the year, the level name and how the level was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page, and the button leading to it is shown only to them and only for an active member. Years without an assignment are not listed.
 
 #### Scenario: Member opens their fee level history from the profile
 
@@ -273,7 +314,7 @@ The system SHALL keep a record of the level each member was assigned in each yea
 
 - **WHEN** a membership administrator opens the "Členské příspěvky" page of another member
 - **THEN** the page shows the member's fee level history
-- **AND** the page does not show the member's current level section or the controls for choosing a level
+- **AND** the page shows the member's current level section without the controls for choosing a level
 
 #### Scenario: Legal guardian sees the fee level history of their minor
 
