@@ -76,6 +76,9 @@ export const openFeeHistoryFromDetail = async (page: Page) => {
     await feeHistoryButton(page).click();
     await expect(page.getByRole('heading', {name: FEE_HISTORY, level: 1})).toBeVisible();
     await expect(heading(page, 'Historie příspěvků')).toBeVisible();
+    const feeSection = heading(page, 'ČLENSKÝ PŘÍSPĚVEK').locator('xpath=..');
+    await expect(feeSection.getByText('Načítání...')).toHaveCount(0);
+    await expect(feeSection.locator('p').first()).toBeVisible();
 };
 
 export const historyEntry = (page: Page, levelName: string, year: number) =>

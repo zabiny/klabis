@@ -41,4 +41,4 @@ Feature: Member fee level history
       And Jan has assigned member "Sofie Svobodová" to level "Basic"
       When Jan opens the fee level history of member "Sofie Svobodová"
       Then Jan sees fee level "Basic" on the fee page of member "Sofie Svobodová"
-      And Jan is not offered to choose or change the fee level of member "Sofie Svobodová"
+      And Jan is not offered to choose or change the fee level

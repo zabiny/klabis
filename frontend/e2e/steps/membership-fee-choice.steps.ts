@@ -5,7 +5,8 @@ import {memberIdentity} from '../support/halApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import type {Role} from '../support/roles';
 import {openFeeHistoryFromDetail} from '../support/membershipFeesPages';
-import {openDetailAs, openOwnProfile} from './members.steps';
+import {openOwnProfile} from './members.steps';
+import {openFeeHistoryOfMember} from './membership-fee-history.steps';
 import {action, czechAmount, heading, openAddress, openFromMenu, submitWith} from '../support/ui';
 
 const {When, Then} = createBdd(test);
@@ -21,8 +22,6 @@ const feeSection = (page: Page) => heading(page, FEE_SECTION).locator('xpath=..'
 const openProfile = async (page: Page) => {
     await openOwnProfile(page);
     await openFeeHistoryFromDetail(page);
-    await expect(feeSection(page).getByText('Načítání...')).toHaveCount(0);
-    await expect(feeSection(page).locator('p').first()).toBeVisible();
 };
 
 // The form is not linked from the profile once voting is closed, so its address is opened.
@@ -32,17 +31,9 @@ const openChoiceForm = async (page: Page, apiAs: (role: Role) => ApiClient, pers
     await expect(page.getByRole('heading', {name: new RegExp(`pro rok ${feeState.year}$`), level: 1})).toBeVisible();
 };
 
-const splitName = (fullName: string) => {
-    const [firstName, ...rest] = fullName.split(' ');
-    return {firstName, lastName: rest.join(' ')};
-};
-
-const openMemberFeePage = async (page: Page, actAs: (persona: Persona) => Promise<void>, persona: Persona, fullName: string) => {
-    const {firstName, lastName} = splitName(fullName);
-    await openDetailAs(page, actAs, persona, lastName, firstName);
-    await openFeeHistoryFromDetail(page);
-    await expect(feeSection(page).getByText('Načítání...')).toHaveCount(0);
-    await expect(feeSection(page).locator('p').first()).toBeVisible();
+const submitChoice = async (page: Page, name: string) => {
+    await page.getByRole('radio', {name}).click();
+    expect((await submitWith(page, page.getByRole('button', {name: CHOICE_ACTION}))).ok()).toBe(true);
 };
 
 const yearlyFeeRow = (page: Page, year: number) =>
@@ -63,17 +54,15 @@ for (const phrase of ['chooses level', 'changes the fee level choice to']) {
         await actAs(persona);
         await openProfile(page);
         await feeSection(page).getByRole('link', {name: CHOICE_ACTION}).click();
-        await page.getByRole('radio', {name}).click();
-        expect((await submitWith(page, page.getByRole('button', {name: CHOICE_ACTION}))).ok()).toBe(true);
+        await submitChoice(page, name);
     });
 }
 
 When('{persona} chooses level {name} for member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
-        await openMemberFeePage(page, actAs, persona, fullName);
+        await openFeeHistoryOfMember(page, actAs, persona, fullName);
         await feeSection(page).getByRole('link', {name: CHOICE_ACTION}).click();
-        await page.getByRole('radio', {name}).click();
-        expect((await submitWith(page, page.getByRole('button', {name: CHOICE_ACTION}))).ok()).toBe(true);
+        await submitChoice(page, name);
     });
 
 When('{persona} withdraws the fee level choice', async ({page, actAs, apiAs, feeState}, persona: Persona) => {
@@ -153,13 +142,12 @@ Then('{persona}\'s account shows no yearly membership fee for the campaign year'
 
 Then('{persona} sees fee level {name} on the fee page of member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
-        await openMemberFeePage(page, actAs, persona, fullName);
+        await openFeeHistoryOfMember(page, actAs, persona, fullName);
         await expect(feeSection(page).getByText(name, {exact: true})).toBeVisible();
     });
 
-Then('{persona} is not offered to choose or change the fee level of member {string}',
+Then('{persona} is not offered to choose or change the fee level',
     async ({page, currentRole}, persona: Persona) => {
         expectActing(currentRole, persona);
-        await expect(feeSection(page).locator('p').first()).toBeVisible();
         await expect(feeSection(page).getByRole('link', {name: CHOICE_ACTION})).toHaveCount(0);
     });

@@ -1,8 +1,8 @@
-import {expect} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
 import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
-import {findMemberIdByName} from '../support/membersApi';
+import {findMemberIdByName, splitName} from '../support/membersApi';
 import {assignLevel} from '../support/membershipFeesApi';
 import {feeHistoryButton, historyEntry, openFeeHistoryFromDetail} from '../support/membershipFeesPages';
 import {expectActing, personas, type Persona} from '../support/personas';
@@ -10,11 +10,6 @@ import {heading} from '../support/ui';
 import {openDetailAs, openOwnProfile} from './members.steps';
 
 const {Given, When, Then} = createBdd(test);
-
-const splitName = (fullName: string) => {
-    const [firstName, ...rest] = fullName.split(' ');
-    return {firstName, lastName: rest.join(' ')};
-};
 
 const OWN_CHOICE = 'Vlastní volba';
 
@@ -37,10 +32,16 @@ When('{persona} opens the fee level history of {persona}', async ({page, actAs, 
     await openFeeHistoryFromDetail(page);
 });
 
-When('{persona} opens the fee level history of member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
+export const openFeeHistoryOfMember = async (
+    page: Page, actAs: (persona: Persona) => Promise<void>, persona: Persona, fullName: string,
+) => {
     const {firstName, lastName} = splitName(fullName);
     await openDetailAs(page, actAs, persona, lastName, firstName);
     await openFeeHistoryFromDetail(page);
+};
+
+When('{persona} opens the fee level history of member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
+    await openFeeHistoryOfMember(page, actAs, persona, fullName);
 });
 
 When('{persona} opens the detail of club member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {

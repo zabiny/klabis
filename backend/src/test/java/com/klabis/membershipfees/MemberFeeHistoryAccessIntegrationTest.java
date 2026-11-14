@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.math.BigDecimal;
@@ -74,6 +75,8 @@ class MemberFeeHistoryAccessIntegrationTest {
     private AuthorizationSnapshotLoader snapshotLoader;
     @Autowired
     private LegalGuardianGroupPort legalGuardianGroupPort;
+
+    private static final RequestPostProcessor CURRENT_USER = request -> request;
 
     private Member member;
     private MembershipFeeGroup group;
@@ -134,20 +137,26 @@ class MemberFeeHistoryAccessIntegrationTest {
         assertGuardianReadsCurrentLevelOfMinorOnly(guardian, minor);
     }
 
+    private ResultActions getSummary(Member target, RequestPostProcessor user) throws Exception {
+        return mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", target.getId().uuid(), CURRENT_YEAR)
+                .with(user).accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+    }
+
+    private ResultActions getChoice(Member target, RequestPostProcessor user) throws Exception {
+        return mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", target.getId().uuid(), CURRENT_YEAR)
+                .with(user).accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+    }
+
     private void assertGuardianReadsCurrentLevelOfMinorOnly(RequestPostProcessor guardian, Member minor)
             throws Exception {
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minor.getId().uuid(), CURRENT_YEAR).with(guardian)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(minor, guardian)
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", minor.getId().uuid(), CURRENT_YEAR).with(guardian)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getChoice(minor, guardian)
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR).with(guardian)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(member, guardian)
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR).with(guardian)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getChoice(member, guardian)
                 .andExpect(status().isForbidden());
     }
 
@@ -203,11 +212,9 @@ class MemberFeeHistoryAccessIntegrationTest {
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     @DisplayName("administrator reads the current level of a member")
     void administratorReadsCurrentLevel() throws Exception {
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(member, CURRENT_USER)
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getChoice(member, CURRENT_USER)
                 .andExpect(status().isOk());
     }
 
@@ -215,11 +222,9 @@ class MemberFeeHistoryAccessIntegrationTest {
     @WithKlabisMockUser(memberId = OTHER_MEMBER_UUID, authorities = {Authority.MEMBERS_READ})
     @DisplayName("ordinary member is forbidden to read another member's current level")
     void ordinaryMemberIsForbiddenToReadCurrentLevel() throws Exception {
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(member, CURRENT_USER)
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getChoice(member, CURRENT_USER)
                 .andExpect(status().isForbidden());
     }
 

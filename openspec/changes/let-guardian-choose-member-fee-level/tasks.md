@@ -17,4 +17,4 @@
 
 ## 3. Integration check
 
-- [ ] 3.1 Full backend suite (final verification, SKIP_OPTIMIZATIONS) and `openspec validate let-guardian-choose-member-fee-level --strict` pass
+- [x] 3.1 Full backend suite (final verification, SKIP_OPTIMIZATIONS) and `openspec validate let-guardian-choose-member-fee-level --strict` pass

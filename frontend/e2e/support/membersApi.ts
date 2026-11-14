@@ -89,3 +89,8 @@ const findMember = async (admin: ApiClient, lastName: string, firstName?: string
 export const findMemberPath = async (admin: ApiClient, lastName: string) => `/api/members/${await findMember(admin, lastName)}`;
 
 export const findMemberIdByName = (admin: ApiClient, firstName: string, lastName: string) => findMember(admin, lastName, firstName);
+
+export const splitName = (fullName: string) => {
+    const [firstName, ...rest] = fullName.split(' ');
+    return {firstName, lastName: rest.join(' ')};
+};

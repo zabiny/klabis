@@ -34,6 +34,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.math.BigDecimal;
@@ -126,12 +127,24 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
                 snapshotLoader.loadFor(userId)));
     }
 
+    private static final RequestPostProcessor CURRENT_USER = request -> request;
+
     private RequestPostProcessor memberGuardian() {
         return loggedInAs(memberGuardian.getId().toUserId(), memberGuardian.getId());
     }
 
     private RequestPostProcessor nonMemberGuardian() {
         return loggedInAs(nonMemberGuardianId, null);
+    }
+
+    private ResultActions getSummary(Member target, RequestPostProcessor user) throws Exception {
+        return mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", target.getId().uuid(), YEAR).with(user)
+                .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+    }
+
+    private ResultActions getChoice(Member target, RequestPostProcessor user) throws Exception {
+        return mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", target.getId().uuid(), YEAR).with(user)
+                .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
     }
 
     private void chooseTier(Member target, RequestPostProcessor user, int expectedStatus) throws Exception {
@@ -150,16 +163,14 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @DisplayName("member guardian chooses and withdraws the level of their minor")
     void memberGuardianChoosesAndWithdraws() throws Exception {
         chooseTier(minor, memberGuardian(), 204);
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minor.getId().uuid(), YEAR)
-                        .with(memberGuardian()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(minor, memberGuardian())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentGroup.id").value(groupId))
                 .andExpect(jsonPath("$._templates.chooseTier").exists())
                 .andExpect(jsonPath("$._templates.removeChoice").exists());
 
         removeChoice(minor, memberGuardian(), 204);
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minor.getId().uuid(), YEAR)
-                        .with(memberGuardian()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(minor, memberGuardian())
                 .andExpect(jsonPath("$.currentGroup").doesNotExist());
     }
 
@@ -167,8 +178,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @DisplayName("non-member guardian chooses and withdraws the level of their minor")
     void nonMemberGuardianChoosesAndWithdraws() throws Exception {
         chooseTier(minorOfNonMemberGuardian, nonMemberGuardian(), 204);
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minorOfNonMemberGuardian.getId().uuid(), YEAR)
-                        .with(nonMemberGuardian()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(minorOfNonMemberGuardian, nonMemberGuardian())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._templates.chooseTier").exists())
                 .andExpect(jsonPath("$._templates.removeChoice").exists());
@@ -195,12 +205,8 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @DisplayName("unrelated member cannot choose or withdraw for another member")
     @WithKlabisMockUser(memberId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", authorities = {Authority.MEMBERS_READ})
     void unrelatedMemberCannotChoose() throws Exception {
-        mockMvc.perform(post("/api/members/{id}/fee-choice/{year}", otherMember.getId().uuid(), YEAR)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"membershipFeeGroupId\":\"" + groupId + "\"}"))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/members/{id}/fee-choice/{year}", otherMember.getId().uuid(), YEAR))
-                .andExpect(status().isForbidden());
+        chooseTier(otherMember, CURRENT_USER, 403);
+        removeChoice(otherMember, CURRENT_USER, 403);
     }
 
     @Test
@@ -210,21 +216,15 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
         memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
                 minor.getId(), new MembershipFeeGroupId(UUID.fromString(groupId)), YEAR));
 
-        mockMvc.perform(post("/api/members/{id}/fee-choice/{year}", minor.getId().uuid(), YEAR)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"membershipFeeGroupId\":\"" + groupId + "\"}"))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/members/{id}/fee-choice/{year}", minor.getId().uuid(), YEAR))
-                .andExpect(status().isForbidden());
+        chooseTier(minor, CURRENT_USER, 403);
+        removeChoice(minor, CURRENT_USER, 403);
 
-        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minor.getId().uuid(), YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getSummary(minor, CURRENT_USER)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentGroup.id").value(groupId))
                 .andExpect(jsonPath("$._templates.chooseTier").doesNotExist())
                 .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
-        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", minor.getId().uuid(), YEAR)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        getChoice(minor, CURRENT_USER)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._templates.chooseTier").doesNotExist())
                 .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
