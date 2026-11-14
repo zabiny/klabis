@@ -1,0 +1,36 @@
+# Tasks
+
+Slices are vertical. Run tests per module through the test-runner skill, sequentially. Regenerate the bundle (`./gradlew openapiBundle` in `backend/`) and the frontend types (`npm run openapi` in `frontend/`) whenever a spec file changes; verify the frontend with `npm run build`.
+
+## 1. Dialog foundation and training groups
+
+- [ ] 1.1 Spec: add required `groupLink` to `AffectedGroup` in `docs/openapi/spec/members.yaml`, update descriptions, regenerate bundle and frontend types. Verify: `./gradlew openapiBundle -PopenapiCheck` passes and `klabisApi.d.ts` contains `groupLink`.
+- [ ] 1.2 Backend (test first): add `groupLink` to `OwnedGroup`; the three `*SuspensionBlockersAdapter`s build it with their own API link; `MembersExceptionHandler` maps it. Tests: adapter tests per type (link points to the right resource), `MemberControllerApiTest` 409 body contains `groupLink` for TRAINING, FREE and LEGAL_GUARDIAN.
+- [ ] 1.3 Frontend (test first): `AffectedGroup` gets `groupLink`; the dialog loads each row's group resource (HAL-FORMS) and decides actions from templates; `onSubmitError` passes submitted values; `useSuspendMemberAction` keeps the last request. Tests (one vitest file per command): row shows "Určit nástupce" only with `addTrainer`; 403 on the group shows the training-groups-administrator contact text; "Rozpustit skupinu" never shown for TRAINING even when `deleteTrainingGroup` is offered.
+- [ ] 1.4 Frontend: "Určit nástupce" opens the `addTrainer` template form (existing HAL form modal); success marks the row resolved; when all rows are resolved show "Ukončit členství" that resubmits the stored request; unresolved rows hide it. Tests: resolved marker, button visibility, resubmission payload, repeated 409 rebuilds the dialog, several groups resolved independently, both `MemberDetailPage` and `MembersPage` wiring (`MembersPage.groups.test.tsx`).
+- [ ] 1.5 Backend verification: `TrainingGroupControllerTest` - MEMBERS:MANAGE-only user gets 403 on the detail, user with MEMBERS:MANAGE and GROUPS:TRAINING sees `addTrainer`; integration test: suspension 409, `addTrainer`, suspension succeeds.
+- [ ] 1.6 E2E (members.feature, e2e-tester): extend "Suspension blocked when member is last owner of a training group" - Jan (admin with GROUPS:TRAINING) designates a successor trainer in the dialog and finishes the suspension; scenario for an admin without GROUPS:TRAINING seeing the contact text, if a persona exists, else covered by 1.3/1.5.
+
+## 2. Free groups
+
+- [ ] 2.1 Spec: update `groups.yaml` (`getGroup` description, `addGroupOwner`/`deleteGroup` description and `x-spring-provide-args` -> `@ActingUser CurrentUserData`, module header comment), regenerate bundle and types. Verify: openapi check passes, generated `GroupsApi` compiles after 2.2.
+- [ ] 2.2 Domain and service (test first): `FreeGroupTest` - actor-free `addOwner` still rejects a non-member; `FreeGroupManagementServiceTest` - owner allowed, manager (has MEMBERS_MANAGE, not owner, no member profile) allowed to add owner and delete, plain member and outsider rejected (`GroupOwnershipRequiredException`), non-member promotion by manager rejected.
+- [ ] 2.3 Controller and postprocessor (test first): `FreeGroupControllerTest` with `@WithKlabisMockUser` - manager can GET a group they are not in and sees only `addGroupOwner` and `deleteGroup` templates; owner unchanged (regression: owner without MEMBERS:MANAGE still allowed); member without MEMBERS:MANAGE sees neither template and gets 403 on the calls; `getGroup` still 403 for an outsider without MEMBERS:MANAGE; offered affordance agrees with the real call for owner, manager, member.
+- [ ] 2.4 Frontend (test first): row for FREE shows "Určit nástupce" iff `addGroupOwner` is offered and the group has other members, "Rozpustit skupinu" iff `deleteGroup` is offered; dissolve asks for confirmation (cancel keeps group and row unresolved); success marks the row resolved. Add labels (confirmation text, resolved marker, contact text) to `labels.ts`.
+- [ ] 2.5 Integration test: suspension 409 for a sole free-group owner, manager adds a member as owner, suspension succeeds; second case: manager dissolves the group, suspension succeeds.
+- [ ] 2.6 E2E (members.feature): scenarios "Admin designates a successor owner of a free group from the warning dialog" and "Admin dissolves a free group from the warning dialog", finishing the suspension in both; a group without other members offers only dissolve.
+
+## 3. Legal guardian groups: suspend the whole group
+
+- [ ] 3.1 Spec: `members.yaml` - `SuspendMembershipRequest.cascadeGroupIds` (hidden from the form), `SuspensionBlockedWarning.dependentMembers`, descriptions; regenerate bundle and types. Verify: `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` succeed.
+- [ ] 3.2 Backend domain/service (test first, `ManagementServiceTest`): cascade suspends guardian and all minors with the same reason/note in one transaction; a minor with negative balance blocks everybody (nobody suspended, blocker attributed to the minor); a minor who is last owner of a free group blocks everybody; guardian's own other blockers still reported; id that is not a sole-guardian group of the member -> 400; already suspended minor skipped; rollback when suspension of a later member fails; per-member `MemberSuspendedEvent`.
+- [ ] 3.3 Controller (test first, `MemberControllerApiTest`): request with `cascadeGroupIds` -> 204 and all suspended; 409 contains `dependentMembers`; caller without MEMBERS:MANAGE -> 403 and nobody suspended.
+- [ ] 3.4 Invariant (test first, depends on Open Question 7): listener on `MemberSuspendedEvent` in `members.legalguardiangroup` removes the member from guardians of groups that keep other guardians (rename/merge verified); group with the sole guardian untouched; resume does not restore. Tests: listener test, integration test through the real event.
+- [ ] 3.5 Frontend (test first, `SuspensionWarningDialog.test.tsx`, fix the existing expectation that LEGAL_GUARDIAN shows "Rozpustit skupinu"): LEGAL_GUARDIAN row offers "Pozastavit celou skupinu" and "Určit nástupce" (navigates to the group page), never dissolve; confirmation lists guardian and minors from the group resource; confirming marks the row resolved without any request; "Zrušit" reverts; final resubmission includes `cascadeGroupIds`; `dependentMembers` blockers are rendered per member and the dialog is rebuilt; hook test for the stored request.
+- [ ] 3.6 E2E (members.feature): "Admin suspends the whole legal guardian group" (guardian with two minors, all suspended with the same reason); "Whole-group suspension blocked by a minor's negative balance" (nobody suspended); "Suspended guardian is removed from a group with another guardian" (if 3.4 is confirmed).
+
+## 4. Wrap-up
+
+- [ ] 4.1 Docs: add an `ADR-011` to `docs/design-decisions.md` (free group management by MEMBERS:MANAGE: option B, why not A and C, follow-up C). Verify: the ADR is linked to this change.
+- [ ] 4.2 Run the full backend and frontend suites (final verification rules for Modulith test skipping apply) and `npm run build`; run code review before any commit.
+- [ ] 4.3 Run `openspec validate resolve-group-ownership-on-suspension --strict`.
