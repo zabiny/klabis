@@ -90,18 +90,14 @@ class MemberFeeChoiceControllerTest {
                     .andExpect(status().isForbidden());
         }
 
-        // A fee choice is the member's own decision: unlike most owner-visible resources, MANAGE
-        // authority is deliberately NOT an alternative. The operation therefore carries
-        // x-klabis-owner-visible with no x-klabis-authority; pairing one in would silently widen
-        // access, and nothing else in the suite would notice.
         @Test
-        @DisplayName("should return 403 for another member's choice even with MEMBERS:MANAGE")
+        @DisplayName("should return another member's choice for MEMBERS:MANAGE holder")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
-        void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
+        void shouldReturnChoiceToManagerOfOtherMember() throws Exception {
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
         }
 
         @Test

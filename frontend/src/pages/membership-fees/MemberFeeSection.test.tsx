@@ -218,4 +218,22 @@ describe('MemberFeeSection', () => {
             expect(screen.queryByRole('link', {name: /Zvolit tier/i})).not.toBeInTheDocument();
         });
     });
+
+    describe('viewer of another member summary (administrator or guardian)', () => {
+        it('shows current level and status when summary carries only a self link', () => {
+            mockFeeSummary({
+                currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
+                votingOpen: false,
+                recommendedGroupId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+            });
+
+            renderSection();
+
+            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+            expect(screen.getByText('Základ')).toBeInTheDocument();
+            expect(screen.getByText(/500/)).toBeInTheDocument();
+            expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        });
+    });
 });

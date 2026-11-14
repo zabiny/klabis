@@ -12,14 +12,14 @@
 # deriver reads that marker to build the envelope; the generated Java returns the bare payload.
 # Same precedent as events.yaml's getEvent.
 #
-# MemberFeeChoice's and MemberFeeSummary's 4 operations (everything except getFeeHistory) are
-# restricted to the member themselves, with no MANAGE-authority alternative. getFeeHistory also
-# admits MEMBERS:MANAGE and MEMBERS:EDIT_PROFILE held over the member, i.e. a legal guardian
-# (OR semantics with ownership). The owner-only restriction is exactly x-klabis-owner-visible WITHOUT a paired
+# MemberFeeChoice and MemberFeeSummary operations: getChoice, getFeeSummary and getFeeHistory
+# admit the member themselves, MEMBERS:MANAGE, and MEMBERS:EDIT_PROFILE held over the member
+# (a legal guardian — OR semantics with ownership). chooseTier and removeChoice stay restricted
+# to the member themselves, declared as x-klabis-owner-visible WITHOUT a paired
 # x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
 # is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
 # lone x-klabis-owner-visible narrows access to the owner rather than widening it.
-
+#
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
 # klabis.yaml rather than shared, because $ref cannot target a document's own info; the
@@ -895,11 +895,8 @@ paths:
         any.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority: ONLY the member themselves, no MANAGE-authority alternative.
-      # See module header comment.
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -931,7 +928,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - members can only access their own fee level choice
+          description: Forbidden - only the member, a MEMBERS:MANAGE holder or a legal guardian of the member can access the fee level choice
           content:
             application/problem+json:
               schema:
@@ -1032,10 +1029,8 @@ paths:
         voting is currently open for the year.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
         - $ref: '#/components/parameters/FeeSummaryYearParam'
@@ -1064,7 +1059,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - members can only access their own fee summary
+          description: Forbidden - only the member, a MEMBERS:MANAGE holder or a legal guardian of the member can access the fee summary
           content:
             application/problem+json:
               schema:
@@ -1103,7 +1098,7 @@ paths:
               description: The member whose fee history this is
             feeSummary:
               operation: getFeeSummary
-              description: Current fee level summary, present for the member themselves only
+              description: Current fee level summary, present for the member, an administrator and a legal guardian of the member
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

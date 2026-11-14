@@ -24,10 +24,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-// Authorization is owner-only, declared as x-klabis-owner-visible with no paired authority (see
-// membershipfees.yaml) and enforced on the generated interface. The actingMember parameter is
-// unused in the method bodies but must stay: it is part of the generated signature and the
-// postprocessors below pass it in methodOn(...) link-building calls.
+// Authorization is declared in membershipfees.yaml and enforced on the generated interface. The
+// actingMember parameter of chooseTier/removeChoice is unused in the bodies but part of the
+// generated signature (group 2 of let-guardian-choose-member-fee-level removes it).
 class MemberFeeChoiceController implements MemberFeeChoiceApi {
 
     private final MemberChoicePort memberChoicePort;
@@ -39,8 +38,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     @Override
     public ResponseEntity<MemberFeeChoiceResponse> getChoice(
             UUID memberId,
-            Integer year,
-            @ActingMember MemberId actingMember) {
+            Integer year) {
 
         MemberId memberIdObj = new MemberId(memberId);
         Optional<MembershipFeeGroupId> currentChoice = memberChoicePort.getCurrentChoice(memberIdObj, year);
@@ -90,7 +88,7 @@ class MemberFeeChoiceDetailsPostprocessor
 
     @Override
     public void process(EntityModel<MemberFeeChoiceResponse> dtoModel, MemberFeeChoiceController.FeeChoiceView view) {
-        klabisLinkTo(methodOn(MemberFeeChoiceApi.class).getChoice(view.memberId(), view.year(), null))
+        klabisLinkTo(methodOn(MemberFeeChoiceApi.class).getChoice(view.memberId(), view.year()))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
                                 .chooseTier(view.memberId(), view.year(), null, null)))

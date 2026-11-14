@@ -5,7 +5,6 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -31,8 +30,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-// Owner-only authorization, declared as x-klabis-owner-visible with no paired authority — see
-// MemberFeeChoiceController for why actingMember stays despite being unused here.
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
@@ -44,8 +41,7 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
     @Override
     public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(
             UUID memberId,
-            Integer year,
-            @ActingMember MemberId actingMember) {
+            Integer year) {
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
                 new MemberId(memberId), year);
@@ -89,7 +85,7 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
                 .ifPresent(link -> dtoModel.add(link.withRel("member")));
 
         int year = campaignManagementPort.relevantFeeYear(LocalDate.now(clock));
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
                 .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
     }
 }
@@ -110,7 +106,7 @@ class MemberFeeSummaryDetailsPostprocessor
         int year = view.year();
         MemberFeeHistoryPort.CurrentLevelInfo info = view.info();
 
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {

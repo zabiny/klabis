@@ -2,10 +2,10 @@
 
 ## 1. Read access to current level for guardian and administrator (vertical slice)
 
-- [ ] 1.1 Write failing integration test: guardian (member and non-member) and administrator get 200 on `getFeeSummary`/`getChoice` of a minor, unrelated member gets 403 (extend `MemberFeeHistoryAccessIntegrationTest`)
-- [ ] 1.2 In `docs/openapi/spec/membershipfees.yaml` set `x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` and `x-klabis-target-id: MEMBER` on `getFeeSummary` and `getChoice`, remove their `x-spring-provide-args`, update the header comment; regenerate backend bundle and frontend types; test 1.1 passes
-- [ ] 1.3 Update controller signatures, postprocessor `methodOn(...)` calls and unit tests (`MemberFeeSummaryControllerTest`); `./gradlew test` for the module passes
-- [ ] 1.4 Frontend: show the current level section for administrator and guardian; `MemberFeeSection.test.tsx` covers administrator without choice links; `npm run build` passes
+- [x] 1.1 Write failing integration test: guardian (member and non-member) and administrator get 200 on `getFeeSummary`/`getChoice` of a minor, unrelated member gets 403 (extend `MemberFeeHistoryAccessIntegrationTest`)
+- [x] 1.2 In `docs/openapi/spec/membershipfees.yaml` set `x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` and `x-klabis-target-id: MEMBER` on `getFeeSummary` and `getChoice`, remove their `x-spring-provide-args`, update the header comment; regenerate backend bundle and frontend types; test 1.1 passes
+- [x] 1.3 Update controller signatures, postprocessor `methodOn(...)` calls and unit tests (`MemberFeeSummaryControllerTest`); `./gradlew test` for the module passes
+- [x] 1.4 Frontend: show the current level section for administrator and guardian; `MemberFeeSection.test.tsx` covers administrator without choice links; `npm run build` passes
 
 ## 2. Guardian chooses, changes and withdraws (vertical slice)
 

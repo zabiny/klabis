@@ -60,6 +60,7 @@ class MemberFeeHistoryAccessIntegrationTest {
     private static final String OTHER_MEMBER_UUID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
     private static final Money YEARLY_FEE = Money.of(new BigDecimal("1200.00"), Currency.getInstance("CZK"));
     private static final int PAST_YEAR = 2024;
+    private static final int CURRENT_YEAR = LocalDate.now().getYear();
 
     @Autowired
     private MockMvc mockMvc;
@@ -124,9 +125,28 @@ class MemberFeeHistoryAccessIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assignments[0].year").value(PAST_YEAR))
                 .andExpect(jsonPath("$.assignments[0].groupName").value("Závodní"))
-                .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+                .andExpect(jsonPath("$._links.feeSummary.href").exists());
 
         mockMvc.perform(get("/api/members/{id}/fee-history", member.getId().uuid()).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isForbidden());
+
+        assertGuardianReadsCurrentLevelOfMinorOnly(guardian, minor);
+    }
+
+    private void assertGuardianReadsCurrentLevelOfMinorOnly(RequestPostProcessor guardian, Member minor)
+            throws Exception {
+        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", minor.getId().uuid(), CURRENT_YEAR).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", minor.getId().uuid(), CURRENT_YEAR).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR).with(guardian)
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isForbidden());
     }
@@ -176,7 +196,31 @@ class MemberFeeHistoryAccessIntegrationTest {
                 .andExpect(jsonPath("$.assignments[0].groupName").value("Závodní"))
                 .andExpect(jsonPath("$.assignments[0].source").value("ADMIN_ASSIGNMENT"))
                 .andExpect(jsonPath("$._links.member.href").exists())
-                .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+                .andExpect(jsonPath("$._links.feeSummary.href").exists());
+    }
+
+    @Test
+    @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+    @DisplayName("administrator reads the current level of a member")
+    void administratorReadsCurrentLevel() throws Exception {
+        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithKlabisMockUser(memberId = OTHER_MEMBER_UUID, authorities = {Authority.MEMBERS_READ})
+    @DisplayName("ordinary member is forbidden to read another member's current level")
+    void ordinaryMemberIsForbiddenToReadCurrentLevel() throws Exception {
+        mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", member.getId().uuid(), CURRENT_YEAR)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/members/{id}/fee-choice/{year}", member.getId().uuid(), CURRENT_YEAR)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isForbidden());
     }
 
     @Test
