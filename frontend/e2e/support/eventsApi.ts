@@ -18,10 +18,11 @@ const findEvent = async (client: ApiClient, name: string) => {
     return client.get(`/api/events/${found.id}`) as Promise<Linked>;
 };
 
-export const createDraftEvent = (admin: ApiClient, name: string) => createEvent(admin, {name});
+export const createDraftEvent = (admin: ApiClient, name: string, coordinators: string[] = []) =>
+    createEvent(admin, {name, coordinators});
 
-export const createOpenEvent = async (admin: ApiClient, name: string) => {
-    await createEvent(admin, {name, deadlines: [REGISTRATION_DEADLINE], categories: [{name: 'M21'}]});
+export const createOpenEvent = async (admin: ApiClient, name: string, coordinators: string[] = []) => {
+    await createEvent(admin, {name, coordinators, deadlines: [REGISTRATION_DEADLINE], categories: [{name: 'M21'}]});
     const event = await findEvent(admin, name);
     await admin.post(admin.templateTarget(event, 'publishEvent'), {});
 };
@@ -33,4 +34,9 @@ export const registerForEvent = async (member: ApiClient, name: string) => {
     const event = await findEvent(member, name);
     const categoryId = templateOptions(event, 'registerForEvent', 'categoryId')[0].value;
     await member.post(member.templateTarget(event, 'registerForEvent'), {categoryId});
+};
+
+export const createCategoryPreset = async (admin: ApiClient, name: string, categories: string[]) => {
+    const presets = await admin.follow(await admin.root(), 'category-presets');
+    await admin.post(admin.templateTarget(presets, 'createCategoryPreset'), {name, categories});
 };

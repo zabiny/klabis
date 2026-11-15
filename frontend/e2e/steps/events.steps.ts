@@ -6,21 +6,10 @@ import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
 import {assignLevel, firstPublishedLevelName, withdrawChoice} from '../support/membershipFeesApi';
 import {personas, type Persona} from '../support/personas';
+import {openEvent, openEventList} from '../support/eventsPages';
 import {action, click, fill, heading, openFromMenu, select, submit} from '../support/ui';
 
 const {Given, When, Then} = createBdd(test);
-
-const openEventList = async (page: Page, name: string) => {
-    await openFromMenu(page, 'Akce');
-    await select(page, 'Rok', '—');
-    await fill(page, 'Hledat', name);
-};
-
-const openEvent = async (page: Page, name: string) => {
-    await openEventList(page, name);
-    await page.getByRole('cell', {name}).first().click();
-    await expect(heading(page, name)).toBeVisible();
-};
 
 const registrations = (page: Page) => page.getByRole('table').filter({hasText: 'Příjmení'});
 

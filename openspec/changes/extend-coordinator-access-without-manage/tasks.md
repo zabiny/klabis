@@ -35,8 +35,8 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 ## 5. Integration verification
 
-- [ ] 5.1 Add E2E scenarios (via `e2e-tester` agent, `gherkin-bdd` skill) for: coordinator without EVENTS:MANAGE sees, edits and publishes their DRAFT event; coordinator applies a category preset; member filters the list by "Vedoucí"; verify they pass against `./runLocalEnvironment.sh`
-- [ ] 5.2 Run the full backend and frontend test suites (final run with Modulith optimizations disabled) and `openspec validate extend-coordinator-access-without-manage --strict`; verify all green
+- [x] 5.1 Add E2E scenarios (via `e2e-tester` agent, `gherkin-bdd` skill) for: coordinator without EVENTS:MANAGE sees, edits and publishes their DRAFT event; coordinator applies a category preset; member filters the list by "Vedoucí"; verify they pass against `./runLocalEnvironment.sh`
+- [x] 5.2 Run the full backend and frontend test suites (final run with Modulith optimizations disabled) and `openspec validate extend-coordinator-access-without-manage --strict`; verify all green
 - [ ] 5.3 Manual QA on http://localhost:3000 as ZBM9500 made coordinator of a DRAFT event: no 403 requests in the network log when opening the edit form; verify against the spec scenarios
 - [ ] 5.4 Add label `BackendCompleted` to GitHub issues #294, #295 and #373
 
