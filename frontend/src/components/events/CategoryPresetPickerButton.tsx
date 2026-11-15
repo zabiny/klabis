@@ -1,6 +1,8 @@
 import {type ReactElement, useState} from 'react';
 import {useFormikContext} from 'formik';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useHalRoute} from '../../contexts/halRouteContext.ts';
+import {toHref} from '../../api/hateoas.ts';
 import {Button, Modal} from '../UI';
 import {BookTemplate} from 'lucide-react';
 import {labels} from '../../localization';
@@ -20,7 +22,10 @@ export const CategoryPresetPickerButton = (): ReactElement | null => {
     const {setFieldValue} = useFormikContext<Record<string, unknown>>();
     const [isOpen, setIsOpen] = useState(false);
 
-    const {data} = useAuthorizedQuery<CategoryPresetsResponse>('/api/category-presets', {
+    const {resourceData} = useHalRoute();
+    const presetsLink = resourceData?._links?.categoryPresets;
+
+    const {data} = useAuthorizedQuery<CategoryPresetsResponse>(presetsLink ? toHref(presetsLink) : undefined, {
         staleTime: 5 * 60 * 1000,
     });
 

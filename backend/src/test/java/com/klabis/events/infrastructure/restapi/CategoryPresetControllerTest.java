@@ -40,7 +40,7 @@ class CategoryPresetControllerTest {
 
         @Test
         @DisplayName("should return 200 with list of presets")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldReturnListOfPresets() throws Exception {
             CategoryPreset preset = CategoryPreset.create(new CategoryPreset.CreateCategoryPreset("Sprint Cup", List.of("M21", "W35")));
             when(categoryPresetManagementService.listAll()).thenReturn(List.of(preset));
@@ -54,7 +54,7 @@ class CategoryPresetControllerTest {
 
         @Test
         @DisplayName("should expose createCategoryPreset template name on collection self link")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCreateCategoryPresetTemplateName() throws Exception {
             when(categoryPresetManagementService.listAll()).thenReturn(List.of());
 
@@ -66,7 +66,7 @@ class CategoryPresetControllerTest {
 
         @Test
         @DisplayName("should return 200 with empty collection when no presets")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldReturnEmptyCollection() throws Exception {
             when(categoryPresetManagementService.listAll()).thenReturn(List.of());
 
@@ -82,7 +82,17 @@ class CategoryPresetControllerTest {
         }
 
         @Test
-        @DisplayName("should return 403 when missing EVENTS:MANAGE authority")
+        @DisplayName("should return 200 for member with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturnListForMemberWithEventsRead() throws Exception {
+            when(categoryPresetManagementService.listAll()).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/category-presets").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("should return 403 when missing EVENTS:READ authority")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(get("/api/category-presets").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -93,6 +103,14 @@ class CategoryPresetControllerTest {
     @Nested
     @DisplayName("GET /api/category-presets/{id}")
     class GetPresetTests {
+
+        @Test
+        @DisplayName("should return 403 for member with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturn403ForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api/category-presets/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
 
         @Test
         @DisplayName("should return 200 with preset details")
@@ -255,6 +273,62 @@ class CategoryPresetControllerTest {
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(delete("/api/category-presets/{id}", UUID.randomUUID()))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("preset mutations")
+    class MutationAuthorizationTests {
+
+        @Test
+        @DisplayName("create should return 403 for member with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void createForbiddenForEventsRead() throws Exception {
+            mockMvc.perform(post("/api/category-presets")
+                            .contentType("application/json")
+                            .content("{\"name\": \"Sprint Cup\", \"categories\": [\"M21\"]}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("update should return 403 for member with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void updateForbiddenForEventsRead() throws Exception {
+            mockMvc.perform(patch("/api/category-presets/{id}", UUID.randomUUID())
+                            .contentType("application/json")
+                            .content("{\"name\": \"Updated\", \"categories\": [\"W35\"]}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("delete should return 403 for member with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void deleteForbiddenForEventsRead() throws Exception {
+            mockMvc.perform(delete("/api/category-presets/{id}", UUID.randomUUID()))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api - category-presets navigation link")
+    class RootNavigationLinkTests {
+
+        @Test
+        @DisplayName("should expose category-presets link for user with EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeLinkForManager() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.category-presets.href", containsString("/api/category-presets")));
+        }
+
+        @Test
+        @DisplayName("should NOT expose category-presets link for user with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldNotExposeLinkForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.category-presets").doesNotExist());
         }
     }
 }

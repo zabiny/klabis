@@ -22,10 +22,10 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 ## 3. Coordinators can apply category presets (#373)
 
-- [ ] 3.1 Write failing tests: member with only EVENTS_READ can list presets (`listPresets`); `getPreset` and preset mutations still require EVENTS_MANAGE; root resource contains `category-presets` only for EVENTS_MANAGE; events list and event detail contain a `categoryPresets` link
-- [ ] 3.2 Change `listPresets` to `x-klabis-authority: EVENTS_READ`, add explicit `has(EVENTS_MANAGE)` check to the root link in `EventsRootPostprocessor`, add `categoryPresets` links in `EventListPostprocessor` and `EventDetailsPostprocessor`, document them in `events.yaml` `x-hal-links`; regenerate; verify tests from 3.1 pass
-- [ ] 3.3 Write failing Vitest for `CategoryPresetPickerButton`: no request and no button when the page resource lacks `categoryPresets`; loads presets from the link href when present; then implement via `useHalRoute().resourceData`; verify tests pass and `npm run build` succeeds
-- [ ] 3.4 Verify the admin menu still hides "Šablony kategorií" for a regular member (existing `useRootNavigation`/Layout tests or a new one) and the presets page stays managers-only
+- [x] 3.1 Write failing tests: member with only EVENTS_READ can list presets (`listPresets`); `getPreset` and preset mutations still require EVENTS_MANAGE; root resource contains `category-presets` only for EVENTS_MANAGE; events list and event detail contain a `categoryPresets` link
+- [x] 3.2 Change `listPresets` to `x-klabis-authority: EVENTS_READ`, add explicit `has(EVENTS_MANAGE)` check to the root link in `EventsRootPostprocessor`, add `categoryPresets` links in `EventListPostprocessor` and `EventDetailsPostprocessor`, document them in `events.yaml` `x-hal-links`; regenerate; verify tests from 3.1 pass
+- [x] 3.3 Write failing Vitest for `CategoryPresetPickerButton`: no request and no button when the page resource lacks `categoryPresets`; loads presets from the link href when present; then implement via `useHalRoute().resourceData`; verify tests pass and `npm run build` succeeds
+- [x] 3.4 Verify the admin menu still hides "Šablony kategorií" for a regular member (existing `useRootNavigation`/Layout tests or a new one) and the presets page stays managers-only
 
 ## 4. "Vedoucí" filter in the events list (#295)
 

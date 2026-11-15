@@ -65,7 +65,7 @@ ADR-010 states that `publishEvent` / `cancelEvent` are `EVENTS_MANAGE` only beca
 
 - `listPresets` changes to `x-klabis-authority: EVENTS_READ`, the same as `listEventTypes`. `getPreset`, create, update and delete stay `EVENTS_MANAGE` — the picker needs only the list.
 - The events list response and the event detail response gain a `categoryPresets` link (subject only to `listPresets` authorization, i.e. present for every member). The picker reads it from the HAL resource of the page the form is opened from (`useHalRoute().resourceData`) and renders nothing without it. No extra condition is needed: the picker exists only inside create/edit forms, which are offered only to users allowed to create/edit.
-- The root `category-presets` link (admin menu item → presets administration page) is added only when the caller `has(EVENTS_MANAGE)`, checked explicitly in `EventsRootPostprocessor`, because `klabisLinkTo` alone would now expose it to everyone.
+- The root `category-presets` link (admin menu item → presets administration page) is added only when the caller `has(EVENTS_MANAGE)`, checked explicitly in `EventsRootPostprocessor`, because `klabisLinkTo` alone would now expose it to everyone. The presets administration page itself renders "access denied" unless the root resource carries that link, since its list request alone no longer requires `EVENTS_MANAGE`.
 
 *Alternatives:* (a) keep presets managers-only and only hide the button — rejected by the user, coordinators should be able to use presets; (b) "authority over at least one target" in the evaluator — changes ADR-010 for one button; (c) event-scoped `GET /events/{id}/category-presets` — the create form has no event yet, so two endpoints would serve the same data.
 

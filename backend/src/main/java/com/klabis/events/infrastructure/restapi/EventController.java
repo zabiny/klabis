@@ -550,6 +550,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+                .ifPresent(link -> dtoModel.add(link.withRel("categoryPresets")));
+
         EventAffordanceSupport.addCoordinatorAndEventTypeLinks(dtoModel, event);
 
         if (event.isSharedAccommodationEnabled()
@@ -635,6 +638,8 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
             }
             return link;
         });
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+                .ifPresent(link -> model.add(link.withRel("categoryPresets")));
         return model;
     }
 }
@@ -682,12 +687,20 @@ class AccommodationListItemPostprocessor
 @MvcComponent
 class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    EventsRootPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
-        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
-                .ifPresent(link -> model.add(link.withRel("category-presets")));
+        if (authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
+            klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+                    .ifPresent(link -> model.add(link.withRel("category-presets")));
+        }
         return model;
     }
 }

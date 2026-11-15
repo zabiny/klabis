@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {render, screen, fireEvent, within, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {useRootNavigation} from '../../hooks/useRootNavigation';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -11,6 +12,10 @@ import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
+
+vi.mock('../../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn(),
+}));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -97,6 +102,10 @@ const buildPresetRow = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
+const mockRootItems = (items: {rel: string; href: string; label: string; section: string}[]) => {
+    vi.mocked(useRootNavigation).mockReturnValue({data: items} as unknown as ReturnType<typeof useRootNavigation>);
+};
+
 const renderPageWithPresets = (presets: unknown[]) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/category-presets'}},
@@ -111,6 +120,26 @@ const renderPageWithPresets = (presets: unknown[]) => {
 describe('CategoryPresetsPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockRootItems([{rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'admin'}]);
+    });
+
+    describe('access control', () => {
+        it('shows access denied and no presets content when root resource lacks category-presets link', () => {
+            mockRootItems([{rel: 'events', href: '/events', label: 'Akce', section: 'main'}]);
+            renderPage(createMockPageData({_links: {self: {href: '/api/category-presets'}}}));
+
+            expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
+            expect(screen.queryByRole('heading', {name: 'Šablony kategorií'})).not.toBeInTheDocument();
+            expect(useAuthorizedQuery).not.toHaveBeenCalled();
+        });
+
+        it('shows no content while root navigation is loading', () => {
+            vi.mocked(useRootNavigation).mockReturnValue({data: undefined} as unknown as ReturnType<typeof useRootNavigation>);
+            renderPage(createMockPageData(null));
+
+            expect(screen.queryByText('Přístup odepřen')).not.toBeInTheDocument();
+            expect(screen.queryByRole('heading', {name: 'Šablony kategorií'})).not.toBeInTheDocument();
+        });
     });
 
     it('renders page title "Šablony kategorií"', () => {

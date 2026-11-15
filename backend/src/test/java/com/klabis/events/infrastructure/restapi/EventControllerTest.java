@@ -895,6 +895,18 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should expose categoryPresets link to member with only EVENTS:READ")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldExposeCategoryPresetsLink() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.categoryPresets.href").value("http://localhost/api/category-presets"));
+        }
+
+        @Test
         @DisplayName("createEvent template should expose coordinators as MemberId and categories as CategoryRequest")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCoordinatorsOptionsLinkOnCreateTemplate() throws Exception {
@@ -1123,6 +1135,17 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("should expose categoryPresets link to member with only EVENTS:READ")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldExposeCategoryPresetsLink() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(EventTestDataBuilder.anEvent().build());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.categoryPresets.href").value("http://localhost/api/category-presets"));
         }
 
         @Test

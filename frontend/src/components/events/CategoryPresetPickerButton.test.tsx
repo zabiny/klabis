@@ -20,8 +20,14 @@ vi.mock('../UI/Modal.tsx', () => ({
         ) : null,
 }));
 
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+vi.mock('../../contexts/halRouteContext', () => ({
+    useHalRoute: vi.fn(),
+}));
 
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useHalRoute} from '../../contexts/halRouteContext';
+
+const mockUseHalRoute = vi.mocked(useHalRoute);
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const PRESETS = [
@@ -53,6 +59,43 @@ const renderButton = (onValues?: (values: FormValues) => void) => {
 describe('CategoryPresetPickerButton', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseHalRoute.mockReturnValue({
+            resourceData: {_links: {categoryPresets: {href: '/api/category-presets'}}},
+        } as unknown as ReturnType<typeof useHalRoute>);
+    });
+
+    describe('categoryPresets link', () => {
+        it('does not request presets and shows no button when page resource lacks categoryPresets link', () => {
+            mockUseHalRoute.mockReturnValue({
+                resourceData: {_links: {self: {href: '/api/events'}}},
+            } as unknown as ReturnType<typeof useHalRoute>);
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: undefined,
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+
+            renderButton();
+
+            expect(mockUseAuthorizedQuery).toHaveBeenCalledWith(undefined, expect.anything());
+            expect(screen.queryByRole('button', {name: /vybrat ze šablon/i})).not.toBeInTheDocument();
+        });
+
+        it('loads presets from the href of the categoryPresets link', () => {
+            mockUseHalRoute.mockReturnValue({
+                resourceData: {_links: {categoryPresets: {href: '/api/custom-presets'}}},
+            } as unknown as ReturnType<typeof useHalRoute>);
+            mockUseAuthorizedQuery.mockReturnValue({
+                data: {_embedded: {categoryPresetDtoList: PRESETS}},
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+
+            renderButton();
+
+            expect(mockUseAuthorizedQuery).toHaveBeenCalledWith('/api/custom-presets', expect.anything());
+            expect(screen.getByRole('button', {name: /vybrat ze šablon/i})).toBeInTheDocument();
+        });
     });
 
     describe('button visibility', () => {
