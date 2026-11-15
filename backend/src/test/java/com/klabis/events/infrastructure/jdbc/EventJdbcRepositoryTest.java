@@ -1361,6 +1361,123 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Filter by draftsLimitedTo — draft visibility rule")
+    class FilterByDraftsLimitedTo {
+
+        private Event draft(String name, int daysAhead) {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(LocalDate.now().plusDays(daysAhead))
+                    .organizer("OOB")
+                    .build());
+            return eventRepository.save(event);
+        }
+
+        private Event active(String name, int daysAhead) {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(LocalDate.now().plusDays(daysAhead))
+                    .organizer("OOB")
+                    .build());
+            event.publish();
+            return eventRepository.save(event);
+        }
+
+        @Test
+        @DisplayName("should return only the listed DRAFT events plus every non-DRAFT event")
+        void shouldLimitDraftsToGivenIds() {
+            Event visibleDraft = draft("Visible Draft", 30);
+            draft("Hidden Draft", 31);
+            active("Active Event", 32);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDraftsLimitedTo(Set.of(visibleDraft.getId())),
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Visible Draft", "Active Event");
+            assertThat(result.getTotalElements()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("empty set hides every DRAFT event")
+        void emptySetHidesAllDrafts() {
+            draft("Draft", 30);
+            active("Active Event", 32);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withDraftsLimitedTo(Set.of()),
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Active Event");
+        }
+
+        @Test
+        @DisplayName("null leaves DRAFT events unrestricted")
+        void nullIsUnrestricted() {
+            draft("Draft", 30);
+            active("Active Event", 32);
+
+            Page<Event> result = eventRepository.findAll(EventFilter.none(), PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("combined with status=DRAFT returns only the listed drafts")
+        void combinedWithDraftStatus() {
+            Event visibleDraft = draft("Visible Draft", 30);
+            draft("Hidden Draft", 31);
+            active("Active Event", 32);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.byStatus(EventStatus.DRAFT).withDraftsLimitedTo(Set.of(visibleDraft.getId())),
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Visible Draft");
+        }
+
+        @Test
+        @DisplayName("combined with status=DRAFT and an empty set returns nothing")
+        void combinedWithDraftStatusAndEmptySet() {
+            draft("Draft", 30);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.byStatus(EventStatus.DRAFT).withDraftsLimitedTo(Set.of()),
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("combined with cancelledVisibleTo applies both rules independently")
+        void combinedWithCancelledVisibleTo() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+            Event visibleDraft = draft("Visible Draft", 30);
+            draft("Hidden Draft", 31);
+
+            Event ownCancelled = active("Own Cancelled", 32);
+            register(ownCancelled, member, new SiCardNumber("111111"), null);
+            ownCancelled.cancel();
+            eventRepository.save(ownCancelled);
+
+            Event otherCancelled = active("Other Cancelled", 33);
+            register(otherCancelled, new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null);
+            otherCancelled.cancel();
+            eventRepository.save(otherCancelled);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none()
+                            .withDraftsLimitedTo(Set.of(visibleDraft.getId()))
+                            .withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Visible Draft", "Own Cancelled");
+        }
+    }
+
+    @Nested
     @DisplayName("Filter by deadlineWithin — nearest future deadline in window")
     class FilterByDeadlineWithin {
 

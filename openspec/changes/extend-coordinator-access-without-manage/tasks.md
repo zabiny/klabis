@@ -4,13 +4,13 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 ## 1. Coordinator sees their own DRAFT event (#294)
 
-- [ ] 1.1 Write failing `AuthorizationEvaluator` unit tests for `targetIdsOf(Authority, TargetType)` (returns ids of SPECIFIC grants of that type; empty without grants; ignores targets of another type), then implement by delegating to `AuthorizationSnapshot.targetsOf`; verify tests pass
-- [ ] 1.2 Document `targetIdsOf` in the `backend-patterns` skill (`authorization.md`: when to use it — restricting list queries to granted targets — and that modules must not re-derive relationships for access control); verify the skill reference mentions it
-- [ ] 1.3 Write failing `EventFilter` unit tests for `withDraftsLimitedTo(Set<EventId>)` (null = unrestricted, empty = no DRAFT, other statuses unaffected), then add the criterion; verify tests pass
-- [ ] 1.4 Write failing repository-adapter integration test (DRAFT limited to the given ids; empty set hides all DRAFT; combined with `status=DRAFT` and with `cancelledVisibleTo`), then translate `draftsLimitedTo` in `EventRepositoryAdapter` to `status <> DRAFT OR id IN (:ids)`; verify test passes
-- [ ] 1.5 Write failing `EventManagementService` tests (non-manager list applies `draftsLimitedTo` from the passed draft visibility instead of excluding DRAFT; detail returns DRAFT when "may see this draft"), then replace the `canManageEvents` boolean parameters; verify tests pass
-- [ ] 1.6 Write failing `EventController` `@WebMvcTest`s with `@WithKlabisMockUser(targetGrants = EVENTS_EDIT over the event)`: DRAFT detail returns the event to its coordinator and 404 to a non-coordinator; list for a coordinator contains their DRAFT and not another DRAFT; then compute draft visibility from `has(EVENTS_MANAGE)` / `targetIdsOf(EVENTS_EDIT, EVENT)` and `isAllowed([EVENTS_MANAGE, EVENTS_EDIT], event)`; verify tests pass and `AuthorizationArchitectureTest` stays green
-- [ ] 1.7 Update `events.yaml` descriptions of `listEvents` / `getEvent` (DRAFT visible to coordinators); verify `npm run openapi` and backend compile succeed
+- [x] 1.1 Write failing `AuthorizationEvaluator` unit tests for `targetIdsOf(Authority, TargetType)` (returns ids of SPECIFIC grants of that type; empty without grants; ignores targets of another type), then implement by delegating to `AuthorizationSnapshot.targetsOf`; verify tests pass
+- [x] 1.2 Document `targetIdsOf` in the `backend-patterns` skill (`authorization.md`: when to use it — restricting list queries to granted targets — and that modules must not re-derive relationships for access control); verify the skill reference mentions it
+- [x] 1.3 Write failing `EventFilter` unit tests for `withDraftsLimitedTo(Set<EventId>)` (null = unrestricted, empty = no DRAFT, other statuses unaffected), then add the criterion; verify tests pass
+- [x] 1.4 Write failing repository-adapter integration test (DRAFT limited to the given ids; empty set hides all DRAFT; combined with `status=DRAFT` and with `cancelledVisibleTo`), then translate `draftsLimitedTo` in `EventRepositoryAdapter` to `status <> DRAFT OR id IN (:ids)`; verify test passes
+- [x] 1.5 Write failing `EventManagementService` tests (non-manager list applies `draftsLimitedTo` from the passed draft visibility instead of excluding DRAFT; detail returns DRAFT when "may see this draft"), then replace the `canManageEvents` boolean parameters; verify tests pass
+- [x] 1.6 Write failing `EventController` `@WebMvcTest`s with `@WithKlabisMockUser(targetGrants = EVENTS_EDIT over the event)`: DRAFT detail returns the event to its coordinator and 404 to a non-coordinator; list for a coordinator contains their DRAFT and not another DRAFT; then compute draft visibility from `has(EVENTS_MANAGE)` / `targetIdsOf(EVENTS_EDIT, EVENT)` and `isAllowed([EVENTS_MANAGE, EVENTS_EDIT], event)`; verify tests pass and `AuthorizationArchitectureTest` stays green
+- [x] 1.7 Update `events.yaml` descriptions of `listEvents` / `getEvent` (DRAFT visible to coordinators); verify `npm run openapi` and backend compile succeed
 
 ## 2. Coordinator publishes and cancels their own event
 

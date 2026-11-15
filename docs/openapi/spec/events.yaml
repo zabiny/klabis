@@ -529,6 +529,8 @@ paths:
         registeredBy and notRegisteredBy currently accept only the literal value "me" — any other
         value is a 400. When "me" is requested but the caller has no member profile, an empty page
         is returned rather than an error.
+        DRAFT events are listed only to callers with EVENTS:MANAGE and, for the events they coordinate,
+        to their coordinators (this applies also when filtering by status=DRAFT).
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_READ
@@ -743,7 +745,8 @@ paths:
       summary: Get event by ID
       description: |
         Retrieves detailed event information by ID. Returns HATEOAS links based on event status and
-        includes embedded registrations.
+        includes embedded registrations. A DRAFT event is returned only to callers with EVENTS:MANAGE
+        and to the coordinators of that event; for anyone else it is answered as not found.
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_READ

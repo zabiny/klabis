@@ -100,15 +100,22 @@ class EventRepositoryAdapter implements EventRepository {
                 conditions.add(Criteria.where("id").notIn(registeredIds));
             }
         }
+        if (filter.draftsLimitedTo() != null && !filter.excludesStatus(EventStatus.DRAFT)) {
+            Criteria notDraft = Criteria.where("status").not(EventStatus.DRAFT.name());
+            conditions.add(filter.draftsLimitedTo().isEmpty()
+                    ? notDraft
+                    : Criteria.from(notDraft.or(Criteria.where("id").in(filter.draftsLimitedTo().stream().map(EventId::value).toList()))));
+        }
         if (filter.cancelledVisibleTo() != null && !filter.excludesStatus(EventStatus.CANCELLED)) {
             Criteria notCancelled = Criteria.where("status").not(EventStatus.CANCELLED.name());
             List<UUID> registeredIds = findIdsByRegisteredMember(filter.cancelledVisibleTo());
             conditions.add(registeredIds.isEmpty()
                     ? notCancelled
-                    : notCancelled.or(Criteria.where("id").in(registeredIds)));
+                    : Criteria.from(notCancelled.or(Criteria.where("id").in(registeredIds))));
         }
 
-        Query query = conditions.stream().reduce(Criteria::and).map(Query::query).orElseGet(Query::empty);
+        Criteria combined = conditions.stream().reduce(Criteria.empty(), Criteria::and);
+        Query query = combined.isEmpty() ? Query.empty() : Query.query(combined);
 
         List<Event> results = jdbcAggregateTemplate.findAll(query.with(pageable), EventMemento.class)
                 .stream()

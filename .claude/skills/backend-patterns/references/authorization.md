@@ -69,6 +69,7 @@ Every decision goes through `com.klabis.common.authorization.AuthorizationEvalua
 | `isGuarded(method, class)` (static) | the pointcut of `HasAuthorityMethodInterceptor` |
 | `toTarget(type, rawId)` | converts a raw id (URI variable, argument) to a `TargetRef` through the same `ConversionService` as `canInvoke`; `null` when not convertible |
 | `has(authority)` / `has(authority, target)` / `isSelf(target)` | application code (controllers, postprocessors) |
+| `targetIdsOf(authority, type)` | application code that restricts a list query to the targets of that type the user holds `authority` over through a SPECIFIC grant |
 
 Rule for an element guarded by authorities `[A1..An]`, an optional target `t` and optional `@OwnerVisible`:
 
@@ -131,6 +132,10 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
   themselves. Keep a gate only when the offering rule genuinely differs (e.g. a navigation entry for
   an operation any authenticated user may call, or hiding an owner-accessible link from the owner),
   and say why in a one-line comment.
+- To restrict a list query to what the user holds a grant over (e.g. DRAFT events a coordinator may see), ask
+  `targetIdsOf(authority, type)` in the controller and pass the ids down as a query criterion. Combine with
+  `has(authority)` (grant over everything = unrestricted). Modules must not re-derive relationships
+  (coordinator, guardian, ...) for access control in services or adapters — the grant is the single source.
 - Prefer `has(authority, target)` whenever the question is about a specific member or event, so a
   future targeted grant works without touching the code.
 - In plain unit tests of a hand-built component pass `SecurityContextAuthorizationEvaluator.create()`

@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Period;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -274,6 +276,58 @@ class EventFilterTest {
             assertThat(result.dateFrom()).isEqualTo(java.time.LocalDate.of(2026, 1, 1));
             assertThat(result.dateTo()).isEqualTo(java.time.LocalDate.of(2026, 12, 31));
             assertThat(result.statuses()).containsExactly(EventStatus.ACTIVE);
+        }
+    }
+
+    @Nested
+    @DisplayName("withDraftsLimitedTo()")
+    class WithDraftsLimitedToTests {
+
+        @Test
+        @DisplayName("none-filter leaves DRAFT unrestricted")
+        void noneFilterIsUnrestricted() {
+            assertThat(EventFilter.none().draftsLimitedTo()).isNull();
+        }
+
+        @Test
+        @DisplayName("sets the ids and leaves the status set untouched")
+        void setsIdsAndLeavesStatusesUntouched() {
+            EventId id = new EventId(UUID.randomUUID());
+            EventFilter result = EventFilter.byStatus(EventStatus.DRAFT).withDraftsLimitedTo(Set.of(id));
+            assertThat(result.draftsLimitedTo()).containsExactly(id);
+            assertThat(result.statuses()).containsExactly(EventStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("empty set is kept as empty, not treated as unrestricted")
+        void emptySetIsKept() {
+            assertThat(EventFilter.none().withDraftsLimitedTo(Set.of()).draftsLimitedTo()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("null clears the restriction")
+        void nullClearsTheRestriction() {
+            EventFilter filter = EventFilter.none().withDraftsLimitedTo(Set.of()).withDraftsLimitedTo(null);
+            assertThat(filter.draftsLimitedTo()).isNull();
+        }
+
+        @Test
+        @DisplayName("every other copy-factory preserves an already-set restriction")
+        void otherCopyFactoriesPreserveTheRestriction() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            Set<EventId> ids = Set.of(new EventId(UUID.randomUUID()));
+            EventFilter base = EventFilter.none().withDraftsLimitedTo(ids);
+
+            assertThat(base.withExcludedStatus(EventStatus.CANCELLED).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withFulltext("jihlava").draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withOrganizer("OOB").draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withRegisteredBy(member).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withCoordinator(member).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withDeadlineWithin(Period.ofDays(7)).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withNotRegisteredBy(member).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withEventTypeIds(List.of()).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withCancelledVisibleTo(member).draftsLimitedTo()).isEqualTo(ids);
+            assertThat(base.withDateRange(java.time.LocalDate.of(2026, 1, 1), null).draftsLimitedTo()).isEqualTo(ids);
         }
     }
 

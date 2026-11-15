@@ -74,6 +74,37 @@ class AuthorizationEvaluatorTest {
     }
 
     @Nested
+    @DisplayName("targetIdsOf")
+    class TargetIdsOf {
+
+        private final UUID eventId = UUID.randomUUID();
+
+        @Test
+        void shouldReturnIdsOfSpecificGrantsOfRequestedType() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(TargetRef.event(eventId))));
+
+            assertThat(evaluatorOver(snapshot).targetIdsOf(Authority.EVENTS_EDIT, TargetType.EVENT))
+                    .containsExactly(eventId);
+        }
+
+        @Test
+        void shouldReturnEmptyWithoutGrants() {
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).targetIdsOf(Authority.EVENTS_EDIT, TargetType.EVENT))
+                    .isEmpty();
+        }
+
+        @Test
+        void shouldIgnoreTargetsOfAnotherType() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(TargetRef.event(eventId), child)));
+
+            assertThat(evaluatorOver(snapshot).targetIdsOf(Authority.EVENTS_EDIT, TargetType.MEMBER))
+                    .containsExactly(child.id());
+        }
+    }
+
+    @Nested
     @DisplayName("isSelf")
     class IsSelf {
 
