@@ -397,6 +397,20 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('button', {name: /zrušit akci/i})).toBeInTheDocument();
         });
 
+        it('shows publish and cancel buttons for a coordinator without manager-only affordances', () => {
+            const data = mockEventDetailData({
+                status: 'DRAFT',
+                _templates: {
+                    updateEvent: mockHalFormsTemplate({title: 'Upravit závod'}),
+                    publishEvent: mockHalFormsTemplate({title: 'Publikovat'}),
+                    cancelEvent: mockHalFormsTemplate({title: 'Zrušit akci'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /publikovat/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /zrušit akci/i})).toBeInTheDocument();
+        });
+
         it('does not show finishEvent button even when template is present (endpoint removed)', () => {
             const data = mockEventDetailData({
                 _templates: {

@@ -14,11 +14,11 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 ## 2. Coordinator publishes and cancels their own event
 
-- [ ] 2.1 Write failing `@WebMvcTest`s: coordinator (EVENTS_EDIT over event) can publish a DRAFT and cancel a DRAFT/ACTIVE event; coordinator of another event gets 403; detail and list row of a coordinated DRAFT event offer `publishEvent` and `cancelEvent` templates, a non-coordinated one offers none
-- [ ] 2.2 Change `publishEvent` and `cancelEvent` to `x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]` in `events.yaml` (+ template descriptions), regenerate backend API and frontend types; verify tests from 2.1 pass
-- [ ] 2.3 Verify in the frontend (Vitest on event detail / events table with a coordinator fixture) that "Publikovat" and "Zrušit" render from the templates without frontend code changes; fix only if they do not
-- [ ] 2.4 Amend ADR-010 in `docs/design-decisions.md` in place: the event-coordinator paragraph (coordinators may publish and cancel their events; changing coordinators, ORIS import and sync stay `EVENTS_MANAGE`) and the evaluator section (`targetIdsOf` beside `has` / `isSelf`, for restricting list queries); verify no sentence still says coordinators must not publish/cancel
-- [ ] 2.5 Update javadoc of `EventCoordinatorRelationshipSource` and "Event coordinator grants" in `backend/CLAUDE.md`; verify both say publish/cancel are included and coordinator changes/ORIS/sync stay EVENTS:MANAGE
+- [x] 2.1 Write failing `@WebMvcTest`s: coordinator (EVENTS_EDIT over event) can publish a DRAFT and cancel a DRAFT/ACTIVE event; coordinator of another event gets 403; detail and list row of a coordinated DRAFT event offer `publishEvent` and `cancelEvent` templates, a non-coordinated one offers none
+- [x] 2.2 Change `publishEvent` and `cancelEvent` to `x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]` in `events.yaml` (+ template descriptions), regenerate backend API and frontend types; verify tests from 2.1 pass
+- [x] 2.3 Verify in the frontend (Vitest on event detail / events table with a coordinator fixture) that "Publikovat" and "Zrušit" render from the templates without frontend code changes; fix only if they do not
+- [x] 2.4 Amend ADR-010 in `docs/design-decisions.md` in place: the event-coordinator paragraph (coordinators may publish and cancel their events; changing coordinators, ORIS import and sync stay `EVENTS_MANAGE`) and the evaluator section (`targetIdsOf` beside `has` / `isSelf`, for restricting list queries); verify no sentence still says coordinators must not publish/cancel
+- [x] 2.5 Update javadoc of `EventCoordinatorRelationshipSource` and "Event coordinator grants" in `backend/CLAUDE.md`; verify both say publish/cancel are included and coordinator changes/ORIS/sync stay EVENTS:MANAGE
 
 ## 3. Coordinators can apply category presets (#373)
 

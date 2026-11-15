@@ -1943,9 +1943,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("coordinator is not offered publish and cancel")
+        @DisplayName("coordinator is offered publish and cancel for the coordinated DRAFT event")
         @AsEventCoordinator
-        void publishAndCancelAbsentForCoordinator() throws Exception {
+        void publishAndCancelOfferedToCoordinator() throws Exception {
             Event draftEvent = aCoordinatedEvent().build();
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
@@ -1956,8 +1956,8 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEvent").exists())
-                    .andExpect(jsonPath("$._templates.publishEvent").doesNotExist())
-                    .andExpect(jsonPath("$._templates.cancelEvent").doesNotExist());
+                    .andExpect(jsonPath("$._templates.publishEvent.target").exists())
+                    .andExpect(jsonPath("$._templates.cancelEvent.target").exists());
         }
 
         @Test
@@ -2266,11 +2266,22 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("coordinator cannot publish the event — returns 403")
+        @DisplayName("coordinator of the event can publish it — returns 204")
         @AsEventCoordinator
-        void coordinatorCannotPublish() throws Exception {
+        void coordinatorCanPublish() throws Exception {
             mockMvc.perform(
                             post("/api/events/{id}/publish", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("coordinator of another event cannot publish — returns 403")
+        @AsEventCoordinator
+        void coordinatorOfAnotherEventCannotPublish() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/{id}/publish", UUID.randomUUID())
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());
@@ -2295,11 +2306,22 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("coordinator cannot cancel the event — returns 403")
+        @DisplayName("coordinator of the event can cancel it — returns 204")
         @AsEventCoordinator
-        void coordinatorCannotCancel() throws Exception {
+        void coordinatorCanCancel() throws Exception {
             mockMvc.perform(
                             post("/api/events/{id}/cancel", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("coordinator of another event cannot cancel — returns 403")
+        @AsEventCoordinator
+        void coordinatorOfAnotherEventCannotCancel() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/{id}/cancel", UUID.randomUUID())
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());
@@ -2852,6 +2874,36 @@ class EventControllerTest {
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist());
+        }
+
+        @Test
+        @DisplayName("coordinated DRAFT event row carries publishEvent and cancelEvent affordances")
+        @AsEventCoordinator
+        void coordinatedDraftRowCarriesPublishAndCancel() throws Exception {
+            Event draftEvent = aCoordinatedEvent().build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(tpl("publishEvent.target")).exists())
+                    .andExpect(jsonPath(tpl("cancelEvent.target")).exists());
+        }
+
+        @Test
+        @DisplayName("DRAFT event row of a non-coordinated event carries no publish or cancel affordance")
+        @AsEventCoordinator
+        void nonCoordinatedDraftRowCarriesNoPublishOrCancel() throws Exception {
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
                     .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
                     .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist());
         }

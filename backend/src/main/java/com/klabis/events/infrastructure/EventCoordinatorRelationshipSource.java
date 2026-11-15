@@ -13,8 +13,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * An event coordinator may edit the event and read its registrations in full. Publishing and cancelling stay
- * with EVENTS:MANAGE, which is why coordinators hold narrower authorities rather than EVENTS:MANAGE itself.
+ * An event coordinator may edit, publish and cancel the event and read its registrations in full. Changing
+ * coordinators, creating events, ORIS import and synchronisation stay with EVENTS:MANAGE, which is why
+ * coordinators hold narrower authorities rather than EVENTS:MANAGE itself.
  */
 @Component
 class EventCoordinatorRelationshipSource implements RelationshipSource {
