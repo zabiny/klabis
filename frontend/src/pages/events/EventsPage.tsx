@@ -4,7 +4,8 @@ import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
-import {asLinkArray} from "../../api/hateoas.ts";
+import {asLinkArray, toHref} from "../../api/hateoas.ts";
+import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -22,7 +23,7 @@ import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, UserMinus, UserPen, UserPlus, XCircle} from "lucide-react";
-import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
+import {type CoordinatorOption, EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventSiPolicyFields} from "../../components/events/EventSiPolicyFields.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
@@ -101,6 +102,11 @@ export const EventsPage = (): ReactElement => {
     });
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
+    const coordinatorOptionsLink = resourceData?._links?.coordinatorOptions;
+    const {data: coordinatorOptions} = useAuthorizedQuery<CoordinatorOption[]>(
+        coordinatorOptionsLink ? toHref(coordinatorOptionsLink) : undefined,
+        {staleTime: 5 * 60 * 1000},
+    );
 
     const importBatchTemplate = resourceData?._templates?.importEventsBatch;
     const importTemplate = resourceData?._templates?.importEvent;
@@ -254,6 +260,7 @@ export const EventsPage = (): ReactElement => {
                 onChange={handleFilterChange}
                 showRegisteredByMeToggle={showRegisteredByMeToggle}
                 eventTypes={eventTypes}
+                coordinatorOptions={coordinatorOptionsLink && Array.isArray(coordinatorOptions) ? coordinatorOptions : undefined}
             />
 
             <HalEmbeddedTable<EventListData>

@@ -1119,6 +1119,8 @@ export const labels = {
         eventTypeFilter: 'Typ akce',
         eventTypeAll: 'Vše',
         eventsFilterYear: 'Rok',
+        coordinator: 'Vedoucí',
+        coordinatorAll: '—',
         noYear: '—',
         timeWindowDisabledTooltip: 'Není k dispozici pro jiný než aktuální rok',
     },

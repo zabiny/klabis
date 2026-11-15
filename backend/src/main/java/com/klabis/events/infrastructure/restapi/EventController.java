@@ -640,6 +640,8 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
         });
         klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
                 .ifPresent(link -> model.add(link.withRel("categoryPresets")));
+        klabisLinkTo(methodOn(MembersApi.class).listMemberOptions())
+                .ifPresent(link -> model.add(link.withRel("coordinatorOptions")));
         return model;
     }
 }

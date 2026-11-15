@@ -29,9 +29,9 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 ## 4. "Vedoucí" filter in the events list (#295)
 
-- [ ] 4.1 Write failing `@WebMvcTest`: events list contains `coordinatorOptions` link to member options for a member with MEMBERS_READ; then add it in `EventListPostprocessor` and to `events.yaml` `x-hal-links`; regenerate; verify test passes
-- [ ] 4.2 Write failing Vitest for `EventsFilterBar`: "Vedoucí" select is rendered only when `coordinatorOptions` is available, lists the options, and selecting/clearing a member emits the change; then implement (plain select, label from `labels.ts`); verify tests pass
-- [ ] 4.3 Write failing Vitest for `useEventsFilterState`: `coordinator` URL parameter round-trips and is sent as the `coordinator` query parameter; then implement via `useUrlFilters`; verify tests pass and `npm run build` succeeds
+- [x] 4.1 Write failing `@WebMvcTest`: events list contains `coordinatorOptions` link to member options for a member with MEMBERS_READ; then add it in `EventListPostprocessor` and to `events.yaml` `x-hal-links`; regenerate; verify test passes
+- [x] 4.2 Write failing Vitest for `EventsFilterBar`: "Vedoucí" select is rendered only when `coordinatorOptions` is available, lists the options, and selecting/clearing a member emits the change; then implement (plain select, label from `labels.ts`); verify tests pass
+- [x] 4.3 Write failing Vitest for `useEventsFilterState`: `coordinator` URL parameter round-trips and is sent as the `coordinator` query parameter; then implement via `useUrlFilters`; verify tests pass and `npm run build` succeeds
 
 ## 5. Integration verification
 

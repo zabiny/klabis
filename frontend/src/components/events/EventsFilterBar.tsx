@@ -10,13 +10,17 @@ export type EventsFilterValue = {
     registeredByMe: boolean;
     eventTypeIds: string[];
     selectedYear: number | null;
+    coordinator: string;
 };
+
+export type CoordinatorOption = {value: string; prompt: string};
 
 export interface EventsFilterBarProps {
     value: EventsFilterValue;
     onChange: (next: EventsFilterValue) => void;
     showRegisteredByMeToggle: boolean;
     eventTypes?: EventTypeCatalogItem[];
+    coordinatorOptions?: CoordinatorOption[];
 }
 
 const TIME_WINDOW_OPTIONS: { value: TimeWindow; label: string }[] = [
@@ -33,6 +37,7 @@ export function EventsFilterBar({
     onChange,
     showRegisteredByMeToggle,
     eventTypes,
+    coordinatorOptions,
 }: EventsFilterBarProps): ReactElement {
     const eventTypeOptions = eventTypes
         ? [
@@ -101,6 +106,26 @@ export function EventsFilterBar({
                     ))}
                 </select>
             </div>
+
+            {coordinatorOptions && (
+                <div className="flex items-center gap-1.5">
+                    <label htmlFor="events-coordinator-filter" className="text-sm text-text-primary whitespace-nowrap">
+                        {labels.eventsFilter.coordinator}
+                    </label>
+                    <select
+                        id="events-coordinator-filter"
+                        aria-label={labels.eventsFilter.coordinator}
+                        value={value.coordinator}
+                        onChange={(e) => onChange({ ...value, coordinator: e.target.value })}
+                        className="form-select text-sm border border-border rounded pl-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                        <option value="">{labels.eventsFilter.coordinatorAll}</option>
+                        {coordinatorOptions.map((o) => (
+                            <option key={o.value} value={o.value}>{o.prompt}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {eventTypes && eventTypes.length > 0 && (
                 <PillGroup<string>

@@ -633,6 +633,9 @@ paths:
             categoryPresets:
               operation: listPresets
               description: Category presets offered by the event form
+            coordinatorOptions:
+              operation: listMemberOptions
+              description: Member options for the coordinator filter (present only for callers with MEMBERS:READ)
           x-hal-templates:
             createEvent:
               operation: createEvent

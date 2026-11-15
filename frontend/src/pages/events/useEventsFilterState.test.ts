@@ -425,3 +425,29 @@ describe('useEventsFilterState — AND semantics (year + time window independent
         });
     });
 });
+
+describe('useEventsFilterState — coordinator', () => {
+    it('reads coordinator from the URL and sends it as the coordinator query parameter', () => {
+        const {result} = renderHook(() => useEventsFilterState(), {
+            wrapper: wrapper('/?coordinator=m-1'),
+        });
+        expect(result.current.filterValue.coordinator).toBe('m-1');
+        expect(result.current.extraParams.coordinator).toBe('m-1');
+    });
+
+    it('omits the coordinator parameter by default', () => {
+        const {result} = renderHook(() => useEventsFilterState(), {wrapper: wrapper('/')});
+        expect(result.current.filterValue.coordinator).toBe('');
+        expect(result.current.extraParams).not.toHaveProperty('coordinator');
+    });
+
+    it('round-trips coordinator through handleFilterChange and clears it', () => {
+        const {result} = renderHook(() => useEventsFilterState(), {wrapper: wrapper('/')});
+        act(() => result.current.handleFilterChange({...result.current.filterValue, coordinator: 'm-2'}));
+        expect(result.current.filterValue.coordinator).toBe('m-2');
+        expect(result.current.extraParams.coordinator).toBe('m-2');
+        act(() => result.current.handleFilterChange({...result.current.filterValue, coordinator: ''}));
+        expect(result.current.filterValue.coordinator).toBe('');
+        expect(result.current.extraParams).not.toHaveProperty('coordinator');
+    });
+});

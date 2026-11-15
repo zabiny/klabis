@@ -907,6 +907,30 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should expose coordinatorOptions link to member holding MEMBERS:READ")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldExposeCoordinatorOptionsLinkWithMembersRead() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.coordinatorOptions.href").value("http://localhost/api/members/options"));
+        }
+
+        @Test
+        @DisplayName("should not expose coordinatorOptions link without MEMBERS:READ")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotExposeCoordinatorOptionsLinkWithoutMembersRead() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.coordinatorOptions").doesNotExist());
+        }
+
+        @Test
         @DisplayName("createEvent template should expose coordinators as MemberId and categories as CategoryRequest")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCoordinatorsOptionsLinkOnCreateTemplate() throws Exception {
