@@ -8,12 +8,12 @@
 
 ## 2. Remaining adapters
 
-- [ ] 2.1 Migrate `useMembershipFeeTierOptions` to `select` value/prompt mapping
-- [ ] 2.2 Migrate `useLegalGuardians`; delete its hand-written `undefined` href loading rule
-- [ ] 2.3 Migrate `useUpcomingDeadlines` → `{items, totalElements, refetch}` (`totalElements` from `pageMetadata`) and `useMyUpcomingRegistrations` → `{items, refetch}`; projections stay in the adapters, passed through `select`
-- [ ] 2.4 Migrate `UpcomingDeadlinesWidget` and `HomePage` to the flattened return shape
-- [ ] 2.5 Trim the adapter tests to their own mapping only
-- [ ] 2.6 Verify: adapter and consumer slice tests green
+- [x] 2.1 Migrate `useMembershipFeeTierOptions` to `select` value/prompt mapping
+- [x] 2.2 Migrate `useLegalGuardians`; delete its hand-written `undefined` href loading rule
+- [x] 2.3 Migrate `useUpcomingDeadlines` → `{items, totalElements, refetch}` (`totalElements` from `pageMetadata`) and `useMyUpcomingRegistrations` → `{items, refetch}`; projections stay in the adapters, passed through `select`
+- [x] 2.4 Migrate `UpcomingDeadlinesWidget` and `HomePage` to the flattened return shape
+- [x] 2.5 Trim the adapter tests to their own mapping only
+- [x] 2.6 Verify: adapter and consumer slice tests green
 
 ## 3. Component call sites
 
