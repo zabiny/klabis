@@ -61,7 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <ul>
  *   <li>Detailed JSON field-by-field mapping - tested in {@link MemberMappingTests}</li>
  *   <li>Domain logic - tested in domain unit tests</li>
- *   <li>Integration flows - tested in integration/E2E tests</li>
+ *   <li>Integration flows - tested in cross-module/E2E tests</li>
  * </ul>
  */
 @DisplayName("Member Controller API Tests")

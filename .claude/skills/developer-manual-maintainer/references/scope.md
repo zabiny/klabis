@@ -58,7 +58,7 @@ Vše frameworkové v `frontend/src/`:
 ### Cross-cutting konvence
 
 - Modulární monolit (Spring Modulith) — pravidla závislostí, hexagonální struktura
-- Testovací patterny — @WithKlabisMockUser, @E2ETest, custom AssertJ asserts, memento round-trip
+- Testovací patterny — @WithKlabisMockUser, @CrossModuleTest, custom AssertJ asserts, memento round-trip
 - OpenSpec workflow + Claude Code skills/agents/commands
 
 ## Co NEPATŘÍ do manuálu

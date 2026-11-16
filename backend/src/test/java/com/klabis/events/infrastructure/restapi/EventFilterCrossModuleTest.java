@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -37,20 +37,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * Specifically tests the fulltext (q) and registeredBy filters in isolation and in
  * combination — these two are resolved via raw SQL (NamedParameterJdbcTemplate) instead
- * of Spring Data Criteria, so they need their own E2E coverage separate from the
+ * of Spring Data Criteria, so they need their own cross-module coverage separate from the
  * DataJdbcTest-level {@code EventJdbcRepositoryTest} that runs in an isolated slice.
  * <p>
  * Also covers the cancelled-visibility rule: CANCELLED events reach the list only for
  * callers with EVENTS:MANAGE and for members registered for them.
  */
-@E2ETest
+@CrossModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(statements = {"DELETE FROM calendar.calendar_items", "DELETE FROM events.events"},
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@DisplayName("Event Filter E2E Tests")
-class EventFilterE2ETest {
+@DisplayName("Event Filter Cross-Module Tests")
+class EventFilterCrossModuleTest {
 
     @MockitoBean
     @SuppressWarnings("unused")

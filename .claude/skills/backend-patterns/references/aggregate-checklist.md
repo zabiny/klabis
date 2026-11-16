@@ -57,4 +57,4 @@ Walk the layers in order when adding a new aggregate or Spring Modulith module. 
 - [ ] Memento round-trip test, repository test
 - [ ] Controller test on the module's shared `@<Module>WebMvcTest` (incl. security and links/affordances in the response)
 - [ ] Converter tests
-- [ ] Integration test (happy path) and one E2E lifecycle test
+- [ ] `@CrossModuleTest` (happy path) only if the aggregate takes part in a cross-module flow

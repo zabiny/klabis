@@ -1,6 +1,6 @@
 package com.klabis.members;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
@@ -68,11 +68,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Validation error messages - tested in controller unit tests</li>
  * </ul>
  */
-@E2ETest
+@CrossModuleTest
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-member-lifecycle-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@DisplayName("Member Lifecycle E2E Test")
-class MemberLifecycleE2ETest {
+@DisplayName("Member Lifecycle Cross-Module Test")
+class MemberLifecycleCrossModuleTest {
 
     private static final LoggingEmailService LOGGING_EMAIL_SERVICE = new LoggingEmailService(
             EmailProperties.withFrom("noreply@klabis.zabiny.club"));
@@ -173,7 +173,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(status().isOk());
 
         String activationToken = Awaitility.waitAtMost(Duration.ofSeconds(4))
-                .until(MemberLifecycleE2ETest::findActivationTokenInSentEmail, Optional::isPresent)
+                .until(MemberLifecycleCrossModuleTest::findActivationTokenInSentEmail, Optional::isPresent)
                 .orElseThrow();
 
         // ========================================================================

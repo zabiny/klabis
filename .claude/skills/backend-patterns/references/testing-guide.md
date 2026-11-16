@@ -2,16 +2,37 @@
 
 Testing patterns derived from the `members` module as the canonical reference.
 
-## Test Types & When to Use Each
+## Test Levels & Placement
 
-| Test Type | Annotation | Scope | Use for |
+Each behaviour is tested **once, at the lowest level that can verify it**.
+
+| Level | Scope | Backend | Frontend |
+|-------|-------|---------|----------|
+| Unit | Confined to one module, with or without Spring | domain/service tests (no Spring), `@DataJdbcTest`, converter tests, `@<Module>WebMvcTest`, single-module `@KlabisModuleTest` | component, hook and util tests |
+| Integration | Backend: real application/domain logic of >1 module. Frontend: Page tests | `@CrossModuleTest`, `@KlabisModuleTest` with business modules in `extraIncludes` / `ALL_DEPENDENCIES` | page tests |
+| End-to-end | Backend + frontend together | — | playwright-bdd scenarios in `frontend/e2e` |
+
+Rules:
+- **Most tests are unit tests.** Business rules, invariants, validation, edge cases, error branches, security (401/403), response shape and HAL links/affordances belong at unit level.
+- **Mock only boundaries.** A unit test may mock only:
+  - layer boundaries inside the module: secondary ports (repositories, `@Port`) in application tests, primary ports in REST adapter tests — the mocked implementation (e.g. repository adapter) gets its own unit test;
+  - module boundaries: other modules' primary ports;
+  - app boundaries: external clients (ORIS, e-mail).
+  Never mock other classes of the module under test (domain objects, domain services, mappers, converters, helpers) — use the real ones.
+- **A module counts as covered** only when its application/domain logic runs for real. A module loaded only for its web beans with mocked primary ports (`extraIncludes` in `@<Module>WebMvcTest`) does not count — such a test is still a unit test.
+- **Higher levels don't repeat lower levels.**
+  - Integration test verifies only the cooperation between modules (event delivered and handled, call crossing the module boundary) — happy path only.
+  - End-to-end verifies only that a user journey works through UI + API — no validation messages, authorization matrix or field-by-field checks.
+- Before writing a higher-level test, name what it verifies that no lower-level test can. If nothing, don't write it.
+
+| Test Type | Annotation | Level | Use for |
 |-----------|-----------|-------|---------|
-| Domain and Value object unit | `@ExtendWith(MockitoExtension.class)` | No Spring | Business rules, invariants, state transitions |
-| Service unit | `@ExtendWith(MockitoExtension.class)` | No Spring | Service logic, mock interactions |
-| Repository | `@DataJdbcTest` | JDBC slice | CRUD, custom queries |
-| Controller (REST adapter) | `@<Module>WebMvcTest` (`@WebMvcTest` + `@ModuleSlicing`) | One shared MVC slice per module | HTTP status, request mapping, service calls, security (401/403), HAL links/affordances incl. postprocessors |
-| Integration | `@KlabisModuleTest` | Module + direct deps | Full flow with real database |
-| E2E | `@E2ETest` | All dependencies | Complete user scenarios |
+| Domain and Value object unit | `@ExtendWith(MockitoExtension.class)` | Unit | Business rules, invariants, state transitions |
+| Service unit | `@ExtendWith(MockitoExtension.class)` | Unit | Service logic, mock interactions |
+| Repository | `@DataJdbcTest` | Unit | CRUD, custom queries |
+| Controller (REST adapter) | `@<Module>WebMvcTest` (`@WebMvcTest` + `@ModuleSlicing`) | Unit | HTTP status, request mapping, service calls, security (401/403), HAL links/affordances incl. postprocessors |
+| Single-module Spring | `@KlabisModuleTest` | Unit | What needs real wiring inside the module (transactions, listeners, persistence + application together) |
+| Cross-module | `@CrossModuleTest` | Integration | Flows crossing module boundaries |
 
 ## Domain & Service Unit Tests
 
@@ -87,7 +108,7 @@ Notes:
 
 ## Controller Tests (@WebMvcTest)
 
-The REST adapter is tested by **one primary test per controller: a `@WebMvcTest`** sharing a **single Spring context per module**. Everything that concerns the controller's HTTP contract lives there — request mapping, status codes, security (401/403 via the real filter chain with `@WithKlabisMockUser`), and links/affordances rendered by postprocessors (assert them on the controller's response in a `@Nested` class; no separate postprocessor/link-processor unit tests, no `@KlabisModuleTest` security tests). Full-stack scenarios stay in `@E2ETest` classes in the module root package (e.g. `com.klabis.members.MemberLifecycleE2ETest`), not in `restapi`.
+The REST adapter is tested by **one primary test per controller: a `@WebMvcTest`** sharing a **single Spring context per module**. Everything that concerns the controller's HTTP contract lives there — request mapping, status codes, security (401/403 via the real filter chain with `@WithKlabisMockUser`), and links/affordances rendered by postprocessors (assert them on the controller's response in a `@Nested` class; no separate postprocessor/link-processor unit tests, no `@KlabisModuleTest` security tests). Cross-module scenarios stay in `@CrossModuleTest` classes in the module root package (e.g. `com.klabis.members.MemberLifecycleCrossModuleTest`), not in `restapi`.
 
 Reference implementation: `com.klabis.members.MembersWebMvcTest` (members module). This module-sliced form is the only form for REST adapter tests. The sole exception are the `common` infrastructure tests with their own test controller (`@WebMvcTest(controllers = ...)` + `CommonInfrastructureWebMvcSetup`), which deliberately keep their own contexts.
 
@@ -135,9 +156,9 @@ Slice-context rules:
 - 403 tests run against the shared context: stub the primary ports via `@Autowired` mocks so a permitted request would succeed, then assert the real filter chain rejects it.
 - Duplicate `@MockitoBean` of the same type (including via two composed annotations) fails context bootstrap — keep type ownership in one `*WebMvcMockitoBeans`.
 
-## Integration Tests (@KlabisModuleTest)
+## Single-module Spring Tests (@KlabisModuleTest)
 
-Never use `@ApplicationModuleTest` directly — use `@KlabisModuleTest` (`com.klabis`), which wraps it with
+Unit level — a Spring Boot test of a single module. Never use `@ApplicationModuleTest` directly — use `@KlabisModuleTest` (`com.klabis`), which wraps it with
 `verifyAutomatically = false` and `@ActiveProfiles("test")` and exposes `mode`, `module` and
 `extraIncludes`. Automatic verification runs a full ArchUnit import per test class; the module structure
 is verified once by `ModuleStructureVerificationTest`.
@@ -168,20 +189,21 @@ class MemberRegistrationIntegrationTest {
 
 Use `BootstrapMode.DIRECT_DEPENDENCIES` for security/controller tests that don't need the full graph.
 
-Integration test scope rules:
-- Test **single module** — mock dependencies from other business modules
-- Test only the **happy path** — edge cases and input variations belong in unit tests
+Scope rules:
+- Test **single module** — mock other modules' primary ports
+- Prefer plain unit tests — use this only for what needs real wiring (transactions, listeners, persistence + application together)
+- Test only the **happy path** — edge cases and input variations belong in plain unit tests
 - **Do not assert unnecessary details** — assert only that the operation ended with expected outcome
 - Use MockMvc for controller triggers, direct method calls for listeners/other primary adapters
 
-## E2E Tests
+## Cross-module Integration Tests (@CrossModuleTest)
 
 ```java
-@E2ETest
+@CrossModuleTest
 @Sql(scripts = "/sql/test-member-lifecycle-setup.sql",
      executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@DisplayName("Member Lifecycle E2E Test")
-class MemberLifecycleE2ETest {
+@DisplayName("Member Lifecycle Cross-Module Test")
+class MemberLifecycleCrossModuleTest {
 
     @TestBean EmailService emailServiceStub;
 
@@ -193,13 +215,13 @@ class MemberLifecycleE2ETest {
 }
 ```
 
-`@E2ETest` is a meta-annotation combining `@KlabisModuleTest(mode = ALL_DEPENDENCIES)`, `@AutoConfigureMockMvc`, `@CleanupTestData`, and `@Import(TestApplicationConfiguration.class)`.
+`@CrossModuleTest` is a meta-annotation combining `@KlabisModuleTest(mode = ALL_DEPENDENCIES)`, `@AutoConfigureMockMvc`, `@CleanupTestData`, and `@Import(TestApplicationConfiguration.class)`.
 
-E2E scope rules:
-- 1 test per aggregate root verifying its **full lifecycle** (register → update → suspend → resume)
+Scope rules:
+- Exists only for a flow that **crosses modules** — a single-module lifecycle belongs to unit level
 - **Verify progression only** — status codes and minimal navigation checks
 - **Never inject repositories** — verify state only through API responses
-- **Not in E2E:** response JSON structure (→ controller unit tests), domain events (→ integration tests)
+- **Not here:** anything covered by unit tests (response JSON structure, validation, security) or by playwright-bdd scenarios
 
 ## Security: @WithKlabisMockUser
 
@@ -322,7 +344,7 @@ void shouldHandleNullOptionalFields() {
 
 ## SQL Test Data
 
-Pre-populate state for integration/E2E tests via `@Sql` scripts in `src/test/resources/sql/`:
+Pre-populate state for Spring tests via `@Sql` scripts in `src/test/resources/sql/`:
 
 ```java
 @Sql(scripts = "/sql/test-members-setup.sql",
@@ -330,7 +352,7 @@ Pre-populate state for integration/E2E tests via `@Sql` scripts in `src/test/res
 void shouldUpdateMember() { }
 ```
 
-Use `@CleanupTestData` on E2E tests — tests share a single H2 instance.
+Use `@CleanupTestData` on committing tests (`@CrossModuleTest` includes it) — tests share a single H2 instance.
 
 ## Gotchas
 
@@ -338,7 +360,7 @@ Use `@CleanupTestData` on E2E tests — tests share a single H2 instance.
 |---------|----------|
 | `@WebMvcTest` fails with `UnsatisfiedDependencyException` / `NoSuchBeanDefinition` | A web bean's dependency is missing in a `*WebMvcMockitoBeans` (also check `common` and `extraIncludes` modules) |
 | Asserting published domain events | `@RecordApplicationEvents` + `ApplicationEvents`, not a custom `@EventListener` bean (`@Import` on the class splits the context cache key) |
-| Domain events not fired in E2E test | Add `SyncTaskExecutor` `@TestConfiguration` |
+| Domain events not fired in `@CrossModuleTest` | Add `SyncTaskExecutor` `@TestConfiguration` |
 | `@DataJdbcTest` doesn't find custom repos | Add `includeFilters = @Filter(type = ANNOTATION, value = Repository.class)` |
 | Tests interfere with each other in H2 | Use `@CleanupTestData` or `@Sql(statements = "DELETE FROM ...")` |
 | `EntityLinks` not available in a `common` infrastructure `@WebMvcTest(controllers=...)` | Provide `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks()` (not needed with `@ModuleSlicing`) |

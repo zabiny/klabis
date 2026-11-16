@@ -1,6 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.calendar.application.IcalTokenPort;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.UserId;
@@ -24,9 +24,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for GET /api/me/ical-token and POST /api/me/ical-token.
  * <p>
- * Uses full Spring Boot context via @E2ETest. Authentication is simulated via klabisAuthentication().
+ * Uses full Spring Boot context via @CrossModuleTest. Authentication is simulated via klabisAuthentication().
  */
-@E2ETest
+@CrossModuleTest
 @DisplayName("IcalTokenController Integration Tests")
 class IcalTokenControllerTest {
 

@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
@@ -41,12 +41,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Event listing with pagination and filtering
  * - HATEOAS link generation based on status
  */
-@E2ETest
+@CrossModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("Event Management E2E Tests")
+@DisplayName("Event Management Cross-Module Tests")
 @WithKlabisMockUser(username = "admin", authorities = {Authority.EVENTS_MANAGE, Authority.EVENTS_READ})
-class EventManagementE2ETest extends SecurityTestBase {
+class EventManagementCrossModuleTest extends SecurityTestBase {
 
     @MockitoBean
     @SuppressWarnings("unused")
