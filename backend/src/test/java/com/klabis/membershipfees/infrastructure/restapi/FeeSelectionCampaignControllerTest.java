@@ -8,12 +8,11 @@ import com.klabis.members.Members;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
-import com.klabis.membershipfees.application.ManualCampaignClosePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.CampaignClosedException;
 import com.klabis.membershipfees.domain.DeadlineNotInFutureException;
@@ -61,10 +60,7 @@ class FeeSelectionCampaignControllerTest {
     private MembershipFeeTierManagementPort levelManagementPort;
 
     @Autowired
-    private AdminFeeAssignmentPort adminFeeAssignmentPort;
-
-    @Autowired
-    private ManualCampaignClosePort manualCampaignClosePort;
+    private FeeYearLifecyclePort feeYearLifecyclePort;
 
     @Autowired
     private Members members;
@@ -491,7 +487,7 @@ class FeeSelectionCampaignControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn409WhenAlreadyProcessed() throws Exception {
             doThrow(new CampaignAlreadyProcessedException())
-                    .when(manualCampaignClosePort).closeCampaign(PUBLICATION_ID);
+                    .when(feeYearLifecyclePort).closeCampaign(PUBLICATION_ID);
 
             mockMvc.perform(
                             post("/api/fee-selection-campaigns/{id}/close", PUBLICATION_UUID)

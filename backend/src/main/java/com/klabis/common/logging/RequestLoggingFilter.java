@@ -6,14 +6,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
-import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -41,6 +43,7 @@ import java.util.UUID;
  */
 @Component
 @Slf4j
+@Order(SecurityFilterProperties.DEFAULT_FILTER_ORDER + 1)
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final String REQUEST_CONTEXT = "requestContext";
@@ -75,13 +78,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             String correlationId = getOrGenerateCorrelationId(request);
             MDC.put(CORRELATION_ID, correlationId);
 
+            extractUserId(SecurityContextHolder.getContext().getAuthentication())
+                    .ifPresent(id -> MDC.put(USER_ID, id));
+
             filterChain.doFilter(request, response);
 
         } finally {
             // CRITICAL: Clean up MDC to prevent memory leaks
-            MDC.remove(REQUEST_CONTEXT);
-            MDC.remove(USER_ID);
-            MDC.remove(CORRELATION_ID);
             MDC.clear();
         }
     }
@@ -108,29 +111,23 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Extracts the user ID from the Spring Security context.
+     * Extracts the user ID from the authenticated principal.
      *
-     * @return the authenticated user's ID, or {@code null} if not authenticated
+     * @param authentication the current authentication, may be {@code null}
+     * @return the authenticated user's ID, empty when unauthenticated or anonymous
      */
     private Optional<String> extractUserId(Authentication authentication) {
-        if (authentication.isAuthenticated()) {
-            return Optional.ofNullable(authentication.getName());
-        } else {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
+        return Optional.ofNullable(authentication.getName());
     }
 
     @Bean
     public AuthenticationEventPublisher authenticationEventPublisher
             (ApplicationEventPublisher applicationEventPublisher) {
         return new DefaultAuthenticationEventPublisher(applicationEventPublisher);
-    }
-
-    @EventListener
-    public void onSuccess(AuthenticationSuccessEvent event) {
-        // Extract user ID from security context
-        extractUserId(event.getAuthentication()).ifPresent(id -> {
-            MDC.put(USER_ID, id);
-        });
     }
 }

@@ -20,16 +20,13 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
 
     private final MembershipFeeGroupRepository groupRepository;
     private final FeeSelectionCampaignRepository publicationRepository;
-    private final MemberChoicePort memberChoicePort;
     private final Clock clock;
 
     MemberFeeHistoryService(MembershipFeeGroupRepository groupRepository,
                              FeeSelectionCampaignRepository publicationRepository,
-                             MemberChoicePort memberChoicePort,
                              Clock clock) {
         this.groupRepository = groupRepository;
         this.publicationRepository = publicationRepository;
-        this.memberChoicePort = memberChoicePort;
         this.clock = clock;
     }
 
@@ -49,7 +46,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
         }
 
         Optional<MembershipFeeGroupId> recommended = votingOpen
-                ? memberChoicePort.getRecommendedLevelForYear(memberId, year)
+                ? getRecommendedLevelForYear(memberId, year)
                         .flatMap(tierId -> findPublishedGroup(year, tierId))
                 : Optional.empty();
 
@@ -61,6 +58,21 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
                 .filter(group -> group.getSourceLevelId().equals(tierId))
                 .map(MembershipFeeGroup::getId)
                 .findFirst();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<MembershipFeeGroupId> getCurrentChoice(MemberId memberId, int year) {
+        return groupRepository.findByMemberAndYear(memberId, year)
+                .map(MembershipFeeGroup::getId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<MembershipFeeTierId> getRecommendedLevelForYear(MemberId memberId, int year) {
+        return groupRepository.findByMemberAndYear(memberId, year - 1)
+                .map(MembershipFeeGroup::getSourceLevelId)
+                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));
     }
 
     @Transactional(readOnly = true)

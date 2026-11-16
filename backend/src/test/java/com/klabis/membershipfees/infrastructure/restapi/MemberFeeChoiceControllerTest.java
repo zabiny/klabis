@@ -5,7 +5,8 @@ import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.MemberChoicePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
+import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.VotingClosedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,7 +40,10 @@ class MemberFeeChoiceControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private MemberChoicePort memberChoicePort;
+    private FeeYearLifecyclePort feeYearLifecyclePort;
+
+    @Autowired
+    private MemberFeeHistoryPort memberFeeHistoryPort;
 
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-choice/{year}")
@@ -49,9 +53,9 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return 200 with current choice when member has chosen")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturnCurrentChoice() throws Exception {
-            when(memberChoicePort.getCurrentChoice(any(), eq(YEAR)))
+            when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.of(new MembershipFeeGroupId(GROUP_UUID)));
-            when(memberChoicePort.getRecommendedLevelForYear(any(), eq(YEAR)))
+            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
 
             mockMvc.perform(
@@ -67,9 +71,9 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return recommended default when no current choice")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturnRecommendedDefault() throws Exception {
-            when(memberChoicePort.getCurrentChoice(any(), eq(YEAR)))
+            when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
-            when(memberChoicePort.getRecommendedLevelForYear(any(), eq(YEAR)))
+            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR)))
                     .thenReturn(Optional.of(new MembershipFeeTierId(LEVEL_UUID)));
 
             mockMvc.perform(
@@ -104,8 +108,8 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should include choose and remove affordances")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeAffordances() throws Exception {
-            when(memberChoicePort.getCurrentChoice(any(), eq(YEAR))).thenReturn(Optional.empty());
-            when(memberChoicePort.getRecommendedLevelForYear(any(), eq(YEAR))).thenReturn(Optional.empty());
+            when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR))).thenReturn(Optional.empty());
+            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR))).thenReturn(Optional.empty());
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -124,7 +128,7 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return 204 when choice is successful")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturn204OnSuccess() throws Exception {
-            doNothing().when(memberChoicePort).chooseFeeLevel(any());
+            doNothing().when(feeYearLifecyclePort).chooseFeeLevel(any());
 
             mockMvc.perform(
                             post("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -140,7 +144,7 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return 400 when voting is closed")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturn400WhenVotingClosed() throws Exception {
-            doThrow(new VotingClosedException()).when(memberChoicePort).chooseFeeLevel(any());
+            doThrow(new VotingClosedException()).when(feeYearLifecyclePort).chooseFeeLevel(any());
 
             mockMvc.perform(
                             post("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -190,7 +194,7 @@ class MemberFeeChoiceControllerTest {
                                             {"membershipFeeGroupId": "%s"}
                                             """.formatted(GROUP_UUID)))
                     .andExpect(status().isForbidden());
-            verifyNoInteractions(memberChoicePort);
+            verifyNoInteractions(feeYearLifecyclePort);
         }
     }
 
@@ -202,7 +206,7 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return 204 on successful removal")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturn204OnSuccess() throws Exception {
-            doNothing().when(memberChoicePort).removeFeeChoice(any(), eq(YEAR));
+            doNothing().when(feeYearLifecyclePort).removeFeeChoice(any(), eq(YEAR));
 
             mockMvc.perform(
                             delete("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -214,7 +218,7 @@ class MemberFeeChoiceControllerTest {
         @DisplayName("should return 400 when voting is closed")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturn400WhenVotingClosed() throws Exception {
-            doThrow(new VotingClosedException()).when(memberChoicePort).removeFeeChoice(any(), eq(YEAR));
+            doThrow(new VotingClosedException()).when(feeYearLifecyclePort).removeFeeChoice(any(), eq(YEAR));
 
             mockMvc.perform(
                             delete("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -240,7 +244,7 @@ class MemberFeeChoiceControllerTest {
                             delete("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
-            verifyNoInteractions(memberChoicePort);
+            verifyNoInteractions(feeYearLifecyclePort);
         }
     }
 }

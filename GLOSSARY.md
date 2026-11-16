@@ -4,6 +4,12 @@ Club management for an orienteering club: members, events, registrations, fees, 
 
 ## Language
 
+### Membership fees
+
+**Fee year** (příspěvkový rok):
+One year of membership fees: the fee selection campaign for that year, the fee groups published from its levels, and the yearly charge raised once the campaign closes. A member belongs to at most one fee group per fee year.
+_Avoid_: campaign year, publication
+
 ### Synchronisation
 
 **Sync pairing**:

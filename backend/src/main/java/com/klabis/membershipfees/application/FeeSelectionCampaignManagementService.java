@@ -64,12 +64,6 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     @Transactional(readOnly = true)
     @Override
-    public List<FeeSelectionCampaign> listPublications() {
-        return publicationRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    @Override
     public List<FeeSelectionCampaign> listPublications(CampaignStatusFilter filter) {
         if (filter == CampaignStatusFilter.CLOSED) {
             LocalDate today = LocalDate.now(clock);
@@ -78,15 +72,6 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
                     .toList();
         }
         return publicationRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public List<FeeSelectionCampaign> listClosedPublications() {
-        LocalDate today = LocalDate.now(clock);
-        return publicationRepository.findAll().stream()
-                .filter(c -> c.isClosed(today))
-                .toList();
     }
 
     @Transactional(readOnly = true)

@@ -92,7 +92,7 @@ Explicitly **not** in this change:
   `EventManagementPort.finishExpiredActiveEvents(date)`; the port, the date it is
   given and the resulting state changes are unchanged.
 - `openspec/specs/membership-fees/spec.md` — unaffected. `FeeSelectionDeadlineScheduler`
-  calls `CampaignEndProcessingPort.processCampaignEnd(today)`, unchanged.
+  calls `FeeYearLifecyclePort.processCampaignEnd(today)`, unchanged.
 - `openspec/specs/users-authentication/spec.md` — unaffected. `TokenCleanupJob` deletes
   expired password-setup tokens; expiry semantics are unchanged.
 - `openspec/specs/legal-guardians/spec.md` (`Minors Leave Guardian Groups When They Turn 18`),

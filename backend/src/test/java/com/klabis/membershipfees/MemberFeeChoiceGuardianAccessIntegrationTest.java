@@ -23,7 +23,7 @@ import com.klabis.members.domain.PhoneNumber;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MemberChoicePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,7 +73,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
     @Autowired
-    private MemberChoicePort memberChoicePort;
+    private FeeYearLifecyclePort feeYearLifecyclePort;
     @Autowired
     private AuthorizationSnapshotLoader snapshotLoader;
     @Autowired
@@ -215,7 +215,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @DisplayName("administrator cannot choose or withdraw and sees no choice affordances")
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     void administratorCannotChooseAndSeesNoAffordances() throws Exception {
-        memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
+        feeYearLifecyclePort.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(
                 minor.getId(), new MembershipFeeGroupId(UUID.fromString(groupId)), YEAR));
 
         chooseTier(minor, CURRENT_USER, 403);

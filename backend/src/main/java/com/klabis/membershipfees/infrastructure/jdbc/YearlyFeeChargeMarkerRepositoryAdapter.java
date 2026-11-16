@@ -10,9 +10,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @SecondaryAdapter
 @Repository
@@ -43,15 +40,5 @@ class YearlyFeeChargeMarkerRepositoryAdapter implements YearlyFeeChargeMarkerRep
         } catch (DataIntegrityViolationException e) {
             log.debug("Yearly fee charge marker already exists for member {} year {} — ignoring duplicate", memberId, year);
         }
-    }
-
-    @Override
-    public Set<MemberId> findChargedMemberIdsForYear(int year) {
-        return jdbcTemplate.queryForList(
-                        "SELECT member_id FROM membershipfees.yearly_fee_charge_marker WHERE charge_year = ?",
-                        UUID.class, year)
-                .stream()
-                .map(MemberId::new)
-                .collect(Collectors.toSet());
     }
 }
