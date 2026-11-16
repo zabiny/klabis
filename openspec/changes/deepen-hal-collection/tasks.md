@@ -17,10 +17,10 @@
 
 ## 3. Component call sites
 
-- [ ] 3.1 Migrate the fetching sites `CategoryPresetPickerButton`, `PastCampaignsSection`, `CampaignDetail`, `GroupsPage`, `AccommodationListPage` to `useHalCollection`; remove their local `_embedded` envelope types
-- [ ] 3.2 Migrate the page-data readers `RulesTable` and `CalendarPage` to `embeddedItems(resourceData)`, and `MembershipFeeGroupDetailPage` to `embeddedItems(resourceData, 'members')`
-- [ ] 3.3 Delete `hasCalendarItems` (and its `CalendarItemEmbedded` type if nothing else uses it) from `src/api/types.ts`
-- [ ] 3.4 Verify: affected component tests green
+- [x] 3.1 Migrate the fetching sites `CategoryPresetPickerButton`, `PastCampaignsSection`, `CampaignDetail`, `GroupsPage`, `AccommodationListPage` to `useHalCollection`; remove their local `_embedded` envelope types
+- [x] 3.2 Migrate the page-data readers `RulesTable` and `CalendarPage` to `embeddedItems(resourceData)`, and `MembershipFeeGroupDetailPage` to `embeddedItems(resourceData, 'members')`
+- [x] 3.3 Delete `hasCalendarItems` (and its `CalendarItemEmbedded` type if nothing else uses it) from `src/api/types.ts`
+- [x] 3.4 Verify: affected component tests green
 
 ## 4. Table adapter
 

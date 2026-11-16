@@ -1,10 +1,12 @@
 import {type ReactElement, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import type {GetFeeGroupResource} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {getEnumLabel, labels, describeError} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -12,6 +14,7 @@ import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
 type MembershipFeeGroupDetail = GetFeeGroupResource;
+type MembershipFeeGroupMember = components['schemas']['MemberInGroupResponse'];
 
 const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT'}): ReactElement => {
     if (source === 'MEMBER_CHOICE') {
@@ -65,7 +68,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     });
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
-    const members = resourceData._embedded?.members ?? [];
+    const members = embeddedItems<MembershipFeeGroupMember>(resourceData, 'members');
     const canEdit = resourceData.status === 'EDITABLE' && !!editTemplate;
 
     return (

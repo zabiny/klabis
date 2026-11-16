@@ -98,9 +98,12 @@ const renderPageWithInvitations = (invitations: unknown[]) => {
         _links: {self: {href: 'http://localhost/api/invitations/pending'}},
         _embedded: {pendingInvitationResponseList: invitations},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
         if (url?.includes('invitations/pending')) {
-            return {data: invitationsData, error: null} as ReturnType<typeof useAuthorizedQuery>;
+            return {
+                data: options?.select ? options.select(invitationsData) : invitationsData,
+                error: null,
+            } as ReturnType<typeof useAuthorizedQuery>;
         }
         return {data: null, error: null} as ReturnType<typeof useAuthorizedQuery>;
     });

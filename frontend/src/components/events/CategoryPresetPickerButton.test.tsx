@@ -30,6 +30,14 @@ import {useHalRoute} from '../../contexts/halRouteContext';
 const mockUseHalRoute = vi.mocked(useHalRoute);
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
+const mockQueryData = (envelope: unknown) => {
+    mockUseAuthorizedQuery.mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => ({
+        data: envelope != null && options?.select ? options.select(envelope) : envelope,
+        isLoading: false,
+        error: null,
+    } as unknown as ReturnType<typeof useAuthorizedQuery>));
+};
+
 const PRESETS = [
     {name: 'Šablona A', categories: ['H21', 'D21']},
     {name: 'Šablona B', categories: ['H35', 'D35', 'H45']},
@@ -69,11 +77,7 @@ describe('CategoryPresetPickerButton', () => {
             mockUseHalRoute.mockReturnValue({
                 resourceData: {_links: {self: {href: '/api/events'}}},
             } as unknown as ReturnType<typeof useHalRoute>);
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: undefined,
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData(undefined);
 
             renderButton();
 
@@ -85,11 +89,7 @@ describe('CategoryPresetPickerButton', () => {
             mockUseHalRoute.mockReturnValue({
                 resourceData: {_links: {categoryPresets: {href: '/api/custom-presets'}}},
             } as unknown as ReturnType<typeof useHalRoute>);
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             renderButton();
 
@@ -100,11 +100,7 @@ describe('CategoryPresetPickerButton', () => {
 
     describe('button visibility', () => {
         it('shows "Vybrat ze šablon" button when presets exist', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             renderButton();
 
@@ -112,11 +108,7 @@ describe('CategoryPresetPickerButton', () => {
         });
 
         it('does not show button when no presets exist (empty list)', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: []}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: []}});
 
             renderButton();
 
@@ -124,11 +116,7 @@ describe('CategoryPresetPickerButton', () => {
         });
 
         it('does not show button when data is undefined', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: undefined,
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData(undefined);
 
             renderButton();
 
@@ -136,11 +124,7 @@ describe('CategoryPresetPickerButton', () => {
         });
 
         it('does not show button when _embedded is absent', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({});
 
             renderButton();
 
@@ -151,11 +135,7 @@ describe('CategoryPresetPickerButton', () => {
     describe('preset picker dialog', () => {
         it('opens dialog showing preset names when button is clicked', async () => {
             const user = userEvent.setup();
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             renderButton();
 
@@ -168,11 +148,7 @@ describe('CategoryPresetPickerButton', () => {
 
         it('closes dialog after preset is selected', async () => {
             const user = userEvent.setup();
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             renderButton();
 
@@ -186,11 +162,7 @@ describe('CategoryPresetPickerButton', () => {
 
         it('populates categories field with selected preset categories', async () => {
             const user = userEvent.setup();
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             let capturedValues: FormValues = {categories: []};
             renderButton((values) => {
@@ -205,11 +177,7 @@ describe('CategoryPresetPickerButton', () => {
 
         it('populates categories without id when preset is selected (new categories)', async () => {
             const user = userEvent.setup();
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             let capturedValues: FormValues = {categories: []};
             renderButton((values) => {
@@ -226,11 +194,7 @@ describe('CategoryPresetPickerButton', () => {
 
         it('populates categories from second preset when second is selected', async () => {
             const user = userEvent.setup();
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: {_embedded: {categoryPresetDtoList: PRESETS}},
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {categoryPresetDtoList: PRESETS}});
 
             let capturedValues: FormValues = {categories: []};
             renderButton((values) => {

@@ -1,5 +1,6 @@
 import type {ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
 import type {HalFormsTemplate, ListGroupRulesResource, ListRulesItemResource, ListRulesResource, OptionItem} from '../../api';
 import {labels} from '../../localization';
@@ -72,7 +73,7 @@ export const RulesTable = (): ReactElement => {
     const {resourceData} = useHalPageData<RulesCollection>();
     const {getById: getEventTypeById} = useEventTypes();
 
-    const rules = resourceData?._embedded?.paymentRuleResponseList ?? [];
+    const rules = embeddedItems<PaymentRuleItem>(resourceData ?? undefined);
     const addRuleTemplate = (resourceData?._templates?.addRule ?? null) as HalFormsTemplate | null;
     const rankingLabelLookup = buildRankingLabelLookup(addRuleTemplate);
     const getRankingLabel = (code: string): string => rankingLabelLookup.get(code) ?? code;

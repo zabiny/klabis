@@ -1,7 +1,7 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowRight} from 'lucide-react';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
@@ -15,18 +15,12 @@ interface CampaignSummary {
     };
 }
 
-interface CampaignsCollection {
-    _embedded?: {
-        feeSelectionCampaignResponseList?: CampaignSummary[];
-    };
-}
-
 interface PastCampaignsSectionProps {
     pastCampaignsHref: string | null;
 }
 
 export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionProps): ReactElement | null => {
-    const {data: campaignsData, isLoading} = useAuthorizedQuery<CampaignsCollection>(pastCampaignsHref ?? undefined);
+    const {items: campaigns, isLoading} = useHalCollection<CampaignSummary>(pastCampaignsHref ?? undefined);
 
     if (!pastCampaignsHref) {
         return null;
@@ -35,8 +29,6 @@ export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionPr
     if (isLoading) {
         return null;
     }
-
-    const campaigns = campaignsData?._embedded?.feeSelectionCampaignResponseList ?? [];
 
     return (
         <div className="flex flex-col gap-4">

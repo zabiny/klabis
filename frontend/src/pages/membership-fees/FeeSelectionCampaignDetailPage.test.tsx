@@ -30,6 +30,13 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
+const mockQueryData = (envelope: unknown) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => ({
+        data: envelope != null && options?.select ? options.select(envelope) : envelope,
+        error: null,
+    } as ReturnType<typeof useAuthorizedQuery>));
+};
+
 const mockGroups = [
     {
         id: 'group-1',
@@ -117,38 +124,26 @@ describe('FeeSelectionCampaignDetailPage', () => {
     });
 
     it('renders group names', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
+        mockQueryData({_embedded: {membershipFeeGroupResponseList: mockGroups}});
         renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
         expect(screen.getByText('Aktivní závodník')).toBeInTheDocument();
     });
 
     it('renders EDITABLE group status as "Editovatelná"', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
+        mockQueryData({_embedded: {membershipFeeGroupResponseList: mockGroups}});
         renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Editovatelná')).toBeInTheDocument();
     });
 
     it('renders FROZEN group status as "Zmrazená"', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
+        mockQueryData({_embedded: {membershipFeeGroupResponseList: mockGroups}});
         renderPage(createMockPageData(buildCampaignDetail()));
         expect(screen.getByText('Zmrazená')).toBeInTheDocument();
     });
 
     it('renders links to group details', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
+        mockQueryData({_embedded: {membershipFeeGroupResponseList: mockGroups}});
         renderPage(createMockPageData(buildCampaignDetail()));
         const links = screen.getAllByRole('link');
         const groupLinks = links.filter(l => l.getAttribute('href')?.includes('membership-fee-groups'));

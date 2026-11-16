@@ -30,6 +30,13 @@ const mockCampaigns = [
     },
 ];
 
+const mockQueryData = (envelope: unknown) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => ({
+        data: envelope != null && options?.select ? options.select(envelope) : envelope,
+        error: null,
+    } as ReturnType<typeof useAuthorizedQuery>));
+};
+
 const renderSection = (pastCampaignsHref: string | null) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -53,10 +60,7 @@ describe('PastCampaignsSection', () => {
 
     describe('empty state', () => {
         it('renders empty state message when no past campaigns are returned', () => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({
-                data: {_embedded: {feeSelectionCampaignResponseList: []}},
-                error: null,
-            } as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({_embedded: {feeSelectionCampaignResponseList: []}});
             renderSection('/api/fee-selection-campaigns?status=closed');
             expect(screen.getByText(/žádné minulé kampaně/i)).toBeInTheDocument();
         });
@@ -64,13 +68,10 @@ describe('PastCampaignsSection', () => {
 
     describe('campaign list', () => {
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({
-                data: {
-                    _embedded: {feeSelectionCampaignResponseList: mockCampaigns},
-                    page: {size: 10, totalElements: 2, totalPages: 1, number: 0},
-                },
-                error: null,
-            } as ReturnType<typeof useAuthorizedQuery>);
+            mockQueryData({
+                _embedded: {feeSelectionCampaignResponseList: mockCampaigns},
+                page: {size: 10, totalElements: 2, totalPages: 1, number: 0},
+            });
         });
 
         it('renders campaign years', () => {

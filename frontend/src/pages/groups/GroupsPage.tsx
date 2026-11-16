@@ -4,10 +4,11 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
-import type {GetPendingInvitationsItemResource, GetPendingInvitationsResource} from '../../api';
+import type {GetPendingInvitationsItemResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {describeError, labels} from '../../localization';
-import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
+import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {useToast} from '../../contexts/toastContext';
 import {Check, X} from 'lucide-react';
@@ -17,14 +18,12 @@ import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFac
 type GroupSummary = components['schemas']['EntityModelGroupSummaryResponse'];
 
 const PendingInvitationsSection = (): ReactElement | null => {
-    const {data} = useAuthorizedQuery<GetPendingInvitationsResource>('/api/invitations/pending');
+    const {items: invitations} = useHalCollection<GetPendingInvitationsItemResource>('/api/invitations/pending');
 
     const {mutate} = useAuthorizedMutation({
         method: 'POST',
     });
     const {addToast} = useToast();
-
-    const invitations: GetPendingInvitationsItemResource[] = data?._embedded?.pendingInvitationResponseList ?? [];
 
     if (invitations.length === 0) {
         return null;

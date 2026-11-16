@@ -3,18 +3,19 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
+import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRouteContext.ts';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeGroupDetailPage} from './MembershipFeeGroupDetailPage';
 import {vi} from 'vitest';
 import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
-
-vi.mock('../../hooks/useHalPageData', () => ({
-    useHalPageData: vi.fn(),
-}));
+import {
+    halRouteValue,
+    stubFetch,
+    ToastProbe,
+    createTestQueryClient,
+} from '../../__mocks__/halDialogTest.tsx';
 
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -26,8 +27,14 @@ vi.mock('../../hooks/useRootNavigation', () => ({
     useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
+let rulesRoute: HalRouteContextValue;
+
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
-    HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
+    HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
+        <div data-testid={`subresource-${subresourceLinkName}`}>
+            <HalRouteContext.Provider value={rulesRoute}>{children}</HalRouteContext.Provider>
+        </div>
+    ),
 }));
 
 const buildGroupDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
@@ -59,24 +66,30 @@ const buildGroupDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-groups/group-1'}),
+type RouteOverrides = Partial<Pick<HalRouteContextValue, 'isLoading' | 'error'>>;
+
+const createMockPageData = (resourceData: HalResponse | null, overrides?: RouteOverrides): HalRouteContextValue => ({
+    ...halRouteValue(resourceData, '/administration/membership-fee-groups/group-1'),
     ...overrides,
 });
 
-const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
+// The rules subresource is a separate HAL route; an empty HAL collection has no `_embedded` block.
+const createMockRulesPageData = (): HalRouteContextValue =>
+    halRouteValue(
+        {_links: {self: {href: '/api/membership-fee-groups/group-1/rules'}}},
+        '/administration/membership-fee-groups/group-1/rules',
+    );
+
+const renderPage = (pageData: HalRouteContextValue) => {
+    rulesRoute = createMockRulesPageData();
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/administration/membership-fee-groups/group-1']}>
                 <ToastProvider>
-                    <MembershipFeeGroupDetailPage/>
+                    <HalRouteContext.Provider value={pageData}>
+                        <MembershipFeeGroupDetailPage/>
+                    </HalRouteContext.Provider>
                     <ToastProbe/>
                 </ToastProvider>
             </MemoryRouter>
