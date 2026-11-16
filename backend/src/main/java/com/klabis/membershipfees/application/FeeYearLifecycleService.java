@@ -6,6 +6,8 @@ import com.klabis.members.application.AllMembersPort;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
+import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
@@ -18,9 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
+import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -92,19 +95,19 @@ class FeeYearLifecycleService implements FeeYearLifecyclePort {
     @Transactional
     @Override
     public void assignLevel(AssignFeeLevel command) {
-        MembershipFeeGroup targetGroup = groupRepository.findById(command.groupId())
-                .orElseThrow(() -> new MembershipFeeGroupNotFoundException(command.groupId()));
+        MembershipFeeGroup targetGroup = requireGroup(command.groupId());
+        requireYearMatchesGroup(command.year(), targetGroup);
 
-        FeeSelectionCampaign campaign = campaignRepository.findByYear(command.year())
-                .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(command.year()));
+        FeeSelectionCampaign campaign = requireCampaign(command.year());
 
         LocalDate today = LocalDate.now(clock);
-        memberFeePlacement.placeByAdminAssignment(
-                new MemberFeePlacement.Move(targetGroup, command.targetMemberId(), command.year(), today),
+        memberFeePlacement.place(
+                new MemberFeePlacement.Move(targetGroup, command.targetMemberId(), today),
+                AssignmentSource.ADMIN_ASSIGNMENT,
                 command.adminId());
 
         if (campaign.isClosed(today)) {
-            chargeImmediately(command.targetMemberId(), command.year(), targetGroup);
+            chargeOnce(command.targetMemberId(), command.year(), targetGroup.getYearlyFeeSnapshot().amount());
         }
 
         // Always publish — the listener's unblockMember() is a no-op when the member is not blocked
@@ -114,13 +117,15 @@ class FeeYearLifecycleService implements FeeYearLifecyclePort {
     @Transactional
     @Override
     public void chooseFeeLevel(ChooseFeeLevel command) {
-        MembershipFeeGroup targetGroup = groupRepository.findById(command.groupId())
-                .orElseThrow(() -> new MembershipFeeGroupNotFoundException(command.groupId()));
+        MembershipFeeGroup targetGroup = requireGroup(command.groupId());
+        requireYearMatchesGroup(command.year(), targetGroup);
 
         requireCampaign(command.year());
 
-        memberFeePlacement.placeByMemberChoice(new MemberFeePlacement.Move(
-                targetGroup, command.memberId(), command.year(), LocalDate.now(clock)));
+        memberFeePlacement.place(
+                new MemberFeePlacement.Move(targetGroup, command.memberId(), LocalDate.now(clock)),
+                AssignmentSource.MEMBER_CHOICE,
+                null);
     }
 
     @Transactional
@@ -128,25 +133,32 @@ class FeeYearLifecycleService implements FeeYearLifecyclePort {
     public void removeFeeChoice(MemberId memberId, int year) {
         requireCampaign(year);
 
-        LocalDate today = LocalDate.now(clock);
-        groupRepository.findByMemberAndYear(memberId, year).ifPresent(group -> {
-            group.removeMemberChoice(memberId, today);
-            groupRepository.save(group);
-        });
+        memberFeePlacement.withdraw(memberId, year, LocalDate.now(clock));
     }
 
-    private void requireCampaign(int year) {
-        if (campaignRepository.findByYear(year).isEmpty()) {
-            throw new FeeSelectionCampaignNotFoundException(year);
-        }
+    private MembershipFeeGroup requireGroup(MembershipFeeGroupId id) {
+        return groupRepository.findById(id)
+                .orElseThrow(() -> new MembershipFeeGroupNotFoundException(id));
     }
 
-    private void chargeImmediately(MemberId memberId, int year, MembershipFeeGroup targetGroup) {
+    private FeeSelectionCampaign requireCampaign(int year) {
+        return campaignRepository.findByYear(year)
+                .orElseThrow(() -> new FeeSelectionCampaignNotFoundException(year));
+    }
+
+    private void requireYearMatchesGroup(int year, MembershipFeeGroup group) {
+        Assert.isTrue(year == group.getYear(),
+                "Requested year " + year + " does not match the year " + group.getYear() + " of the fee group");
+    }
+
+    private void chargeOnce(MemberId memberId, int year, BigDecimal amount) {
         if (markerRepository.existsByMemberIdAndYear(memberId, year)) {
+            log.debug("Skipping yearly fee charge for member {} year {} — already charged", memberId, year);
             return;
         }
-        chargePort.chargeMembershipFee(memberId, targetGroup.getYearlyFeeSnapshot().amount(), year);
+        chargePort.chargeMembershipFee(memberId, amount, year);
         markerRepository.markCharged(memberId, year);
+        log.info("Charged yearly fee for member {} year {}", memberId, year);
     }
 
     private void processCampaign(FeeSelectionCampaign campaign, Set<MemberId> allMembers) {
@@ -174,7 +186,7 @@ class FeeYearLifecycleService implements FeeYearLifecyclePort {
                     eventPublisher.publishEvent(new MemberMissedFeeSelectionEvent(memberId, year));
                 });
 
-        campaign.markProcessed(Instant.now());
+        campaign.markProcessed(clock.instant());
     }
 
     private void freezeGroups(List<MembershipFeeGroup> groups) {
@@ -188,18 +200,9 @@ class FeeYearLifecycleService implements FeeYearLifecyclePort {
     }
 
     private void chargeYearlyFees(int year, List<MembershipFeeGroup> groups) {
-        Set<MemberId> alreadyCharged = markerRepository.findChargedMemberIdsForYear(year);
-
         for (MembershipFeeGroup group : groups) {
             for (FeeGroupMembership membership : group.getMemberships()) {
-                MemberId memberId = membership.memberId();
-                if (alreadyCharged.contains(memberId)) {
-                    log.debug("Skipping yearly fee charge for member {} year {} — already charged", memberId, year);
-                    continue;
-                }
-                chargePort.chargeMembershipFee(memberId, group.getYearlyFeeSnapshot().amount(), year);
-                markerRepository.markCharged(memberId, year);
-                log.info("Charged yearly fee for member {} year {}", memberId, year);
+                chargeOnce(membership.memberId(), year, group.getYearlyFeeSnapshot().amount());
             }
         }
     }

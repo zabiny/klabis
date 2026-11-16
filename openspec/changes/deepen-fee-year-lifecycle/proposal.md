@@ -45,6 +45,7 @@ flowchart LR
 - Guards stay in the aggregates: `MembershipFeeGroup.addMember` still rejects a member choice after the voting deadline or after freezing, and `removeMemberChoice` keeps its guard while the administrator path keeps the unguarded `removeMember`.
 - Transaction scope, ordering (freeze → charge → marker → missed-choice events → `markProcessed`), event publication points and the batch failure semantics of `processCampaignEnd` are preserved as they are.
 - The asymmetry that `MemberFeeSelectionResolvedEvent` is published only by an emergency assignment is intentional per **Lifting the Sanction by Emergency Assignment**, not a defect to fix here.
+- One defensive check is added where the two assignment paths now share the placement rule: a command whose `year` disagrees with the target group's year is rejected as `/errors/invalid-request` instead of silently moving the member across fee years. No spec scenario covers that input; the glossary invariant "a member belongs to at most one fee group per fee year" now gets enforced at the seam that can enforce it.
 - Aggregates keep their own behaviour; no new domain rules are introduced.
 
 ## Impact

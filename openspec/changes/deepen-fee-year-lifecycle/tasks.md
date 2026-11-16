@@ -23,6 +23,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run the full backend test suite, including the Modulith module-structure and ArchUnit tests.
-- [ ] 4.2 Run a code review of the three slices and address the findings in a follow-up commit.
+- [x] 4.1 Run the full backend test suite, including the Modulith module-structure and ArchUnit tests.
+- [x] 4.2 Run a code review of the three slices and address the findings in a follow-up commit.
 - [ ] 4.3 Commit slice 3 and verify the change contains no spec delta.

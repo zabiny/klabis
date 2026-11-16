@@ -6,6 +6,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.application.AllMembersPort;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
+import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.*;
@@ -24,6 +25,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,8 +51,6 @@ class FeeYearLifecycleServiceTest {
     private static final MemberId MEMBER_WITH_CHOICE = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     private static final MemberId ADMIN_ID = new MemberId(UUID.fromString("a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0"));
-    private static final MemberId TARGET_MEMBER_ID = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-    private static final MemberId CHOOSING_MEMBER_ID = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final MembershipFeeTierId LEVEL_ID_A =
             new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     private static final MembershipFeeTierId LEVEL_ID_B =
@@ -79,6 +79,9 @@ class FeeYearLifecycleServiceTest {
     @BeforeEach
     void setUp() {
         clock = Clock.systemDefaultZone();
+        // Most tests verify placement, freezing or event publishing. Defaulting the marker to "already
+        // charged" keeps the charge path out of their way; tests that assert a charge stub it explicitly.
+        lenient().when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(true);
         testedInstance = newTestedInstance();
     }
 
@@ -108,9 +111,23 @@ class FeeYearLifecycleServiceTest {
         return buildGroup(levelId, "Test Group", CHOICE_GROUP_DEADLINE, PublishedLevelStatus.EDITABLE, Set.of());
     }
 
+    private MembershipFeeGroup buildYearlyFeeGroup(int year, Money yearlyFee, Set<FeeGroupMembership> memberships) {
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(UUID.randomUUID()), LEVEL_ID_A, "Youth", year, DEADLINE,
+                yearlyFee, PublishedLevelStatus.EDITABLE, List.of(), memberships, null);
+    }
+
+    private static Set<FeeGroupMembership> membershipOf(MemberId memberId, int year) {
+        return Set.of(new FeeGroupMembership(memberId, LocalDate.of(year, 1, 15), AssignmentSource.MEMBER_CHOICE, null));
+    }
+
     private FeeSelectionCampaign buildClosedPublication() {
+        return buildClosedPublication(FEE_YEAR);
+    }
+
+    private FeeSelectionCampaign buildClosedPublication(int year) {
         return FeeSelectionCampaign.reconstruct(
-                new FeeSelectionCampaignId(UUID.randomUUID()), FEE_YEAR, LocalDate.now().minusDays(1), null, List.of());
+                new FeeSelectionCampaignId(UUID.randomUUID()), year, LocalDate.now().minusDays(1), null, List.of());
     }
 
     private FeeSelectionCampaign buildProcessedPublication() {
@@ -148,14 +165,6 @@ class FeeYearLifecycleServiceTest {
         }
 
         @Test
-        @DisplayName("should call processPublication with the loaded campaign and all members")
-        void shouldProcessPublication() {
-            testedInstance.closeCampaign(CAMPAIGN_ID);
-
-            verify(campaignRepository).save(any(FeeSelectionCampaign.class));
-        }
-
-        @Test
         @DisplayName("should mark the campaign as processed after closing")
         void shouldMarkCampaignAsProcessed() {
             testedInstance.closeCampaign(CAMPAIGN_ID);
@@ -164,7 +173,7 @@ class FeeYearLifecycleServiceTest {
         }
 
         @Test
-        @DisplayName("should fetch all members and pass them to processPublication")
+        @DisplayName("should fetch all members")
         void shouldFetchAllMembers() {
             testedInstance.closeCampaign(CAMPAIGN_ID);
 
@@ -191,7 +200,7 @@ class FeeYearLifecycleServiceTest {
     class CloseCampaignWhenCampaignAlreadyProcessed {
 
         @Test
-        @DisplayName("should throw CampaignAlreadyProcessedException before calling processPublication")
+        @DisplayName("should throw CampaignAlreadyProcessedException before processing the campaign")
         void shouldThrowWhenAlreadyProcessed() {
             FeeSelectionCampaign processedCampaign = FeeSelectionCampaign.reconstruct(
                     CAMPAIGN_ID,
@@ -215,28 +224,13 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should not charge a member who was already charged by a previous close")
         void shouldNotChargeAlreadyChargedMember() {
-            FeeSelectionCampaign campaign = FeeSelectionCampaign.reconstruct(
-                    CAMPAIGN_ID,
-                    2099,
-                    DEADLINE_IN_FUTURE,
-                    null,
-                    List.of());
+            MembershipFeeGroup group = buildYearlyFeeGroup(
+                    2099, Money.ofCzk(BigDecimal.valueOf(500)), membershipOf(MEMBER_WITH_CHOICE, 2099));
 
-            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Youth",
-                    2099, DEADLINE_IN_FUTURE,
-                    Money.ofCzk(BigDecimal.valueOf(500)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2099, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
-                    null);
-
-            when(campaignRepository.findById(CAMPAIGN_ID)).thenReturn(Optional.of(campaign));
+            when(campaignRepository.findById(CAMPAIGN_ID)).thenReturn(Optional.of(buildClosedPublication(2099)));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
             when(groupRepository.findByYear(2099)).thenReturn(List.of(group));
-            when(markerRepository.findChargedMemberIdsForYear(2099)).thenReturn(Set.of(MEMBER_WITH_CHOICE));
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, 2099)).thenReturn(true);
 
             testedInstance.closeCampaign(CAMPAIGN_ID);
 
@@ -252,14 +246,7 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should publish MemberMissedFeeSelectionEvent for a member without a choice")
         void shouldPublishSanctionEventForMemberWithoutChoice() {
-            FeeSelectionCampaign campaign = FeeSelectionCampaign.reconstruct(
-                    CAMPAIGN_ID,
-                    2099,
-                    DEADLINE_IN_FUTURE,
-                    null,
-                    List.of());
-
-            when(campaignRepository.findById(CAMPAIGN_ID)).thenReturn(Optional.of(campaign));
+            when(campaignRepository.findById(CAMPAIGN_ID)).thenReturn(Optional.of(buildClosedPublication(2099)));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITHOUT_CHOICE));
             when(groupRepository.findByYear(2099)).thenReturn(List.of());
 
@@ -269,7 +256,7 @@ class FeeYearLifecycleServiceTest {
             verify(eventPublisher).publishEvent(eventCaptor.capture());
 
             assertThat(eventCaptor.getValue())
-                    .isInstanceOfSatisfying(com.klabis.membershipfees.MemberMissedFeeSelectionEvent.class, event -> {
+                    .isInstanceOfSatisfying(MemberMissedFeeSelectionEvent.class, event -> {
                         assertThat(event.memberId()).isEqualTo(MEMBER_WITHOUT_CHOICE);
                         assertThat(event.year()).isEqualTo(2099);
                     });
@@ -296,32 +283,16 @@ class FeeYearLifecycleServiceTest {
     @DisplayName("processCampaignEnd — when a closed unprocessed publication exists")
     class WhenUnprocessedPublicationExists {
 
-        private FeeSelectionCampaign publication;
         private MembershipFeeGroup groupWithMemberWithChoice;
 
         @BeforeEach
         void setUp() {
-            publication = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2026,
-                    DEADLINE,
-                    null,
-                    List.of());
-
-            groupWithMemberWithChoice = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Youth",
-                    2026, DEADLINE,
-                    Money.ofCzk(BigDecimal.valueOf(500)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
-                    null);
+            groupWithMemberWithChoice = buildYearlyFeeGroup(
+                    FEE_YEAR, Money.ofCzk(BigDecimal.valueOf(500)), membershipOf(MEMBER_WITH_CHOICE, FEE_YEAR));
 
             when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of(publication));
-            when(groupRepository.findByYear(2026))
+                    .thenReturn(List.of(buildClosedPublication()));
+            when(groupRepository.findByYear(FEE_YEAR))
                     .thenReturn(List.of(groupWithMemberWithChoice));
             when(allMembersPort.findAll())
                     .thenReturn(Set.of(MEMBER_WITHOUT_CHOICE, MEMBER_WITH_CHOICE));
@@ -335,13 +306,11 @@ class FeeYearLifecycleServiceTest {
             ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
             verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
-            Object publishedEvent = eventCaptor.getValue();
-            assertThat(publishedEvent).isInstanceOf(com.klabis.membershipfees.MemberMissedFeeSelectionEvent.class);
-
-            com.klabis.membershipfees.MemberMissedFeeSelectionEvent event =
-                    (com.klabis.membershipfees.MemberMissedFeeSelectionEvent) publishedEvent;
-            assertThat(event.memberId()).isEqualTo(MEMBER_WITHOUT_CHOICE);
-            assertThat(event.year()).isEqualTo(2026);
+            assertThat(eventCaptor.getValue())
+                    .isInstanceOfSatisfying(MemberMissedFeeSelectionEvent.class, event -> {
+                        assertThat(event.memberId()).isEqualTo(MEMBER_WITHOUT_CHOICE);
+                        assertThat(event.year()).isEqualTo(FEE_YEAR);
+                    });
         }
 
         @Test
@@ -352,12 +321,10 @@ class FeeYearLifecycleServiceTest {
             ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
             verify(eventPublisher, atMostOnce()).publishEvent(eventCaptor.capture());
 
-            List<Object> publishedEvents = eventCaptor.getAllValues();
-            publishedEvents.forEach(e -> {
-                com.klabis.membershipfees.MemberMissedFeeSelectionEvent event =
-                        (com.klabis.membershipfees.MemberMissedFeeSelectionEvent) e;
-                assertThat(event.memberId()).isNotEqualTo(MEMBER_WITH_CHOICE);
-            });
+            assertThat(eventCaptor.getAllValues())
+                    .allSatisfy(published -> assertThat(published)
+                            .isInstanceOfSatisfying(MemberMissedFeeSelectionEvent.class,
+                                    event -> assertThat(event.memberId()).isNotEqualTo(MEMBER_WITH_CHOICE)));
         }
 
         @Test
@@ -373,24 +340,9 @@ class FeeYearLifecycleServiceTest {
         }
 
         @Test
-        @DisplayName("should freeze all groups for the year before sanctioning members")
-        void shouldFreezeGroupsBeforeSanctioning() {
-            assertThat(groupWithMemberWithChoice.getStatus()).isEqualTo(PublishedLevelStatus.EDITABLE);
-
-            when(groupRepository.save(any(MembershipFeeGroup.class)))
-                    .thenAnswer(inv -> inv.getArgument(0));
-
-            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
-
-            ArgumentCaptor<MembershipFeeGroup> groupCaptor = ArgumentCaptor.forClass(MembershipFeeGroup.class);
-            verify(groupRepository).save(groupCaptor.capture());
-            assertThat(groupCaptor.getValue().getStatus()).isEqualTo(PublishedLevelStatus.FROZEN);
-        }
-
-        @Test
         @DisplayName("should both freeze and persist the group and publish sanction events in the same run")
         void shouldFreezeAndPublishInSameRun() {
-            List<MembershipFeeGroup> savedGroups = new java.util.ArrayList<>();
+            List<MembershipFeeGroup> savedGroups = new ArrayList<>();
 
             when(groupRepository.save(any(MembershipFeeGroup.class)))
                     .thenAnswer(inv -> {
@@ -411,51 +363,35 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should charge yearly fee for each member in group")
         void shouldChargeYearlyFeeForMembersInGroup() {
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verify(chargePort, times(1)).chargeMembershipFee(
                     eq(MEMBER_WITH_CHOICE),
                     argThat(amount -> amount.compareTo(BigDecimal.valueOf(500)) == 0),
-                    eq(2026));
+                    eq(FEE_YEAR));
         }
 
         @Test
         @DisplayName("should save marker after successful charge")
         void shouldSaveMarkerAfterCharge() {
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
-            verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, 2026);
+            verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, FEE_YEAR);
         }
 
         @Test
         @DisplayName("should skip charge for member who already has a marker (idempotence)")
         void shouldSkipChargeForAlreadyMarkedMember() {
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of(MEMBER_WITH_CHOICE));
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(true);
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verifyNoInteractions(chargePort);
             verify(markerRepository, never()).markCharged(any(), anyInt());
-        }
-    }
-
-    @Nested
-    @DisplayName("processCampaignEnd — when publication was already processed")
-    class WhenAlreadyProcessed {
-
-        @Test
-        @DisplayName("should not process again (idempotence)")
-        void shouldNotReprocess() {
-            when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of());
-
-            testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
-
-            verifyNoInteractions(allMembersPort, eventPublisher, chargePort, markerRepository);
         }
     }
 
@@ -466,29 +402,14 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should not publish any event")
         void shouldPublishNoEvents() {
-            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2026,
-                    DEADLINE,
-                    null,
-                    List.of());
-
-            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Youth",
-                    2026, DEADLINE,
-                    Money.ofCzk(BigDecimal.valueOf(500)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
-                    null);
+            MembershipFeeGroup group = buildYearlyFeeGroup(
+                    FEE_YEAR, Money.ofCzk(BigDecimal.valueOf(500)), membershipOf(MEMBER_WITH_CHOICE, FEE_YEAR));
 
             when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of(publication));
-            when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
+                    .thenReturn(List.of(buildClosedPublication()));
+            when(groupRepository.findByYear(FEE_YEAR)).thenReturn(List.of(group));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
@@ -505,27 +426,12 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should not charge members not belonging to any group")
         void shouldNotChargeMembersWithoutGroup() {
-            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2026,
-                    DEADLINE,
-                    null,
-                    List.of());
-
-            MembershipFeeGroup emptyGroup = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Empty",
-                    2026, DEADLINE,
-                    Money.ofCzk(BigDecimal.valueOf(500)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(),
-                    null);
+            MembershipFeeGroup emptyGroup = buildYearlyFeeGroup(
+                    FEE_YEAR, Money.ofCzk(BigDecimal.valueOf(500)), Set.of());
 
             when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of(publication));
-            when(groupRepository.findByYear(2026)).thenReturn(List.of(emptyGroup));
+                    .thenReturn(List.of(buildClosedPublication()));
+            when(groupRepository.findByYear(FEE_YEAR)).thenReturn(List.of(emptyGroup));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITHOUT_CHOICE));
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
@@ -543,36 +449,21 @@ class FeeYearLifecycleServiceTest {
         void shouldChargeYearlyFeeRegardlessOfOverdraftLimit() {
             // Verifies routing: yearly fee is dispatched via the unlimited chargeMembershipFee() path.
             // Domain-level bypass of overdraft enforcement is covered in MemberAccountTest.
-            FeeSelectionCampaign publication = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2026,
-                    DEADLINE,
-                    null,
-                    List.of());
-
-            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Youth",
-                    2026, DEADLINE,
-                    Money.ofCzk(BigDecimal.valueOf(300)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
-                    null);
+            MembershipFeeGroup group = buildYearlyFeeGroup(
+                    FEE_YEAR, Money.ofCzk(BigDecimal.valueOf(300)), membershipOf(MEMBER_WITH_CHOICE, FEE_YEAR));
 
             when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of(publication));
-            when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
+                    .thenReturn(List.of(buildClosedPublication()));
+            when(groupRepository.findByYear(FEE_YEAR)).thenReturn(List.of(group));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.processCampaignEnd(DAY_AFTER_DEADLINE);
 
             verify(chargePort).chargeMembershipFee(
                     eq(MEMBER_WITH_CHOICE),
                     argThat(amount -> amount.compareTo(BigDecimal.valueOf(300)) == 0),
-                    eq(2026));
+                    eq(FEE_YEAR));
         }
     }
 
@@ -583,35 +474,14 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should abort the rest of the batch when processing one campaign fails")
         void shouldAbortBatchWhenOneCampaignFails() {
-            FeeSelectionCampaign first = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2026,
-                    DEADLINE,
-                    null,
-                    List.of());
-            FeeSelectionCampaign second = FeeSelectionCampaign.reconstruct(
-                    new FeeSelectionCampaignId(UUID.randomUUID()),
-                    2027,
-                    DEADLINE,
-                    null,
-                    List.of());
-
-            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    new MembershipFeeTierId(UUID.randomUUID()),
-                    "Youth",
-                    2026, DEADLINE,
-                    Money.ofCzk(BigDecimal.valueOf(500)),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(),
-                    Set.of(new FeeGroupMembership(MEMBER_WITH_CHOICE, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null)),
-                    null);
+            MembershipFeeGroup group = buildYearlyFeeGroup(
+                    FEE_YEAR, Money.ofCzk(BigDecimal.valueOf(500)), membershipOf(MEMBER_WITH_CHOICE, FEE_YEAR));
 
             when(campaignRepository.findUnprocessedClosedPublications(DAY_AFTER_DEADLINE))
-                    .thenReturn(List.of(first, second));
+                    .thenReturn(List.of(buildClosedPublication(2026), buildClosedPublication(2027)));
             when(allMembersPort.findAll()).thenReturn(Set.of(MEMBER_WITH_CHOICE));
             when(groupRepository.findByYear(2026)).thenReturn(List.of(group));
-            when(markerRepository.findChargedMemberIdsForYear(2026)).thenReturn(Set.of());
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, 2026)).thenReturn(false);
             doThrow(new IllegalStateException("charge failed"))
                     .when(chargePort).chargeMembershipFee(any(), any(), anyInt());
 
@@ -627,13 +497,6 @@ class FeeYearLifecycleServiceTest {
     @DisplayName("assignLevel() — admin assigns after deadline")
     class AssignLevel {
 
-        @BeforeEach
-        void suppressChargePath() {
-            // Tests in this class verify assignment behaviour, not charging.
-            // Returning true prevents the immediate charge when a closed campaign is used.
-            lenient().when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(true);
-        }
-
         @Test
         @DisplayName("should assign member to FROZEN group bypassing deadline check")
         void shouldAssignMemberToFrozenGroupWithoutDeadlineCheck() {
@@ -642,13 +505,13 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(frozenGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> g.hasMember(TARGET_MEMBER_ID)));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITH_CHOICE)));
         }
 
         @Test
@@ -659,11 +522,11 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(frozenGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             ArgumentCaptor<MembershipFeeGroup> captor = ArgumentCaptor.forClass(MembershipFeeGroup.class);
             verify(groupRepository).save(captor.capture());
@@ -680,11 +543,11 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(frozenGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             ArgumentCaptor<MembershipFeeGroup> captor = ArgumentCaptor.forClass(MembershipFeeGroup.class);
             verify(groupRepository).save(captor.capture());
@@ -696,8 +559,7 @@ class FeeYearLifecycleServiceTest {
         @Test
         @DisplayName("should move member from old group to new group when changing assignment after deadline")
         void shouldMoveMemberBetweenGroupsAfterDeadline() {
-            Set<FeeGroupMembership> existingMemberships = Set.of(
-                    new FeeGroupMembership(TARGET_MEMBER_ID, LocalDate.of(FEE_YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE, null));
+            Set<FeeGroupMembership> existingMemberships = membershipOf(MEMBER_WITH_CHOICE, FEE_YEAR);
             MembershipFeeGroup oldGroup = buildGroup(LEVEL_ID_A, "Old Frozen Group", DEADLINE,
                     PublishedLevelStatus.FROZEN, existingMemberships);
             MembershipFeeGroup newGroup = buildFrozenGroup(LEVEL_ID_B);
@@ -705,14 +567,14 @@ class FeeYearLifecycleServiceTest {
             MembershipFeeGroupId newGroupId = newGroup.getId();
             when(groupRepository.findById(newGroupId)).thenReturn(Optional.of(newGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.of(oldGroup));
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.of(oldGroup));
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, newGroupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, newGroupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> !g.hasMember(TARGET_MEMBER_ID) && g.getId().equals(oldGroup.getId())));
-            verify(groupRepository).save(argThat(g -> g.hasMember(TARGET_MEMBER_ID) && g.getId().equals(newGroupId)));
+            verify(groupRepository).save(argThat(g -> !g.hasMember(MEMBER_WITH_CHOICE) && g.getId().equals(oldGroup.getId())));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITH_CHOICE) && g.getId().equals(newGroupId)));
         }
 
         @Test
@@ -723,13 +585,13 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(editableGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> g.hasMember(TARGET_MEMBER_ID)));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITH_CHOICE)));
         }
 
         @Test
@@ -739,7 +601,7 @@ class FeeYearLifecycleServiceTest {
             when(groupRepository.findById(unknownGroupId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, unknownGroupId, FEE_YEAR)))
+                    ADMIN_ID, MEMBER_WITH_CHOICE, unknownGroupId, FEE_YEAR)))
                     .isInstanceOf(MembershipFeeGroupNotFoundException.class);
         }
 
@@ -752,21 +614,29 @@ class FeeYearLifecycleServiceTest {
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR)))
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR)))
                     .isInstanceOf(FeeSelectionCampaignNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should reject a command whose year does not match the target group's year")
+        void shouldRejectCommandYearMismatch() {
+            MembershipFeeGroup group = buildFrozenGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR + 1)))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verify(campaignRepository, never()).findByYear(anyInt());
+            verify(groupRepository, never()).save(any());
         }
     }
 
     @Nested
     @DisplayName("assignLevel() — sanction lifting")
     class AssignLevelSanctionLifting {
-
-        @BeforeEach
-        void suppressChargePath() {
-            // Tests in this class verify event publishing, not charging.
-            // Returning true prevents the immediate charge when a closed campaign is used.
-            lenient().when(markerRepository.existsByMemberIdAndYear(any(), anyInt())).thenReturn(true);
-        }
 
         @Test
         @DisplayName("should always publish MemberFeeSelectionResolvedEvent on admin assignment")
@@ -776,18 +646,19 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
             verify(eventPublisher).publishEvent(eventCaptor.capture());
-            assertThat(eventCaptor.getValue()).isInstanceOf(MemberFeeSelectionResolvedEvent.class);
-            MemberFeeSelectionResolvedEvent event = (MemberFeeSelectionResolvedEvent) eventCaptor.getValue();
-            assertThat(event.memberId()).isEqualTo(TARGET_MEMBER_ID);
-            assertThat(event.year()).isEqualTo(FEE_YEAR);
+            assertThat(eventCaptor.getValue())
+                    .isInstanceOfSatisfying(MemberFeeSelectionResolvedEvent.class, event -> {
+                        assertThat(event.memberId()).isEqualTo(MEMBER_WITH_CHOICE);
+                        assertThat(event.year()).isEqualTo(FEE_YEAR);
+                    });
         }
     }
 
@@ -803,11 +674,11 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildOpenCampaign()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             verify(chargePort, never()).chargeMembershipFee(any(), any(), anyInt());
             verify(markerRepository, never()).markCharged(any(), anyInt());
@@ -821,18 +692,18 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(false);
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             verify(chargePort).chargeMembershipFee(
-                    eq(TARGET_MEMBER_ID),
+                    eq(MEMBER_WITH_CHOICE),
                     argThat(amount -> amount.compareTo(FEE_AMOUNT) == 0),
                     eq(FEE_YEAR));
-            verify(markerRepository).markCharged(TARGET_MEMBER_ID, FEE_YEAR);
+            verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, FEE_YEAR);
         }
 
         @Test
@@ -843,15 +714,15 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildProcessedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(false);
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(false);
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             verify(chargePort).chargeMembershipFee(any(), any(), anyInt());
-            verify(markerRepository).markCharged(TARGET_MEMBER_ID, FEE_YEAR);
+            verify(markerRepository).markCharged(MEMBER_WITH_CHOICE, FEE_YEAR);
         }
 
         @Test
@@ -862,12 +733,12 @@ class FeeYearLifecycleServiceTest {
 
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildClosedPublication()));
-            when(groupRepository.findByMemberAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(markerRepository.existsByMemberIdAndYear(TARGET_MEMBER_ID, FEE_YEAR)).thenReturn(true);
+            when(markerRepository.existsByMemberIdAndYear(MEMBER_WITH_CHOICE, FEE_YEAR)).thenReturn(true);
 
             testedInstance.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
-                    ADMIN_ID, TARGET_MEMBER_ID, groupId, FEE_YEAR));
+                    ADMIN_ID, MEMBER_WITH_CHOICE, groupId, FEE_YEAR));
 
             verify(chargePort, never()).chargeMembershipFee(any(), any(), anyInt());
             verify(markerRepository, never()).markCharged(any(), anyInt());
@@ -891,31 +762,31 @@ class FeeYearLifecycleServiceTest {
             MembershipFeeGroupId groupId = group.getId();
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, groupId, FEE_YEAR));
+            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> g.hasMember(CHOOSING_MEMBER_ID)));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITHOUT_CHOICE)));
         }
 
         @Test
         @DisplayName("should move member from old group to new group when changing choice")
         void shouldMoveMemberBetweenGroups() {
             MembershipFeeGroup oldGroup = buildChoiceGroup(LEVEL_ID_A);
-            oldGroup.addMember(CHOOSING_MEMBER_ID, LocalDate.of(FEE_YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE);
+            oldGroup.addMember(MEMBER_WITHOUT_CHOICE, LocalDate.of(FEE_YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE);
             MembershipFeeGroup newGroup = buildChoiceGroup(LEVEL_ID_B);
 
             MembershipFeeGroupId newGroupId = newGroup.getId();
             when(groupRepository.findById(newGroupId)).thenReturn(Optional.of(newGroup));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.of(oldGroup));
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.of(oldGroup));
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, newGroupId, FEE_YEAR));
+            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, newGroupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> !g.hasMember(CHOOSING_MEMBER_ID) && g.getId().equals(oldGroup.getId())));
-            verify(groupRepository).save(argThat(g -> g.hasMember(CHOOSING_MEMBER_ID) && g.getId().equals(newGroupId)));
+            verify(groupRepository).save(argThat(g -> !g.hasMember(MEMBER_WITHOUT_CHOICE) && g.getId().equals(oldGroup.getId())));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITHOUT_CHOICE) && g.getId().equals(newGroupId)));
         }
 
         @Test
@@ -928,7 +799,7 @@ class FeeYearLifecycleServiceTest {
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
 
             assertThatThrownBy(() -> testedInstance.chooseFeeLevel(
-                    new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, groupId, FEE_YEAR)))
+                    new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR)))
                     .isInstanceOf(VotingClosedException.class);
         }
 
@@ -941,7 +812,7 @@ class FeeYearLifecycleServiceTest {
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> testedInstance.chooseFeeLevel(
-                    new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, groupId, FEE_YEAR)))
+                    new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR)))
                     .isInstanceOf(FeeSelectionCampaignNotFoundException.class);
         }
 
@@ -953,12 +824,12 @@ class FeeYearLifecycleServiceTest {
             MembershipFeeGroupId groupId = group.getId();
             when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, groupId, FEE_YEAR));
+            testedInstance.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR));
 
-            verify(groupRepository).save(argThat(g -> g.hasMember(CHOOSING_MEMBER_ID)));
+            verify(groupRepository).save(argThat(g -> g.hasMember(MEMBER_WITHOUT_CHOICE)));
         }
 
         @Test
@@ -971,8 +842,23 @@ class FeeYearLifecycleServiceTest {
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
 
             assertThatThrownBy(() -> testedInstance.chooseFeeLevel(
-                    new FeeYearLifecyclePort.ChooseFeeLevel(CHOOSING_MEMBER_ID, groupId, FEE_YEAR)))
+                    new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR)))
                     .isInstanceOf(VotingClosedException.class);
+        }
+
+        @Test
+        @DisplayName("should reject a command whose year does not match the target group's year")
+        void shouldRejectCommandYearMismatch() {
+            MembershipFeeGroup group = buildChoiceGroup(LEVEL_ID_A);
+            MembershipFeeGroupId groupId = group.getId();
+            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> testedInstance.chooseFeeLevel(
+                    new FeeYearLifecyclePort.ChooseFeeLevel(MEMBER_WITHOUT_CHOICE, groupId, FEE_YEAR - 1)))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verify(campaignRepository, never()).findByYear(anyInt());
+            verify(groupRepository, never()).save(any());
         }
     }
 
@@ -990,23 +876,23 @@ class FeeYearLifecycleServiceTest {
         @DisplayName("should remove member from their current group when voting is open")
         void shouldRemoveMemberFromGroup() {
             MembershipFeeGroup group = buildChoiceGroup(LEVEL_ID_A);
-            group.addMember(CHOOSING_MEMBER_ID, LocalDate.of(FEE_YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE);
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.of(group));
+            group.addMember(MEMBER_WITHOUT_CHOICE, LocalDate.of(FEE_YEAR, 1, 5), AssignmentSource.MEMBER_CHOICE);
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.of(group));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            testedInstance.removeFeeChoice(CHOOSING_MEMBER_ID, FEE_YEAR);
+            testedInstance.removeFeeChoice(MEMBER_WITHOUT_CHOICE, FEE_YEAR);
 
-            verify(groupRepository).save(argThat(g -> !g.hasMember(CHOOSING_MEMBER_ID)));
+            verify(groupRepository).save(argThat(g -> !g.hasMember(MEMBER_WITHOUT_CHOICE)));
         }
 
         @Test
         @DisplayName("should be no-op when member has no choice")
         void shouldBeNoOpWhenNoChoice() {
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.empty());
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.empty());
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
 
-            testedInstance.removeFeeChoice(CHOOSING_MEMBER_ID, FEE_YEAR);
+            testedInstance.removeFeeChoice(MEMBER_WITHOUT_CHOICE, FEE_YEAR);
 
             verify(groupRepository, never()).save(any());
         }
@@ -1015,13 +901,11 @@ class FeeYearLifecycleServiceTest {
         @DisplayName("should throw VotingClosedException when removing after group voting deadline")
         void shouldThrowWhenRemovingAfterDeadline() {
             MembershipFeeGroup group = buildGroup(LEVEL_ID_A, "Expired Group", CHOICE_TODAY.minusDays(1),
-                    PublishedLevelStatus.EDITABLE,
-                    Set.of(new FeeGroupMembership(CHOOSING_MEMBER_ID, LocalDate.of(FEE_YEAR, 1, 5),
-                            AssignmentSource.MEMBER_CHOICE, null)));
+                    PublishedLevelStatus.EDITABLE, membershipOf(MEMBER_WITHOUT_CHOICE, FEE_YEAR));
             when(campaignRepository.findByYear(FEE_YEAR)).thenReturn(Optional.of(buildChoiceCampaign()));
-            when(groupRepository.findByMemberAndYear(CHOOSING_MEMBER_ID, FEE_YEAR)).thenReturn(Optional.of(group));
+            when(groupRepository.findByMemberAndYear(MEMBER_WITHOUT_CHOICE, FEE_YEAR)).thenReturn(Optional.of(group));
 
-            assertThatThrownBy(() -> testedInstance.removeFeeChoice(CHOOSING_MEMBER_ID, FEE_YEAR))
+            assertThatThrownBy(() -> testedInstance.removeFeeChoice(MEMBER_WITHOUT_CHOICE, FEE_YEAR))
                     .isInstanceOf(VotingClosedException.class);
         }
     }

@@ -82,6 +82,16 @@ class MemberFeeHistoryServiceTest {
                 List.of(GROUP_ID));
     }
 
+    private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId sourceLevelId) {
+        return MembershipFeeGroup.reconstruct(
+                new MembershipFeeGroupId(UUID.randomUUID()),
+                sourceLevelId,
+                "Test Group", YEAR, GROUP_DEADLINE,
+                Money.ofCzk(new BigDecimal("1200.00")),
+                PublishedLevelStatus.EDITABLE,
+                List.of(), Set.of(), null);
+    }
+
     @Nested
     @DisplayName("getCurrentLevelInfo()")
     class GetCurrentLevelInfo {
@@ -225,16 +235,6 @@ class MemberFeeHistoryServiceTest {
     @DisplayName("getRecommendedLevelForYear() — previous year default (D8)")
     class GetRecommendedLevelForYear {
 
-        private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId sourceLevelId) {
-            return MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    sourceLevelId,
-                    "Test Group", YEAR, GROUP_DEADLINE,
-                    Money.ofCzk(new BigDecimal("1200.00")),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(), Set.of(), null);
-        }
-
         @Test
         @DisplayName("should return previous year's sourceLevelId when it is published in the requested year")
         void shouldReturnPreviousYearLevelId() {
@@ -280,16 +280,6 @@ class MemberFeeHistoryServiceTest {
     @Nested
     @DisplayName("getCurrentChoice()")
     class GetCurrentChoice {
-
-        private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId sourceLevelId) {
-            return MembershipFeeGroup.reconstruct(
-                    new MembershipFeeGroupId(UUID.randomUUID()),
-                    sourceLevelId,
-                    "Test Group", YEAR, GROUP_DEADLINE,
-                    Money.ofCzk(new BigDecimal("1200.00")),
-                    PublishedLevelStatus.EDITABLE,
-                    List.of(), Set.of(), null);
-        }
 
         @Test
         @DisplayName("should return group id when member has a choice")

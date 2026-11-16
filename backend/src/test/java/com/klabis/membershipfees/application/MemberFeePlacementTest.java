@@ -68,8 +68,12 @@ class MemberFeePlacementTest {
         return Set.of(new FeeGroupMembership(memberId, LocalDate.of(YEAR, 1, 5), source, null));
     }
 
+    private static MemberFeePlacement.Move moveTo(MembershipFeeGroup targetGroup) {
+        return new MemberFeePlacement.Move(targetGroup, MEMBER_ID, TODAY);
+    }
+
     @Nested
-    @DisplayName("placeByMemberChoice()")
+    @DisplayName("place() — member choice")
     class PlaceByMemberChoice {
 
         @Test
@@ -79,8 +83,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
 
-            testedInstance.placeByMemberChoice(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY));
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.MEMBER_CHOICE, null);
 
             assertThat(targetGroup.hasMember(MEMBER_ID)).isTrue();
             FeeGroupMembership membership = targetGroup.getMemberships().iterator().next();
@@ -99,8 +102,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(currentGroup));
 
-            testedInstance.placeByMemberChoice(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY));
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.MEMBER_CHOICE, null);
 
             assertThat(currentGroup.hasMember(MEMBER_ID)).isFalse();
             assertThat(targetGroup.hasMember(MEMBER_ID)).isTrue();
@@ -119,8 +121,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(currentGroup));
 
-            assertThatThrownBy(() -> testedInstance.placeByMemberChoice(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY)))
+            assertThatThrownBy(() -> testedInstance.place(moveTo(targetGroup), AssignmentSource.MEMBER_CHOICE, null))
                     .isInstanceOf(VotingClosedException.class);
 
             assertThat(currentGroup.hasMember(MEMBER_ID)).isTrue();
@@ -134,8 +135,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
 
-            testedInstance.placeByMemberChoice(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY));
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.MEMBER_CHOICE, null);
 
             verify(groupRepository, times(1)).save(targetGroup);
         }
@@ -147,8 +147,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, membershipOf(MEMBER_ID, AssignmentSource.MEMBER_CHOICE));
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(targetGroup));
 
-            testedInstance.placeByMemberChoice(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY));
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.MEMBER_CHOICE, null);
 
             assertThat(targetGroup.memberCount()).isEqualTo(1);
             verify(groupRepository, times(1)).save(targetGroup);
@@ -156,7 +155,7 @@ class MemberFeePlacementTest {
     }
 
     @Nested
-    @DisplayName("placeByAdminAssignment()")
+    @DisplayName("place() — administrator assignment")
     class PlaceByAdminAssignment {
 
         @Test
@@ -166,8 +165,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
 
-            testedInstance.placeByAdminAssignment(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY), ADMIN_ID);
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.ADMIN_ASSIGNMENT, ADMIN_ID);
 
             FeeGroupMembership membership = targetGroup.getMemberships().iterator().next();
             assertThat(membership.source()).isEqualTo(AssignmentSource.ADMIN_ASSIGNMENT);
@@ -185,8 +183,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(currentGroup));
 
-            testedInstance.placeByAdminAssignment(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY), ADMIN_ID);
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.ADMIN_ASSIGNMENT, ADMIN_ID);
 
             assertThat(currentGroup.hasMember(MEMBER_ID)).isFalse();
             assertThat(targetGroup.hasMember(MEMBER_ID)).isTrue();
@@ -203,8 +200,7 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, Set.of());
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
 
-            testedInstance.placeByAdminAssignment(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY), ADMIN_ID);
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.ADMIN_ASSIGNMENT, ADMIN_ID);
 
             verify(groupRepository, times(1)).save(targetGroup);
         }
@@ -216,11 +212,53 @@ class MemberFeePlacementTest {
                     PublishedLevelStatus.EDITABLE, membershipOf(MEMBER_ID, AssignmentSource.ADMIN_ASSIGNMENT));
             when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(targetGroup));
 
-            testedInstance.placeByAdminAssignment(
-                    new MemberFeePlacement.Move(targetGroup, MEMBER_ID, YEAR, TODAY), ADMIN_ID);
+            testedInstance.place(moveTo(targetGroup), AssignmentSource.ADMIN_ASSIGNMENT, ADMIN_ID);
 
             assertThat(targetGroup.memberCount()).isEqualTo(1);
             verify(groupRepository, times(1)).save(targetGroup);
+        }
+    }
+
+    @Nested
+    @DisplayName("withdraw()")
+    class Withdraw {
+
+        @Test
+        @DisplayName("should remove the member choice from the group of the given year and save it")
+        void shouldRemoveMemberFromGroup() {
+            MembershipFeeGroup group = buildGroup(LEVEL_ID_A, "Chosen", OPEN_DEADLINE,
+                    PublishedLevelStatus.EDITABLE, membershipOf(MEMBER_ID, AssignmentSource.MEMBER_CHOICE));
+            MembershipFeeGroupId groupId = group.getId();
+            when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(group));
+
+            testedInstance.withdraw(MEMBER_ID, YEAR, TODAY);
+
+            assertThat(group.hasMember(MEMBER_ID)).isFalse();
+            verify(groupRepository).save(argThat(saved -> saved.getId().equals(groupId) && !saved.hasMember(MEMBER_ID)));
+        }
+
+        @Test
+        @DisplayName("should be a no-op when the member has no group for that year")
+        void shouldBeNoOpWhenNoGroup() {
+            when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.empty());
+
+            testedInstance.withdraw(MEMBER_ID, YEAR, TODAY);
+
+            verify(groupRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should keep the voting-closed guard")
+        void shouldRejectWithdrawalWhenVotingIsClosed() {
+            MembershipFeeGroup group = buildGroup(LEVEL_ID_A, "Frozen", PASSED_DEADLINE,
+                    PublishedLevelStatus.FROZEN, membershipOf(MEMBER_ID, AssignmentSource.MEMBER_CHOICE));
+            when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> testedInstance.withdraw(MEMBER_ID, YEAR, TODAY))
+                    .isInstanceOf(VotingClosedException.class);
+
+            assertThat(group.hasMember(MEMBER_ID)).isTrue();
+            verify(groupRepository, never()).save(any());
         }
     }
 }
