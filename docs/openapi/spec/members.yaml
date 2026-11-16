@@ -1105,6 +1105,7 @@ components:
           example: CZ
           minLength: 2
           maxLength: 2
+          x-hal-input-type: Country
         gender:
           $ref: '#/components/schemas/Gender'
           x-hal-input-type: Gender
@@ -1206,6 +1207,7 @@ components:
           maxLength: 2
           x-klabis-authority: MEMBERS_MANAGE
           x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
+          x-hal-input-type: Country
         identityCard:
           $ref: '#/components/schemas/IdentityCardDto'
           x-klabis-nullable: true

@@ -17,6 +17,19 @@ export const fill = (page: Page, label: string, value: string) => field(page, la
 
 export const select = (page: Page, label: string, option: string) => field(page, label).selectOption({label: option});
 
+const PRESET_COUNTRIES: Record<string, string> = {
+    CZ: 'Česko', SK: 'Slovensko', AT: 'Rakousko', PL: 'Polsko', DE: 'Německo', SE: 'Švédsko', NO: 'Norsko', DK: 'Dánsko',
+};
+
+// Country picker: preset countries are chosen from the select, any other code through "Jiný stát…" and the code input.
+export const chooseCountry = async (page: Page, label: string, code: string) => {
+    const preset = PRESET_COUNTRIES[code];
+    await select(page, label, preset ?? 'Jiný stát…');
+    if (!preset) {
+        await page.getByRole('textbox', {name: 'Kód státu'}).fill(code);
+    }
+};
+
 export const pick = async (page: Page, label: string, option: string) => {
     await field(page, label).fill(option);
     await page.getByRole('option', {name: option, exact: true}).click();

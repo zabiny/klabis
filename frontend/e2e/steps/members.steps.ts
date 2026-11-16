@@ -5,7 +5,7 @@ import {type Linked} from '../support/halApi';
 import {minorDateOfBirth} from '../support/dates';
 import {createTrainingGroup, findMemberPath, guardianEmail, registerMember, REGISTERED_FIRST_NAME, registrationBody} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
-import {action, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
+import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
 
 const {Given, When, Then} = createBdd(test);
 
@@ -92,7 +92,7 @@ const addNewGuardian = async (page: Page, lastName: string) => {
 export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {
     await fill(page, 'Datum narození', body.dateOfBirth);
     await select(page, 'Pohlaví', 'Muž');
-    await fill(page, 'Státní příslušnost', body.nationality);
+    await chooseCountry(page, 'Státní příslušnost', body.nationality);
     await fill(page, 'Rodné číslo', body.birthNumber);
     if (contact) {
         await fill(page, 'E-mail', body.email);

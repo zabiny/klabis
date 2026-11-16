@@ -54,3 +54,11 @@ describe('KlabisFieldsFactory input render mode naming', () => {
         expect(screen.getByLabelText('Platnost')).toBeInTheDocument();
     });
 });
+
+describe('KlabisFieldsFactory Country input type', () => {
+    it('renders the country picker for nationality', () => {
+        renderInputMode('Country', 'nationality');
+
+        expect(screen.getByRole('combobox', {name: 'Státní příslušnost'})).toBeInTheDocument();
+    });
+});

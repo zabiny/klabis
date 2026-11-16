@@ -23,11 +23,11 @@
 
 ## 4. Country picker for nationality
 
-- [ ] 4.1 TDD: country-name helper returning the Czech name for a code and nothing for an unknown code; verify unit tests (CZ → Česko, FR → Francie, QQ → none)
-- [ ] 4.2 TDD: country picker component (presets in order CZ, SK, AT, PL, DE, SE, NO, DK; "Jiný stát…" reveals a code input with name or unknown-code hint; a stored non-preset value opens in "Jiný stát…" mode); verify component tests pass
-- [ ] 4.3 Add `x-hal-input-type: Country` to `nationality` in `RegisterMemberRequest` and `UpdateMemberRequest`, render the picker for input type `Country` in `KlabisFieldsFactory`, regenerate types; verify factory tests and that registration and admin edit show the picker
-- [ ] 4.4 TDD: registration form starts with Česko in nationality and the birth number field is shown; verify the registration integration test passes
-- [ ] 4.5 Update E2E member steps that type nationality (`frontend/e2e/steps/members.steps.ts`) to use the picker and verify the member E2E scenarios pass
+- [x] 4.1 TDD: country-name helper returning the Czech name for a code and nothing for an unknown code; verify unit tests (CZ → Česko, FR → Francie, QQ → none)
+- [x] 4.2 TDD: country picker component (presets in order CZ, SK, AT, PL, DE, SE, NO, DK; "Jiný stát…" reveals a code input with name or unknown-code hint; a stored non-preset value opens in "Jiný stát…" mode); verify component tests pass
+- [x] 4.3 Add `x-hal-input-type: Country` to `nationality` in `RegisterMemberRequest` and `UpdateMemberRequest`, render the picker for input type `Country` in `KlabisFieldsFactory`, regenerate types; verify factory tests and that registration and admin edit show the picker
+- [x] 4.4 TDD: registration form starts with Česko in nationality and the birth number field is shown; verify the registration integration test passes
+- [x] 4.5 Update E2E member steps that type nationality (`frontend/e2e/steps/members.steps.ts`) to use the picker and verify the member E2E scenarios pass
 
 ## 5. Country picker for address country
 
