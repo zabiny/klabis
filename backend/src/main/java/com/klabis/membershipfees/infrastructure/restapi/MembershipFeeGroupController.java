@@ -10,8 +10,8 @@ import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
@@ -40,16 +40,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MembershipFeeGroupController implements MembershipFeeGroupsApi {
 
     private final FeeSelectionCampaignManagementPort managementPort;
-    private final AdminFeeAssignmentPort adminFeeAssignmentPort;
+    private final FeeYearLifecyclePort feeYearLifecyclePort;
     private final Members members;
     private final ConversionService conversionService;
 
     MembershipFeeGroupController(FeeSelectionCampaignManagementPort managementPort,
-                                 AdminFeeAssignmentPort adminFeeAssignmentPort,
+                                 FeeYearLifecyclePort feeYearLifecyclePort,
                                  Members members,
                                  ConversionService conversionService) {
         this.managementPort = managementPort;
-        this.adminFeeAssignmentPort = adminFeeAssignmentPort;
+        this.feeYearLifecyclePort = feeYearLifecyclePort;
         this.members = members;
         this.conversionService = conversionService;
     }
@@ -104,7 +104,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
             AdminAssignMemberRequest request,
             @ActingMember MemberId actingAdmin) {
 
-        adminFeeAssignmentPort.assignLevel(new AdminFeeAssignmentPort.AssignFeeLevel(
+        feeYearLifecyclePort.assignLevel(new FeeYearLifecyclePort.AssignFeeLevel(
                 actingAdmin,
                 new MemberId(request.memberId()),
                 new MembershipFeeGroupId(groupId),

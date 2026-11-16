@@ -7,12 +7,10 @@ import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
-import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
-import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.membershipfees.application.MembershipFeeGroupNotFoundException;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
@@ -71,11 +69,7 @@ class MembershipFeesErrorTypesTest {
     @Autowired
     private FeeSelectionCampaignManagementPort campaignPort;
     @Autowired
-    private FeeYearLifecyclePort closePort;
-    @Autowired
-    private MemberChoicePort choicePort;
-    @Autowired
-    private AdminFeeAssignmentPort assignmentPort;
+    private FeeYearLifecyclePort lifecyclePort;
 
     @BeforeEach
     void stubOptions() {
@@ -293,7 +287,7 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("campaign already processed")
         void campaignAlreadyProcessed() throws Exception {
-            doThrow(new CampaignAlreadyProcessedException()).when(closePort).closeCampaign(any());
+            doThrow(new CampaignAlreadyProcessedException()).when(lifecyclePort).closeCampaign(any());
 
             mockMvc.perform(post("/api/fee-selection-campaigns/{id}/close", CAMPAIGN_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -321,7 +315,7 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID)
         @DisplayName("voting is closed")
         void votingClosed() throws Exception {
-            doThrow(new VotingClosedException()).when(choicePort).chooseFeeLevel(any());
+            doThrow(new VotingClosedException()).when(lifecyclePort).chooseFeeLevel(any());
 
             mockMvc.perform(post("/api/members/{memberId}/fee-choice/{year}", ADMIN_ID, 2026)
                             .contentType("application/json")

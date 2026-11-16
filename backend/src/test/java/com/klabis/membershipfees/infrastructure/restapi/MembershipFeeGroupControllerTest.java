@@ -9,8 +9,8 @@ import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.EventTypeReference;
@@ -55,7 +55,7 @@ class MembershipFeeGroupControllerTest {
     private FeeSelectionCampaignManagementPort managementPort;
 
     @Autowired
-    private AdminFeeAssignmentPort adminFeeAssignmentPort;
+    private FeeYearLifecyclePort feeYearLifecyclePort;
 
     @Autowired
     private Members members;
@@ -196,7 +196,7 @@ class MembershipFeeGroupControllerTest {
         @DisplayName("should return 204 when admin assigns a member to a group")
         @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn204WhenAdminAssigns() throws Exception {
-            doNothing().when(adminFeeAssignmentPort).assignLevel(any());
+            doNothing().when(feeYearLifecyclePort).assignLevel(any());
 
             mockMvc.perform(
                             post("/api/membership-fee-groups/{groupId}/members", GROUP_UUID)
@@ -207,7 +207,7 @@ class MembershipFeeGroupControllerTest {
                                             """.formatted(MEMBER_UUID)))
                     .andExpect(status().isNoContent());
 
-            verify(adminFeeAssignmentPort).assignLevel(any(AdminFeeAssignmentPort.AssignFeeLevel.class));
+            verify(feeYearLifecyclePort).assignLevel(any(FeeYearLifecyclePort.AssignFeeLevel.class));
         }
 
         @Test

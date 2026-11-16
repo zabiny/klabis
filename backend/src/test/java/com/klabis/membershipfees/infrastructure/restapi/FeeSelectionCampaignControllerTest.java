@@ -8,7 +8,6 @@ import com.klabis.members.Members;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -59,9 +58,6 @@ class FeeSelectionCampaignControllerTest {
 
     @Autowired
     private MembershipFeeTierManagementPort levelManagementPort;
-
-    @Autowired
-    private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
     @Autowired
     private FeeYearLifecyclePort feeYearLifecyclePort;

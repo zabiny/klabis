@@ -9,7 +9,7 @@ The area is hot: the guardian fee-choice feature landed this month and touched b
 - Add one primary port `FeeYearLifecyclePort` in `membershipfees.application` with five methods: `closeCampaign(FeeSelectionCampaignId)`, `processCampaignEnd(LocalDate)`, `assignLevel(AssignFeeLevel)`, `chooseFeeLevel(ChooseFeeLevel)`, `removeFeeChoice(MemberId, int)`.
 - Add `FeeYearLifecycleService` as its single implementation, absorbing `CampaignProcessor`, `AdminFeeAssignmentService`, `ManualCampaignClosePortImpl` and `CampaignEndProcessingPortImpl`.
 - Extract the shared "move a member into a fee group for a year" step into a package-private `MemberFeePlacement` collaborator with its own unit test; `chooseFeeLevel`, `removeFeeChoice` and `assignLevel` all go through it.
-- Delete `ManualCampaignClosePort`, `CampaignEndProcessingPort`, `AdminFeeAssignmentPort` and `MemberChoicePort`; their methods live on the new port.
+- Delete `ManualCampaignClosePort`, `CampaignEndProcessingPort`, `AdminFeeAssignmentPort` and `MemberChoicePort`; their write commands live on the new port, while the two queries `getCurrentChoice` and `getRecommendedLevelForYear` move to the existing read port `MemberFeeHistoryPort`.
 - Update the four adapters that used the deleted ports: `FeeSelectionCampaignController`, `MembershipFeeGroupController`, `MemberFeeChoiceController`, `FeeSelectionDeadlineScheduler`.
 - Delete the two deprecated, uncalled methods `listPublications()` and `listClosedPublications()` from `FeeSelectionCampaignManagementPort`; the rest of that port is unchanged.
 - Update the two passages in `openspec/changes/introduce-quartz-scheduler/proposal.md` that name `CampaignEndProcessingPort`.

@@ -6,7 +6,8 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.MemberChoicePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
+import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -26,10 +27,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 // Authorization is declared in membershipfees.yaml and enforced on the generated interface.
 class MemberFeeChoiceController implements MemberFeeChoiceApi {
 
-    private final MemberChoicePort memberChoicePort;
+    private final FeeYearLifecyclePort feeYearLifecyclePort;
+    private final MemberFeeHistoryPort memberFeeHistoryPort;
 
-    MemberFeeChoiceController(MemberChoicePort memberChoicePort) {
-        this.memberChoicePort = memberChoicePort;
+    MemberFeeChoiceController(FeeYearLifecyclePort feeYearLifecyclePort, MemberFeeHistoryPort memberFeeHistoryPort) {
+        this.feeYearLifecyclePort = feeYearLifecyclePort;
+        this.memberFeeHistoryPort = memberFeeHistoryPort;
     }
 
     @Override
@@ -38,8 +41,8 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
             Integer year) {
 
         MemberId memberIdObj = new MemberId(memberId);
-        Optional<MembershipFeeGroupId> currentChoice = memberChoicePort.getCurrentChoice(memberIdObj, year);
-        Optional<MembershipFeeTierId> recommended = memberChoicePort.getRecommendedLevelForYear(memberIdObj, year);
+        Optional<MembershipFeeGroupId> currentChoice = memberFeeHistoryPort.getCurrentChoice(memberIdObj, year);
+        Optional<MembershipFeeTierId> recommended = memberFeeHistoryPort.getRecommendedLevelForYear(memberIdObj, year);
 
         MemberFeeChoiceResponse response = MembershipFeesResponseMapper.toResponse(memberId, year, currentChoice, recommended);
         HalResponseContext.setDomain(new FeeChoiceView(memberId, year, currentChoice, recommended));
@@ -58,7 +61,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
             Integer year,
             ChooseFeeChoiceRequest request) {
 
-        memberChoicePort.chooseFeeLevel(new MemberChoicePort.ChooseFeeLevel(
+        feeYearLifecyclePort.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(
                 new MemberId(memberId),
                 new MembershipFeeGroupId(request.membershipFeeGroupId()),
                 year));
@@ -71,7 +74,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
             UUID memberId,
             Integer year) {
 
-        memberChoicePort.removeFeeChoice(new MemberId(memberId), year);
+        feeYearLifecyclePort.removeFeeChoice(new MemberId(memberId), year);
 
         return ResponseEntity.noContent().build();
     }
