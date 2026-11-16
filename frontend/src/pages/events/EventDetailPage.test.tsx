@@ -1486,10 +1486,11 @@ describe('EventDetailPage', () => {
 
     describe('event type badge (B7.3)', () => {
         const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
+            const eventTypesEnvelope = {_embedded: {eventTypeDtoList: eventTypes}};
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: {_embedded: {eventTypeDtoList: eventTypes}},
+                        data: options?.select ? options.select(eventTypesEnvelope) : eventTypesEnvelope,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;

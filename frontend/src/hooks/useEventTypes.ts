@@ -1,16 +1,10 @@
-import {useAuthorizedQuery} from './useAuthorizedFetch.ts';
+import {useHalCollection} from './useHalCollection.ts';
 
 export interface EventTypeCatalogItem {
     id: string;
     name: string;
     color?: string;
     sortOrder: number;
-}
-
-interface EventTypesResponse {
-    _embedded?: {
-        eventTypeDtoList?: EventTypeCatalogItem[];
-    };
 }
 
 interface UseEventTypesResult {
@@ -24,11 +18,9 @@ interface UseEventTypesResult {
  * Used across events list, event detail and event form for badge display and dropdown options.
  */
 export function useEventTypes(): UseEventTypesResult {
-    const {data, isLoading} = useAuthorizedQuery<EventTypesResponse>('/api/event-types', {
+    const {items: eventTypes, isLoading} = useHalCollection<EventTypeCatalogItem>('/api/event-types', {
         staleTime: 5 * 60 * 1000,
     });
-
-    const eventTypes = data?._embedded?.eventTypeDtoList ?? [];
 
     const getById = (id: string | null | undefined): EventTypeCatalogItem | undefined => {
         if (!id) return undefined;

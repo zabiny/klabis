@@ -1,10 +1,10 @@
 ## 1. Core module + first consumer
 
-- [ ] 1.1 Red: test `embeddedItems` against every row of design D3 — undefined envelope and missing `_embedded` yield `[]`, single key is inferred, explicit `collection` override wins, and the guards (two keys without override, override key absent, non-array value) throw `HalCollectionError` naming the self href and the keys found
-- [ ] 1.2 Red: test `useHalCollection` — returns typed `items` and `pageMetadata`, `select` receives typed rows, `undefined` href yields `items: []` and `isLoading: false`, a guard failure arrives as `error` (no throw), `refetch` is exposed
-- [ ] 1.3 Green: implement `src/hooks/useHalCollection.ts` (`embeddedItems` + `useHalCollection`) with the interface from design D2
-- [ ] 1.4 Refactor: make `useEventTypes` an adapter over the module; keep `getById` and its mapping test, drop the envelope-fetch assertions the module now owns
-- [ ] 1.5 Verify: module slice tests green (`useHalCollection`, `useEventTypes`)
+- [x] 1.1 Red: test `embeddedItems` against every row of design D3 — undefined envelope and missing `_embedded` yield `[]`, single key is inferred, explicit `collection` override wins, and the guards (two keys without override, override key absent, non-array value) throw `HalCollectionError` naming the self href and the keys found
+- [x] 1.2 Red: test `useHalCollection` — returns typed `items` and `pageMetadata`, `select` receives typed rows, `undefined` href yields `items: []` and `isLoading: false`, a guard failure arrives as `error` (no throw), `refetch` is exposed
+- [x] 1.3 Green: implement `src/hooks/useHalCollection.ts` (`embeddedItems` + `useHalCollection`) with the interface from design D2
+- [x] 1.4 Refactor: make `useEventTypes` an adapter over the module; keep `getById` and its mapping test, drop the envelope-fetch assertions the module now owns
+- [x] 1.5 Verify: module slice tests green (`useHalCollection`, `useEventTypes`)
 
 ## 2. Remaining adapters
 
