@@ -4,7 +4,7 @@ import {labels} from '../../localization';
 import {Section} from './MemberSection.tsx';
 import {RegistrationContactSection, RegistrationGuardianSections} from './RegistrationGuardianSections.tsx';
 import {BirthNumberConditionalField} from './BirthNumberConditionalField.tsx';
-import {DefaultNationality} from './DefaultNationality.tsx';
+import {DefaultCountry} from './DefaultCountry.tsx';
 
 const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
 const CONTACT_FIELDS = ['email', 'phone'];
@@ -30,7 +30,7 @@ export const renderRegistrationForm = (takeOverId?: string) => ({renderInput, re
                             {hasField('dateOfBirth') && <DetailRow label={labels.fields.dateOfBirth}>{renderInput('dateOfBirth')}</DetailRow>}
                             {hasField('gender') && <DetailRow label={labels.fields.gender}>{renderInput('gender')}</DetailRow>}
                             {hasField('nationality') && <DetailRow label={labels.fields.nationality}>{renderInput('nationality')}</DetailRow>}
-                            {hasField('nationality') && <DefaultNationality/>}
+                            {hasField('nationality') && <DefaultCountry field="nationality"/>}
                             {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput}/>}
                         </Section>
                     )}
@@ -41,6 +41,7 @@ export const renderRegistrationForm = (takeOverId?: string) => ({renderInput, re
                     {hasType(ADDRESS_TYPE) && (
                         <Section title={labels.sections.address}>
                             {renderInput('address')}
+                            <DefaultCountry field="address.country"/>
                         </Section>
                     )}
                 </div>

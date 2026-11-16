@@ -31,9 +31,9 @@
 
 ## 5. Country picker for address country
 
-- [ ] 5.1 TDD: the address composite field renders its country sub-field with the country picker in registration, admin edit and self-edit; verify the Vitest tests pass
-- [ ] 5.2 TDD: registration form starts with Česko in address country; verify the registration integration test passes
-- [ ] 5.3 Update E2E member steps that type address country to use the picker, add a scenario entering a country via "Jiný stát…", and verify the member E2E scenarios pass
+- [x] 5.1 TDD: the address composite field renders its country sub-field with the country picker in registration, admin edit and self-edit; verify the Vitest tests pass
+- [x] 5.2 TDD: registration form starts with Česko in address country; verify the registration integration test passes
+- [x] 5.3 Update E2E member steps that type address country to use the picker, add a scenario entering a country via "Jiný stát…", and verify the member E2E scenarios pass
 
 ## 6. Czech country names on member detail
 

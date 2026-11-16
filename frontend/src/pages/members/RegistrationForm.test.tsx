@@ -11,10 +11,12 @@ vi.mock('./RegistrationGuardianSections.tsx', () => ({
 }));
 
 const helpers = {
-    renderInput: (name: string) => <Field key={name} as="input" data-testid={`input-${name}`} name={name}/>,
+    renderInput: (name: string) => name === 'address'
+        ? <Field key={name} as="input" data-testid="input-address-country" name="address.country"/>
+        : <Field key={name} as="input" data-testid={`input-${name}`} name={name}/>,
     renderField: () => null,
     hasField: (name: string) => ['nationality', 'birthNumber'].includes(name),
-    hasType: () => false,
+    hasType: (type: string) => type === 'AddressRequest',
 } as unknown as HalFormPanelRenderHelpers;
 
 const renderForm = (initialValues: Record<string, unknown>) =>
@@ -36,5 +38,19 @@ describe('renderRegistrationForm nationality default', () => {
         renderForm({nationality: 'SK', birthNumber: ''});
 
         expect(screen.getByTestId('input-nationality')).toHaveValue('SK');
+    });
+});
+
+describe('renderRegistrationForm address country default', () => {
+    it('starts with CZ address country when empty', async () => {
+        renderForm({nationality: 'SK', birthNumber: '', address: {country: ''}});
+
+        expect(await screen.findByTestId('input-address-country')).toHaveValue('CZ');
+    });
+
+    it('keeps an existing address country', () => {
+        renderForm({nationality: 'SK', birthNumber: '', address: {country: 'DE'}});
+
+        expect(screen.getByTestId('input-address-country')).toHaveValue('DE');
     });
 });

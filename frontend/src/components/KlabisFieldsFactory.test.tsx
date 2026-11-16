@@ -27,6 +27,9 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
     const actual = await vi.importActual('./HalNavigator2/halforms/fields');
     return {
         ...(actual as object),
+        HalFormsCountry: ({prop}: HalFormsInputProps) => (
+            <div data-testid={`hal-country-${prop.name}`}>{prop.prompt}</div>
+        ),
         HalFormsInput: ({prop}: HalFormsInputProps) => (
             <div data-testid={`hal-input-${prop.name}`}>{prop.prompt}</div>
         ),
@@ -273,7 +276,7 @@ describe('KlabisFieldsFactory', () => {
             expect(mockSubElementProps).toHaveBeenCalledWith('street', {prompt: 'Ulice'});
             expect(mockSubElementProps).toHaveBeenCalledWith('city', {prompt: 'Město'});
             expect(mockSubElementProps).toHaveBeenCalledWith('postalCode', {prompt: 'PSČ'});
-            expect(mockSubElementProps).toHaveBeenCalledWith('country', {prompt: 'Stát'});
+            expect(mockSubElementProps).toHaveBeenCalledWith('country', {prompt: 'Stát', type: 'Country'});
             expect(mockSubElementProps).not.toHaveBeenCalledWith('streetAndNumber', expect.anything());
         });
     });

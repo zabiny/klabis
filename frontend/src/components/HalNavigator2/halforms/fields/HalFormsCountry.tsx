@@ -21,13 +21,14 @@ interface CountryPickerProps {
     name: string
     label?: string
     ariaLabel?: string
+    codeLabel?: string
     disabled?: boolean
     required?: boolean
     error?: string
 }
 
 export const CountryPicker = ({
-                                  value, onChange, onBlur, name, label, ariaLabel, disabled, required, error
+                                  value, onChange, onBlur, name, label, ariaLabel, codeLabel, disabled, required, error
                               }: CountryPickerProps): ReactElement => {
     const [otherChosen, setOtherChosen] = useState(false)
     const isOther = otherChosen || (value !== '' && !PRESET_CODES.includes(value))
@@ -62,7 +63,7 @@ export const CountryPicker = ({
                 <div className="flex items-center gap-3">
                     <TextField
                         name={`${name}-code`}
-                        aria-label="Kód státu"
+                        aria-label={codeLabel ? `Kód státu (${codeLabel})` : 'Kód státu'}
                         value={value}
                         maxLength={2}
                         disabled={disabled}
@@ -95,6 +96,7 @@ export const HalFormsCountry = ({prop, errorText, renderMode = 'field'}: HalForm
                 onBlur={() => form.setFieldTouched(field.name, true)}
                 label={renderMode === 'field' ? fieldLabel(prop) : undefined}
                 ariaLabel={renderMode === 'input' ? fieldLabel(prop) : undefined}
+                codeLabel={fieldLabel(prop)}
                 disabled={prop.readOnly || false}
                 required={prop.required}
                 error={errorText}

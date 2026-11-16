@@ -26,7 +26,7 @@ export const chooseCountry = async (page: Page, label: string, code: string) => 
     const preset = PRESET_COUNTRIES[code];
     await select(page, label, preset ?? 'Jiný stát…');
     if (!preset) {
-        await page.getByRole('textbox', {name: 'Kód státu'}).fill(code);
+        await page.getByRole('textbox', {name: `Kód státu (${label})`}).fill(code);
     }
 };
 

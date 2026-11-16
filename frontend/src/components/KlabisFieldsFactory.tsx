@@ -21,12 +21,17 @@ interface SubField {
     type?: string;
 }
 
+const SubFieldInput = ({props, sf}: {props: HalFormsInputProps; sf: SubField}): ReactElement => {
+    const subProps = props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type});
+    return sf.type === "Country" ? <HalFormsCountry {...subProps}/> : <HalFormsInput {...subProps}/>;
+};
+
 const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]): ReactElement => {
     if (props.renderMode === 'input') {
         return <>
             {subFields.map(sf => (
                 <DetailRow key={sf.key} label={sf.prompt}>
-                    <HalFormsInput {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+                    <SubFieldInput props={props} sf={sf}/>
                 </DetailRow>
             ))}
         </>;
@@ -34,7 +39,7 @@ const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]):
     const baseName = props.prop.name.replace(/\.\d+$/, '');
     return <FormGroupWrapper label={props.prop.prompt || getFieldLabel(baseName)}>
         {subFields.map(sf => (
-            <HalFormsInput key={sf.key} {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+            <SubFieldInput key={sf.key} props={props} sf={sf}/>
         ))}
     </FormGroupWrapper>;
 };
@@ -43,7 +48,7 @@ const ADDRESS_FIELDS: SubField[] = [
     {key: "street", attr: "street", prompt: "Ulice"},
     {key: "city", attr: "city", prompt: "Město"},
     {key: "postal", attr: "postalCode", prompt: "PSČ"},
-    {key: "country", attr: "country", prompt: "Stát"},
+    {key: "country", attr: "country", prompt: "Stát", type: "Country"},
 ];
 
 const IDENTITY_CARD_FIELDS: SubField[] = [

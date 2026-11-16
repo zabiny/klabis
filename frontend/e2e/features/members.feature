@@ -56,6 +56,11 @@ Feature: Members
       When Eva opens the edit form of her profile
       Then Eva's nationality "CZ" is shown read-only
 
+    Scenario: Member enters a country outside the common list
+      Given the address of Eva is in "CZ"
+      When Eva changes the country of her address to "FR"
+      Then Eva's address country is "FR"
+
   Rule: A member cannot update another member's profile
 
     Scenario: Member cannot edit another member's profile

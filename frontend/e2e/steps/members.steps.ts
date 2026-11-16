@@ -68,6 +68,12 @@ Given('the phone number of {persona} is {string}', async ({apiAs}, persona: Pers
     await member.patch(member.templateTarget(profile, 'updateMember'), {phone});
 });
 
+Given('the address of {persona} is in {string}', async ({apiAs}, persona: Persona, country: string) => {
+    const member = apiAs(personas[persona]);
+    const profile = await member.get((await member.root())._links!.profile.href) as Linked;
+    await member.patch(member.templateTarget(profile, 'updateMember'), {address: {...registrationBody('Eva').address, country}});
+});
+
 const addGuardianRow = async (page: Page) => {
     await click(page, 'Přidat');
     return page.getByTestId('collection-item').last();
@@ -89,6 +95,8 @@ const addNewGuardian = async (page: Page, lastName: string) => {
     await row.getByRole('textbox', {name: 'Telefon', exact: true}).fill('+420 777 333 444');
 };
 
+const COUNTRY_NAMES: Record<string, string> = {FR: 'Francie'};
+
 export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {
     await fill(page, 'Datum narození', body.dateOfBirth);
     await select(page, 'Pohlaví', 'Muž');
@@ -101,7 +109,7 @@ export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeo
     await fill(page, 'Ulice', body.address.street);
     await fill(page, 'Město', body.address.city);
     await fill(page, 'PSČ', body.address.postalCode);
-    await fill(page, 'Stát', body.address.country);
+    await chooseCountry(page, 'Stát', body.address.country);
 };
 
 const fillRegistrationForm = async (page: Page, lastName: string, body: ReturnType<typeof registrationBody>, contact = true) => {
@@ -176,6 +184,14 @@ When('{persona} opens the edit form of her profile', async ({page, actAs}, perso
     await expect(action(page, 'Uložit změny')).toBeVisible();
 });
 
+When('{persona} changes the country of her address to {string}', async ({page, actAs}, persona: Persona, code: string) => {
+    await actAs(persona);
+    await openOwnProfile(page);
+    await click(page, 'Upravit profil');
+    await chooseCountry(page, 'Stát', code);
+    await submit(page, 'Uložit změny');
+});
+
 When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await actAs(persona);
     await openMemberDetail(page, lastName);
@@ -211,6 +227,13 @@ Then('{persona}\'s nationality {string} is shown read-only', async ({page, curre
     await expect(page.getByLabel('Telefon')).toBeVisible();
     await expect(page.getByLabel(/^Státní příslušnost/)).toHaveCount(0);
     await expect(page.getByText('Státní příslušnost', {exact: true}).locator('xpath=..').getByText(nationality, {exact: true})).toBeVisible();
+});
+
+Then('{persona}\'s address country is {string}', async ({page, currentRole}, persona: Persona, code: string) => {
+    expectActing(currentRole, persona);
+    const label = page.getByText('Stát', {exact: true});
+    await expect(label.first()).toBeVisible();
+    await expect(page.getByText(new RegExp(`^(${code}|${COUNTRY_NAMES[code] ?? code})$`)).first()).toBeVisible();
 });
 
 Then('member {name} is suspended', async ({page}, lastName: string) => {
