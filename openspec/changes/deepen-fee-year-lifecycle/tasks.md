@@ -17,9 +17,9 @@
 
 ## 3. Cleanup and supporting documents
 
-- [ ] 3.1 Delete the deprecated, uncalled `listPublications()` and `listClosedPublications()` from `FeeSelectionCampaignManagementPort` and its service, then compile to prove nothing referenced them.
-- [ ] 3.2 Update the two `CampaignEndProcessingPort` references in `openspec/changes/introduce-quartz-scheduler/proposal.md` to the new port.
-- [ ] 3.3 Confirm the **Fee year (příspěvkový rok)** term is present in `GLOSSARY.md` (added during the architecture review).
+- [x] 3.1 Delete the deprecated, uncalled `listPublications()` and `listClosedPublications()` from `FeeSelectionCampaignManagementPort` and its service, then compile to prove nothing referenced them.
+- [x] 3.2 Update the two `CampaignEndProcessingPort` references in `openspec/changes/introduce-quartz-scheduler/proposal.md` to the new port.
+- [x] 3.3 Confirm the **Fee year (příspěvkový rok)** term is present in `GLOSSARY.md` (added during the architecture review).
 
 ## 4. Verification
 
