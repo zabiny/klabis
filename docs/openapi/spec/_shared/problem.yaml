@@ -85,6 +85,8 @@ components:
         - /errors/invalid-bank-account-number           # 400, field bankAccountNumber, no parameters
         - /errors/invalid-email-address                 # 400, field email, no parameters
         - /errors/invalid-phone-number                  # 400, field phone, no parameters
+        - /errors/invalid-nationality                   # 400, field nationality, no parameters
+        - /errors/invalid-address-country               # 400, field address.country, no parameters
         - /errors/date-of-birth-in-future               # 400, field dateOfBirth, no parameters
         - /errors/medical-course-validity-not-after-completion  # 400, field medicalCourse, no parameters
         - /errors/member-already-suspended              # 400, no parameters

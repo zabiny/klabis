@@ -11,12 +11,12 @@ class AddressTest extends ValueObjectTestBase<Address> {
 
     @Override
     protected Address createValidValue() {
-        return Address.of("Hlavní 123", "Praha", "11000", "CZ");
+        return Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
     }
 
     @Override
     protected Address createDifferentValue() {
-        return Address.of("Different", "Brno", "60200", "CZ");
+        return Address.of("Different", "Brno", "60200", Country.of("CZ"));
     }
 
     @Override
@@ -35,13 +35,13 @@ class AddressTest extends ValueObjectTestBase<Address> {
         String country = "CZ";
 
         // When
-        Address address = Address.of(street, city, postalCode, country);
+        Address address = Address.of(street, city, postalCode, Country.of(country));
 
         // Then
         assertThat(address.street()).isEqualTo(street);
         assertThat(address.city()).isEqualTo(city);
         assertThat(address.postalCode()).isEqualTo(postalCode);
-        assertThat(address.country()).isEqualTo(country);
+        assertThat(address.country()).isEqualTo(Country.of(country));
     }
 
     @Nested
@@ -51,7 +51,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when street is null")
         void shouldThrowWhenStreetIsNull() {
-            assertThatThrownBy(() -> Address.of(null, "Praha", "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of(null, "Praha", "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Street is required");
         }
@@ -59,7 +59,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when street is blank")
         void shouldThrowWhenStreetIsBlank() {
-            assertThatThrownBy(() -> Address.of("   ", "Praha", "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of("   ", "Praha", "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Street is required");
         }
@@ -68,7 +68,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should throw exception when street exceeds maximum length")
         void shouldThrowWhenStreetExceedsMaxLength() {
             String longStreet = "a".repeat(201);
-            assertThatThrownBy(() -> Address.of(longStreet, "Praha", "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of(longStreet, "Praha", "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Street must not exceed 200 characters");
         }
@@ -77,7 +77,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should accept street at maximum length")
         void shouldAcceptStreetAtMaxLength() {
             String maxStreet = "a".repeat(200);
-            assertThatCode(() -> Address.of(maxStreet, "Praha", "11000", "CZ"))
+            assertThatCode(() -> Address.of(maxStreet, "Praha", "11000", Country.of("CZ")))
                     .doesNotThrowAnyException();
         }
     }
@@ -89,7 +89,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when city is null")
         void shouldThrowWhenCityIsNull() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", null, "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", null, "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("City is required");
         }
@@ -97,7 +97,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when city is blank")
         void shouldThrowWhenCityIsBlank() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "   ", "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "   ", "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("City is required");
         }
@@ -106,7 +106,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should throw exception when city exceeds maximum length")
         void shouldThrowWhenCityExceedsMaxLength() {
             String longCity = "a".repeat(101);
-            assertThatThrownBy(() -> Address.of("Hlavní 123", longCity, "11000", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", longCity, "11000", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("City must not exceed 100 characters");
         }
@@ -115,7 +115,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should accept city at maximum length")
         void shouldAcceptCityAtMaxLength() {
             String maxCity = "a".repeat(100);
-            assertThatCode(() -> Address.of("Hlavní 123", maxCity, "11000", "CZ"))
+            assertThatCode(() -> Address.of("Hlavní 123", maxCity, "11000", Country.of("CZ")))
                     .doesNotThrowAnyException();
         }
     }
@@ -127,7 +127,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when postal code is null")
         void shouldThrowWhenPostalCodeIsNull() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", null, "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", null, Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Postal code is required");
         }
@@ -135,7 +135,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when postal code is blank")
         void shouldThrowWhenPostalCodeIsBlank() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "   ", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "   ", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Postal code is required");
         }
@@ -144,7 +144,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should throw exception when postal code exceeds maximum length")
         void shouldThrowWhenPostalCodeExceedsMaxLength() {
             String longPostalCode = "a".repeat(21);
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", longPostalCode, "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", longPostalCode, Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Postal code must not exceed 20 characters");
         }
@@ -153,18 +153,18 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @DisplayName("Should accept postal code at maximum length")
         void shouldAcceptPostalCodeAtMaxLength() {
             String maxPostalCode = "a".repeat(20);
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", maxPostalCode, "CZ"))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", maxPostalCode, Country.of("CZ")))
                     .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("Should throw exception for invalid postal code with special characters")
         void shouldThrowForInvalidPostalCodeWithSpecialCharacters() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "110@00", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "110@00", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Postal code must be alphanumeric");
 
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "110!00", "CZ"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "110!00", Country.of("CZ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Postal code must be alphanumeric");
         }
@@ -172,14 +172,14 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should accept valid postal code with hyphen")
         void shouldAcceptValidPostalCodeWithHyphen() {
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "110-00", "CZ"))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "110-00", Country.of("CZ")))
                     .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("Should accept valid postal code with space")
         void shouldAcceptValidPostalCodeWithSpace() {
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "110 00", "CZ"))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "110 00", Country.of("CZ")))
                     .doesNotThrowAnyException();
         }
     }
@@ -199,52 +199,50 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should throw exception when country is blank")
         void shouldThrowWhenCountryIsBlank() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", "   "))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("   ")))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Country is required");
         }
 
         @Test
-        @DisplayName("Should accept valid 2-letter country codes including XX")
+        @DisplayName("Should accept codes of existing countries")
         void shouldAcceptValid2LetterCountryCodes() {
-            // XX is a valid 2-letter format even though it's not a real country code
-            // We validate format, not existence in ISO registry
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", "XX"))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("FR")))
                     .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("Should throw exception for invalid country code with numbers")
         void shouldThrowForInvalidCountryCodeWithNumbers() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", "12"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("12")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Country must be a valid ISO 3166-1 alpha-2 code");
+                    .hasMessageContaining("existing country");
         }
 
         @Test
         @DisplayName("Should throw exception for invalid country code with 3 letters")
         void shouldThrowForInvalidCountryCodeWith3Letters() {
-            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", "ABC"))
+            assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("ABC")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Country must be a valid ISO 3166-1 alpha-2 code");
+                    .hasMessageContaining("existing country");
         }
 
         @Test
         @DisplayName("Should accept valid ISO 3166-1 alpha-2 country codes")
         void shouldAcceptValidISOCountryCodes() {
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .doesNotThrowAnyException();
-            assertThatCode(() -> Address.of("Main St", "New York", "10001", "US"))
+            assertThatCode(() -> Address.of("Main St", "New York", "10001", Country.of("US")))
                     .doesNotThrowAnyException();
-            assertThatCode(() -> Address.of("High St", "London", "SW1A", "GB"))
+            assertThatCode(() -> Address.of("High St", "London", "SW1A", Country.of("GB")))
                     .doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("Should normalize country code to uppercase")
         void shouldNormalizeCountryCodeToUppercase() {
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "cz");
-            assertThat(address.country()).isEqualTo("CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("cz"));
+            assertThat(address.country().code()).isEqualTo("CZ");
         }
     }
 
@@ -255,11 +253,11 @@ class AddressTest extends ValueObjectTestBase<Address> {
         @Test
         @DisplayName("Should trim whitespace from all fields")
         void shouldTrimWhitespaceFromAllFields() {
-            Address address = Address.of("  Hlavní 123  ", "  Praha  ", "  11000  ", "  CZ  ");
+            Address address = Address.of("  Hlavní 123  ", "  Praha  ", "  11000  ", Country.of("  CZ  "));
             assertThat(address.street()).isEqualTo("Hlavní 123");
             assertThat(address.city()).isEqualTo("Praha");
             assertThat(address.postalCode()).isEqualTo("11000");
-            assertThat(address.country()).isEqualTo("CZ");
+            assertThat(address.country().code()).isEqualTo("CZ");
         }
     }
 }

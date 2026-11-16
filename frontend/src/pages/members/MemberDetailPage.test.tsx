@@ -289,6 +289,32 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('11000')).toBeInTheDocument();
     });
 
+    describe('country names', () => {
+        const withEditTemplate = {_templates: {updateMember: selfEditTemplateWithReservedFields}};
+
+        it('shows nationality and address country by Czech name', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                nationality: 'SK',
+                address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'CZ'},
+                ...withEditTemplate,
+            })));
+            expect(screen.getByText('Slovensko')).toBeInTheDocument();
+            expect(screen.getByText('Česko')).toBeInTheDocument();
+            expect(screen.queryByText('SK')).not.toBeInTheDocument();
+            expect(screen.queryByText('CZ')).not.toBeInTheDocument();
+        });
+
+        it('falls back to the raw code for an unknown country code', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                nationality: 'ZZ1',
+                address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'XX1'},
+                ...withEditTemplate,
+            })));
+            expect(screen.getByText('ZZ1')).toBeInTheDocument();
+            expect(screen.getByText('XX1')).toBeInTheDocument();
+        });
+    });
+
     it('renders address section gracefully with a placeholder when member has no address (imported member)', () => {
         renderPage(createMockPageData(mockMemberDetailData({address: undefined})));
         expect(screen.getByText('ADRESA')).toBeInTheDocument();
@@ -796,6 +822,75 @@ describe('MemberDetailPage', () => {
                 for (const reserved of ['firstName', 'lastName', 'dateOfBirth', 'gender', 'birthNumber']) {
                     expect(body).not.toHaveProperty(reserved);
                 }
+            });
+        });
+
+        describe('nationality marked readOnly or absent in the edit template', () => {
+            const withNationalityReadOnly: HalFormsTemplate = {
+                ...selfEditTemplateWithReservedFields,
+                properties: [
+                    ...selfEditTemplateWithReservedFields.properties!,
+                    {name: 'nationality', type: 'text', prompt: 'Státní příslušnost', readOnly: true},
+                ],
+            };
+            const withoutNationality: HalFormsTemplate = selfEditTemplateWithReservedFields;
+
+            it.each([
+                ['readOnly', withNationalityReadOnly],
+                ['absent', withoutNationality],
+            ])('shows nationality value without input and keeps birth number read-only when %s', async (_label, template) => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(mockMemberDetailData({
+                    nationality: 'CZ',
+                    birthNumber: '9003151234',
+                    _templates: {updateMember: template},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(document.querySelector('[name="nationality"]')).not.toBeInTheDocument();
+                expect(screen.queryByDisplayValue('CZ')).not.toBeInTheDocument();
+                expect(screen.getAllByText('Česko').length).toBeGreaterThan(0);
+                expect(screen.queryByText('CZ')).not.toBeInTheDocument();
+                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+                expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+            });
+
+            it('hides birth number for a non-CZ nationality shown read-only', async () => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(mockMemberDetailData({
+                    nationality: 'SK',
+                    birthNumber: null,
+                    _templates: {updateMember: withNationalityReadOnly},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByText('Slovensko')).toBeInTheDocument();
+                expect(screen.queryByText('SK')).not.toBeInTheDocument();
+                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+            });
+
+            it('omits nationality from the PATCH body', async () => {
+                const user = userEvent.setup();
+                const mutate = vi.fn();
+                vi.mocked(useAuthorizedMutation).mockReturnValue({
+                    mutate,
+                    mutateAsync: vi.fn(),
+                    isPending: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedMutation>);
+                renderPage(createMockPageData(mockMemberDetailData({
+                    _templates: {updateMember: withNationalityReadOnly},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+                await user.click(screen.getByRole('button', {name: /uložit změny/i}));
+
+                await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
+                const body = mutate.mock.calls[0][0].data as Record<string, unknown>;
+                expect(body).not.toHaveProperty('nationality');
+                expect(body).not.toHaveProperty('birthNumber');
             });
         });
 

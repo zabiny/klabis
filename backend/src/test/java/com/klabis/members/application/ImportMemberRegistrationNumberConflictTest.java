@@ -43,8 +43,8 @@ class ImportMemberRegistrationNumberConflictTest {
 
     private RegistrationPort.RegisterNewMember detailsFor(String email, LocalDate dateOfBirth) {
         return new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", "Novák", dateOfBirth, "CZ", Gender.MALE),
-                Address.of("Testovací 1", "Praha", "10000", "CZ"),
+                PersonalInformation.of("Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                Address.of("Testovací 1", "Praha", "10000", Country.of("CZ")),
                 EmailAddress.of(email),
                 PhoneNumber.of("+420777888999"),
                 BirthNumber.of(dateOfBirth.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd")) + "/1234"),

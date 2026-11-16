@@ -178,7 +178,9 @@ function renderFieldInternal(
         errorText: errorText || undefined,
         renderMode,
         subElementProps: (attrName, conf) => {
-            return subElementInputProps(attrName, fieldProps, conf);
+            const subProps = subElementInputProps(attrName, fieldProps, conf);
+            const subError = (submitted || getIn(touched, subProps.prop.name)) && getIn(errors, subProps.prop.name);
+            return {...subProps, errorText: typeof subError === 'string' && subError ? subError : undefined};
         },
     };
 

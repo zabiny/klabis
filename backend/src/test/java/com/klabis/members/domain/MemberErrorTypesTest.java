@@ -49,8 +49,8 @@ class MemberErrorTypesTest {
         assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
                 .id(new MemberId(UUID.randomUUID()))
                 .registrationNumber(new RegistrationNumber("ZBM9001"))
-                .personalInformation(PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE))
-                .address(new Address("Ulice 1", "Město", "11000", "CZ"))
+                .personalInformation(PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("CZ"), Gender.MALE))
+                .address(new Address("Ulice 1", "Město", "11000", Country.of("CZ")))
                 .build()))
                 .isInstanceOf(MemberDataRequiredException.class)
                 .extracting(e -> ((UserFacingError) e).errorType())
@@ -94,7 +94,7 @@ class MemberErrorTypesTest {
     void dateOfBirthInFuture() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
 
-        assertThatThrownBy(() -> PersonalInformation.of("Jan", "Novák", tomorrow, "CZ", Gender.MALE))
+        assertThatThrownBy(() -> PersonalInformation.of("Jan", "Novák", tomorrow, Nationality.of("CZ"), Gender.MALE))
                 .isInstanceOfSatisfying(DateOfBirthInFutureException.class, ex -> {
                     assertThat(ex.errorType()).isEqualTo("date-of-birth-in-future");
                     assertThat(ex.field()).isEqualTo("dateOfBirth");

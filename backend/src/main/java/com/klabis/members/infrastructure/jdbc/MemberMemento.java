@@ -164,7 +164,7 @@ class MemberMemento implements Persistable<UUID> {
             memento.firstName = personalInfo.getFirstName();
             memento.lastName = personalInfo.getLastName();
             memento.dateOfBirth = personalInfo.getDateOfBirth();
-            memento.nationality = personalInfo.getNationalityCode();
+            memento.nationality = personalInfo.getNationality().code();
             memento.gender = personalInfo.getGender();
         }
 
@@ -173,7 +173,7 @@ class MemberMemento implements Persistable<UUID> {
             memento.street = address.street();
             memento.city = address.city();
             memento.postalCode = address.postalCode();
-            memento.country = address.country();
+            memento.country = address.country().code();
         }
 
         memento.email = member.getEmail() != null ? member.getEmail().value() : null;
@@ -237,7 +237,7 @@ class MemberMemento implements Persistable<UUID> {
                     this.firstName,
                     this.lastName,
                     this.dateOfBirth,
-                    this.nationality,
+                    Nationality.of(this.nationality),
                     this.gender
             );
         }
@@ -248,7 +248,7 @@ class MemberMemento implements Persistable<UUID> {
                     this.street,
                     this.city,
                     this.postalCode,
-                    this.country
+                    Country.of(this.country)
             );
         }
 

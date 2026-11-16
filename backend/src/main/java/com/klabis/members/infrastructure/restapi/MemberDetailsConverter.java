@@ -38,6 +38,7 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
+    @Mapping(target = "nationality", source = "nationality.country.code")
     @Mapping(target = "email", source = "email.value")
     @Mapping(target = "phone", source = "phone.value")
     @Mapping(target = "birthNumber", source = "birthNumber.value")
@@ -50,6 +51,7 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "displayContact", ignore = true)
     MemberDetailsResponse convert(Member member);
 
+    @Mapping(target = "country", source = "country.code")
     AddressResponse addressToResponse(Address address);
 
     Gender genderToDto(com.klabis.members.domain.Gender gender);

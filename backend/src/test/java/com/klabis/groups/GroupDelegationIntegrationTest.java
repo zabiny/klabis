@@ -16,6 +16,8 @@ import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Nationality;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
@@ -107,8 +109,8 @@ class GroupDelegationIntegrationTest {
         LocalDate dateOfBirth = LocalDate.now().minusYears(30);
         String birthNumber = dateOfBirth.format(DateTimeFormatter.ofPattern("yyMMdd")) + "/1234";
         Member registered = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", lastName + unique(), dateOfBirth, "CZ", Gender.MALE),
-                Address.of("Hlavní 1", "Brno", "60200", "CZ"),
+                PersonalInformation.of("Jan", lastName + unique(), dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                Address.of("Hlavní 1", "Brno", "60200", Country.of("CZ")),
                 EmailAddress.of("jan." + unique() + "@example.com"), PhoneNumber.of("+420777000111"),
                 BirthNumber.of(birthNumber), null, null));
         UserId userId = registered.getId().toUserId();

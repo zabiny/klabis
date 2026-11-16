@@ -2,87 +2,40 @@ package com.klabis.members.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
 
-import java.util.Objects;
+import org.springframework.util.Assert;
 
 /**
- * Value Object representing a nationality as an ISO 3166-1 alpha-2 country code.
- * <p>
- * Only 2-letter ISO 3166-1 alpha-2 codes are accepted (e.g., "CZ", "US", "GB").
- * All nationality codes are normalized to uppercase for consistency.
+ * A person's nationality, expressed as the {@link Country} whose citizenship they hold.
  */
 @ValueObject
-public record Nationality(String code) {
+public record Nationality(Country country) {
 
-    private static final String ISO_3166_PATTERN = "^[A-Za-z]{2}$";
-
-    /**
-     * Creates a Nationality value object with validation.
-     *
-     * @param code the ISO 3166-1 alpha-2 country code (2 letters)
-     * @throws IllegalArgumentException if the code is null, blank, or not a valid ISO 3166-1 alpha-2 format
-     */
     public Nationality {
-        Objects.requireNonNull(code, "Nationality code is required");
-
-        String trimmed = code.trim();
-
-        if (trimmed.isBlank()) {
-            throw new IllegalArgumentException("Nationality code cannot be blank");
-        }
-
-        if (!trimmed.matches(ISO_3166_PATTERN)) {
-            throw new IllegalArgumentException(
-                    "Nationality must be a valid ISO 3166-1 alpha-2 code (2-letter country code)"
-            );
-        }
-
-        // Normalize to uppercase
-        code = trimmed.toUpperCase();
+        Assert.notNull(country, "Nationality country is required");
     }
 
-    /**
-     * Static factory method to create a Nationality from a string code.
-     *
-     * @param code the ISO 3166-1 alpha-2 country code
-     * @return Nationality value object
-     * @throws IllegalArgumentException if validation fails
-     */
     public static Nationality of(String code) {
-        return new Nationality(code);
+        return new Nationality(Country.of(code));
     }
 
-    /**
-     * Returns the ISO 3166-1 alpha-2 country code in uppercase.
-     *
-     * @return the 2-letter country code (e.g., "CZ", "US")
-     */
-    @Override
+    public static Nationality ofNullable(String code) {
+        return code == null ? null : of(code);
+    }
+
+    public static String codeOf(Nationality nationality) {
+        return nationality == null ? null : nationality.code();
+    }
+
     public String code() {
-        return code; // Already normalized in constructor
+        return country.code();
     }
 
-    /**
-     * Checks if this nationality is Czech (CZ).
-     *
-     * @return true if the nationality code is "CZ"
-     */
     public boolean isCzech() {
-        return "CZ".equals(code);
-    }
-
-    /**
-     * Returns the display name of this nationality.
-     * Note: This is a placeholder implementation that returns the code.
-     * A full implementation would use a locale/database mapping.
-     *
-     * @return the country code (placeholder for full name)
-     */
-    public String displayName() {
-        return code;
+        return "CZ".equals(code());
     }
 
     @Override
     public String toString() {
-        return code;
+        return code();
     }
 }

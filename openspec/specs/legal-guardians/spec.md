@@ -272,7 +272,7 @@ A legal guardian group SHALL always delegate "Úprava údajů člena" to its gua
 #### Scenario: Guardian cannot change reserved data of their child
 
 - **WHEN** a legal guardian without MEMBERS:MANAGE opens the edit form of their minor child
-- **THEN** first name, last name, date of birth, gender and birth number are shown read-only
+- **THEN** first name, last name, date of birth, gender, nationality and birth number are shown read-only
 
 #### Scenario: Non-member guardian edits their child's data
 

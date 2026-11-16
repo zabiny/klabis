@@ -1105,6 +1105,7 @@ components:
           example: CZ
           minLength: 2
           maxLength: 2
+          x-hal-input-type: Country
         gender:
           $ref: '#/components/schemas/Gender'
           x-hal-input-type: Gender
@@ -1204,6 +1205,9 @@ components:
           type: ['string', 'null']
           minLength: 2
           maxLength: 2
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
+          x-hal-input-type: Country
         identityCard:
           $ref: '#/components/schemas/IdentityCardDto'
           x-klabis-nullable: true
@@ -1343,8 +1347,8 @@ components:
         country:
           type: string
           x-klabis-not-blank: true
-          description: ISO 3166-1 alpha-2 code
-          # Kept in sync with Address.ISO_3166_ALPHA_2_PATTERN.
+          description: ISO 3166-1 alpha-2 code; must name an existing country
+          # Format pre-check only; whether the code names an existing country is decided by the Country value object.
           pattern: '^[A-Za-z]{2}$'
 
     IdentityCardDto:

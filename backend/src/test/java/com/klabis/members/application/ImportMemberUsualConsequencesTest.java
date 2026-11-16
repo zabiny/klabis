@@ -68,8 +68,8 @@ class ImportMemberUsualConsequencesTest {
         trainingGroupRepository.save(group);
 
         RegistrationPort.RegisterNewMember details = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Imported", "Child", dateOfBirth, "CZ", Gender.MALE),
-                Address.of("Importovaná 1", "Praha", "10000", "CZ"),
+                PersonalInformation.of("Imported", "Child", dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                Address.of("Importovaná 1", "Praha", "10000", Country.of("CZ")),
                 EmailAddress.of("imported.consequences.test@example.com"),
                 PhoneNumber.of("+420777123456"),
                 BirthNumber.of(dateOfBirth.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd")) + "/1234"),

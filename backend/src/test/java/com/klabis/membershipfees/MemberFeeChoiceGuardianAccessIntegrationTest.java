@@ -12,6 +12,8 @@ import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Nationality;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
@@ -106,8 +108,8 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
 
     private Member registerAdult(String first, String last, String phone) {
         return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of(first, last, LocalDate.of(1985, 5, 5), "CZ", Gender.FEMALE),
-                Address.of("Hlavní 1", "Praha", "11000", "CZ"),
+                PersonalInformation.of(first, last, LocalDate.of(1985, 5, 5), Nationality.of("CZ"), Gender.FEMALE),
+                Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")),
                 EmailAddress.of(first.toLowerCase() + "." + UUID.randomUUID() + "@example.com"),
                 PhoneNumber.of(phone),
                 BirthNumber.of("855505/1234"),
@@ -116,8 +118,8 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
 
     private Member registerMinor(List<LegalGuardianPort.GuardianInput> guardians) {
         return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), "CZ", Gender.FEMALE),
-                Address.of("Dětská 1", "Praha", "11000", "CZ"),
+                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), Nationality.of("CZ"), Gender.FEMALE),
+                Address.of("Dětská 1", "Praha", "11000", Country.of("CZ")),
                 null, null, BirthNumber.of("900101/1234"), null, null, guardians, null));
     }
 

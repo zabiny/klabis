@@ -248,8 +248,8 @@ class MemberSyncAdapterTest {
         Member member = Member.register(new Member.RegisterMember(
                 MEMBER_ID,
                 new RegistrationNumber("ZBM0001"),
-                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 15), "CZ", Gender.MALE),
-                new Address("Testovací 1", "Brno", "60000", "CZ"),
+                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 15), Nationality.of("CZ"), Gender.MALE),
+                new Address("Testovací 1", "Brno", "60000", Country.of("CZ")),
                 EmailAddress.of("jan@example.com"),
                 PhoneNumber.of("+420123456789"),
                 BirthNumber.of("9001151234"),

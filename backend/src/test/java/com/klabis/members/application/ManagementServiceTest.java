@@ -71,7 +71,7 @@ class ManagementServiceTest {
                 .withNationality("SK")
                 .withEmail("john.doe@example.com")
                 .withPhone("+420123456789")
-                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                 .build();
     }
 
@@ -151,7 +151,7 @@ class ManagementServiceTest {
                     .withRegistrationNumber("ZBM5678")
                     .withEmail("jane.smith@example.com")
                     .withPhone("+420987654321")
-                    .withAddress(Address.of("Vinohradská 456", "Praha", "12000", "CZ"))
+                    .withAddress(Address.of("Vinohradská 456", "Praha", "12000", Country.of("CZ")))
                     .build();
 
             // Default: no outstanding debt — only override in debt-specific tests
@@ -443,7 +443,7 @@ class ManagementServiceTest {
                         .withRegistrationNumber("ZBM9999")
                         .withEmail("bob.jones@example.com")
                         .withPhone("+420111222333")
-                        .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
+                        .withAddress(Address.of("Řeznická 1", "Brno", "60200", Country.of("CZ")))
                         .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                         .build();
 
@@ -526,11 +526,11 @@ class ManagementServiceTest {
                     .lastName("Svoboda")
                     .dateOfBirth(java.time.LocalDate.of(1985, 3, 20))
                     .gender(Gender.MALE)
-                    .nationality(new Nationality("SK"))
+                    .nationality(Nationality.of("SK"))
                     .birthNumber(null)
                     .email(EmailAddress.of("petr.svoboda@example.com"))
                     .phone(PhoneNumber.of("+420999888777"))
-                    .address(Address.of("Nová 1", "Brno", "60200", "CZ"))
+                    .address(Address.of("Nová 1", "Brno", "60200", Country.of("CZ")))
                     .chipNumber("111")
                     .build();
 
@@ -554,11 +554,11 @@ class ManagementServiceTest {
                     .lastName("Svoboda")
                     .dateOfBirth(java.time.LocalDate.of(1985, 3, 20))
                     .gender(Gender.MALE)
-                    .nationality(new Nationality("SK"))
+                    .nationality(Nationality.of("SK"))
                     .birthNumber(null)
                     .email(EmailAddress.of("petr.svoboda@example.com"))
                     .phone(PhoneNumber.of("+420999888777"))
-                    .address(Address.of("Nová 1", "Brno", "60200", "CZ"))
+                    .address(Address.of("Nová 1", "Brno", "60200", Country.of("CZ")))
                     .chipNumber("111")
                     .build();
 
@@ -747,7 +747,7 @@ class ManagementServiceTest {
                     .withRegistrationNumber("ZBM9998")
                     .withEmail("jane.smith@example.com")
                     .withPhone("+420987654321")
-                    .withAddress(Address.of("Reakční 10", "Brno", "60200", "CZ"))
+                    .withAddress(Address.of("Reakční 10", "Brno", "60200", Country.of("CZ")))
                     .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                     .build();
         }
@@ -775,7 +775,7 @@ class ManagementServiceTest {
                     .withRegistrationNumber("ZBM9999")
                     .withEmail("bob.jones@example.com")
                     .withPhone("+420111222333")
-                    .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
+                    .withAddress(Address.of("Řeznická 1", "Brno", "60200", Country.of("CZ")))
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));

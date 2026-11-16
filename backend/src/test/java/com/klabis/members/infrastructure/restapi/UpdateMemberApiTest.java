@@ -100,7 +100,7 @@ class UpdateMemberApiTest {
                 .withDateOfBirth(LocalDate.of(1990, 1, 1))
                 .withEmail("jan.novak@example.com")
                 .withPhone("+420777123456")
-                .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
                 .build();
     }
 
@@ -207,7 +207,7 @@ class UpdateMemberApiTest {
                 assertThat(command.address().street()).isEqualTo("New Street 123");
                 assertThat(command.address().city()).isEqualTo("Prague");
                 assertThat(command.address().postalCode()).isEqualTo("11000");
-                assertThat(command.address().country()).isEqualTo("CZ");
+                assertThat(command.address().country().code()).isEqualTo("CZ");
             }
 
             @Test
@@ -274,6 +274,27 @@ class UpdateMemberApiTest {
                         .andExpect(status().isForbidden());
 
                 verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
+            @DisplayName("updating nationality should be saved when admin")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldUpdateNationalityWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("{\"nationality\": \"SK\"}")
+                        )
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.UpdateMember.class);
+                verify(memberService).updateMember(any(MemberId.class), captor.capture());
+                assertThat(captor.getValue().nationality().code()).isEqualTo("SK");
             }
 
             @Test
@@ -784,6 +805,24 @@ class UpdateMemberApiTest {
             }
 
             @Test
+            @DisplayName("updating own nationality should return 403 — it needs MEMBERS:MANAGE")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
+                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                            ids = "00000000-0000-0000-0000-000000000001"))
+            void shouldRejectMemberUpdatingOwnNationality() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("{\"nationality\": \"SK\"}")
+                        )
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
             @DisplayName("updating own chipNumber should return 204 — it carries no authority")
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
                     targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
@@ -863,7 +902,8 @@ class UpdateMemberApiTest {
                     "email,invalid-email,invalid-email-address",
                     "phone,123,invalid-phone-number",
                     "birthNumber,12345,invalid-birth-number",
-                    "bankAccountNumber,abc,invalid-bank-account-number"
+                    "bankAccountNumber,abc,invalid-bank-account-number",
+                    "nationality,QQ,invalid-nationality"
             })
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WithTypeAndFieldWhenValueInvalid(String field, String value, String type) throws Exception {
@@ -879,6 +919,25 @@ class UpdateMemberApiTest {
                         .andExpect(jsonPath("$.type").value("/errors/" + type))
                         .andExpect(jsonPath("$.field").value(field))
                         .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("address with an unknown country is refused at address.country")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {"address": {"street": "Hlavní 1", "city": "Praha", "postalCode": "11000", "country": "QQ"}}
+                                                """)
+                        )
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
+                        .andExpect(jsonPath("$.field").value("address.country"));
             }
 
             @Test
@@ -997,6 +1056,32 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("address country naming no existing country should return 400 and save nothing")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenAddressCountryIsUnknown() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "address": {
+                                                        "street": "New Street 123",
+                                                        "city": "Prague",
+                                                        "postalCode": "11000",
+                                                        "country": "QQ"
+                                                    }
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isBadRequest());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
             }
 
             @Test

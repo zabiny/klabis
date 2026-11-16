@@ -5,7 +5,7 @@ import {type Linked} from '../support/halApi';
 import {minorDateOfBirth} from '../support/dates';
 import {createTrainingGroup, findMemberPath, guardianEmail, registerMember, REGISTERED_FIRST_NAME, registrationBody} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
-import {action, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
+import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
 
 const {Given, When, Then} = createBdd(test);
 
@@ -68,6 +68,12 @@ Given('the phone number of {persona} is {string}', async ({apiAs}, persona: Pers
     await member.patch(member.templateTarget(profile, 'updateMember'), {phone});
 });
 
+Given('the address of {persona} is in {string}', async ({apiAs}, persona: Persona, country: string) => {
+    const member = apiAs(personas[persona]);
+    const profile = await member.get((await member.root())._links!.profile.href) as Linked;
+    await member.patch(member.templateTarget(profile, 'updateMember'), {address: {...registrationBody('Eva').address, country}});
+});
+
 const addGuardianRow = async (page: Page) => {
     await click(page, 'Přidat');
     return page.getByTestId('collection-item').last();
@@ -92,7 +98,7 @@ const addNewGuardian = async (page: Page, lastName: string) => {
 export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {
     await fill(page, 'Datum narození', body.dateOfBirth);
     await select(page, 'Pohlaví', 'Muž');
-    await fill(page, 'Státní příslušnost', body.nationality);
+    await chooseCountry(page, 'Státní příslušnost', body.nationality);
     await fill(page, 'Rodné číslo', body.birthNumber);
     if (contact) {
         await fill(page, 'E-mail', body.email);
@@ -101,7 +107,7 @@ export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeo
     await fill(page, 'Ulice', body.address.street);
     await fill(page, 'Město', body.address.city);
     await fill(page, 'PSČ', body.address.postalCode);
-    await fill(page, 'Stát', body.address.country);
+    await chooseCountry(page, 'Stát', body.address.country);
 };
 
 const fillRegistrationForm = async (page: Page, lastName: string, body: ReturnType<typeof registrationBody>, contact = true) => {
@@ -169,6 +175,21 @@ When('{persona} changes the phone number in the profile to {string}', async ({pa
     await submit(page, 'Uložit změny');
 });
 
+When('{persona} opens the edit form of her profile', async ({page, actAs}, persona: Persona) => {
+    await actAs(persona);
+    await openOwnProfile(page);
+    await click(page, 'Upravit profil');
+    await expect(action(page, 'Uložit změny')).toBeVisible();
+});
+
+When('{persona} changes the country of her address to {string}', async ({page, actAs}, persona: Persona, code: string) => {
+    await actAs(persona);
+    await openOwnProfile(page);
+    await click(page, 'Upravit profil');
+    await chooseCountry(page, 'Stát', code);
+    await submit(page, 'Uložit změny');
+});
+
 When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await actAs(persona);
     await openMemberDetail(page, lastName);
@@ -197,6 +218,18 @@ Then('the detail shows the personal data and address of member {name}', async ({
 Then('{persona}\'s profile shows the phone number {string}', async ({page, currentRole}, persona: Persona, phone: string) => {
     expectActing(currentRole, persona);
     await expect(page.getByText(phone, {exact: true}).first()).toBeVisible();
+});
+
+Then('{persona}\'s nationality {string} is shown read-only', async ({page, currentRole}, persona: Persona, nationality: string) => {
+    expectActing(currentRole, persona);
+    await expect(page.getByLabel('Telefon')).toBeVisible();
+    await expect(page.getByLabel(/^Státní příslušnost/)).toHaveCount(0);
+    await expect(page.getByText('Státní příslušnost', {exact: true}).locator('xpath=..').getByText(nationality, {exact: true})).toBeVisible();
+});
+
+Then('{persona}\'s address country is {string}', async ({page, currentRole}, persona: Persona, country: string) => {
+    expectActing(currentRole, persona);
+    await expect(page.getByText('Stát', {exact: true}).locator('xpath=..').getByText(country, {exact: true})).toBeVisible();
 });
 
 Then('member {name} is suspended', async ({page}, lastName: string) => {

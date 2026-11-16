@@ -55,11 +55,11 @@ class RegisterMemberAutoProvisioningTest {
     @Transactional
     void shouldCreateUserWhenMemberRegistered() {
         // Create a test shared ID
-        Address address = Address.of("Street 1", "City 1", "10000", "CZ");
+        Address address = Address.of("Street 1", "City 1", "10000", Country.of("CZ"));
         EmailAddress email = EmailAddress.of("test@example.com");
         PhoneNumber phone = PhoneNumber.of("+420777888888");
         PersonalInformation personalInformation = PersonalInformation.of(
-                "Test", "User", LocalDate.of(2005, 6, 15), "CZ", Gender.MALE
+                "Test", "User", LocalDate.of(2005, 6, 15), Nationality.of("CZ"), Gender.MALE
         );
 
         RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -95,11 +95,11 @@ class RegisterMemberAutoProvisioningTest {
     @DisplayName("User should have MEMBERS:READ authority")
     @Transactional
     void userShouldHaveReadAuthority() {
-        Address address = Address.of("Street 2", "City 2", "20000", "CZ");
+        Address address = Address.of("Street 2", "City 2", "20000", Country.of("CZ"));
         EmailAddress email = EmailAddress.of("integration@example.com");
         PhoneNumber phone = PhoneNumber.of("+420777999999");
         PersonalInformation personalInformation = PersonalInformation.of(
-                "Integration", "Test", LocalDate.of(2006, 3, 20), "SK", Gender.FEMALE
+                "Integration", "Test", LocalDate.of(2006, 3, 20), Nationality.of("SK"), Gender.FEMALE
         );
 
         RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -126,11 +126,11 @@ class RegisterMemberAutoProvisioningTest {
     void shouldCreateDifferentUsersForDifferentMembers() {
         // Create first member
         RegistrationNumber registrationNumber1 = RegistrationNumber.of("ZBM0001");
-        Address address1 = Address.of("Street 3", "City 3", "30000", "CZ");
+        Address address1 = Address.of("Street 3", "City 3", "30000", Country.of("CZ"));
         EmailAddress email1 = EmailAddress.of("first@example.com");
         PhoneNumber phone1 = PhoneNumber.of("+420111111111");
         PersonalInformation personalInformation1 = PersonalInformation.of(
-                "First", "Person", LocalDate.of(2005, 1, 1), "CZ", Gender.MALE
+                "First", "Person", LocalDate.of(2005, 1, 1), Nationality.of("CZ"), Gender.MALE
         );
 
         RegistrationPort.RegisterNewMember command1 = new RegistrationPort.RegisterNewMember(personalInformation1,
@@ -144,11 +144,11 @@ class RegisterMemberAutoProvisioningTest {
 
         // Create second member
         RegistrationNumber registrationNumber2 = RegistrationNumber.of("ZBM0002");
-        Address address2 = Address.of("Street 4", "City 4", "40000", "CZ");
+        Address address2 = Address.of("Street 4", "City 4", "40000", Country.of("CZ"));
         EmailAddress email2 = EmailAddress.of("second@example.com");
         PhoneNumber phone2 = PhoneNumber.of("+420222222222");
         PersonalInformation personalInformation2 = PersonalInformation.of(
-                "Second", "Person", LocalDate.of(2005, 1, 2), "CZ", Gender.MALE
+                "Second", "Person", LocalDate.of(2005, 1, 2), Nationality.of("CZ"), Gender.MALE
         );
 
         RegistrationPort.RegisterNewMember command2 = new RegistrationPort.RegisterNewMember(personalInformation2,

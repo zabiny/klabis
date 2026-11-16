@@ -47,13 +47,13 @@ class MemberTest {
             LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
             EmailAddress email = new EmailAddress("jan.novak@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
-            Address address = new Address("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = new Address("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Jan",
                     "Novák",
                     dateOfBirth,
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -102,9 +102,9 @@ class MemberTest {
             LocalDate dateOfBirth = LocalDate.now().minusYears(10);
             int birthYear = dateOfBirth.getYear() % 100;
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM%02d01".formatted(birthYear));
-            Address address = new Address("Školská 456", "Brno", "60200", "CZ");
+            Address address = new Address("Školská 456", "Brno", "60200", Country.of("CZ"));
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Anna", "Nováková", dateOfBirth, "CZ", Gender.FEMALE);
+                    "Anna", "Nováková", dateOfBirth, Nationality.of("CZ"), Gender.FEMALE);
 
             Member member = Member.register(MemberRegisterMemberBuilder.builder()
                     .id(new MemberId(UUID.randomUUID()))
@@ -123,12 +123,12 @@ class MemberTest {
             // Arrange
             LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Jan",
                     "Novák",
                     dateOfBirth,
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -153,13 +153,13 @@ class MemberTest {
             // Arrange
             LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             PhoneNumber phone = new PhoneNumber("+420123456789");
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Jan",
                     "Novák",
                     dateOfBirth,
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -185,13 +185,13 @@ class MemberTest {
             // Arrange
             LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             EmailAddress email = new EmailAddress("jan@example.com");
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Jan",
                     "Novák",
                     dateOfBirth,
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -215,7 +215,7 @@ class MemberTest {
         @DisplayName("should fail when first name is blank")
         void shouldFailWhenFirstNameIsBlank() {
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -225,7 +225,7 @@ class MemberTest {
                         "",
                         "Novák",
                         LocalDate.of(1990, 5, 15),
-                        "CZ",
+                        Nationality.of("CZ"),
                         Gender.MALE
                 );
                 Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
@@ -246,7 +246,7 @@ class MemberTest {
         @DisplayName("should fail when last name is blank")
         void shouldFailWhenLastNameIsBlank() {
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -256,7 +256,7 @@ class MemberTest {
                         "Jan",
                         "",
                         LocalDate.of(1990, 5, 15),
-                        "CZ",
+                        Nationality.of("CZ"),
                         Gender.MALE
                 );
                 Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
@@ -274,10 +274,10 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should fail when nationality is blank")
-        void shouldFailWhenNationalityIsBlank() {
+        @DisplayName("should fail when nationality is missing")
+        void shouldFailWhenNationalityIsMissing() {
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", "CZ");
+            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -287,7 +287,7 @@ class MemberTest {
                         "Jan",
                         "Novák",
                         LocalDate.of(1990, 5, 15),
-                        "",
+                        null,
                         Gender.MALE
                 );
                 Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
@@ -309,13 +309,13 @@ class MemberTest {
         void shouldFailWhenRegisteringCzMemberWithoutBirthNumber() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             PersonalInformation personalInfo = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("CZ"), Gender.MALE);
 
             assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
                     .id(memberId)
                     .registrationNumber(new RegistrationNumber("ZBM9001"))
                     .personalInformation(personalInfo)
-                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .address(Address.of("Ulice 1", "Praha", "11000", Country.of("CZ")))
                     .email(EmailAddress.of("jan@example.com"))
                     .phone(PhoneNumber.of("+420123456789"))
                     .build()))
@@ -335,7 +335,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("SK")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -496,7 +496,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("SK")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -561,7 +561,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .withBirthNumber("900515/1234")
@@ -596,7 +596,7 @@ class MemberTest {
         @DisplayName("should update address when provided")
         void shouldUpdateAddressWhenProvided() {
             Member member = createAdultMember();
-            Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
+            Address newAddress = Address.of("Nová 1", "Brno", "60200", Country.of("CZ"));
 
             update(member, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).address(newAddress).build());
 
@@ -681,7 +681,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.now().minusYears(12))
                     .withNationality("CZ")
                     .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 2", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Dětská 2", "Praha", "11000", Country.of("CZ")))
                     .withEmail("guardian@example.com")
                     .withPhone("+420222000222")
                     .withBirthNumber("015315/1234")
@@ -689,7 +689,7 @@ class MemberTest {
             assertThat(missing(minorWithoutGuardian)).containsExactly(MissingDataItem.GUARDIAN);
 
             update(minorWithoutGuardian, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(minorWithoutGuardian))
-                    .address(Address.of("Nová 5", "Brno", "60200", "CZ"))
+                    .address(Address.of("Nová 5", "Brno", "60200", Country.of("CZ")))
                     .build());
 
             assertThat(minorWithoutGuardian.getAddress().street()).isEqualTo("Nová 5");
@@ -709,7 +709,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .withBirthNumber("900515/1234")
@@ -847,7 +847,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("SK")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", "SK"))
+                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", Country.of("SK")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -880,13 +880,13 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("SK")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", "SK"))
+                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", Country.of("SK")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
 
             assertThatThrownBy(() -> update(member, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
-                    .nationality("CZ")
+                    .nationality(Nationality.of("CZ"))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Birth number is required for Czech nationals");
@@ -903,7 +903,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.now().minusYears(10))
                     .withNationality("CZ")
                     .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Dětská 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("guardian@example.com")
                     .withPhone("+420111000111")
                     .withBirthNumber("015315/1234")
@@ -927,13 +927,13 @@ class MemberTest {
         void adultMemberWithoutEmailAtCreationShouldFail() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             PersonalInformation personalInfo = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("CZ"), Gender.MALE);
 
             assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
                     .id(memberId)
                     .registrationNumber(new RegistrationNumber("ZBM9001"))
                     .personalInformation(personalInfo)
-                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .address(Address.of("Ulice 1", "Praha", "11000", Country.of("CZ")))
                     .phone(PhoneNumber.of("+420123456789"))
                     .build()))
                     .isInstanceOf(MemberDataRequiredException.class)
@@ -945,13 +945,13 @@ class MemberTest {
         void adultMemberWithoutPhoneAtCreationShouldFail() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             PersonalInformation personalInfo = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("CZ"), Gender.MALE);
 
             assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
                     .id(memberId)
                     .registrationNumber(new RegistrationNumber("ZBM9001"))
                     .personalInformation(personalInfo)
-                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .address(Address.of("Ulice 1", "Praha", "11000", Country.of("CZ")))
                     .email(EmailAddress.of("jan@example.com"))
                     .build()))
                     .isInstanceOf(MemberDataRequiredException.class)
@@ -1103,7 +1103,7 @@ class MemberTest {
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .withBirthNumber("900515/1234")
@@ -1137,11 +1137,11 @@ class MemberTest {
                     .lastName("Svoboda")
                     .dateOfBirth(LocalDate.of(1985, 3, 20))
                     .gender(Gender.FEMALE)
-                    .nationality(new Nationality("SK"))
+                    .nationality(Nationality.of("SK"))
                     .birthNumber(null)
                     .email(EmailAddress.of("petr.svoboda@example.com"))
                     .phone(PhoneNumber.of("+420999888777"))
-                    .address(Address.of("Nová 1", "Brno", "60200", "CZ"))
+                    .address(Address.of("Nová 1", "Brno", "60200", Country.of("CZ")))
                     .chipNumber("111")
                     .build();
         }
@@ -1158,11 +1158,11 @@ class MemberTest {
             assertThat(member.getLastName()).isEqualTo("Svoboda");
             assertThat(member.getDateOfBirth()).isEqualTo(LocalDate.of(1985, 3, 20));
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
-            assertThat(member.getNationality()).isEqualTo("SK");
+            assertThat(member.getNationality().code()).isEqualTo("SK");
             assertThat(member.getBirthNumber()).isNull();
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("petr.svoboda@example.com"));
             assertThat(member.getPhone()).isEqualTo(PhoneNumber.of("+420999888777"));
-            assertThat(member.getAddress()).isEqualTo(Address.of("Nová 1", "Brno", "60200", "CZ"));
+            assertThat(member.getAddress()).isEqualTo(Address.of("Nová 1", "Brno", "60200", Country.of("CZ")));
             assertThat(member.getChipNumber()).isEqualTo("111");
         }
 
@@ -1201,7 +1201,7 @@ class MemberTest {
                     .lastName(member.getLastName())
                     .dateOfBirth(member.getDateOfBirth())
                     .gender(member.getGender())
-                    .nationality(new Nationality("CZ"))
+                    .nationality(Nationality.of("CZ"))
                     .birthNumber(BirthNumber.of("850320/1234"))
                     .email(member.getEmail())
                     .phone(member.getPhone())
@@ -1227,7 +1227,7 @@ class MemberTest {
                     .lastName(member.getLastName())
                     .dateOfBirth(member.getDateOfBirth())
                     .gender(member.getGender())
-                    .nationality(new Nationality("CZ"))
+                    .nationality(Nationality.of("CZ"))
                     .birthNumber(null)
                     .email(member.getEmail())
                     .phone(null)
@@ -1255,7 +1255,7 @@ class MemberTest {
                     .lastName(member.getLastName())
                     .dateOfBirth(member.getDateOfBirth())
                     .gender(member.getGender())
-                    .nationality(new Nationality("SK"))
+                    .nationality(Nationality.of("SK"))
                     .birthNumber(BirthNumber.of("850320/1234"))
                     .email(member.getEmail())
                     .phone(member.getPhone())

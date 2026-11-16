@@ -31,7 +31,7 @@ class MemberMementoTest {
         LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
         EmailAddress email = EmailAddress.of("jan.novak@example.com");
         PhoneNumber phone = PhoneNumber.of("+420123456789");
-        Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+        Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
 
         return MemberTestDataBuilder.aMember()
@@ -61,7 +61,7 @@ class MemberMementoTest {
         LocalDate dateOfBirth = LocalDate.of(2005, 3, 15);
         EmailAddress email = EmailAddress.of("petra.novakova@example.com");
         PhoneNumber phone = PhoneNumber.of("+420111222333");
-        Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
+        Address address = Address.of("Dětská 1", "Brno", "60200", Country.of("CZ"));
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         IdentityCard identityCard = IdentityCard.of("AB123456", LocalDate.now().plusYears(5));
         MedicalCourse medicalCourse = MedicalCourse.of(
@@ -161,7 +161,7 @@ class MemberMementoTest {
             assertThat(reconstructed.getFirstName()).isEqualTo("Jan");
             assertThat(reconstructed.getLastName()).isEqualTo("Novák");
             assertThat(reconstructed.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 15));
-            assertThat(reconstructed.getNationality()).isEqualTo("CZ");
+            assertThat(reconstructed.getNationality().code()).isEqualTo("CZ");
             assertThat(reconstructed.getGender()).isEqualTo(Gender.MALE);
         }
 
@@ -183,7 +183,7 @@ class MemberMementoTest {
             assertThat(reconstructed.getAddress().street()).isEqualTo("Dětská 1");
             assertThat(reconstructed.getAddress().city()).isEqualTo("Brno");
             assertThat(reconstructed.getAddress().postalCode()).isEqualTo("60200");
-            assertThat(reconstructed.getAddress().country()).isEqualTo("CZ");
+            assertThat(reconstructed.getAddress().country().code()).isEqualTo("CZ");
 
             // Assert - Contact
             assertThat(reconstructed.getEmail().value()).isEqualTo("petra.novakova@example.com");

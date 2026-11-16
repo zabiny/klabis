@@ -12,6 +12,7 @@ import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberSyncFromOrisBuilder;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
@@ -155,7 +156,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
                 .lastName(projection.lastName())
                 .dateOfBirth(projection.dateOfBirth())
                 .gender(projection.gender())
-                .nationality(projection.nationality() != null ? Nationality.of(projection.nationality()) : null)
+                .nationality(Nationality.ofNullable(projection.nationality()))
                 .birthNumber(projection.birthNumber() != null ? BirthNumber.of(projection.birthNumber()) : null)
                 .email(projection.email() != null ? EmailAddress.of(projection.email()) : null)
                 .phone(projection.phone() != null ? PhoneNumber.of(projection.phone()) : null)
@@ -175,7 +176,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
                         projection.firstName(),
                         projection.lastName(),
                         projection.dateOfBirth(),
-                        projection.nationality(),
+                        Nationality.of(projection.nationality()),
                         projection.gender()),
                 addressOf(projection),
                 projection.email() != null ? EmailAddress.of(projection.email()) : null,
@@ -196,7 +197,8 @@ class MemberSyncAdapter implements SynchronizationAdapter {
         if (projection.street() == null) {
             return null;
         }
-        return new Address(projection.street(), projection.city(), projection.postalCode(), projection.country());
+        return new Address(projection.street(), projection.city(), projection.postalCode(),
+                Country.of(projection.country()));
     }
 
     private static MemberId toMemberId(String entityId) {

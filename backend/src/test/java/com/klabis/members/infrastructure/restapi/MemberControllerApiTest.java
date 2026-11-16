@@ -132,7 +132,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.of(2005, 6, 15))
                     .withGender(Gender.MALE)
                     .withPhone("+420777888999")
-                    .withAddress(new Address("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(new Address("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withActive(true)
                     .withNationality("CZ")
                     .build();
@@ -235,7 +235,7 @@ class MemberControllerApiTest {
         void shouldReturnSingleEmailAndPhoneWithAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
+                    .withAddress(new Address("Main Street 123", "Bratislava", "81101", Country.of("SK")))
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
@@ -256,7 +256,7 @@ class MemberControllerApiTest {
         @Disabled("need to finish authorization for klabisAfford")
         void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            Address address = Address.of("Test Street", "Test City", "10000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("test@example.com");
             PhoneNumber phone = PhoneNumber.of("+420123456789");
 
@@ -444,7 +444,7 @@ class MemberControllerApiTest {
 
             var result = mockMvc.perform(getMemberById(memberId)).andExpect(status().isOk());
 
-            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber")) {
+            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality")) {
                 result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
                         .value(true));
             }
@@ -467,6 +467,9 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')]").exists())
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')].readOnly")
+                            .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='nationality')]").exists())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='nationality')].readOnly")
                             .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
         }
 
@@ -967,7 +970,7 @@ class MemberControllerApiTest {
                     cmd.personalInformation().getFirstName().equals("Jan") &&
                     cmd.personalInformation().getLastName().equals("Novák") &&
                     cmd.personalInformation().getDateOfBirth().equals(LocalDate.of(2000, 6, 15)) &&
-                    cmd.personalInformation().getNationalityCode().equals("CZ") &&
+                    cmd.personalInformation().getNationality().code().equals("CZ") &&
                     cmd.personalInformation().getGender() == Gender.MALE
             ));
         }
@@ -1003,7 +1006,7 @@ class MemberControllerApiTest {
                     cmd.address().street().equals("Hlavní 123") &&
                     cmd.address().city().equals("Praha") &&
                     cmd.address().postalCode().equals("11000") &&
-                    cmd.address().country().equals("CZ")
+                    cmd.address().country().code().equals("CZ")
             ));
         }
 
@@ -1081,7 +1084,7 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            Address address = Address.of("Test Street", "Test City", "10000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("test@example.com");
             PhoneNumber phone = PhoneNumber.of("+420123456789");
 
@@ -1421,7 +1424,7 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            Address address = Address.of("Test Street", "Test City", "10000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("test@example.com");
             PhoneNumber phone = PhoneNumber.of("+420123456789");
 
@@ -1490,6 +1493,33 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("with nationality naming no existing country should return 400 and register nobody")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenNationalityIsUnknownCountry() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "QQ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest());
+
+            Mockito.verifyNoInteractions(registrationService);
+        }
+
+        @Test
         @DisplayName("with invalid address missing fields should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAddressMissingFields() throws Exception {
@@ -1515,6 +1545,60 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['address.street']").value("nesmí být prázdná"));
+        }
+
+        @Test
+        @DisplayName("with unknown nationality code should return field-level error")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithNationalityFieldWhenNationalityUnknown() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "QQ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-nationality"))
+                    .andExpect(jsonPath("$.field").value("nationality"));
+        }
+
+        @Test
+        @DisplayName("with unknown address country code should return field-level error")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "QQ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
+                    .andExpect(jsonPath("$.field").value("address.country"));
         }
 
         @Test

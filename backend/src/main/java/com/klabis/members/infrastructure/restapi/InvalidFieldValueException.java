@@ -18,7 +18,9 @@ class InvalidFieldValueException extends InvalidDataException implements UserFac
         BIRTH_NUMBER("invalid-birth-number", "birthNumber"),
         BANK_ACCOUNT_NUMBER("invalid-bank-account-number", "bankAccountNumber"),
         EMAIL("invalid-email-address", "email"),
-        PHONE("invalid-phone-number", "phone");
+        PHONE("invalid-phone-number", "phone"),
+        NATIONALITY("invalid-nationality", "nationality"),
+        ADDRESS_COUNTRY("invalid-address-country", "address.country");
 
         private final String errorType;
         private final String field;

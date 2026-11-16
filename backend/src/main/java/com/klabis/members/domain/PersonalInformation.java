@@ -1,6 +1,7 @@
 package com.klabis.members.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -46,7 +47,7 @@ public final class PersonalInformation {
      * @param firstName       member's first name (required, not blank)
      * @param lastName        member's last name (required, not blank)
      * @param dateOfBirth     member's date of birth (required, not in the future)
-     * @param nationalityCode member's nationality as ISO 3166-1 code (required)
+     * @param nationality     member's nationality (required)
      * @param gender          member's gender (required)
      * @return PersonalInformation value object
      * @throws IllegalArgumentException if validation fails
@@ -55,14 +56,14 @@ public final class PersonalInformation {
             String firstName,
             String lastName,
             LocalDate dateOfBirth,
-            String nationalityCode,
+            Nationality nationality,
             Gender gender) {
 
         validateDateOfBirth(dateOfBirth);
         validateGender(gender);
 
         PersonName name = PersonName.of(firstName, lastName);
-        Nationality nationality = Nationality.of(nationalityCode);
+        Assert.notNull(nationality, "Nationality is required");
 
         return new PersonalInformation(
                 name,
@@ -143,15 +144,6 @@ public final class PersonalInformation {
      */
     public Nationality getNationality() {
         return nationality;
-    }
-
-    /**
-     * Returns the nationality as an ISO 3166-1 country code string.
-     *
-     * @return the country code (e.g., "CZ", "US")
-     */
-    public String getNationalityCode() {
-        return nationality.code();
     }
 
     public Gender getGender() {

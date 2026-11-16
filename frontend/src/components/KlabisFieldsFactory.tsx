@@ -6,7 +6,7 @@ import {
 } from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import {type ReactElement} from "react";
-import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
+import {HalFormsCheckboxGroup, HalFormsCountry, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
@@ -21,12 +21,18 @@ interface SubField {
     type?: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+const SubFieldInput = ({props, sf}: {props: HalFormsInputProps; sf: SubField}): ReactElement => {
+    const subProps = props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type});
+    return klabisCustomFieldFactory(sf.type ?? "", subProps) ?? <HalFormsInput {...subProps}/>;
+};
+
 const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]): ReactElement => {
     if (props.renderMode === 'input') {
         return <>
             {subFields.map(sf => (
                 <DetailRow key={sf.key} label={sf.prompt}>
-                    <HalFormsInput {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+                    <SubFieldInput props={props} sf={sf}/>
                 </DetailRow>
             ))}
         </>;
@@ -34,7 +40,7 @@ const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]):
     const baseName = props.prop.name.replace(/\.\d+$/, '');
     return <FormGroupWrapper label={props.prop.prompt || getFieldLabel(baseName)}>
         {subFields.map(sf => (
-            <HalFormsInput key={sf.key} {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+            <SubFieldInput key={sf.key} props={props} sf={sf}/>
         ))}
     </FormGroupWrapper>;
 };
@@ -43,7 +49,7 @@ const ADDRESS_FIELDS: SubField[] = [
     {key: "street", attr: "street", prompt: "Ulice"},
     {key: "city", attr: "city", prompt: "Město"},
     {key: "postal", attr: "postalCode", prompt: "PSČ"},
-    {key: "country", attr: "country", prompt: "Stát"},
+    {key: "country", attr: "country", prompt: "Stát", type: "Country"},
 ];
 
 const IDENTITY_CARD_FIELDS: SubField[] = [
@@ -196,6 +202,8 @@ const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeId
 
 export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
+        case "Country":
+            return <HalFormsCountry {...conf}/>;
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
         case "MemberId":
         case "UserId": {

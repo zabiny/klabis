@@ -3,6 +3,8 @@ package com.klabis.members.infrastructure.orissync;
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.BirthNumber;
+import com.klabis.members.domain.Country;
+import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
@@ -28,8 +30,8 @@ final class MemberProjectionMapper {
     }
 
     static MemberProjection fromOrisClubMember(ClubMember clubMember) {
-        String country = normalizeNationality(clubMember.country());
-        String nationality = normalizeNationality(clubMember.nationality());
+        String country = mapCountry(clubMember.id(), clubMember.country(), "country");
+        String nationality = mapCountry(clubMember.id(), clubMember.nationality(), "nationality");
         String phone = mapPhone(clubMember.id(), PhoneNumberNormalizer.normalize(clubMember.phone(), country));
 
         String street = blankToNull(clubMember.street());
@@ -82,14 +84,14 @@ final class MemberProjectionMapper {
                 blankToNull(member.getLastName()),
                 member.getDateOfBirth(),
                 member.getGender(),
-                normalizeNationality(member.getNationality()),
+                Nationality.codeOf(member.getNationality()),
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
                 member.getEmail() != null ? member.getEmail().value() : null,
                 member.getPhone() != null ? member.getPhone().value() : null,
                 address != null ? blankToNull(address.street()) : null,
                 address != null ? blankToNull(address.city()) : null,
                 address != null ? blankToNull(address.postalCode()) : null,
-                address != null ? normalizeNationality(address.country()) : null,
+                address != null ? Country.codeOf(address.country()) : null,
                 blankToNull(member.getChipNumber())
         );
     }
@@ -170,9 +172,21 @@ final class MemberProjectionMapper {
         return (StringUtils.isBlank(si) || "0".equals(si)) ? null : si;
     }
 
-    private static String normalizeNationality(String code) {
-        String value = blankToNull(code);
-        return value != null ? value.toUpperCase() : null;
+    /**
+     * Leaves out a country code that names no existing country, validating through
+     * {@link Country} itself. Logged at WARN with the ORIS id and the field name only — never the value.
+     */
+    private static String mapCountry(int orisId, String rawCode, String fieldName) {
+        String value = blankToNull(rawCode);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Country.of(value).code();
+        } catch (IllegalArgumentException e) {
+            log.warn("ORIS member {}: dropping {} - not an existing country", orisId, fieldName);
+            return null;
+        }
     }
 
     private static String blankToNull(String value) {

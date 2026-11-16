@@ -188,8 +188,8 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
     private Member registerMinor(String firstName, String lastName, LocalDate dateOfBirth, Gender gender,
                                  UserId registeredBy, List<GuardianInput> guardians) {
         Member member = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of(firstName, lastName, dateOfBirth, "CZ", gender),
-                Address.of("Dětská 1", "Praha", "11000", "CZ"),
+                PersonalInformation.of(firstName, lastName, dateOfBirth, Nationality.of("CZ"), gender),
+                Address.of("Dětská 1", "Praha", "11000", Country.of("CZ")),
                 null, null, birthNumberOf(dateOfBirth, gender), null,
                 registeredBy, guardians, null));
         LOG.info("Created bootstrap minor: {} {} (registration number: {})", firstName, lastName,
@@ -208,7 +208,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
         registrationPort.importMember(new RegistrationPort.ImportMember(
                 new RegistrationPort.RegisterNewMember(
-                        PersonalInformation.of(firstName, lastName, dateOfBirth, "CZ", gender),
+                        PersonalInformation.of(firstName, lastName, dateOfBirth, Nationality.of("CZ"), gender),
                         null, null, null, null, null, registeredBy),
                 registrationNumber));
         LOG.info("Created bootstrap ORIS-imported minor without guardian: {} {} (registration number: {})",
@@ -228,8 +228,8 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         Member member = Member.register(new Member.RegisterMember(
                 MemberId.fromUserId(userId),
                 registrationNumber,
-                PersonalInformation.of(firstName, lastName, dateOfBirth, "CZ", gender),
-                Address.of(street, city, postalCode, "CZ"),
+                PersonalInformation.of(firstName, lastName, dateOfBirth, Nationality.of("CZ"), gender),
+                Address.of(street, city, postalCode, Country.of("CZ")),
                 EmailAddress.of(email),
                 PhoneNumber.of(phone),
                 birthNumber,

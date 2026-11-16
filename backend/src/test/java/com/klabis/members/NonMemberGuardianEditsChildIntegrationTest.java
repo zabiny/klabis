@@ -8,6 +8,8 @@ import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Nationality;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
@@ -94,8 +96,8 @@ class NonMemberGuardianEditsChildIntegrationTest {
     private Member registerMinor(String lastName, LocalDate dateOfBirth, List<GuardianInput> guardians) {
         String birthNumber = dateOfBirth.format(DateTimeFormatter.ofPattern("yyMMdd")) + "/1234";
         return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", lastName, dateOfBirth, "CZ", Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", "CZ"),
+                PersonalInformation.of("Jan", lastName, dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, BirthNumber.of(birthNumber), null, null, guardians, null));
     }
 
