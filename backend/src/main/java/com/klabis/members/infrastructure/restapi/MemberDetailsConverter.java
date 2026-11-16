@@ -2,8 +2,10 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.IdentityCard;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.MedicalCourse;
 import com.klabis.members.domain.RefereeLicense;
 import com.klabis.members.domain.TrainerLicense;
@@ -51,6 +53,14 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     MemberDetailsResponse convert(Member member);
 
     AddressResponse addressToResponse(Address address);
+
+    default String nationalityToCode(Nationality nationality) {
+        return nationality == null ? null : nationality.code();
+    }
+
+    default String countryToCode(Country country) {
+        return country == null ? null : country.code();
+    }
 
     Gender genderToDto(com.klabis.members.domain.Gender gender);
 

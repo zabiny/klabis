@@ -23,7 +23,7 @@ class PersonalInformationTest {
             String firstName = "Jan";
             String lastName = "Novák";
             LocalDate dateOfBirth = LocalDate.of(2005, 3, 15);
-            String nationality = "CZ";
+            Nationality nationality = Nationality.of("CZ");
             Gender gender = Gender.MALE;
 
             // When
@@ -35,7 +35,7 @@ class PersonalInformationTest {
             assertThat(info.getFirstName()).isEqualTo(firstName);
             assertThat(info.getLastName()).isEqualTo(lastName);
             assertThat(info.getDateOfBirth()).isEqualTo(dateOfBirth);
-            assertThat(info.getNationalityCode()).isEqualTo(nationality);
+            assertThat(info.getNationality()).isEqualTo(nationality);
             assertThat(info.getGender()).isEqualTo(gender);
         }
 
@@ -44,7 +44,7 @@ class PersonalInformationTest {
         void shouldThrowWhenFirstNameIsNull() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            null, "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                            null, "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("First name");
@@ -55,7 +55,7 @@ class PersonalInformationTest {
         void shouldThrowWhenFirstNameIsBlank() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "   ", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                            "   ", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("First name");
@@ -66,7 +66,7 @@ class PersonalInformationTest {
         void shouldThrowWhenLastNameIsNull() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "Jan", null, LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                            "Jan", null, LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Last name");
@@ -77,7 +77,7 @@ class PersonalInformationTest {
         void shouldThrowWhenLastNameIsBlank() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "Jan", "", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                            "Jan", "", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Last name");
@@ -88,7 +88,7 @@ class PersonalInformationTest {
         void shouldThrowWhenDateOfBirthIsNull() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "Jan", "Novák", null, "CZ", Gender.MALE
+                            "Jan", "Novák", null, Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Date of birth");
@@ -99,7 +99,7 @@ class PersonalInformationTest {
         void shouldThrowWhenDateOfBirthIsInFuture() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "Jan", "Novák", LocalDate.now().plusDays(1), "CZ", Gender.MALE
+                            "Jan", "Novák", LocalDate.now().plusDays(1), Nationality.of("CZ"), Gender.MALE
                     )
             ).isInstanceOf(DateOfBirthInFutureException.class)
                     .hasMessageContaining("future");
@@ -112,19 +112,8 @@ class PersonalInformationTest {
                     PersonalInformation.of(
                             "Jan", "Novák", LocalDate.of(2005, 3, 15), null, Gender.MALE
                     )
-            ).isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("required");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when nationality is blank")
-        void shouldThrowWhenNationalityIsBlank() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of(
-                            "Jan", "Novák", LocalDate.of(2005, 3, 15), "  ", Gender.MALE
-                    )
             ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Nationality");
+                    .hasMessageContaining("Nationality is required");
         }
 
         @Test
@@ -132,7 +121,7 @@ class PersonalInformationTest {
         void shouldThrowWhenGenderIsNull() {
             assertThatThrownBy(() ->
                     PersonalInformation.of(
-                            "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", null
+                            "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), null
                     )
             ).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Gender");
@@ -149,7 +138,7 @@ class PersonalInformationTest {
             // Given
             LocalDate birthDate = LocalDate.of(2005, 3, 15);
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", birthDate, "CZ", Gender.MALE
+                    "Jan", "Novák", birthDate, Nationality.of("CZ"), Gender.MALE
             );
 
             // When
@@ -170,7 +159,7 @@ class PersonalInformationTest {
         void shouldIdentifyMinorCorrectly() {
             // Given - person born 15 years ago
             PersonalInformation minor = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.now().minusYears(15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.now().minusYears(15), Nationality.of("CZ"), Gender.MALE
             );
 
             // Then
@@ -183,7 +172,7 @@ class PersonalInformationTest {
         void shouldIdentifyAdultCorrectly() {
             // Given - person born 20 years ago
             PersonalInformation adult = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.now().minusYears(20), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.now().minusYears(20), Nationality.of("CZ"), Gender.MALE
             );
 
             // Then
@@ -196,7 +185,7 @@ class PersonalInformationTest {
         void shouldIdentifyExactly18AsAdult() {
             // Given - person born exactly 18 years ago
             PersonalInformation adult = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.now().minusYears(18), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.now().minusYears(18), Nationality.of("CZ"), Gender.MALE
             );
 
             // Then
@@ -214,7 +203,7 @@ class PersonalInformationTest {
         void shouldReturnFullName() {
             // Given
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
             );
 
             // When
@@ -230,7 +219,7 @@ class PersonalInformationTest {
             // Given - note: PersonalInformation validates that names are not blank,
             // but we should still handle any edge cases in getFullName()
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
             );
 
             // When
@@ -251,63 +240,16 @@ class PersonalInformationTest {
         @DisplayName("Should accept valid ISO 3166-1 alpha-2 nationality codes")
         void shouldAcceptValidAlpha2NationalityCodes() {
             assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE)
+                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE)
             ).doesNotThrowAnyException();
 
             assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "US", Gender.MALE)
+                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("US"), Gender.MALE)
             ).doesNotThrowAnyException();
 
             assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "GB", Gender.MALE)
+                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("GB"), Gender.MALE)
             ).doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should reject alpha-3 nationality codes")
-        void shouldRejectAlpha3NationalityCodes() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "CZE", Gender.MALE)
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "USA", Gender.MALE)
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "GBR", Gender.MALE)
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-        }
-
-        @Test
-        @DisplayName("Should reject invalid nationality codes")
-        void shouldRejectInvalidNationalityCodes() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "C", Gender.MALE)
-            )
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "CZE123", Gender.MALE)
-            )
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "12", Gender.MALE)
-            )
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
-
-            assertThatThrownBy(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), "C1", Gender.MALE)
-            )
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1");
         }
 
         @Test
@@ -315,11 +257,11 @@ class PersonalInformationTest {
         void shouldNormalizeNationalityToUppercase() {
             // Given
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "cz", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("cz"), Gender.MALE
             );
 
             // When & Then
-            assertThat(info.getNationalityCode()).isEqualTo("CZ");
+            assertThat(info.getNationality().code()).isEqualTo("CZ");
         }
     }
 
@@ -332,13 +274,13 @@ class PersonalInformationTest {
         void shouldImplementEqualityCorrectly() {
             // Given
             PersonalInformation info1 = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
             );
             PersonalInformation info2 = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
             );
             PersonalInformation info3 = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 16), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 16), Nationality.of("CZ"), Gender.MALE
             );
 
             // Then
@@ -353,7 +295,7 @@ class PersonalInformationTest {
             // Given
             LocalDate birthDate = LocalDate.of(2005, 3, 15);
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", birthDate, "CZ", Gender.MALE
+                    "Jan", "Novák", birthDate, Nationality.of("CZ"), Gender.MALE
             );
 
             // When - trying to modify returned values
@@ -368,7 +310,7 @@ class PersonalInformationTest {
         void shouldHaveProperToString() {
             // Given
             PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), "CZ", Gender.MALE
+                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
             );
 
             // When

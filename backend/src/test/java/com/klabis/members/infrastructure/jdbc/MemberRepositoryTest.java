@@ -61,7 +61,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 3, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -95,7 +95,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 5", "Ostrava", "70800", "CZ"))
+                    .withAddress(Address.of("Test 5", "Ostrava", "70800", Country.of("CZ")))
                     .withEmail("test@example.com")
                     .withPhone("+420111111111")
                     .build();
@@ -121,7 +121,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("version@example.com")
                     .withPhone("+420111111112")
                     .build();
@@ -145,7 +145,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("complete@example.com")
                     .withPhone("+420111111114")
                     .build();
@@ -304,7 +304,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 3, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -343,7 +343,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Test", "11000", Country.of("CZ")))
                     .withEmail("full@example.com")
                     .withPhone("+420111111116")
                     .build();
@@ -389,7 +389,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 3, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -429,7 +429,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 3, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
                     .build();
@@ -464,7 +464,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Test", "11000", Country.of("CZ")))
                     .withEmail("test@example.com")
                     .withPhone("+420111111118")
                     .build();
@@ -494,7 +494,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test1 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test1 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("test1@example.com")
                     .withPhone("+420111111119")
                     .build();
@@ -505,7 +505,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 12, 31))
                     .withNationality("CZ")
                     .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Test2 2", "Brno", "60200", "CZ"))
+                    .withAddress(Address.of("Test2 2", "Brno", "60200", Country.of("CZ")))
                     .withEmail("test2@example.com")
                     .withPhone("+420111111120")
                     .build();
@@ -516,7 +516,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2006, 6, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test3 3", "Ostrava", "70800", "CZ"))
+                    .withAddress(Address.of("Test3 3", "Ostrava", "70800", Country.of("CZ")))
                     .withEmail("test3@example.com")
                     .withPhone("+420111111121")
                     .build();
@@ -562,7 +562,7 @@ class MemberRepositoryTest {
                         .withDateOfBirth(LocalDate.of(2000 + i, 1, 1))
                         .withNationality("CZ")
                         .withGender(Gender.MALE)
-                        .withAddress(Address.of("Street " + i, "City", "11000", "CZ"))
+                        .withAddress(Address.of("Street " + i, "City", "11000", Country.of("CZ")))
                         .withEmail("user" + i + "@example.com")
                         .withPhone("+420111111%03d".formatted(i))
                         .build();
@@ -591,7 +591,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 1, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan@example.com")
                     .withPhone("+420111111122")
                     .build();
@@ -602,7 +602,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2002, 6, 20))
                     .withNationality("CZ")
                     .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
+                    .withAddress(Address.of("Dětská 2", "Brno", "60200", Country.of("CZ")))
                     .withEmail("petra@example.com")
                     .withPhone("+420111111123")
                     .build();
@@ -613,7 +613,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 12, 31))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Svobodova 3", "Ostrava", "70800", "CZ"))
+                    .withAddress(Address.of("Svobodova 3", "Ostrava", "70800", Country.of("CZ")))
                     .withEmail("karel@example.com")
                     .withPhone("+420111111124")
                     .build();
@@ -659,7 +659,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2005, 1, 15))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan@example.com")
                     .withPhone("+420111111125")
                     .build();
@@ -670,7 +670,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2010, 6, 20))
                     .withNationality("CZ")
                     .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
+                    .withAddress(Address.of("Dětská 2", "Brno", "60200", Country.of("CZ")))
                     .withEmail("petra@example.com")
                     .withPhone("+420111111126")
                     .build();
@@ -714,7 +714,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("version@example.com")
                     .withPhone("+420111111127")
                     .build();
@@ -744,7 +744,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("audit@example.com")
                     .withPhone("+420111111129")
                     .build();
@@ -767,7 +767,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("modified@example.com")
                     .withPhone("+420111111130")
                     .build();
@@ -803,7 +803,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420111111200")
                     .build();
@@ -814,7 +814,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
                     .withEmail("petr.cermak@example.com")
                     .withPhone("+420111111201")
                     .build();
@@ -914,14 +914,14 @@ class MemberRepositoryTest {
                     "Jan",
                     "Novák",
                     LocalDate.of(2005, 3, 15),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             Address address = Address.of(
                     "Hlavní 123",
                     "Praha",
                     "11000",
-                    "CZ"
+                    Country.of("CZ")
             );
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
 
@@ -955,14 +955,14 @@ class MemberRepositoryTest {
                     "Petra",
                     "Svobodová",
                     LocalDate.of(1995, 6, 20),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.FEMALE
             );
             Address address = Address.of(
                     "Dětská 1",
                     "Brno",
                     "60200",
-                    "CZ"
+                    Country.of("CZ")
             );
             BirthNumber birthNumber = BirthNumber.of("950620/5678");
 
@@ -998,14 +998,14 @@ class MemberRepositoryTest {
                     "Karel",
                     "Černý",
                     LocalDate.of(2000, 1, 1),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             Address address = Address.of(
                     "Svobodova 3",
                     "Ostrava",
                     "70800",
-                    "CZ"
+                    Country.of("CZ")
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
@@ -1040,14 +1040,14 @@ class MemberRepositoryTest {
                     "Jana",
                     "Procházková",
                     LocalDate.of(2002, 5, 10),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.FEMALE
             );
             Address address = Address.of(
                     "Hlavní 5",
                     "Plzeň",
                     "30100",
-                    "CZ"
+                    Country.of("CZ")
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
 
@@ -1082,14 +1082,14 @@ class MemberRepositoryTest {
                     "Martin",
                     "Dvořák",
                     LocalDate.of(2005, 3, 15),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             Address address = Address.of(
                     "Náměstí 1",
                     "Liberec",
                     "46001",
-                    "CZ"
+                    Country.of("CZ")
             );
 
             Member member = MemberTestDataBuilder.aMember()
@@ -1121,14 +1121,14 @@ class MemberRepositoryTest {
                     "Lucie",
                     "Kučerová",
                     LocalDate.of(2000, 8, 25),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.FEMALE
             );
             Address address = Address.of(
                     "Mládí 1",
                     "Hradec Králové",
                     "50002",
-                    "CZ"
+                    Country.of("CZ")
             );
 
             Member member = MemberTestDataBuilder.aMember()
@@ -1162,14 +1162,14 @@ class MemberRepositoryTest {
                     "Tomáš",
                     "Beneš",
                     LocalDate.of(2005, 3, 15),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             Address address = Address.of(
                     "Komenského 10",
                     "Pardubice",
                     "53002",
-                    "CZ"
+                    Country.of("CZ")
             );
             BirthNumber birthNumber = BirthNumber.of("050315/1234");
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
@@ -1212,14 +1212,14 @@ class MemberRepositoryTest {
                     "Jan",
                     "Novák",
                     LocalDate.of(2005, 3, 15),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.MALE
             );
             Address address = Address.of(
                     "Hlavní 123",
                     "Praha",
                     "11000",
-                    "CZ"
+                    Country.of("CZ")
             );
             UserId adminUserId = new UserId(UUID.randomUUID());
 
@@ -1267,14 +1267,14 @@ class MemberRepositoryTest {
                     "Petra",
                     "Svobodová",
                     LocalDate.of(1995, 7, 20),
-                    "CZ",
+                    Nationality.of("CZ"),
                     Gender.FEMALE
             );
             Address address = Address.of(
                     "Nová 456",
                     "Brno",
                     "60200",
-                    "CZ"
+                    Country.of("CZ")
             );
 
             Member member = MemberTestDataBuilder.aMember()
@@ -1316,7 +1316,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("active@example.com")
                     .withPhone("+420111111900")
                     .withActive(true)
@@ -1328,7 +1328,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
                     .withEmail("inactive@example.com")
                     .withPhone("+420111111901")
                     .withActive(false)
@@ -1401,7 +1401,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
                     .withEmail("trainer.test@example.com")
                     .withPhone("+420111111200")
                     .withTrainerLicense(trainerLicense)
@@ -1426,7 +1426,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
                     .withEmail("referee.test@example.com")
                     .withPhone("+420111111201")
                     .withRefereeLicense(refereeLicense)
@@ -1450,7 +1450,7 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2000, 1, 1))
                     .withNationality("CZ")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 3", "Praha", "11000", "CZ"))
+                    .withAddress(Address.of("Test 3", "Praha", "11000", Country.of("CZ")))
                     .withEmail("nolicense.test@example.com")
                     .withPhone("+420111111202")
                     .build();

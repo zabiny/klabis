@@ -3,6 +3,7 @@ package com.klabis.common.users.passwordsetup;
 import com.klabis.common.users.application.PasswordComplexityValidator;
 import com.klabis.common.users.domain.PasswordValidationException;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -818,7 +819,7 @@ class PasswordComplexityValidatorTest {
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withNationality("IT")
                     .withGender(Gender.MALE)
-                    .withAddress(Address.of("Via Roma 123", "Milano", "20100", "IT"))
+                    .withAddress(Address.of("Via Roma 123", "Milano", "20100", Country.of("IT")))
                     .withEmail("test@example.com")
                     .withPhone("+420777888999")
                     .build();

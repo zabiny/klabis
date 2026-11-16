@@ -6,6 +6,8 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.email.LoggingEmailService;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Nationality;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
@@ -59,8 +61,8 @@ class PasswordSetupRequestSecurityIntegrationTest {
     @BeforeEach
     void registerPendingMember() {
         Member member = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 1), "SK", Gender.MALE),
-                Address.of("Hlavní 1", "Praha", "110 00", "CZ"),
+                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 1), Nationality.of("SK"), Gender.MALE),
+                Address.of("Hlavní 1", "Praha", "110 00", Country.of("CZ")),
                 EmailAddress.of(OWN_EMAIL),
                 PhoneNumber.of("+420123456789"),
                 null,

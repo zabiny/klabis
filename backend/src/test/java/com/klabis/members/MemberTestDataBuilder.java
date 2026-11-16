@@ -17,7 +17,7 @@ public class MemberTestDataBuilder {
     private LocalDate dateOfBirth = LocalDate.of(2010, 5, 15);
     private String nationality = "SK";
     private Gender gender = Gender.MALE;
-    private Address address = Address.of("Hlavní 123", "Praha", "110 00", "CZ");
+    private Address address = Address.of("Hlavní 123", "Praha", "110 00", Country.of("CZ"));
     private EmailAddress email = EmailAddress.of("jan.novak@example.com");
     private PhoneNumber phone = PhoneNumber.of("+420 123 456 789");
     private boolean isActive = true;
@@ -198,7 +198,7 @@ public class MemberTestDataBuilder {
     public Member build() {
         Member result = Member.reconstruct(new MemberId(memberId),
                 registrationNumber,
-                PersonalInformation.of(firstName, lastName, dateOfBirth, nationality, gender),
+                PersonalInformation.of(firstName, lastName, dateOfBirth, Nationality.of(nationality), gender),
                 address,
                 email,
                 phone,

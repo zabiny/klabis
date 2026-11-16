@@ -5,7 +5,9 @@ import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.BankAccountNumber;
 import com.klabis.members.domain.BirthNumber;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.EmailAddress;
+import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
 import com.klabis.members.infrastructure.restapi.InvalidFieldValueException.Kind;
@@ -31,9 +33,9 @@ class RegisterNewMemberConverter implements Converter<RegisterMemberRequestWithP
         com.klabis.members.domain.Gender gender = com.klabis.members.domain.Gender.valueOf(request.gender().name());
         return new RegistrationPort.RegisterNewMember(
                 PersonalInformation.of(request.firstName(), request.lastName(),
-                        request.dateOfBirth(), request.nationality(), gender),
+                        request.dateOfBirth(), Nationality.of(request.nationality()), gender),
                 request.address() != null ? new Address(request.address().street(), request.address().city(),
-                        request.address().postalCode(), request.address().country()) : null,
+                        request.address().postalCode(), Country.of(request.address().country())) : null,
                 hasText(request.email()) ? InvalidFieldValueException.parse(Kind.EMAIL, () -> EmailAddress.of(request.email())) : null,
                 hasText(request.phone()) ? InvalidFieldValueException.parse(Kind.PHONE, () -> PhoneNumber.of(request.phone())) : null,
                 request.birthNumber() != null ? InvalidFieldValueException.parse(Kind.BIRTH_NUMBER, () -> BirthNumber.of(request.birthNumber())) : null,

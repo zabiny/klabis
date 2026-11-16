@@ -64,15 +64,15 @@ class RegisterMemberWithGuardiansIntegrationTest {
 
     private RegistrationPort.RegisterNewMember minor(String lastName, List<GuardianInput> guardians) {
         return new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", lastName, LocalDate.of(2015, 4, 10), "SK", Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", "CZ"),
+                PersonalInformation.of("Dítě", lastName, LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
+                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, guardians, null);
     }
 
     private RegistrationPort.RegisterNewMember adult(String email, UserId takeOver) {
         return new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), "SK", Gender.FEMALE),
-                Address.of("Hlavní 1", "Brno", "60200", "CZ"),
+                PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), Nationality.of("SK"), Gender.FEMALE),
+                Address.of("Hlavní 1", "Brno", "60200", Country.of("CZ")),
                 EmailAddress.of(email), PhoneNumber.of("+420777111222"), null, null, null, List.of(), takeOver);
     }
 
@@ -162,8 +162,8 @@ class RegisterMemberWithGuardiansIntegrationTest {
         LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("rej." + unique() + "@example.com"));
         UserId guardianId = profile.guardian().getId();
         var minorTakeOver = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.of(2015, 4, 10), "SK", Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", "CZ"),
+                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
+                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, List.of(GuardianInput.existing(guardianId)), guardianId);
 
         assertThatThrownBy(() -> registrationPort.registerMember(minorTakeOver)).isInstanceOf(BusinessRuleViolationException.class);

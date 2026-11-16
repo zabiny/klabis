@@ -104,7 +104,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             PhoneNumber phone,
             Address address,
             String chipNumber,
-            String nationality,
+            Nationality nationality,
             BankAccountNumber bankAccountNumber,
             IdentityCard identityCard,
             DrivingLicenseGroup drivingLicenseGroup,
@@ -131,7 +131,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                     member.phone,
                     member.address,
                     member.chipNumber,
-                    pi != null ? pi.getNationalityCode() : null,
+                    pi != null ? pi.getNationality() : null,
                     member.bankAccountNumber,
                     member.identityCard,
                     member.drivingLicenseGroup,
@@ -187,10 +187,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * <p>
      * {@code registrationNumber} is not applied — {@link Member#registrationNumber} is set only at
      * construction — but is checked against the target aggregate as a guard against the caller
-     * having resolved the wrong member. {@code nationality} is a validated {@link Nationality}
-     * rather than the raw code {@link UpdateMember} still takes, since the ORIS projection this
-     * command is built from has already produced one.
-     */
+     * having resolved the wrong member.     */
     @RecordBuilder
     public record SyncFromOris(
             RegistrationNumber registrationNumber,
@@ -357,7 +354,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         validateStructure(command);
 
         // Consistency rule: always enforced, regardless of completeness
-        validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
+        validateBirthNumberConsistency(command.personalInformation().getNationality(), command.birthNumber());
 
         Set<MissingDataItem> missing = MemberCompleteness.missingData(command.email(), command.phone(),
                 command.personalInformation(), command.birthNumber(), command.address(),
@@ -382,7 +379,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         validateStructure(command);
 
         // Consistency rule: always enforced, even when completeness is not
-        validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
+        validateBirthNumberConsistency(command.personalInformation().getNationality(), command.birthNumber());
 
         return buildFrom(command, GuardianContacts.NONE);
     }
@@ -438,13 +435,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * the requirement that a Czech national *have* a birth number, which is a completeness rule
      * (see {@link MissingDataItem#BIRTH_NUMBER}).
      *
-     * @param nationalityCode the member's nationality code (ISO 3166-1)
-     * @param birthNumber     the birth number to validate (may be null)
+     * @param nationality the member's nationality
+     * @param birthNumber the birth number to validate (may be null)
      * @throws BusinessRuleViolationException if a birth number is provided for a non-Czech national
      */
-    private static void validateBirthNumberConsistency(String nationalityCode, BirthNumber birthNumber) {
-        Nationality nationality = Nationality.of(nationalityCode);
-
+    private static void validateBirthNumberConsistency(Nationality nationality, BirthNumber birthNumber) {
         if (birthNumber != null && !nationality.isCzech()) {
             throw new BirthNumberNotAllowedException();
         }
@@ -538,8 +533,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         return personalInformation != null ? personalInformation.getDateOfBirth() : null;
     }
 
-    public String getNationality() {
-        return personalInformation != null ? personalInformation.getNationalityCode() : null;
+    public Nationality getNationality() {
+        return personalInformation != null ? personalInformation.getNationality() : null;
     }
 
     public Gender getGender() {
@@ -631,7 +626,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             newBirthNumber = null;
         }
         // Consistency rule: always enforced, regardless of completeness
-        validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), newBirthNumber);
+        validateBirthNumberConsistency(newPersonalInfo.getNationality(), newBirthNumber);
 
         // Never-worsen rule: an edit may only fill in missing data, never add to it. The one
         // exception is a corrected date of birth turning an adult into a minor, who then lacks a guardian.
@@ -681,14 +676,13 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 command.firstName(), command.lastName(), command.dateOfBirth(),
-                command.nationality() != null ? command.nationality().code() : null,
-                command.gender());
+                command.nationality(), command.gender());
 
         // Completeness rules are dropped for ORIS-owned fields: ORIS is the
         // authority, so a synchronisation may leave the member incomplete rather than being
         // refused or holding on to a stale value. Only the consistency rule survives — a birth
         // number is never accepted for a non-Czech national.
-        validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), command.birthNumber());
+        validateBirthNumberConsistency(newPersonalInfo.getNationality(), command.birthNumber());
 
         this.personalInformation = newPersonalInfo;
         this.birthNumber = command.birthNumber();

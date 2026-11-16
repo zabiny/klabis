@@ -100,7 +100,7 @@ class UpdateMemberApiTest {
                 .withDateOfBirth(LocalDate.of(1990, 1, 1))
                 .withEmail("jan.novak@example.com")
                 .withPhone("+420777123456")
-                .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
                 .build();
     }
 
@@ -207,7 +207,7 @@ class UpdateMemberApiTest {
                 assertThat(command.address().street()).isEqualTo("New Street 123");
                 assertThat(command.address().city()).isEqualTo("Prague");
                 assertThat(command.address().postalCode()).isEqualTo("11000");
-                assertThat(command.address().country()).isEqualTo("CZ");
+                assertThat(command.address().country().code()).isEqualTo("CZ");
             }
 
             @Test

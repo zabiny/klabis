@@ -82,14 +82,14 @@ final class MemberProjectionMapper {
                 blankToNull(member.getLastName()),
                 member.getDateOfBirth(),
                 member.getGender(),
-                normalizeNationality(member.getNationality()),
+                member.getNationality() != null ? member.getNationality().code() : null,
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
                 member.getEmail() != null ? member.getEmail().value() : null,
                 member.getPhone() != null ? member.getPhone().value() : null,
                 address != null ? blankToNull(address.street()) : null,
                 address != null ? blankToNull(address.city()) : null,
                 address != null ? blankToNull(address.postalCode()) : null,
-                address != null ? normalizeNationality(address.country()) : null,
+                address != null ? address.country().code() : null,
                 blankToNull(member.getChipNumber())
         );
     }

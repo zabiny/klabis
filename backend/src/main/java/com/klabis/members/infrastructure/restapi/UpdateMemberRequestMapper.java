@@ -39,7 +39,7 @@ class UpdateMemberRequestMapper {
         overlay(request.dietaryRestrictions(), b::dietaryRestrictions);
         overlay(request.birthNumber(), v -> b.birthNumber(toBirthNumber(v)));
 
-        overlayNonNull(request.nationality(), b::nationality);
+        overlayNonNull(request.nationality(), v -> b.nationality(Nationality.of(v)));
         overlayNonNull(request.firstName(), b::firstName);
         overlayNonNull(request.lastName(), b::lastName);
         overlayNonNull(request.dateOfBirth(), b::dateOfBirth);
@@ -51,7 +51,7 @@ class UpdateMemberRequestMapper {
 
 
     private static Address toAddress(AddressRequest a) {
-        return Address.of(a.street(), a.city(), a.postalCode(), a.country());
+        return Address.of(a.street(), a.city(), a.postalCode(), Country.of(a.country()));
     }
 
     private static BankAccountNumber toBankAccountNumber(String value) {

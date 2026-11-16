@@ -49,8 +49,8 @@ class MemberAccountCreationIntegrationTest {
     @DisplayName("registering a member results in a finance account being created")
     void registeringMemberResultsInFinanceAccountBeingCreated(Scenario scenario) throws Exception {
         RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 5, 15), "SK", Gender.MALE),
-                Address.of("Testovací 1", "Praha", "10000", "CZ"),
+                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("SK"), Gender.MALE),
+                Address.of("Testovací 1", "Praha", "10000", Country.of("CZ")),
                 EmailAddress.of("jan.novak.finance.test@example.com"),
                 PhoneNumber.of("+420777888999"),
                 null,
@@ -76,8 +76,8 @@ class MemberAccountCreationIntegrationTest {
     @DisplayName("account stays available and accepts transactions after the membership is suspended")
     void accountSurvivesMembershipSuspension(Scenario scenario) throws Exception {
         RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Petr", "Svoboda", LocalDate.of(1985, 3, 10), "SK", Gender.MALE),
-                Address.of("Testovací 2", "Praha", "10000", "CZ"),
+                PersonalInformation.of("Petr", "Svoboda", LocalDate.of(1985, 3, 10), Nationality.of("SK"), Gender.MALE),
+                Address.of("Testovací 2", "Praha", "10000", Country.of("CZ")),
                 EmailAddress.of("petr.svoboda.finance.test@example.com"),
                 PhoneNumber.of("+420777888111"),
                 null,

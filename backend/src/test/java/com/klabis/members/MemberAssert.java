@@ -59,7 +59,7 @@ public class MemberAssert extends AbstractAssert<MemberAssert, Member> {
 
     public MemberAssert hasNationality(String expected) {
         isNotNull();
-        if (!actual.getNationality().equals(expected)) {
+        if (!actual.getNationality().code().equals(expected)) {
             failWithMessage("Expected nationality to be <%s> but was <%s>", expected, actual.getNationality());
         }
         return this;

@@ -12,16 +12,15 @@ import org.jmolecules.ddd.annotation.ValueObject;
  * - Street is required and cannot be blank (max 200 characters)
  * - City is required and cannot be blank (max 100 characters)
  * - Postal code is required and cannot be blank (max 20 characters, alphanumeric with optional hyphen/space)
- * - Country is required and must be a valid ISO 3166-1 alpha-2 code (2 letters)
+ * - Country is required
  */
 @ValueObject
-public record Address(String street, String city, String postalCode, String country) {
+public record Address(String street, String city, String postalCode, Country country) {
 
     private static final int MAX_STREET_LENGTH = 200;
     private static final int MAX_CITY_LENGTH = 100;
     private static final int MAX_POSTAL_CODE_LENGTH = 20;
     public static final String POSTAL_CODE_PATTERN = "^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$|^[A-Za-z0-9]$";
-    public static final String ISO_3166_ALPHA_2_PATTERN = "^[A-Za-z]{2}$";
 
     /**
      * Creates an Address value object with validation.
@@ -29,7 +28,7 @@ public record Address(String street, String city, String postalCode, String coun
      * @param street     street address (required, not blank, max 200 characters)
      * @param city       city name (required, not blank, max 100 characters)
      * @param postalCode postal code (required, not blank, max 20 characters, alphanumeric with optional hyphen/space)
-     * @param country    ISO 3166-1 alpha-2 country code (required, 2 letters)
+     * @param country    country (required)
      * @throws IllegalArgumentException if validation fails
      */
     public Address {
@@ -63,13 +62,8 @@ public record Address(String street, String city, String postalCode, String coun
             throw new IllegalArgumentException("Postal code must be alphanumeric (hyphens and spaces allowed)");
         }
 
-        // Validate country
-        if (country == null || country.trim().isBlank()) {
+        if (country == null) {
             throw new IllegalArgumentException("Country is required");
-        }
-        country = country.trim().toUpperCase();
-        if (!country.matches(ISO_3166_ALPHA_2_PATTERN)) {
-            throw new IllegalArgumentException("Country must be a valid ISO 3166-1 alpha-2 code (2 letters)");
         }
     }
 
@@ -79,11 +73,11 @@ public record Address(String street, String city, String postalCode, String coun
      * @param street     street address
      * @param city       city name
      * @param postalCode postal code
-     * @param country    ISO 3166-1 alpha-2 country code
+     * @param country    country
      * @return Address value object
      * @throws IllegalArgumentException if validation fails
      */
-    public static Address of(String street, String city, String postalCode, String country) {
+    public static Address of(String street, String city, String postalCode, Country country) {
         return new Address(street, city, postalCode, country);
     }
 

@@ -14,6 +14,8 @@ import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
+import com.klabis.members.domain.Nationality;
+import com.klabis.members.domain.Country;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
@@ -84,8 +86,8 @@ class MemberFeeHistoryAccessIntegrationTest {
     @BeforeEach
     void memberWithPastAssignment() {
         member = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 1), "CZ", Gender.MALE),
-                Address.of("Hlavní 1", "Praha", "11000", "CZ"),
+                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 1), Nationality.of("CZ"), Gender.MALE),
+                Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")),
                 EmailAddress.of("jan.novak." + UUID.randomUUID() + "@example.com"),
                 PhoneNumber.of("+420777111222"),
                 BirthNumber.of("900101/1234"),
@@ -101,8 +103,8 @@ class MemberFeeHistoryAccessIntegrationTest {
 
     private Member registerMinor(List<LegalGuardianPort.GuardianInput> guardians) {
         Member minor = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), "CZ", Gender.FEMALE),
-                Address.of("Dětská 1", "Praha", "11000", "CZ"),
+                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), Nationality.of("CZ"), Gender.FEMALE),
+                Address.of("Dětská 1", "Praha", "11000", Country.of("CZ")),
                 null, null, BirthNumber.of("900101/1234"), null, null, guardians, null));
         group.addMember(minor.getId(), LocalDate.of(PAST_YEAR - 1, 11, 20), AssignmentSource.ADMIN_ASSIGNMENT);
         group = groupRepository.save(group);
@@ -164,8 +166,8 @@ class MemberFeeHistoryAccessIntegrationTest {
     @DisplayName("member guardian follows feeHistory of their minor and is forbidden for another member")
     void memberGuardianFollowsFeeHistoryOfMinor() throws Exception {
         Member guardian = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 5, 5), "CZ", Gender.FEMALE),
-                Address.of("Hlavní 2", "Praha", "11000", "CZ"),
+                PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 5, 5), Nationality.of("CZ"), Gender.FEMALE),
+                Address.of("Hlavní 2", "Praha", "11000", Country.of("CZ")),
                 EmailAddress.of("eva." + UUID.randomUUID() + "@example.com"),
                 PhoneNumber.of("+420777111333"),
                 BirthNumber.of("855505/1234"),

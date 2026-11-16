@@ -72,7 +72,7 @@ class NationalityTest {
     @DisplayName("Should throw exception when code is null")
     void shouldThrowWhenCodeIsNull() {
         assertThatThrownBy(() -> Nationality.of(null))
-                .isInstanceOf(NullPointerException.class)
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("required");
     }
 
@@ -81,7 +81,7 @@ class NationalityTest {
     void shouldThrowWhenCodeIsBlank() {
         assertThatThrownBy(() -> Nationality.of("   "))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("blank");
+                .hasMessageContaining("required");
     }
 
     @Test
@@ -213,5 +213,12 @@ class NationalityTest {
         assertThat(Nationality.of("CZ").isCzech()).isTrue();
         assertThat(Nationality.of("SK").isCzech()).isFalse();
         assertThat(Nationality.of("US").isCzech()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should wrap a Country")
+    void shouldWrapCountry() {
+        assertThat(Nationality.of("cz").country()).isEqualTo(Country.of("CZ"));
+        assertThat(new Nationality(Country.of("SK")).code()).isEqualTo("SK");
     }
 }

@@ -2,10 +2,10 @@
 
 ## 1. Country value object (behaviour-neutral refactoring)
 
-- [ ] 1.1 Add the Country value object with today's two-letter format rule and upper-casing (TDD: unit tests for valid, lower-case, blank, malformed codes) and verify the tests pass
-- [ ] 1.2 Make Nationality wrap Country (remove its own format check, keep "is Czech") and verify the Nationality and MemberCompleteness tests pass
-- [ ] 1.3 Make Address hold a Country and create personal information from a Nationality instead of strings; adapt REST converters/mappers, JDBC memento, ORIS projection mapper and sync adapter, `MembersImpl`, data bootstrap and tests; verify `./gradlew test` for the members module passes with no behaviour change
-- [ ] 1.4 Commit the refactoring on its own (no API or UI change)
+- [x] 1.1 Add the Country value object with today's two-letter format rule and upper-casing (TDD: unit tests for valid, lower-case, blank, malformed codes) and verify the tests pass
+- [x] 1.2 Make Nationality wrap Country (remove its own format check, keep "is Czech") and verify the Nationality and MemberCompleteness tests pass
+- [x] 1.3 Make Address hold a Country and create personal information from a Nationality instead of strings; adapt REST converters/mappers, JDBC memento, ORIS projection mapper and sync adapter, `MembersImpl`, data bootstrap and tests; verify `./gradlew test` for the members module passes with no behaviour change
+- [x] 1.4 Commit the refactoring on its own (no API or UI change)
 
 ## 2. Only existing country codes are accepted
 

@@ -150,11 +150,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId userId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
 
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -203,11 +203,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 3, 20);
             UserId testSharedId = new UserId(UUID.fromString("87654321-4321-4321-4321-210987654321"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-            Address address = Address.of("Štúrova 45", "Bratislava", "81101", "SK");
+            Address address = Address.of("Štúrova 45", "Bratislava", "81101", Country.of("SK"));
             EmailAddress email = EmailAddress.of("eva@example.com");
             PhoneNumber phone = PhoneNumber.of("+421777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Eva", "Svobodová", dateOfBirth, "SK", Gender.FEMALE
+                    "Eva", "Svobodová", dateOfBirth, Nationality.of("SK"), Gender.FEMALE
             );
 
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -241,11 +241,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 7, 20);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0502");
-            Address address = Address.of("Testovací 5", "Plzeň", "30100", "CZ");
+            Address address = Address.of("Testovací 5", "Plzeň", "30100", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("test@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777777777");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Test", "Member", dateOfBirth, "CZ", Gender.MALE
+                    "Test", "Member", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
 
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -277,11 +277,11 @@ class RegistrationServiceTest {
             // Given
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0000");
-            Address address = Address.of("Transakční 10", "Liberec", "46001", "CZ");
+            Address address = Address.of("Transakční 10", "Liberec", "46001", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("transaction@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777000000");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Transaction", "Test", LocalDate.of(2000, 1, 1), "CZ", Gender.MALE
+                    "Transaction", "Test", LocalDate.of(2000, 1, 1), Nationality.of("CZ"), Gender.MALE
             );
 
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -311,11 +311,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
 
@@ -352,11 +352,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "SK", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("SK"), Gender.MALE
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
@@ -393,11 +393,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
@@ -437,11 +437,11 @@ class RegistrationServiceTest {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "SK", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("SK"), Gender.MALE
             );
 
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
@@ -476,11 +476,11 @@ class RegistrationServiceTest {
             // Given
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
 
             // RegisterNewMember carries no registration number field - it must stay this shape
@@ -515,8 +515,8 @@ class RegistrationServiceTest {
         private RegistrationPort.RegisterNewMember minorCommand(EmailAddress email, PhoneNumber phone,
                                                                List<GuardianInput> guardians) {
             return new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), "CZ", Gender.MALE),
-                    Address.of("Dětská 1", "Brno", "60200", "CZ"),
+                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                     email,
                     phone,
                     BirthNumber.of("150410/1234"),
@@ -621,8 +621,8 @@ class RegistrationServiceTest {
         @DisplayName("should reject taking over a legal guardian for a minor")
         void shouldRejectTakeOverForMinor() {
             var command = new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), "CZ", Gender.MALE),
-                    Address.of("Dětská 1", "Brno", "60200", "CZ"), null, null, null, null, null,
+                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")), null, null, null, null, null,
                     List.of(GuardianInput.existing(GUARDIAN_ID)), GUARDIAN_ID);
 
             assertThatThrownBy(() -> service.registerMember(command))
@@ -648,8 +648,8 @@ class RegistrationServiceTest {
         private RegistrationPort.RegisterNewMember adultCommand(EmailAddress email, PhoneNumber phone,
                                                                List<GuardianInput> guardians, UserId takeOver) {
             return new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), "CZ", Gender.FEMALE),
-                    Address.of("Hlavní 1", "Brno", "60200", "CZ"),
+                    PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), Nationality.of("CZ"), Gender.FEMALE),
+                    Address.of("Hlavní 1", "Brno", "60200", Country.of("CZ")),
                     email,
                     phone,
                     BirthNumber.of("855410/1234"),
@@ -712,8 +712,8 @@ class RegistrationServiceTest {
 
         private RegistrationPort.RegisterNewMember takeOverCommand() {
             return new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), "CZ", Gender.FEMALE),
-                    Address.of("Hlavní 1", "Brno", "60200", "CZ"),
+                    PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 4, 10), Nationality.of("CZ"), Gender.FEMALE),
+                    Address.of("Hlavní 1", "Brno", "60200", Country.of("CZ")),
                     EmailAddress.of("eva@example.com"),
                     PhoneNumber.of("+420777111222"),
                     BirthNumber.of("855410/1234"),
@@ -790,11 +790,11 @@ class RegistrationServiceTest {
             // Given
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
             );
             RegistrationNumber importedRegistrationNumber = RegistrationNumber.of("ZBM0099");
 
