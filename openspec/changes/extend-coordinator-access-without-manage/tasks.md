@@ -23,7 +23,7 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 ## 3. Coordinators can apply category presets (#373)
 
 - [x] 3.1 Write failing tests: member with only EVENTS_READ can list presets (`listPresets`); `getPreset` and preset mutations still require EVENTS_MANAGE; root resource contains `category-presets` only for EVENTS_MANAGE; events list and event detail contain a `categoryPresets` link
-- [x] 3.2 Change `listPresets` to `x-klabis-authority: EVENTS_READ`, add explicit `has(EVENTS_MANAGE)` check to the root link in `EventsRootPostprocessor`, add `categoryPresets` links in `EventListPostprocessor` and `EventDetailsPostprocessor`, document them in `events.yaml` `x-hal-links`; regenerate; verify tests from 3.1 pass
+- [x] 3.2 Change `listPresets` to `x-klabis-authority: EVENTS_READ`, keep the root link in `EventsRootPostprocessor` managers-only, add `categoryPresets` links in `EventListPostprocessor` and `EventDetailsPostprocessor`, document them in `events.yaml` `x-hal-links`; regenerate; verify tests from 3.1 pass
 - [x] 3.3 Write failing Vitest for `CategoryPresetPickerButton`: no request and no button when the page resource lacks `categoryPresets`; loads presets from the link href when present; then implement via `useHalRoute().resourceData`; verify tests pass and `npm run build` succeeds
 - [x] 3.4 Verify the admin menu still hides "Šablony kategorií" for a regular member (existing `useRootNavigation`/Layout tests or a new one) and the presets page stays managers-only
 
@@ -37,8 +37,8 @@ Each group is an end-to-end slice (spec → backend → frontend → tests → d
 
 - [x] 5.1 Add E2E scenarios (via `e2e-tester` agent, `gherkin-bdd` skill) for: coordinator without EVENTS:MANAGE sees, edits and publishes their DRAFT event; coordinator applies a category preset; member filters the list by "Vedoucí"; verify they pass against `./runLocalEnvironment.sh`
 - [x] 5.2 Run the full backend and frontend test suites (final run with Modulith optimizations disabled) and `openspec validate extend-coordinator-access-without-manage --strict`; verify all green
-- [ ] 5.3 Manual QA on http://localhost:3000 as ZBM9500 made coordinator of a DRAFT event: no 403 requests in the network log when opening the edit form; verify against the spec scenarios
-- [ ] 5.4 Add label `BackendCompleted` to GitHub issues #294, #295 and #373
+- [x] 5.3 Manual QA on http://localhost:3000 as ZBM9500 made coordinator of a DRAFT event: no 403 requests in the network log when opening the edit form; verify against the spec scenarios
+- [x] 5.4 Add label `BackendCompleted` to GitHub issues #294, #295 and #373
 
 ## Workflow follow-up
 

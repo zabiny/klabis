@@ -30,14 +30,14 @@ class EventFilterTest {
         @Test
         @DisplayName("null statuses in canonical constructor mean all statuses")
         void nullMeansAllStatuses() {
-            EventFilter filter = new EventFilter(null, null, null, null, null, null, null, null, null, null, null);
+            EventFilter filter = EventFilter.none();
             assertThat(filter.statuses()).containsExactlyInAnyOrder(EventStatus.values());
         }
 
         @Test
         @DisplayName("explicitly empty statuses stay empty")
         void emptyStaysEmpty() {
-            EventFilter filter = new EventFilter(java.util.Set.of(), null, null, null, null, null, null, null, null, null, null);
+            EventFilter filter = new EventFilter(java.util.Set.of(), null, null, null, null, null, null, null, null, null, null, null);
             assertThat(filter.statuses()).isEmpty();
         }
 
@@ -263,6 +263,7 @@ class EventFilterTest {
                     "OOB",
                     java.time.LocalDate.of(2026, 1, 1),
                     java.time.LocalDate.of(2026, 12, 31),
+                    null,
                     null,
                     null,
                     null,

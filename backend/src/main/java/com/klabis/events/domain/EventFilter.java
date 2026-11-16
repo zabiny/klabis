@@ -45,25 +45,18 @@ public record EventFilter(
         draftsLimitedTo = draftsLimitedTo == null ? null : Set.copyOf(draftsLimitedTo);
     }
 
-    public EventFilter(Set<EventStatus> statuses, String organizer, LocalDate dateFrom, LocalDate dateTo,
-                       String fulltextQuery, MemberId registeredBy, MemberId coordinator, Period deadlineWithin,
-                       MemberId notRegisteredBy, List<EventTypeId> eventTypeIds, MemberId cancelledVisibleTo) {
-        this(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin,
-                notRegisteredBy, eventTypeIds, cancelledVisibleTo, null);
-    }
-
     /**
      * No filtering — returns all events.
      */
     public static EventFilter none() {
-        return new EventFilter(null, null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
      * Filter to events whose status is one of the given statuses.
      */
     public static EventFilter byStatus(EventStatus... statuses) {
-        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -72,7 +65,7 @@ public record EventFilter(
     public static EventFilter byNotHavingStatus(EventStatus... excluded) {
         EnumSet<EventStatus> allowed = EnumSet.allOf(EventStatus.class);
         allowed.removeAll(Arrays.asList(excluded));
-        return new EventFilter(allowed, null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(allowed, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -176,15 +169,15 @@ public record EventFilter(
      * exclusive-upper-bound semantics that the original SQL query used.
      */
     public static EventFilter activeEventsWithDateBefore(LocalDate date) {
-        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null, null, null, null, null, null, null);
+        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null, null, null, null, null, null, null, null);
     }
 
     public static EventFilter byOrganizer(String organizer) {
-        return new EventFilter(null, organizer, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, organizer, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(null, null, from, to, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, from, to, null, null, null, null, null, null, null, null);
     }
 
     /**

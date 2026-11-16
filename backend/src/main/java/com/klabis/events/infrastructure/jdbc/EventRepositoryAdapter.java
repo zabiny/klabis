@@ -101,17 +101,12 @@ class EventRepositoryAdapter implements EventRepository {
             }
         }
         if (filter.draftsLimitedTo() != null && !filter.excludesStatus(EventStatus.DRAFT)) {
-            Criteria notDraft = Criteria.where("status").not(EventStatus.DRAFT.name());
-            conditions.add(filter.draftsLimitedTo().isEmpty()
-                    ? notDraft
-                    : Criteria.from(notDraft.or(Criteria.where("id").in(filter.draftsLimitedTo().stream().map(EventId::value).toList()))));
+            conditions.add(statusUnlessIdIn(EventStatus.DRAFT,
+                    filter.draftsLimitedTo().stream().map(EventId::value).toList()));
         }
         if (filter.cancelledVisibleTo() != null && !filter.excludesStatus(EventStatus.CANCELLED)) {
-            Criteria notCancelled = Criteria.where("status").not(EventStatus.CANCELLED.name());
-            List<UUID> registeredIds = findIdsByRegisteredMember(filter.cancelledVisibleTo());
-            conditions.add(registeredIds.isEmpty()
-                    ? notCancelled
-                    : Criteria.from(notCancelled.or(Criteria.where("id").in(registeredIds))));
+            conditions.add(statusUnlessIdIn(EventStatus.CANCELLED,
+                    findIdsByRegisteredMember(filter.cancelledVisibleTo())));
         }
 
         Criteria combined = conditions.stream().reduce(Criteria.empty(), Criteria::and);
@@ -123,6 +118,11 @@ class EventRepositoryAdapter implements EventRepository {
                 .toList();
         long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(query, EventMemento.class);
         return new PageImpl<>(results, pageable, total);
+    }
+
+    private static Criteria statusUnlessIdIn(EventStatus status, List<UUID> ids) {
+        Criteria notStatus = Criteria.where("status").not(status.name());
+        return ids.isEmpty() ? notStatus : Criteria.from(notStatus.or(Criteria.where("id").in(ids)));
     }
 
     /**

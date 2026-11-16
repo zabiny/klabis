@@ -5,12 +5,10 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.util.Set;
 
 @PrimaryPort
 public interface EventManagementPort {
@@ -28,10 +26,9 @@ public interface EventManagementPort {
     Event getEvent(EventId eventId, boolean mayViewDraft);
 
     /**
-     * @param draftsLimitedTo ids of the DRAFT events the caller may see, {@code null} when DRAFT events are
-     *                        unrestricted (the caller manages all events)
+     * @param draftVisibility which DRAFT events the caller may see
      * @param viewerMemberId  the calling member, {@code null} when the user has no member profile;
-     *                        ignored when {@code draftsLimitedTo} is null
+     *                        ignored when all DRAFT events are visible
      */
-    Page<Event> listEvents(EventFilter filter, Pageable pageable, @Nullable Set<EventId> draftsLimitedTo, MemberId viewerMemberId);
+    Page<Event> listEvents(EventFilter filter, Pageable pageable, DraftVisibility draftVisibility, MemberId viewerMemberId);
 }

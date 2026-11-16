@@ -260,7 +260,7 @@ export const EventsPage = (): ReactElement => {
                 onChange={handleFilterChange}
                 showRegisteredByMeToggle={showRegisteredByMeToggle}
                 eventTypes={eventTypes}
-                coordinatorOptions={coordinatorOptionsLink && Array.isArray(coordinatorOptions) ? coordinatorOptions : undefined}
+                coordinatorOptions={Array.isArray(coordinatorOptions) ? coordinatorOptions : undefined}
             />
 
             <HalEmbeddedTable<EventListData>

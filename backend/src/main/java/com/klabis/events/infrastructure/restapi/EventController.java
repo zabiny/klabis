@@ -200,19 +200,19 @@ public class EventController implements EventsApi {
             return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable,
-                draftsVisibleToCaller(), currentUser.memberId());
+                draftVisibilityOfCaller(), currentUser.memberId());
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
     }
 
-    private @Nullable Set<EventId> draftsVisibleToCaller() {
+    private DraftVisibility draftVisibilityOfCaller() {
         if (authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
-            return null;
+            return DraftVisibility.all();
         }
-        return authorizationEvaluator.targetIdsOf(Authority.EVENTS_EDIT, TargetType.EVENT).stream()
+        return DraftVisibility.only(authorizationEvaluator.targetIdsOf(Authority.EVENTS_EDIT, TargetType.EVENT).stream()
                 .map(EventId::new)
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableSet()));
     }
 
     /**
@@ -689,20 +689,12 @@ class AccommodationListItemPostprocessor
 @MvcComponent
 class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
-    private final AuthorizationEvaluator authorizationEvaluator;
-
-    EventsRootPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
-        this.authorizationEvaluator = authorizationEvaluator;
-    }
-
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
-        if (authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
-            klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
-                    .ifPresent(link -> model.add(link.withRel("category-presets")));
-        }
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).createCategoryPreset(null))
+                .ifPresent(link -> model.add(link.withRel("category-presets")));
         return model;
     }
 }

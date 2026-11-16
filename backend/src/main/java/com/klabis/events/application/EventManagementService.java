@@ -5,7 +5,6 @@ import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.jmolecules.ddd.annotation.Service;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,11 +101,11 @@ public class EventManagementService implements EventManagementPort {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Event> listEvents(EventFilter filter, Pageable pageable, @Nullable Set<EventId> draftsLimitedTo, MemberId viewerMemberId) {
-        if (draftsLimitedTo == null) {
+    public Page<Event> listEvents(EventFilter filter, Pageable pageable, DraftVisibility draftVisibility, MemberId viewerMemberId) {
+        if (!(draftVisibility instanceof DraftVisibility.Only(Set<EventId> draftIds))) {
             return eventRepository.findAll(filter, pageable);
         }
-        EventFilter visible = filter.withDraftsLimitedTo(draftsLimitedTo);
+        EventFilter visible = filter.withDraftsLimitedTo(draftIds);
         visible = viewerMemberId == null
                 ? visible.withExcludedStatus(EventStatus.CANCELLED)
                 : visible.withCancelledVisibleTo(viewerMemberId);

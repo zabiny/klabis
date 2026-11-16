@@ -493,7 +493,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.none(), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, null, null);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, DraftVisibility.all(), null);
 
             // Then
             assertThat(result.getContent()).hasSize(2);
@@ -516,7 +516,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
@@ -532,7 +532,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -552,7 +552,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.byStatus(EventStatus.DRAFT), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, null, null);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, DraftVisibility.all(), null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
@@ -573,7 +573,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.byStatus(EventStatus.ACTIVE).withDraftsLimitedTo(Set.of()), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
@@ -597,7 +597,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(cancelledEvent), pageable, 1));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, Set.of(), viewer);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, DraftVisibility.only(Set.of()), viewer);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -615,7 +615,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -631,7 +631,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -654,7 +654,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(cancelledEvent), pageable, 1));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, Set.of(), viewer);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, DraftVisibility.only(Set.of()), viewer);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -674,7 +674,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            service.listEvents(EventFilter.none(), pageable, Set.of(granted), null);
+            service.listEvents(EventFilter.none(), pageable, DraftVisibility.only(Set.of(granted)), null);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -691,7 +691,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            service.listEvents(requested, pageable, null, viewer);
+            service.listEvents(requested, pageable, DraftVisibility.all(), viewer);
 
             // Then
             verify(eventRepository).findAll(requested, pageable);
@@ -707,7 +707,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, Set.of(), viewer);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, DraftVisibility.only(Set.of()), viewer);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -726,7 +726,7 @@ class EventManagementServiceTest {
                     .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            service.listEvents(requested, pageable, Set.of(), viewer);
+            service.listEvents(requested, pageable, DraftVisibility.only(Set.of()), viewer);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);
@@ -741,7 +741,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT, EventStatus.CANCELLED), pageable, Set.of(), null);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT, EventStatus.CANCELLED), pageable, DraftVisibility.only(Set.of()), null);
 
             // Then
             verify(eventRepository).findAll(expectedFilter, pageable);

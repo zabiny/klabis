@@ -988,7 +988,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(Set.of()), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(DraftVisibility.only(Set.of())), any());
         }
 
         @Test
@@ -1008,7 +1008,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), isNull(), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(DraftVisibility.all()), any());
         }
 
         @Test
@@ -1041,7 +1041,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.page.totalElements").value(0));
 
-            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(Set.of()), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(DraftVisibility.only(Set.of())), any());
         }
 
         @Test
@@ -1061,7 +1061,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("DRAFT"));
 
-            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), isNull(), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(DraftVisibility.all()), any());
         }
 
         @Test
@@ -1082,7 +1082,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
 
-            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.ACTIVE)), any(), eq(Set.of()), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.ACTIVE)), any(), eq(DraftVisibility.only(Set.of())), any());
         }
     }
 
@@ -1128,7 +1128,7 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("DRAFT"));
 
             verify(eventManagementService).listEvents(any(EventFilter.class), any(),
-                    eq(Set.of(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))), any());
+                    eq(DraftVisibility.only(Set.of(new EventId(UUID.fromString(COORDINATED_EVENT_ID))))), any());
         }
 
         private void stubDraftVisibleOnlyWhenAllowed() {
@@ -2751,7 +2751,7 @@ class EventControllerTest {
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(Set.of()), eq(memberId));
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(DraftVisibility.only(Set.of())), eq(memberId));
         }
 
         @Test
@@ -2764,7 +2764,7 @@ class EventControllerTest {
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(Set.of()), isNull());
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(DraftVisibility.only(Set.of())), isNull());
         }
 
         @Test
