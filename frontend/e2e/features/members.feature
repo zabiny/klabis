@@ -52,6 +52,10 @@ Feature: Members
       When Eva changes the phone number in the profile to "+420 777 123 456"
       Then Eva's profile shows the phone number "+420 777 123 456"
 
+    Scenario: Member cannot change their own nationality
+      When Eva opens the edit form of her profile
+      Then Eva's nationality "CZ" is shown read-only
+
   Rule: A member cannot update another member's profile
 
     Scenario: Member cannot edit another member's profile

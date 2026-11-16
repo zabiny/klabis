@@ -444,7 +444,7 @@ class MemberControllerApiTest {
 
             var result = mockMvc.perform(getMemberById(memberId)).andExpect(status().isOk());
 
-            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber")) {
+            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality")) {
                 result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
                         .value(true));
             }
@@ -467,6 +467,9 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')]").exists())
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')].readOnly")
+                            .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='nationality')]").exists())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='nationality')].readOnly")
                             .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
         }
 

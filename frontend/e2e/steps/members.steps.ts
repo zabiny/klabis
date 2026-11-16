@@ -169,6 +169,13 @@ When('{persona} changes the phone number in the profile to {string}', async ({pa
     await submit(page, 'Uložit změny');
 });
 
+When('{persona} opens the edit form of her profile', async ({page, actAs}, persona: Persona) => {
+    await actAs(persona);
+    await openOwnProfile(page);
+    await click(page, 'Upravit profil');
+    await expect(action(page, 'Uložit změny')).toBeVisible();
+});
+
 When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await actAs(persona);
     await openMemberDetail(page, lastName);
@@ -197,6 +204,13 @@ Then('the detail shows the personal data and address of member {name}', async ({
 Then('{persona}\'s profile shows the phone number {string}', async ({page, currentRole}, persona: Persona, phone: string) => {
     expectActing(currentRole, persona);
     await expect(page.getByText(phone, {exact: true}).first()).toBeVisible();
+});
+
+Then('{persona}\'s nationality {string} is shown read-only', async ({page, currentRole}, persona: Persona, nationality: string) => {
+    expectActing(currentRole, persona);
+    await expect(page.getByLabel('Telefon')).toBeVisible();
+    await expect(page.getByLabel(/^Státní příslušnost/)).toHaveCount(0);
+    await expect(page.getByText('Státní příslušnost', {exact: true}).locator('xpath=..').getByText(nationality, {exact: true})).toBeVisible();
 });
 
 Then('member {name} is suspended', async ({page}, lastName: string) => {

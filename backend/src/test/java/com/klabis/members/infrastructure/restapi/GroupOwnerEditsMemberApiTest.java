@@ -77,6 +77,8 @@ class GroupOwnerEditsMemberApiTest {
                 .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
                 .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='birthNumber')].readOnly")
                         .value(true))
+                .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='nationality')].readOnly")
+                        .value(true))
                 .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
     }
 

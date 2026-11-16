@@ -1204,6 +1204,8 @@ components:
           type: ['string', 'null']
           minLength: 2
           maxLength: 2
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
         identityCard:
           $ref: '#/components/schemas/IdentityCardDto'
           x-klabis-nullable: true

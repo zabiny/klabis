@@ -110,7 +110,7 @@ class GuardianEditsMinorApiTest {
         ResultActions result = getMember(CHILD_ID)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
-        for (String reserved : new String[]{"firstName", "lastName", "dateOfBirth", "gender", "birthNumber"}) {
+        for (String reserved : new String[]{"firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality"}) {
             result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
                     .value(true));
         }

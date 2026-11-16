@@ -277,6 +277,27 @@ class UpdateMemberApiTest {
             }
 
             @Test
+            @DisplayName("updating nationality should be saved when admin")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldUpdateNationalityWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("{\"nationality\": \"SK\"}")
+                        )
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.UpdateMember.class);
+                verify(memberService).updateMember(any(MemberId.class), captor.capture());
+                assertThat(captor.getValue().nationality().code()).isEqualTo("SK");
+            }
+
+            @Test
             @DisplayName("updating birth number and bank account should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
@@ -777,6 +798,24 @@ class UpdateMemberApiTest {
                                                     "gender": "FEMALE"
                                                 }
                                                 """)
+                        )
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
+            @DisplayName("updating own nationality should return 403 — it needs MEMBERS:MANAGE")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
+                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                            ids = "00000000-0000-0000-0000-000000000001"))
+            void shouldRejectMemberUpdatingOwnNationality() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("{\"nationality\": \"SK\"}")
                         )
                         .andExpect(status().isForbidden());
 

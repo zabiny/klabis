@@ -16,10 +16,10 @@
 
 ## 3. Nationality reserved for administrators (#360)
 
-- [ ] 3.1 Add `x-klabis-authority: MEMBERS_MANAGE` and `x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` to `UpdateMemberRequest.nationality`, regenerate, and verify the generated field carries the authority check
-- [ ] 3.2 TDD (`@WebMvcTest`): for an adult member editing themself and for a legal guardian, the `updateMember` template omits `nationality` and a submitted nationality is ignored; for an administrator it is offered and saved; verify the tests pass
-- [ ] 3.3 TDD (frontend): the member edit page shows nationality read-only when the template lacks it (self-edit, guardian) and the birth number field stays read-only; verify the Vitest tests pass
-- [ ] 3.4 E2E: scenario that an adult member sees their nationality read-only in their own edit form; verify it passes against the local environment
+- [x] 3.1 Add `x-klabis-authority: MEMBERS_MANAGE` and `x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` to `UpdateMemberRequest.nationality`, regenerate, and verify the generated field carries the authority check
+- [x] 3.2 TDD (`@WebMvcTest`): for an adult member editing themself and for a legal guardian, the `updateMember` template omits `nationality` and a submitted nationality is ignored; for an administrator it is offered and saved; verify the tests pass
+- [x] 3.3 TDD (frontend): the member edit page shows nationality read-only when the template lacks it (self-edit, guardian) and the birth number field stays read-only; verify the Vitest tests pass
+- [x] 3.4 E2E: scenario that an adult member sees their nationality read-only in their own edit form; verify it passes against the local environment
 
 ## 4. Country picker for nationality
 

@@ -799,6 +799,73 @@ describe('MemberDetailPage', () => {
             });
         });
 
+        describe('nationality marked readOnly or absent in the edit template', () => {
+            const withNationalityReadOnly: HalFormsTemplate = {
+                ...selfEditTemplateWithReservedFields,
+                properties: [
+                    ...selfEditTemplateWithReservedFields.properties!,
+                    {name: 'nationality', type: 'text', prompt: 'Státní příslušnost', readOnly: true},
+                ],
+            };
+            const withoutNationality: HalFormsTemplate = selfEditTemplateWithReservedFields;
+
+            it.each([
+                ['readOnly', withNationalityReadOnly],
+                ['absent', withoutNationality],
+            ])('shows nationality value without input and keeps birth number read-only when %s', async (_label, template) => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(mockMemberDetailData({
+                    nationality: 'CZ',
+                    birthNumber: '9003151234',
+                    _templates: {updateMember: template},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(document.querySelector('[name="nationality"]')).not.toBeInTheDocument();
+                expect(screen.queryByDisplayValue('CZ')).not.toBeInTheDocument();
+                expect(screen.getByText('CZ')).toBeInTheDocument();
+                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+                expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+            });
+
+            it('hides birth number for a non-CZ nationality shown read-only', async () => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(mockMemberDetailData({
+                    nationality: 'SK',
+                    birthNumber: null,
+                    _templates: {updateMember: withNationalityReadOnly},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByText('SK')).toBeInTheDocument();
+                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+            });
+
+            it('omits nationality from the PATCH body', async () => {
+                const user = userEvent.setup();
+                const mutate = vi.fn();
+                vi.mocked(useAuthorizedMutation).mockReturnValue({
+                    mutate,
+                    mutateAsync: vi.fn(),
+                    isPending: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedMutation>);
+                renderPage(createMockPageData(mockMemberDetailData({
+                    _templates: {updateMember: withNationalityReadOnly},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+                await user.click(screen.getByRole('button', {name: /uložit změny/i}));
+
+                await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
+                const body = mutate.mock.calls[0][0].data as Record<string, unknown>;
+                expect(body).not.toHaveProperty('nationality');
+                expect(body).not.toHaveProperty('birthNumber');
+            });
+        });
+
         describe('admin edit template', () => {
             it('sends reserved fields in the body when they are editable', async () => {
                 const user = userEvent.setup();
