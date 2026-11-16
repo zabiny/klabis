@@ -2,7 +2,7 @@ package com.klabis.membershipfees;
 
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.ManualCampaignClosePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
         MembershipFeeTierManagementPort.class,
         MembershipFeeTierOptionsPort.class,
         FeeSelectionCampaignManagementPort.class,
-        ManualCampaignClosePort.class,
+        FeeYearLifecyclePort.class,
         AdminFeeAssignmentPort.class,
         MemberChoicePort.class,
         MemberFeeHistoryPort.class

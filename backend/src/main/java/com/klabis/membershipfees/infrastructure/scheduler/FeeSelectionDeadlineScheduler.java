@@ -1,6 +1,6 @@
 package com.klabis.membershipfees.infrastructure.scheduler;
 
-import com.klabis.membershipfees.application.CampaignEndProcessingPort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +13,16 @@ class FeeSelectionDeadlineScheduler {
     private static final Logger LOG = LoggerFactory.getLogger(FeeSelectionDeadlineScheduler.class);
 
 
-    private final CampaignEndProcessingPort campaignEndProcessingPort;
+    private final FeeYearLifecyclePort feeYearLifecyclePort;
 
-    FeeSelectionDeadlineScheduler(CampaignEndProcessingPort campaignEndProcessingPort) {
-        this.campaignEndProcessingPort = campaignEndProcessingPort;
+    FeeSelectionDeadlineScheduler(FeeYearLifecyclePort feeYearLifecyclePort) {
+        this.feeYearLifecyclePort = feeYearLifecyclePort;
     }
 
     @Scheduled(cron = "0 0 3 * * *")
     void processMissedSelections() {
         LocalDate today = LocalDate.now();
-        campaignEndProcessingPort.processCampaignEnd(today);
+        feeYearLifecyclePort.processCampaignEnd(today);
     }
 
 }

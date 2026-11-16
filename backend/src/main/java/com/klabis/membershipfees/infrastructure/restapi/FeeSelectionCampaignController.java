@@ -6,7 +6,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.ManualCampaignClosePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -36,14 +36,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
     private final FeeSelectionCampaignManagementPort managementPort;
-    private final ManualCampaignClosePort manualCampaignClosePort;
+    private final FeeYearLifecyclePort feeYearLifecyclePort;
     private final ConversionService conversionService;
 
     FeeSelectionCampaignController(FeeSelectionCampaignManagementPort managementPort,
-                                   ManualCampaignClosePort manualCampaignClosePort,
+                                   FeeYearLifecyclePort feeYearLifecyclePort,
                                    ConversionService conversionService) {
         this.managementPort = managementPort;
-        this.manualCampaignClosePort = manualCampaignClosePort;
+        this.feeYearLifecyclePort = feeYearLifecyclePort;
         this.conversionService = conversionService;
     }
 
@@ -87,7 +87,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
     @Override
     public ResponseEntity<Void> closeCampaign(UUID id) {
-        manualCampaignClosePort.closeCampaign(new FeeSelectionCampaignId(id));
+        feeYearLifecyclePort.closeCampaign(new FeeSelectionCampaignId(id));
         return ResponseEntity.noContent().build();
     }
 

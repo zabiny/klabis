@@ -11,7 +11,7 @@ import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
-import com.klabis.membershipfees.application.ManualCampaignClosePort;
+import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.membershipfees.application.MembershipFeeGroupNotFoundException;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
@@ -71,7 +71,7 @@ class MembershipFeesErrorTypesTest {
     @Autowired
     private FeeSelectionCampaignManagementPort campaignPort;
     @Autowired
-    private ManualCampaignClosePort closePort;
+    private FeeYearLifecyclePort closePort;
     @Autowired
     private MemberChoicePort choicePort;
     @Autowired

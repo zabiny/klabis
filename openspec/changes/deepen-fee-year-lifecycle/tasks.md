@@ -1,11 +1,11 @@
 ## 1. Close and process the fee year through one port (TDD)
 
-- [ ] 1.1 **Red** — add `FeeYearLifecyclePort` (`@PrimaryPort`) in `membershipfees.application` with `closeCampaign(FeeSelectionCampaignId)` and `processCampaignEnd(LocalDate)`, plus a `FeeYearLifecycleService` whose two methods throw `UnsupportedOperationException`.
-- [ ] 1.2 **Red** — move `ManualCampaignClosePortTest` and `CampaignEndProcessingPortTest` onto the new interface, assertions and fixtures unchanged, and run them: both must fail.
-- [ ] 1.3 **Red** — add the behaviour tests missing today, each failing for the right reason: closing an already-processed campaign is rejected, a member charged by one close is not charged again, a member without a choice publishes the sanction event, and a failure in one campaign aborts the rest of the batch.
-- [ ] 1.4 **Green** — implement `FeeYearLifecycleService`, absorbing `CampaignProcessor` and the bodies of `ManualCampaignClosePortImpl` / `CampaignEndProcessingPortImpl`; keep `@Transactional` per method and the ordering freeze → charge → marker → missed-choice events → `markProcessed`.
-- [ ] 1.5 **Refactor** — point `FeeSelectionCampaignController` and `FeeSelectionDeadlineScheduler` at the new port, delete `ManualCampaignClosePort`, `CampaignEndProcessingPort` and their implementations, and update `MembershipFeesWebMvcMockitoBeans` and the REST tests that referenced them.
-- [ ] 1.6 Run the `membershipfees` test slice; commit slice 1.
+- [x] 1.1 **Red** — add `FeeYearLifecyclePort` (`@PrimaryPort`) in `membershipfees.application` with `closeCampaign(FeeSelectionCampaignId)` and `processCampaignEnd(LocalDate)`, plus a `FeeYearLifecycleService` whose two methods throw `UnsupportedOperationException`.
+- [x] 1.2 **Red** — move `ManualCampaignClosePortTest` and `CampaignEndProcessingPortTest` onto the new interface, assertions and fixtures unchanged, and run them: both must fail.
+- [x] 1.3 **Red** — add the behaviour tests missing today, each failing for the right reason: closing an already-processed campaign is rejected, a member charged by one close is not charged again, a member without a choice publishes the sanction event, and a failure in one campaign aborts the rest of the batch.
+- [x] 1.4 **Green** — implement `FeeYearLifecycleService`, absorbing `CampaignProcessor` and the bodies of `ManualCampaignClosePortImpl` / `CampaignEndProcessingPortImpl`; keep `@Transactional` per method and the ordering freeze → charge → marker → missed-choice events → `markProcessed`.
+- [x] 1.5 **Refactor** — point `FeeSelectionCampaignController` and `FeeSelectionDeadlineScheduler` at the new port, delete `ManualCampaignClosePort`, `CampaignEndProcessingPort` and their implementations, and update `MembershipFeesWebMvcMockitoBeans` and the REST tests that referenced them.
+- [x] 1.6 Run the `membershipfees` test slice; commit slice 1.
 
 ## 2. One placement rule for member choice and emergency assignment (TDD)
 
