@@ -95,8 +95,6 @@ const addNewGuardian = async (page: Page, lastName: string) => {
     await row.getByRole('textbox', {name: 'Telefon', exact: true}).fill('+420 777 333 444');
 };
 
-const COUNTRY_NAMES: Record<string, string> = {FR: 'Francie'};
-
 export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {
     await fill(page, 'Datum narození', body.dateOfBirth);
     await select(page, 'Pohlaví', 'Muž');
@@ -229,11 +227,9 @@ Then('{persona}\'s nationality {string} is shown read-only', async ({page, curre
     await expect(page.getByText('Státní příslušnost', {exact: true}).locator('xpath=..').getByText(nationality, {exact: true})).toBeVisible();
 });
 
-Then('{persona}\'s address country is {string}', async ({page, currentRole}, persona: Persona, code: string) => {
+Then('{persona}\'s address country is {string}', async ({page, currentRole}, persona: Persona, country: string) => {
     expectActing(currentRole, persona);
-    const label = page.getByText('Stát', {exact: true});
-    await expect(label.first()).toBeVisible();
-    await expect(page.getByText(new RegExp(`^(${code}|${COUNTRY_NAMES[code] ?? code})$`)).first()).toBeVisible();
+    await expect(page.getByText('Stát', {exact: true}).locator('xpath=..').getByText(country, {exact: true})).toBeVisible();
 });
 
 Then('member {name} is suspended', async ({page}, lastName: string) => {

@@ -14,6 +14,7 @@ import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialo
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX, Wallet} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
+import {countryName} from "../../utils/countryName.ts";
 import {isCzNationality} from "./isCzNationality";
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
@@ -34,6 +35,8 @@ type MemberDetail = GetMemberResource;
 type MemberLinks = NonNullable<GetMemberHal['_links']>;
 const memberRel = <K extends keyof MemberLinks>(rel: K): K => rel;
 const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined, rel: K): MemberLinks[K] => links?.[rel];
+
+const displayCountry = (code: string | null | undefined): string | null | undefined => countryName(code) ?? code;
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -155,7 +158,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                         <DetailRow label={labels.fields.lastName}>{ri('lastName') ?? val(member.lastName)}</DetailRow>
                         <DetailRow label={labels.fields.dateOfBirth}>{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
                         <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
-                        <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
+                        <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(displayCountry(member.nationality))}</DetailRow>
                         {isEditing
                             ? enrichedFieldNames.has('birthNumber') && (
                                 <BirthNumberConditionalField
@@ -187,7 +190,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                                 <DetailRow label="Ulice">{val(address.street)}</DetailRow>
                                 <DetailRow label="Město">{val(address.city)}</DetailRow>
                                 <DetailRow label="PSČ">{val(address.postalCode)}</DetailRow>
-                                <DetailRow label="Stát">{val(address.country)}</DetailRow>
+                                <DetailRow label="Stát">{val(displayCountry(address.country))}</DetailRow>
                             </>
                         ) : <span className="text-sm text-text-tertiary">{'\u2014'}</span>
                     )}

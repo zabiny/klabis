@@ -37,7 +37,7 @@
 
 ## 6. Czech country names on member detail
 
-- [ ] 6.1 TDD: member detail page shows nationality and address country by Czech name (falls back to the code if unknown); verify the MemberDetailPage tests pass
+- [x] 6.1 TDD: member detail page shows nationality and address country by Czech name (falls back to the code if unknown); verify the MemberDetailPage tests pass
 
 ## 7. Integration
 

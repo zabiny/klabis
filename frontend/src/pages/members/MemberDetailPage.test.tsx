@@ -289,6 +289,32 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('11000')).toBeInTheDocument();
     });
 
+    describe('country names', () => {
+        const withEditTemplate = {_templates: {updateMember: selfEditTemplateWithReservedFields}};
+
+        it('shows nationality and address country by Czech name', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                nationality: 'SK',
+                address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'CZ'},
+                ...withEditTemplate,
+            })));
+            expect(screen.getByText('Slovensko')).toBeInTheDocument();
+            expect(screen.getByText('Česko')).toBeInTheDocument();
+            expect(screen.queryByText('SK')).not.toBeInTheDocument();
+            expect(screen.queryByText('CZ')).not.toBeInTheDocument();
+        });
+
+        it('falls back to the raw code for an unknown country code', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                nationality: 'ZZ1',
+                address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'XX1'},
+                ...withEditTemplate,
+            })));
+            expect(screen.getByText('ZZ1')).toBeInTheDocument();
+            expect(screen.getByText('XX1')).toBeInTheDocument();
+        });
+    });
+
     it('renders address section gracefully with a placeholder when member has no address (imported member)', () => {
         renderPage(createMockPageData(mockMemberDetailData({address: undefined})));
         expect(screen.getByText('ADRESA')).toBeInTheDocument();
@@ -824,7 +850,8 @@ describe('MemberDetailPage', () => {
 
                 expect(document.querySelector('[name="nationality"]')).not.toBeInTheDocument();
                 expect(screen.queryByDisplayValue('CZ')).not.toBeInTheDocument();
-                expect(screen.getByText('CZ')).toBeInTheDocument();
+                expect(screen.getAllByText('Česko').length).toBeGreaterThan(0);
+                expect(screen.queryByText('CZ')).not.toBeInTheDocument();
                 expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
                 expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
             });
@@ -839,7 +866,8 @@ describe('MemberDetailPage', () => {
 
                 await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
-                expect(screen.getByText('SK')).toBeInTheDocument();
+                expect(screen.getByText('Slovensko')).toBeInTheDocument();
+                expect(screen.queryByText('SK')).not.toBeInTheDocument();
                 expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
             });
 
