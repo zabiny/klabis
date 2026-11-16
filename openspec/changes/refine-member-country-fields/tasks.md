@@ -43,8 +43,8 @@
 
 - [x] 7.1 Run the full backend test suite and verify it passes (apart from known pre-existing failures)
 - [x] 7.2 Run `npm run build` and the full Vitest suite in `frontend/` and verify both pass
-- [ ] 7.3 Run the E2E suite against the local environment and verify the member scenarios pass
-- [ ] 7.4 Run `npm run refresh-backend-server-resources` and verify the backend static assets are updated
+- [x] 7.3 Run the E2E suite against the local environment and verify the member scenarios pass
+- [x] 7.4 Run `npm run refresh-backend-server-resources` and verify the backend static assets are updated
 - [ ] 7.5 Add label `BackendCompleted` to GitHub issues #360 and #335 and verify the labels are shown
 
 ## Workflow follow-up
