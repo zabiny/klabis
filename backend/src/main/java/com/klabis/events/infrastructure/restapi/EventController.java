@@ -1,6 +1,8 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.*;
@@ -46,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -123,7 +126,9 @@ public class EventController implements EventsApi {
             @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
-        Event event = eventManagementService.getEvent(new EventId(id), authorizationEvaluator.has(Authority.EVENTS_MANAGE));
+        Event event = eventManagementService.getEvent(new EventId(id),
+                authorizationEvaluator.isAllowed(List.of(Authority.EVENTS_MANAGE, Authority.EVENTS_EDIT),
+                        TargetRef.event(id), false));
 
         EventDto dto = conversionService.convert(event, EventDto.class);
         dto = EventDtoBuilder.builder(dto)
@@ -195,10 +200,19 @@ public class EventController implements EventsApi {
             return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable,
-                authorizationEvaluator.has(Authority.EVENTS_MANAGE), currentUser.memberId());
+                draftVisibilityOfCaller(), currentUser.memberId());
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
+    }
+
+    private DraftVisibility draftVisibilityOfCaller() {
+        if (authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
+            return DraftVisibility.all();
+        }
+        return DraftVisibility.only(authorizationEvaluator.targetIdsOf(Authority.EVENTS_EDIT, TargetType.EVENT).stream()
+                .map(EventId::new)
+                .collect(Collectors.toUnmodifiableSet()));
     }
 
     /**
@@ -536,6 +550,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+                .ifPresent(link -> dtoModel.add(link.withRel("categoryPresets")));
+
         EventAffordanceSupport.addCoordinatorAndEventTypeLinks(dtoModel, event);
 
         if (event.isSharedAccommodationEnabled()
@@ -621,6 +638,10 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
             }
             return link;
         });
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+                .ifPresent(link -> model.add(link.withRel("categoryPresets")));
+        klabisLinkTo(methodOn(MembersApi.class).listMemberOptions())
+                .ifPresent(link -> model.add(link.withRel("coordinatorOptions")));
         return model;
     }
 }
@@ -672,7 +693,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         klabisLinkTo(methodOn(EventsApi.class).listEvents(null, null, null, null, null, null, null, null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
-        klabisLinkTo(methodOn(CategoryPresetsApi.class).listPresets())
+        klabisLinkTo(methodOn(CategoryPresetsApi.class).createCategoryPreset(null))
                 .ifPresent(link -> model.add(link.withRel("category-presets")));
         return model;
     }

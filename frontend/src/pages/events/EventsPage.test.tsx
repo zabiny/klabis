@@ -679,6 +679,16 @@ describe('EventsPage', () => {
             expect(btn).toHaveClass('text-red-600');
         });
 
+        it('renders publishEvent and cancelEvent row buttons for a coordinator without manager-only affordances', async () => {
+            renderWithEventTemplates({
+                updateEvent: mockHalFormsTemplate({method: 'PATCH', target: '/api/events/evt-color'}),
+                publishEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/publish'}),
+                cancelEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/cancel'}),
+            });
+            expect(await screen.findByTitle(labels.templates.publishEvent)).toBeInTheDocument();
+            expect(await screen.findByTitle(labels.templates.cancelEvent)).toBeInTheDocument();
+        });
+
         it('renders registerForEvent button with primary-ghost (text-primary) class', async () => {
             renderWithEventTemplates({
                 registerForEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/register'}),

@@ -23,11 +23,12 @@ public interface EventManagementPort {
 
     void finishExpiredActiveEvents(LocalDate currentDate);
 
-    Event getEvent(EventId eventId, boolean canManageEvents);
+    Event getEvent(EventId eventId, boolean mayViewDraft);
 
     /**
-     * @param viewerMemberId the calling member, {@code null} when the user has no member profile;
-     *                       ignored when {@code canManageEvents} is true
+     * @param draftVisibility which DRAFT events the caller may see
+     * @param viewerMemberId  the calling member, {@code null} when the user has no member profile;
+     *                        ignored when all DRAFT events are visible
      */
-    Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents, MemberId viewerMemberId);
+    Page<Event> listEvents(EventFilter filter, Pageable pageable, DraftVisibility draftVisibility, MemberId viewerMemberId);
 }

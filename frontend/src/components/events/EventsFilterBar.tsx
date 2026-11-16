@@ -1,4 +1,4 @@
-import {type ReactElement} from 'react';
+import {type ReactElement, type ReactNode} from 'react';
 import {labels} from '../../localization';
 import {FulltextSearchInput, PillGroup} from '../UI';
 import {getYearRange, isCurrentYear, type TimeWindow} from './eventsFilterUtils';
@@ -10,13 +10,17 @@ export type EventsFilterValue = {
     registeredByMe: boolean;
     eventTypeIds: string[];
     selectedYear: number | null;
+    coordinator: string;
 };
+
+export type CoordinatorOption = {value: string; prompt: string};
 
 export interface EventsFilterBarProps {
     value: EventsFilterValue;
     onChange: (next: EventsFilterValue) => void;
     showRegisteredByMeToggle: boolean;
     eventTypes?: EventTypeCatalogItem[];
+    coordinatorOptions?: CoordinatorOption[];
 }
 
 const TIME_WINDOW_OPTIONS: { value: TimeWindow; label: string }[] = [
@@ -28,11 +32,39 @@ const TIME_WINDOW_OPTIONS: { value: TimeWindow; label: string }[] = [
 const ALL_EVENT_TYPES = '';
 const YEAR_OPTIONS = getYearRange();
 
+interface FilterSelectProps {
+    id: string;
+    label: string;
+    value: string | number;
+    onChange: (value: string) => void;
+    children: ReactNode;
+}
+
+function FilterSelect({id, label, value, onChange, children}: FilterSelectProps): ReactElement {
+    return (
+        <div className="flex items-center gap-1.5">
+            <label htmlFor={id} className="text-sm text-text-primary whitespace-nowrap">
+                {label}
+            </label>
+            <select
+                id={id}
+                aria-label={label}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="form-select text-sm border border-border rounded pl-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+                {children}
+            </select>
+        </div>
+    );
+}
+
 export function EventsFilterBar({
     value,
     onChange,
     showRegisteredByMeToggle,
     eventTypes,
+    coordinatorOptions,
 }: EventsFilterBarProps): ReactElement {
     const eventTypeOptions = eventTypes
         ? [
@@ -84,23 +116,31 @@ export function EventsFilterBar({
                 disabledTooltip={labels.eventsFilter.timeWindowDisabledTooltip}
             />
 
-            <div className="flex items-center gap-1.5">
-                <label htmlFor="events-year-filter" className="text-sm text-text-primary whitespace-nowrap">
-                    {labels.eventsFilter.eventsFilterYear}
-                </label>
-                <select
-                    id="events-year-filter"
-                    aria-label={labels.eventsFilter.eventsFilterYear}
-                    value={value.selectedYear ?? ''}
-                    onChange={(e) => handleYearChange(e.target.value)}
-                    className="form-select text-sm border border-border rounded pl-2 py-1 bg-surface text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            <FilterSelect
+                id="events-year-filter"
+                label={labels.eventsFilter.eventsFilterYear}
+                value={value.selectedYear ?? ''}
+                onChange={handleYearChange}
+            >
+                <option value="">{labels.eventsFilter.noYear}</option>
+                {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                ))}
+            </FilterSelect>
+
+            {coordinatorOptions && (
+                <FilterSelect
+                    id="events-coordinator-filter"
+                    label={labels.eventsFilter.coordinator}
+                    value={value.coordinator}
+                    onChange={(coordinator) => onChange({ ...value, coordinator })}
                 >
-                    <option value="">{labels.eventsFilter.noYear}</option>
-                    {YEAR_OPTIONS.map((y) => (
-                        <option key={y} value={y}>{y}</option>
+                    <option value="">{labels.eventsFilter.coordinatorAll}</option>
+                    {coordinatorOptions.map((o) => (
+                        <option key={o.value} value={o.value}>{o.prompt}</option>
                     ))}
-                </select>
-            </div>
+                </FilterSelect>
+            )}
 
             {eventTypes && eventTypes.length > 0 && (
                 <PillGroup<string>

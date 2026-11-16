@@ -7,10 +7,12 @@ export type Contribution = {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'; value: numb
 
 // Entities are never cleaned up and catalog levels are found by name, so every name is unique per run and scenario;
 // otherwise a scenario would silently reuse a level another scenario created with a different yearly fee.
+export const scenarioPrefix = () => `E2E-${process.env.E2E_RUN_ID}-${test.info().testId.slice(-8)}-`;
+
 defineParameterType({
     name: 'name',
     regexp: /"([^"]*)"/,
-    transformer: (name: string) => `E2E-${process.env.E2E_RUN_ID}-${test.info().testId.slice(-8)}-${name}`,
+    transformer: (name: string) => `${scenarioPrefix()}${name}`,
 });
 
 defineParameterType({

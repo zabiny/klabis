@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 
@@ -89,10 +90,10 @@ public class EventManagementService implements EventManagementPort {
 
     @Override
     @Transactional(readOnly = true)
-    public Event getEvent(EventId eventId, boolean canManageEvents) {
+    public Event getEvent(EventId eventId, boolean mayViewDraft) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
-        if (!canManageEvents && event.getStatus() == EventStatus.DRAFT) {
+        if (!mayViewDraft && event.getStatus() == EventStatus.DRAFT) {
             throw new EventNotFoundException(eventId);
         }
         return event;
@@ -100,11 +101,11 @@ public class EventManagementService implements EventManagementPort {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents, MemberId viewerMemberId) {
-        if (canManageEvents) {
+    public Page<Event> listEvents(EventFilter filter, Pageable pageable, DraftVisibility draftVisibility, MemberId viewerMemberId) {
+        if (!(draftVisibility instanceof DraftVisibility.Only(Set<EventId> draftIds))) {
             return eventRepository.findAll(filter, pageable);
         }
-        EventFilter visible = filter.withExcludedStatus(EventStatus.DRAFT);
+        EventFilter visible = filter.withDraftsLimitedTo(draftIds);
         visible = viewerMemberId == null
                 ? visible.withExcludedStatus(EventStatus.CANCELLED)
                 : visible.withCancelledVisibleTo(viewerMemberId);

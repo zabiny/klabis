@@ -32,6 +32,7 @@ export function useEventsFilterState(): EventsFilterState {
         q: {type: 'string'},
         registeredByMe: {type: 'boolean', param: 'registeredBy', trueValue: REGISTERED_BY_ME},
         eventTypeIds: {type: 'string[]', param: 'eventTypeId'},
+        coordinator: {type: 'string'},
     });
 
     const parsedYear = values.year === '' ? NaN : parseInt(values.year, 10);
@@ -44,7 +45,7 @@ export function useEventsFilterState(): EventsFilterState {
             ? 'vse'
             : requestedTimeWindow;
 
-    const {q, registeredByMe, eventTypeIds} = values;
+    const {q, registeredByMe, eventTypeIds, coordinator} = values;
 
     const filterValue: EventsFilterValue = useMemo(() => ({
         q,
@@ -52,7 +53,8 @@ export function useEventsFilterState(): EventsFilterState {
         registeredByMe,
         eventTypeIds,
         selectedYear,
-    }), [q, effectiveTimeWindow, registeredByMe, eventTypeIds, selectedYear]);
+        coordinator,
+    }), [q, effectiveTimeWindow, registeredByMe, eventTypeIds, selectedYear, coordinator]);
 
     const handleFilterChange = useCallback((next: EventsFilterValue) => {
         setValues({
@@ -61,6 +63,7 @@ export function useEventsFilterState(): EventsFilterState {
             q: next.q,
             registeredByMe: next.registeredByMe,
             eventTypeIds: next.eventTypeIds,
+            coordinator: next.coordinator,
         });
     }, [setValues]);
 
@@ -74,8 +77,9 @@ export function useEventsFilterState(): EventsFilterState {
         if (q.length >= 2) params.q = q;
         if (registeredByMe) params.registeredBy = REGISTERED_BY_ME;
         if (eventTypeIds.length > 0) params.eventTypeId = eventTypeIds;
+        if (coordinator) params.coordinator = coordinator;
         return params;
-    }, [dateFrom, dateTo, q, registeredByMe, eventTypeIds]);
+    }, [dateFrom, dateTo, q, registeredByMe, eventTypeIds, coordinator]);
 
     const defaultSort = getDefaultSortForTimeWindow(effectiveTimeWindow);
 

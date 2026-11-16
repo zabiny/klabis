@@ -14,9 +14,11 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * The single place that answers authorization questions, over the permission snapshot of the current request.
@@ -58,6 +60,18 @@ public class AuthorizationEvaluator {
 
     public boolean has(Authority authority, TargetRef target) {
         return snapshots.current().has(authority, target);
+    }
+
+    /**
+     * Ids of the targets of {@code type} over which the user holds {@code authority} through a grant over
+     * specific targets. Lets list queries be restricted to granted targets; grants over everything are
+     * answered by {@link #has(Authority)}.
+     */
+    public Set<UUID> targetIdsOf(Authority authority, TargetType type) {
+        return snapshots.current().targetsOf(authority).stream()
+                .filter(target -> target.type() == type)
+                .map(TargetRef::id)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**

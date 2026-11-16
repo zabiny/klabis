@@ -18,6 +18,7 @@ const defaultValue: EventsFilterValue = {
     registeredByMe: false,
     eventTypeIds: [],
     selectedYear: null,
+    coordinator: '',
 };
 
 const defaultProps: EventsFilterBarProps = {
@@ -488,6 +489,39 @@ describe('EventsFilterBar', () => {
             const called = onChange.mock.calls[0][0] as EventsFilterValue;
             expect(called.selectedYear).toBe(currentYear);
             expect(called.timeWindow).toBe('budouci');
+        });
+    });
+
+    describe('coordinator filter', () => {
+        const coordinatorOptions = [
+            {value: 'm-1', prompt: 'Jan Novák (ZBM0001)'},
+            {value: 'm-2', prompt: 'Eva Svobodová (ZBM0002)'},
+        ];
+
+        it('is not rendered without coordinator options', () => {
+            renderFilterBar();
+            expect(screen.queryByLabelText(labels.eventsFilter.coordinator)).not.toBeInTheDocument();
+        });
+
+        it('lists the members as options', () => {
+            renderFilterBar({coordinatorOptions});
+            const select = screen.getByLabelText(labels.eventsFilter.coordinator);
+            expect(within(select).getByRole('option', {name: 'Jan Novák (ZBM0001)'})).toBeInTheDocument();
+            expect(within(select).getByRole('option', {name: 'Eva Svobodová (ZBM0002)'})).toBeInTheDocument();
+        });
+
+        it('emits the selected member', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({coordinatorOptions, onChange});
+            await userEvent.selectOptions(screen.getByLabelText(labels.eventsFilter.coordinator), 'm-2');
+            expect(onChange).toHaveBeenCalledWith({...defaultValue, coordinator: 'm-2'});
+        });
+
+        it('emits an empty coordinator when cleared', async () => {
+            const onChange = vi.fn();
+            renderFilterBar({coordinatorOptions, onChange, value: {...defaultValue, coordinator: 'm-1'}});
+            await userEvent.selectOptions(screen.getByLabelText(labels.eventsFilter.coordinator), '');
+            expect(onChange).toHaveBeenCalledWith({...defaultValue, coordinator: ''});
         });
     });
 });

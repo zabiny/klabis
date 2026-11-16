@@ -529,6 +529,8 @@ paths:
         registeredBy and notRegisteredBy currently accept only the literal value "me" — any other
         value is a 400. When "me" is requested but the caller has no member profile, an empty page
         is returned rather than an error.
+        DRAFT events are listed only to callers with EVENTS:MANAGE and, for the events they coordinate,
+        to their coordinators (this applies also when filtering by status=DRAFT).
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_READ
@@ -628,6 +630,12 @@ paths:
               description: Next page (present when one exists)
             prev:
               description: Previous page (present when one exists)
+            categoryPresets:
+              operation: listPresets
+              description: Category presets offered by the event form
+            coordinatorOptions:
+              operation: listMemberOptions
+              description: Member options for the coordinator filter (present only for callers with MEMBERS:READ)
           x-hal-templates:
             createEvent:
               operation: createEvent
@@ -665,10 +673,10 @@ paths:
               description: Present for DRAFT and ACTIVE events and callers allowed to manage the event
             publishEvent:
               operation: publishEvent
-              description: Present for DRAFT events and callers allowed to manage the event
+              description: Present for DRAFT events and callers with EVENTS:MANAGE or the event coordinator
             cancelEvent:
               operation: cancelEvent
-              description: Present for DRAFT and ACTIVE events and callers allowed to manage the event
+              description: Present for DRAFT and ACTIVE events and callers with EVENTS:MANAGE or the event coordinator
             registerForEvent:
               operation: registerForEvent
               description: Present when the event is ACTIVE with open registrations and the caller is not yet registered
@@ -743,7 +751,8 @@ paths:
       summary: Get event by ID
       description: |
         Retrieves detailed event information by ID. Returns HATEOAS links based on event status and
-        includes embedded registrations.
+        includes embedded registrations. A DRAFT event is returned only to callers with EVENTS:MANAGE
+        and to the coordinators of that event; for anyone else it is answered as not found.
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_READ
@@ -773,6 +782,9 @@ paths:
             registrations:
               operation: listRegistrations
               description: Present for events not in DRAFT status
+            categoryPresets:
+              operation: listPresets
+              description: Category presets offered by the event form
             coordinator:
               operation: getMember
               description: One link per event coordinator
@@ -805,10 +817,10 @@ paths:
                 sharedTransportEnabled / sharedAccommodationEnabled properties.
             publishEvent:
               operation: publishEvent
-              description: Present for DRAFT events and callers with EVENTS:MANAGE
+              description: Present for DRAFT events and callers with EVENTS:MANAGE or the event coordinator
             cancelEvent:
               operation: cancelEvent
-              description: Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE
+              description: Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE or the event coordinator
             registerForEvent:
               operation: registerForEvent
               description: |
@@ -909,7 +921,7 @@ paths:
       description: Transitions event from DRAFT to ACTIVE status.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_MANAGE
+      x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]
       parameters:
         - $ref: '#/components/parameters/EventIdParam'
       responses:
@@ -939,7 +951,7 @@ paths:
         Transitions event to CANCELLED status. An optional cancellation reason may be provided.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_MANAGE
+      x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]
       parameters:
         - $ref: '#/components/parameters/EventIdParam'
       requestBody:
@@ -1463,10 +1475,10 @@ paths:
       operationId: listPresets
       tags: [CategoryPresets]
       summary: List all category presets
-      description: Returns all category presets. Requires EVENTS:MANAGE authority.
+      description: Returns all category presets. Requires EVENTS:READ authority.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_MANAGE
+      x-klabis-authority: EVENTS_READ
       responses:
         '200':
           description: List of category presets

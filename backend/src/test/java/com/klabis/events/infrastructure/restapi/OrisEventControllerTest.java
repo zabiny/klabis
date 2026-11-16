@@ -187,7 +187,7 @@ class OrisEventControllerTest {
         @DisplayName("should include importFromOris affordance when oris profile is active and user has EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldIncludeImportAffordanceWhenOrisActiveAndManager() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -202,7 +202,7 @@ class OrisEventControllerTest {
         @DisplayName("should NOT include importEvent affordance when user lacks EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldNotIncludeImportAffordanceWithoutManageAuthority() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -297,7 +297,7 @@ class OrisEventControllerTest {
         @DisplayName("should expose bulk-sync-oris affordance in events list when caller has EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeBulkSyncAffordanceInEventsListForManager() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -309,7 +309,7 @@ class OrisEventControllerTest {
         @DisplayName("should NOT expose bulk-sync-oris affordance in events list when caller lacks EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldNotExposeBulkSyncAffordanceWhenNotManager() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -321,7 +321,7 @@ class OrisEventControllerTest {
         @DisplayName("regression: syncAllUpcomingFromOris affordance present on filtered list (dateFrom param)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeBulkSyncAffordanceOnFilteredListWithDateFrom() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events")
@@ -437,7 +437,7 @@ class OrisEventControllerTest {
         @DisplayName("should include importEventsBatch affordance when oris profile active and user has EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldIncludeImportBatchAffordanceWhenOrisActiveAndManager() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -449,7 +449,7 @@ class OrisEventControllerTest {
         @DisplayName("should NOT include importEventsBatch affordance when user lacks EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldNotIncludeImportBatchAffordanceWithoutManageAuthority() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -461,7 +461,7 @@ class OrisEventControllerTest {
         @DisplayName("should also keep importEvent affordance alongside importEventsBatch")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldKeepImportEventAffordanceAlongsideImportBatch() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), any(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))

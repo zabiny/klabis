@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
@@ -31,7 +32,8 @@ public record EventFilter(
         Period deadlineWithin,
         MemberId notRegisteredBy,
         List<EventTypeId> eventTypeIds,
-        MemberId cancelledVisibleTo
+        MemberId cancelledVisibleTo,
+        Set<EventId> draftsLimitedTo
 ) {
 
     public EventFilter {
@@ -40,20 +42,21 @@ public record EventFilter(
             fulltextQuery = fulltextQuery.trim().isEmpty() ? null : fulltextQuery.trim();
         }
         eventTypeIds = eventTypeIds == null ? List.of() : List.copyOf(eventTypeIds);
+        draftsLimitedTo = draftsLimitedTo == null ? null : Set.copyOf(draftsLimitedTo);
     }
 
     /**
      * No filtering — returns all events.
      */
     public static EventFilter none() {
-        return new EventFilter(null, null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
      * Filter to events whose status is one of the given statuses.
      */
     public static EventFilter byStatus(EventStatus... statuses) {
-        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(Set.copyOf(Arrays.asList(statuses)), null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -62,7 +65,7 @@ public record EventFilter(
     public static EventFilter byNotHavingStatus(EventStatus... excluded) {
         EnumSet<EventStatus> allowed = EnumSet.allOf(EventStatus.class);
         allowed.removeAll(Arrays.asList(excluded));
-        return new EventFilter(allowed, null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(allowed, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -79,7 +82,7 @@ public record EventFilter(
     public EventFilter withExcludedStatus(EventStatus excluded) {
         EnumSet<EventStatus> remaining = copyOf(statuses);
         remaining.remove(excluded);
-        return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -87,7 +90,7 @@ public record EventFilter(
      * Leading/trailing whitespace is trimmed; blank input clears the query (no filtering).
      */
     public EventFilter withFulltext(String query) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, query, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, query, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -95,7 +98,7 @@ public record EventFilter(
      * Null clears the restriction.
      */
     public EventFilter withOrganizer(String organizerCode) {
-        return new EventFilter(statuses, organizerCode, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizerCode, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -103,7 +106,7 @@ public record EventFilter(
      * member has a registration. Null clears the restriction.
      */
     public EventFilter withRegisteredBy(MemberId memberId) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, memberId, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, memberId, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -111,7 +114,7 @@ public record EventFilter(
      * member is the coordinator. Null clears the restriction.
      */
     public EventFilter withCoordinator(MemberId memberId) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, memberId, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, memberId, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -121,7 +124,7 @@ public record EventFilter(
      * Null clears the restriction.
      */
     public EventFilter withDeadlineWithin(Period period) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, period, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, period, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -130,7 +133,7 @@ public record EventFilter(
      * Null clears the restriction.
      */
     public EventFilter withNotRegisteredBy(MemberId memberId) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, memberId, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, memberId, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -138,7 +141,7 @@ public record EventFilter(
      * An empty list clears the restriction (no filter applied).
      */
     public EventFilter withEventTypeIds(List<EventTypeId> ids) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, ids, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, ids, cancelledVisibleTo, draftsLimitedTo);
     }
 
     /**
@@ -147,7 +150,16 @@ public record EventFilter(
      * status is unaffected. Null clears the restriction (cancelled events unrestricted).
      */
     public EventFilter withCancelledVisibleTo(MemberId memberId) {
-        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, memberId);
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, memberId, draftsLimitedTo);
+    }
+
+    /**
+     * Returns a new filter restricted so that a DRAFT event matches only when its id is in the given set,
+     * while every other status is unaffected. Null clears the restriction (DRAFT unrestricted); an empty
+     * set hides every DRAFT event.
+     */
+    public EventFilter withDraftsLimitedTo(Set<EventId> eventIds) {
+        return new EventFilter(statuses, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, eventIds);
     }
 
     /**
@@ -157,15 +169,15 @@ public record EventFilter(
      * exclusive-upper-bound semantics that the original SQL query used.
      */
     public static EventFilter activeEventsWithDateBefore(LocalDate date) {
-        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null, null, null, null, null, null, null);
+        return new EventFilter(Set.of(EventStatus.ACTIVE), null, null, date.minusDays(1), null, null, null, null, null, null, null, null);
     }
 
     public static EventFilter byOrganizer(String organizer) {
-        return new EventFilter(null, organizer, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, organizer, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(null, null, from, to, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, from, to, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -173,7 +185,7 @@ public record EventFilter(
      * Either bound may be null (meaning no restriction on that side).
      */
     public EventFilter withDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(statuses, organizer, from, to, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+        return new EventFilter(statuses, organizer, from, to, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo, draftsLimitedTo);
     }
 
     private static EnumSet<EventStatus> copyOf(Set<EventStatus> statuses) {

@@ -4,6 +4,8 @@ import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {useRootNavigation} from "../../hooks/useRootNavigation.ts";
+import ForbiddenPage from "../ForbiddenPage.tsx";
 import {labels} from "../../localization";
 import {Badge, Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
@@ -11,7 +13,21 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
 type CategoryPresetListItem = ListPresetsItemResource;
 
-export const CategoryPresetsPage = (): ReactElement => {
+export const CategoryPresetsPage = (): ReactElement | null => {
+    const {data: rootItems} = useRootNavigation();
+
+    if (!rootItems) {
+        return null;
+    }
+
+    if (!rootItems.some(item => item.rel === 'category-presets')) {
+        return <ForbiddenPage/>;
+    }
+
+    return <CategoryPresetsContent/>;
+};
+
+const CategoryPresetsContent = (): ReactElement => {
     const actionDialog = useTemplateDialog(undefined, {
         size: 'md',
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],

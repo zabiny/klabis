@@ -92,6 +92,16 @@ describe('useRootNavigation — section assignment', () => {
         expect(items.some(i => i.section === 'admin')).toBe(false);
     });
 
+    it('does not offer category-presets menu item when root resource lacks the rel', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'members']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.some(i => i.rel === 'category-presets')).toBe(false);
+    });
+
     it('returns only admin-section items when response has only admin rels', async () => {
         mockFetchWithResponse(buildHalResponse(['training-groups', 'category-presets', 'legalGuardianGroups']));
 
