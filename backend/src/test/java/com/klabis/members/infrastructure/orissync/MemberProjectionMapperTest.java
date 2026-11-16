@@ -247,6 +247,33 @@ class MemberProjectionMapperTest {
         }
 
         @Test
+        @DisplayName("an unknown nationality is dropped, logging the ORIS id and field but not the value")
+        void unknownNationalityIsDroppedAndLogged(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).nationality("QQ"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.nationality()).isNull();
+            assertThat(output).contains("33630").contains("nationality");
+            assertThat(output).doesNotContain("QQ");
+        }
+
+        @Test
+        @DisplayName("an unknown address country is dropped with the whole address, logging the ORIS id and field but not the value")
+        void unknownAddressCountryDropsAddressAndLogs(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).country("QQ"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.country()).isNull();
+            assertThat(projection.street()).isNull();
+            assertThat(projection.city()).isNull();
+            assertThat(projection.postalCode()).isNull();
+            assertThat(output).contains("33630").contains("country");
+            assertThat(output).doesNotContain("QQ");
+        }
+
+        @Test
         @DisplayName("a missing birth number is left null without any warning")
         void missingBirthNumberIsNullWithoutWarning(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.persNum(null));

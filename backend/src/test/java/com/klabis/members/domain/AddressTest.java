@@ -205,11 +205,9 @@ class AddressTest extends ValueObjectTestBase<Address> {
         }
 
         @Test
-        @DisplayName("Should accept valid 2-letter country codes including XX")
+        @DisplayName("Should accept codes of existing countries")
         void shouldAcceptValid2LetterCountryCodes() {
-            // XX is a valid 2-letter format even though it's not a real country code
-            // We validate format, not existence in ISO registry
-            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("XX")))
+            assertThatCode(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("FR")))
                     .doesNotThrowAnyException();
         }
 

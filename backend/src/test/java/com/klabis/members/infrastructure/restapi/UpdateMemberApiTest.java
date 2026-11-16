@@ -1000,6 +1000,32 @@ class UpdateMemberApiTest {
             }
 
             @Test
+            @DisplayName("address country naming no existing country should return 400 and save nothing")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenAddressCountryIsUnknown() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "address": {
+                                                        "street": "New Street 123",
+                                                        "city": "Prague",
+                                                        "postalCode": "11000",
+                                                        "country": "QQ"
+                                                    }
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isBadRequest());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
             @DisplayName("nationality exceeding 3 characters should return 400 not 500")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WhenNationalityTooLong() throws Exception {

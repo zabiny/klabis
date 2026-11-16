@@ -52,6 +52,22 @@ class CountryTest {
     }
 
     @Test
+    @DisplayName("Should reject well-formed code that names no country")
+    void shouldRejectUnknownCountry() {
+        assertThatThrownBy(() -> Country.of("QQ"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("existing country");
+    }
+
+    @Test
+    @DisplayName("Should accept codes of existing countries")
+    void shouldAcceptExistingCountries() {
+        for (String code : new String[]{"CZ", "SK", "FR"}) {
+            assertThat(Country.of(code).code()).isEqualTo(code);
+        }
+    }
+
+    @Test
     @DisplayName("toString returns the code")
     void toStringReturnsCode() {
         assertThat(Country.of("cz").toString()).isEqualTo("CZ");

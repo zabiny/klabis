@@ -1490,6 +1490,33 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("with nationality naming no existing country should return 400 and register nobody")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenNationalityIsUnknownCountry() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "QQ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest());
+
+            Mockito.verifyNoInteractions(registrationService);
+        }
+
+        @Test
         @DisplayName("with invalid address missing fields should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAddressMissingFields() throws Exception {

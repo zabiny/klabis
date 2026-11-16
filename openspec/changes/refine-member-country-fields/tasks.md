@@ -9,10 +9,10 @@
 
 ## 2. Only existing country codes are accepted
 
-- [ ] 2.1 TDD: Country accepts only codes from the platform country list (`QQ` refused, `CZ`/`SK`/`FR` accepted) and verify the unit tests pass
-- [ ] 2.2 TDD: registering a member with nationality `QQ` and updating an address with country `QQ` are refused with no change saved (controller/integration tests), covering spec "Country Code Validation"
-- [ ] 2.3 TDD: the ORIS projection mapper drops an unknown nationality or address country with a WARN log (ORIS id + field name only); an unknown address country drops the whole address; verify the mapper tests pass
-- [ ] 2.4 Update `AddressRequest.country` description in `docs/openapi/spec/members.yaml`, regenerate bundle and frontend types (`npm run openapi`) and verify the backend build passes
+- [x] 2.1 TDD: Country accepts only codes from the platform country list (`QQ` refused, `CZ`/`SK`/`FR` accepted) and verify the unit tests pass
+- [x] 2.2 TDD: registering a member with nationality `QQ` and updating an address with country `QQ` are refused with no change saved (controller/integration tests), covering spec "Country Code Validation"
+- [x] 2.3 TDD: the ORIS projection mapper drops an unknown nationality or address country with a WARN log (ORIS id + field name only); an unknown address country drops the whole address; verify the mapper tests pass
+- [x] 2.4 Update `AddressRequest.country` description in `docs/openapi/spec/members.yaml`, regenerate bundle and frontend types (`npm run openapi`) and verify the backend build passes
 
 ## 3. Nationality reserved for administrators (#360)
 

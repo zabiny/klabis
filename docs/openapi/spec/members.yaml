@@ -1343,8 +1343,8 @@ components:
         country:
           type: string
           x-klabis-not-blank: true
-          description: ISO 3166-1 alpha-2 code
-          # Kept in sync with Address.ISO_3166_ALPHA_2_PATTERN.
+          description: ISO 3166-1 alpha-2 code; must name an existing country
+          # Kept in sync with Country.ISO_3166_ALPHA_2_PATTERN.
           pattern: '^[A-Za-z]{2}$'
 
     IdentityCardDto:
