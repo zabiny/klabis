@@ -111,7 +111,7 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 ### `10-testing.html` — Testování
 - Pyramidový přehled (odkaz na docs/testing-pyramid.md)
 - `@WithKlabisMockUser`
-- `@E2ETest` meta-annotation
+- `@CrossModuleTest` meta-annotation
 - `@ApplicationModuleTest` + Scenario API
 - Custom AssertJ asserts (`MemberAssert`, `UserAssert`, `EventAssert`, `CalendarItemAssert`)
 - Memento round-trip test
@@ -119,7 +119,7 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 - Spouštění (test-runner skill)
 - Gotcha: `@WebMvcTest` + UserService
 
-**Zdroj:** `backend/src/test/java/com/klabis/common/WithKlabisMockUser.java`, `backend/src/test/java/com/klabis/E2ETest.java`, `backend/src/test/java/com/klabis/**/*Assert.java`
+**Zdroj:** `backend/src/test/java/com/klabis/common/WithKlabisMockUser.java`, `backend/src/test/java/com/klabis/CrossModuleTest.java`, `backend/src/test/java/com/klabis/**/*Assert.java`
 
 ### `11-frontend.html` — Frontend
 - Tabulka klíčových stavebních bloků

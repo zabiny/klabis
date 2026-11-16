@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
@@ -42,12 +42,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Privacy enforcement (SI card only visible to owner)
  * - Permission enforcement (authentication required)
  */
-@E2ETest
+@CrossModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@DisplayName("Event Registration E2E Tests")
-class EventRegistrationE2ETest {
+@DisplayName("Event Registration Cross-Module Tests")
+class EventRegistrationCrossModuleTest {
 
     @MockitoBean
     @SuppressWarnings("unused")

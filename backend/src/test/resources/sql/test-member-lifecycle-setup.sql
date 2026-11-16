@@ -1,4 +1,4 @@
--- Test Setup Script for MemberLifecycleE2ETest
+-- Test Setup Script for MemberLifecycleCrossModuleTest
 -- Creates the admin user required by the test authentication
 
 -- First, delete the existing admin user if it exists

@@ -1,6 +1,6 @@
 package com.klabis.members;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -32,12 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * dev-profile H2 DB. Slice tests alone would miss runtime bugs in the JDBC adapter's unaccent
  * SQL — the same class of issue found with the events filter.
  */
-@E2ETest
+@CrossModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-members-filter-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@DisplayName("Member Filter E2E Tests")
-class MemberFilterE2ETest {
+@DisplayName("Member Filter Cross-Module Tests")
+class MemberFilterCrossModuleTest {
 
     @MockitoBean
     @SuppressWarnings("unused")

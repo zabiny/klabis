@@ -1,6 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.calendar.application.IcalTokenPort;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses full Spring Boot context to test the complete flow: token auth filter → controller → iCal renderer.
  * The iCal token is generated via IcalTokenPort and used as the ?token= parameter.
  */
-@E2ETest
+@CrossModuleTest
 @DisplayName("IcalFeedController Integration Tests")
 class IcalFeedControllerTest {
 

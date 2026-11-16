@@ -53,13 +53,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles({"test", "test-bootstrap"})
 @TestPropertySource(properties = {
-        "klabis.bootstrap.admin.username=" + OidcFlowE2ETest.ADMIN_USERNAME,
-        "klabis.bootstrap.admin.password=" + OidcFlowE2ETest.ADMIN_PASSWORD,
-        "klabis.oauth2.client.secret=" + OidcFlowE2ETest.CLIENT_SECRET
+        "klabis.bootstrap.admin.username=" + OidcFlowCrossModuleTest.ADMIN_USERNAME,
+        "klabis.bootstrap.admin.password=" + OidcFlowCrossModuleTest.ADMIN_PASSWORD,
+        "klabis.oauth2.client.secret=" + OidcFlowCrossModuleTest.CLIENT_SECRET
 })
-@DisplayName("OIDC Complete Flow E2E Test")
+@DisplayName("OIDC Complete Flow Cross-Module Test")
 @CleanupTestData
-class OidcFlowE2ETest {
+class OidcFlowCrossModuleTest {
 
     @Autowired
     private MockMvc mockMvc;

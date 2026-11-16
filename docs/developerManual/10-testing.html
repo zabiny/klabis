@@ -21,7 +21,7 @@
 <p class="lead">
     Testovací stack stojí na JUnit 5 + AssertJ + Mockito + Spring Boot test slicy. Klabis přidává
     pár vlastních anotací a assertion tříd, které řeší specifické potřeby projektu — autentizaci v
-    testech, izolaci E2E flow a doménové asserty.
+    testech, izolaci mezimodulových testů a doménové asserty.
 </p>
 
 <h2>Pyramida v Klabisu</h2>
@@ -33,7 +33,7 @@
         <tr><td>Repository</td><td><code>@DataJdbcTest</code></td><td>JDBC repository adaptery + memento mapování.</td></tr>
         <tr><td>Controller</td><td><code>@WebMvcTest</code> + <code>@WithKlabisMockUser</code></td><td>Endpoint mapping, request/response, autorizace.</td></tr>
         <tr><td>Modulová integrace</td><td><code>@ApplicationModuleTest</code></td><td>Modul + jeho závislosti, event flows uvnitř modulu.</td></tr>
-        <tr><td>End-to-end</td><td><code>@E2ETest</code></td><td>Plný flow přes všechny moduly s MockMvc.</td></tr>
+        <tr><td>Mezimodulová integrace</td><td><code>@CrossModuleTest</code></td><td>Flow přes více modulů s MockMvc.</td></tr>
         <tr><td>Modularita</td><td>plain test s <code>ApplicationModules</code></td><td>Verifikace pravidel závislostí.</td></tr>
     </tbody>
 </table>
@@ -92,10 +92,10 @@ void delegate_acts_only_for_that_member() { ... }</code></pre>
     ownership-based field security, <strong>musíte</strong> nastavit <code>memberId</code>.
 </aside>
 
-<h2>@E2ETest</h2>
+<h2>@CrossModuleTest</h2>
 
 <p>
-    Meta-anotace pro end-to-end testy. Spustí celou aplikaci se všemi moduly a poskytne
+    Meta-anotace pro mezimodulové integrační testy. Spustí testovaný modul se všemi jeho závislostmi a poskytne
     <code>MockMvc</code> pro HTTP volání.
 </p>
 
@@ -106,7 +106,7 @@ void delegate_acts_only_for_that_member() { ... }</code></pre>
 @Import(TestApplicationConfiguration.class)
 @Retention(RUNTIME)
 @Target(TYPE)
-public @interface E2ETest {}</code></pre>
+public @interface CrossModuleTest {}</code></pre>
 
 <dl class="api-list">
     <dt>BootstrapMode.ALL_DEPENDENCIES</dt>
@@ -115,15 +115,15 @@ public @interface E2ETest {}</code></pre>
 
     <dt>verifyAutomatically = false</dt>
     <dd>Vypne kontrolu závislostí mezi moduly. Tu má dělat samostatný <code>ApplicationModulesTest</code>,
-        ne každý E2E test.</dd>
+        ne každý integrační test.</dd>
 
     <dt>@CleanupTestData</dt>
-    <dd>Listener, který po každém testu vymaže data z DB (E2E testy commitují kvůli event flow,
+    <dd>Listener, který po každém testu vymaže data z DB (tyto testy commitují kvůli event flow,
         proto je nutný explicitní cleanup).</dd>
 </dl>
 
-<pre class="signature"><code>@E2ETest
-class MemberRegistrationE2ETest {
+<pre class="signature"><code>@CrossModuleTest
+class MemberRegistrationCrossModuleTest {
     @Autowired MockMvc mvc;
 
     @Test

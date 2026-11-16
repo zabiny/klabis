@@ -1,4 +1,4 @@
--- Test member data for MemberFilterE2ETest
+-- Test member data for MemberFilterCrossModuleTest
 -- Provides a controlled set of members with varied names and active/inactive state
 -- to verify fulltext (q) and status filter combinations.
 

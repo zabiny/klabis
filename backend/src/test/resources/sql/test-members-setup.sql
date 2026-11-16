@@ -1,4 +1,4 @@
--- Test member data for event registration E2E tests
+-- Test member data for event registration cross-module tests
 -- This script creates test members that correspond to the authenticated user IDs
 -- used in @WithMockUser annotations
 

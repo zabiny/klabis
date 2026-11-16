@@ -10,9 +10,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Meta-annotation for E2E tests
+ * Meta-annotation for cross-module integration tests
  * <p>
- * E2E test starts up tested module and all dependent modules. Then test should perform tested flow by emulating API calls (using MockMvc) and verify expected responses from API. Flow typically consists from multiple requests
+ * Starts up tested module and all dependent modules. Then test should perform tested flow by emulating API calls (using MockMvc) and verify expected responses from API. Flow typically consists from multiple requests
  */
 @KlabisModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES)
 @AutoConfigureMockMvc
@@ -21,6 +21,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Import(TestApplicationConfiguration.class)
-public @interface E2ETest {
+public @interface CrossModuleTest {
 
 }

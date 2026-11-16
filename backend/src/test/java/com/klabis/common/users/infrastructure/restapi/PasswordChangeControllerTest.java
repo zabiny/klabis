@@ -1,6 +1,6 @@
 package com.klabis.common.users.infrastructure.restapi;
 
-import com.klabis.E2ETest;
+import com.klabis.CrossModuleTest;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@E2ETest
+@CrossModuleTest
 @DisplayName("PasswordChangeController integration tests")
 class PasswordChangeControllerTest {
 

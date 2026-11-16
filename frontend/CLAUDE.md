@@ -81,6 +81,18 @@ npm run preview
 - Environment: jsdom
 - Coverage provider: v8
 
+**Test levels** (same taxonomy as backend `backend-patterns` → `testing-guide.md`). Each behaviour is tested **once, at the lowest level that can verify it**.
+
+| Level | Frontend form | Covers |
+|-------|---------------|--------|
+| Unit | component, hook and util tests | Rendering states, form validation, field visibility by affordances, edge cases, error states |
+| Integration | Page tests (`src/pages/**`) | Cooperation of the page's components and navigation — happy path only |
+| End-to-end | playwright-bdd scenarios (`e2e/`) | User journey through UI + backend — no validation messages, permission matrix or field-by-field checks |
+
+- **Most tests are unit tests.**
+- **Mock only boundaries:** the data/API layer (`useHalPageData`, `useAuthorizedFetch`, `authorizedFetch`), auth (`klabisUserManager`) and browser/router infrastructure. Never mock the component's own child components, hooks or utils — render the real ones.
+- **Higher levels don't repeat lower levels.** Before writing a Page test or E2E scenario, name what it verifies that no lower-level test can. If nothing, don't write it. Behaviour already covered by backend tests (validation rules, authorization) is not re-tested in E2E.
+
 ### E2E Tests
 
 Playwright + playwright-bdd scenarios drive a running Klabis instance through the browser. They are never part of `npm test`; see [`e2e/README.md`](e2e/README.md) for commands, rules and the step vocabulary.
