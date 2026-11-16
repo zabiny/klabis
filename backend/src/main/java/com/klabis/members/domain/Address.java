@@ -1,6 +1,7 @@
 package com.klabis.members.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.springframework.util.Assert;
 
 /**
  * Value Object representing a postal address.
@@ -62,9 +63,7 @@ public record Address(String street, String city, String postalCode, Country cou
             throw new IllegalArgumentException("Postal code must be alphanumeric (hyphens and spaces allowed)");
         }
 
-        if (country == null) {
-            throw new IllegalArgumentException("Country is required");
-        }
+        Assert.notNull(country, "Country is required");
     }
 
     /**

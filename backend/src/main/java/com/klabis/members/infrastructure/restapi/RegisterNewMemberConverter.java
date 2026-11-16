@@ -33,9 +33,9 @@ class RegisterNewMemberConverter implements Converter<RegisterMemberRequestWithP
         com.klabis.members.domain.Gender gender = com.klabis.members.domain.Gender.valueOf(request.gender().name());
         return new RegistrationPort.RegisterNewMember(
                 PersonalInformation.of(request.firstName(), request.lastName(),
-                        request.dateOfBirth(), Nationality.of(request.nationality()), gender),
+                        request.dateOfBirth(), InvalidFieldValueException.parse(Kind.NATIONALITY, () -> Nationality.of(request.nationality())), gender),
                 request.address() != null ? new Address(request.address().street(), request.address().city(),
-                        request.address().postalCode(), Country.of(request.address().country())) : null,
+                        request.address().postalCode(), InvalidFieldValueException.parse(Kind.ADDRESS_COUNTRY, () -> Country.of(request.address().country()))) : null,
                 hasText(request.email()) ? InvalidFieldValueException.parse(Kind.EMAIL, () -> EmailAddress.of(request.email())) : null,
                 hasText(request.phone()) ? InvalidFieldValueException.parse(Kind.PHONE, () -> PhoneNumber.of(request.phone())) : null,
                 request.birthNumber() != null ? InvalidFieldValueException.parse(Kind.BIRTH_NUMBER, () -> BirthNumber.of(request.birthNumber())) : null,

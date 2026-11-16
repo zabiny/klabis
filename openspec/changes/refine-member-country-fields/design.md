@@ -21,7 +21,7 @@ See proposal.md for motivation. Current state:
 - Restricting nationality to sovereign states; both fields accept the same code list.
 - Showing country names outside the member detail page (accommodation list, CSV export keep codes).
 - A full country list or search on the frontend.
-- Field-level server error for an unknown code (see Decision 4).
+- A second copy of the country rule in the API layer (see Decision 4).
 
 ## Decisions
 
@@ -89,9 +89,9 @@ In `UpdateMemberRequest`, `nationality` gets `x-klabis-authority: MEMBERS_MANAGE
 
 **Alternatives:** HAL+FORMS options sent by the backend (rejected in explore: the address sub-field cannot carry backend options, and the frontend would still need names); a `datalist` combobox (inconsistent across browsers).
 
-### 4. Unknown codes are refused by the domain, reported as a general form error
+### 4. Unknown codes are refused by the domain, reported as a field-level error
 
-The rule lives only in Country. An unknown code that reaches the backend raises the domain's invalid-argument error, which the form shows as a general error, and nothing is saved. A field-level server error would need a separate DTO constraint duplicating the rule. That is not worth it: the picker already flags unknown codes while typing, so the server check only catches codes the browser knows and the JDK does not (e.g. `XK`).
+The rule lives only in Country. The REST converters (registration, member update) build Nationality and Country through the existing `InvalidFieldValueException` mechanism, the same one used for e-mail, phone, birth number and bank account. An unknown code therefore becomes a 400 problem response with its own error type and field: `invalid-nationality` on `nationality`, `invalid-address-country` on `address.country`. Nothing is saved. No DTO constraint repeats the rule; the OpenAPI `pattern` stays a format pre-check only. The picker also flags unknown codes while typing, so the server check mainly catches codes the browser knows and the JDK does not (e.g. `XK`).
 
 ### 5. ORIS sync drops an unknown nationality or country
 

@@ -1,6 +1,7 @@
 package com.klabis.members.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -62,9 +63,7 @@ public final class PersonalInformation {
         validateGender(gender);
 
         PersonName name = PersonName.of(firstName, lastName);
-        if (nationality == null) {
-            throw new IllegalArgumentException("Nationality is required");
-        }
+        Assert.notNull(nationality, "Nationality is required");
 
         return new PersonalInformation(
                 name,

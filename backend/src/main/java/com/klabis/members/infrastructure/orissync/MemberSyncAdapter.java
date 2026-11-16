@@ -156,7 +156,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
                 .lastName(projection.lastName())
                 .dateOfBirth(projection.dateOfBirth())
                 .gender(projection.gender())
-                .nationality(projection.nationality() != null ? Nationality.of(projection.nationality()) : null)
+                .nationality(Nationality.ofNullable(projection.nationality()))
                 .birthNumber(projection.birthNumber() != null ? BirthNumber.of(projection.birthNumber()) : null)
                 .email(projection.email() != null ? EmailAddress.of(projection.email()) : null)
                 .phone(projection.phone() != null ? PhoneNumber.of(projection.phone()) : null)

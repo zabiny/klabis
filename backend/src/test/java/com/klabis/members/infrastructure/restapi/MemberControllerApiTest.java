@@ -1548,6 +1548,60 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("with unknown nationality code should return field-level error")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithNationalityFieldWhenNationalityUnknown() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "QQ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-nationality"))
+                    .andExpect(jsonPath("$.field").value("nationality"));
+        }
+
+        @Test
+        @DisplayName("with unknown address country code should return field-level error")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "QQ"
+                                }
+                            }
+                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
+                    .andExpect(jsonPath("$.field").value("address.country"));
+        }
+
+        @Test
         @DisplayName("with invalid address country code format should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAddressCountryInvalid() throws Exception {

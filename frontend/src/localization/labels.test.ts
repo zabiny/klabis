@@ -291,6 +291,8 @@ describe('labels.errorTypes members, events and calendar', () => {
         ['/errors/invalid-bank-account-number', 'Číslo bankovního účtu není platné.'],
         ['/errors/invalid-email-address', 'E-mailová adresa není platná.'],
         ['/errors/invalid-phone-number', 'Telefonní číslo není platné.'],
+        ['/errors/invalid-nationality', 'Státní příslušnost není platný kód státu.'],
+        ['/errors/invalid-address-country', 'Stát v adrese není platný kód státu.'],
         ['/errors/date-of-birth-in-future', 'Datum narození nesmí být v budoucnosti.'],
         ['/errors/medical-course-validity-not-after-completion', 'Platnost zdravotního kurzu musí být později než datum jeho absolvování.'],
         ['/errors/member-already-suspended', 'Člen je již pozastaven.'],

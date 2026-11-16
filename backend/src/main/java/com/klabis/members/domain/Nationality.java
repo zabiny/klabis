@@ -2,7 +2,7 @@ package com.klabis.members.domain;
 
 import org.jmolecules.ddd.annotation.ValueObject;
 
-import java.util.Objects;
+import org.springframework.util.Assert;
 
 /**
  * A person's nationality, expressed as the {@link Country} whose citizenship they hold.
@@ -11,11 +11,19 @@ import java.util.Objects;
 public record Nationality(Country country) {
 
     public Nationality {
-        Objects.requireNonNull(country, "Nationality country is required");
+        Assert.notNull(country, "Nationality country is required");
     }
 
     public static Nationality of(String code) {
         return new Nationality(Country.of(code));
+    }
+
+    public static Nationality ofNullable(String code) {
+        return code == null ? null : of(code);
+    }
+
+    public static String codeOf(Nationality nationality) {
+        return nationality == null ? null : nationality.code();
     }
 
     public String code() {
@@ -24,10 +32,6 @@ public record Nationality(Country country) {
 
     public boolean isCzech() {
         return "CZ".equals(code());
-    }
-
-    public String displayName() {
-        return code();
     }
 
     @Override

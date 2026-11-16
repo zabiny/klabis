@@ -902,7 +902,8 @@ class UpdateMemberApiTest {
                     "email,invalid-email,invalid-email-address",
                     "phone,123,invalid-phone-number",
                     "birthNumber,12345,invalid-birth-number",
-                    "bankAccountNumber,abc,invalid-bank-account-number"
+                    "bankAccountNumber,abc,invalid-bank-account-number",
+                    "nationality,QQ,invalid-nationality"
             })
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WithTypeAndFieldWhenValueInvalid(String field, String value, String type) throws Exception {
@@ -918,6 +919,25 @@ class UpdateMemberApiTest {
                         .andExpect(jsonPath("$.type").value("/errors/" + type))
                         .andExpect(jsonPath("$.field").value(field))
                         .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("address with an unknown country is refused at address.country")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {"address": {"street": "Hlavní 1", "city": "Praha", "postalCode": "11000", "country": "QQ"}}
+                                                """)
+                        )
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
+                        .andExpect(jsonPath("$.field").value("address.country"));
             }
 
             @Test

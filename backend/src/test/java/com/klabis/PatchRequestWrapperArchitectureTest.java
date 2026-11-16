@@ -83,7 +83,7 @@ class PatchRequestWrapperArchitectureTest {
      */
     private static final Map<Class<?>, List<String>> EXPECTED_PRIVILEGED_COMPONENTS = Map.of(
             com.klabis.members.infrastructure.restapi.UpdateMemberRequest.class,
-            List.of("birthNumber", "dateOfBirth", "firstName", "gender", "lastName"),
+            List.of("birthNumber", "dateOfBirth", "firstName", "gender", "lastName", "nationality"),
             com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest.class,
             List.of(),
             com.klabis.events.infrastructure.restapi.UpdateEventRequest.class,

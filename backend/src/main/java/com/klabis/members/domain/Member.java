@@ -187,7 +187,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * <p>
      * {@code registrationNumber} is not applied — {@link Member#registrationNumber} is set only at
      * construction — but is checked against the target aggregate as a guard against the caller
-     * having resolved the wrong member.     */
+     * having resolved the wrong member.
+     */
     @RecordBuilder
     public record SyncFromOris(
             RegistrationNumber registrationNumber,

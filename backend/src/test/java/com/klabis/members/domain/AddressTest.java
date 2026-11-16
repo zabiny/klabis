@@ -216,7 +216,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         void shouldThrowForInvalidCountryCodeWithNumbers() {
             assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("12")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Country must be a valid ISO 3166-1 alpha-2 code");
+                    .hasMessageContaining("existing country");
         }
 
         @Test
@@ -224,7 +224,7 @@ class AddressTest extends ValueObjectTestBase<Address> {
         void shouldThrowForInvalidCountryCodeWith3Letters() {
             assertThatThrownBy(() -> Address.of("Hlavní 123", "Praha", "11000", Country.of("ABC")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Country must be a valid ISO 3166-1 alpha-2 code");
+                    .hasMessageContaining("existing country");
         }
 
         @Test

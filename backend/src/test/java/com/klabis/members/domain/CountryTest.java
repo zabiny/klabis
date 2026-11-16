@@ -47,7 +47,7 @@ class CountryTest {
             assertThatThrownBy(() -> Country.of(code))
                     .as(code)
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("ISO 3166-1 alpha-2");
+                    .hasMessageContaining("existing country");
         }
     }
 
@@ -71,5 +71,14 @@ class CountryTest {
     @DisplayName("toString returns the code")
     void toStringReturnsCode() {
         assertThat(Country.of("cz").toString()).isEqualTo("CZ");
+    }
+
+    @Test
+    @DisplayName("Should convert null-tolerantly to and from code")
+    void shouldConvertNullTolerantly() {
+        assertThat(Country.ofNullable(null)).isNull();
+        assertThat(Country.ofNullable("fr")).isEqualTo(Country.of("FR"));
+        assertThat(Country.codeOf(null)).isNull();
+        assertThat(Country.codeOf(Country.of("FR"))).isEqualTo("FR");
     }
 }

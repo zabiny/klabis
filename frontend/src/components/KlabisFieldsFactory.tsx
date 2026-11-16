@@ -21,9 +21,10 @@ interface SubField {
     type?: string;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const SubFieldInput = ({props, sf}: {props: HalFormsInputProps; sf: SubField}): ReactElement => {
     const subProps = props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type});
-    return sf.type === "Country" ? <HalFormsCountry {...subProps}/> : <HalFormsInput {...subProps}/>;
+    return klabisCustomFieldFactory(sf.type ?? "", subProps) ?? <HalFormsInput {...subProps}/>;
 };
 
 const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]): ReactElement => {

@@ -2,10 +2,8 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.members.domain.Address;
-import com.klabis.members.domain.Country;
 import com.klabis.members.domain.IdentityCard;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.MedicalCourse;
 import com.klabis.members.domain.RefereeLicense;
 import com.klabis.members.domain.TrainerLicense;
@@ -40,6 +38,7 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
+    @Mapping(target = "nationality", source = "nationality.country.code")
     @Mapping(target = "email", source = "email.value")
     @Mapping(target = "phone", source = "phone.value")
     @Mapping(target = "birthNumber", source = "birthNumber.value")
@@ -52,15 +51,8 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "displayContact", ignore = true)
     MemberDetailsResponse convert(Member member);
 
+    @Mapping(target = "country", source = "country.code")
     AddressResponse addressToResponse(Address address);
-
-    default String nationalityToCode(Nationality nationality) {
-        return nationality == null ? null : nationality.code();
-    }
-
-    default String countryToCode(Country country) {
-        return country == null ? null : country.code();
-    }
 
     Gender genderToDto(com.klabis.members.domain.Gender gender);
 

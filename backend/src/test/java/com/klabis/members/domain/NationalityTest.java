@@ -159,19 +159,6 @@ class NationalityTest {
     }
 
     @Test
-    @DisplayName("Should return display name")
-    void shouldReturnDisplayName() {
-        // Given
-        Nationality nationality = Nationality.of("CZ");
-
-        // When
-        String displayName = nationality.displayName();
-
-        // Then
-        assertThat(displayName).isEqualTo("CZ");
-    }
-
-    @Test
     @DisplayName("Should accept common alpha-2 codes")
     void shouldAcceptCommonAlpha2Codes() {
         assertThatCode(() -> Nationality.of("US")).doesNotThrowAnyException();
@@ -220,5 +207,22 @@ class NationalityTest {
     void shouldWrapCountry() {
         assertThat(Nationality.of("cz").country()).isEqualTo(Country.of("CZ"));
         assertThat(new Nationality(Country.of("SK")).code()).isEqualTo("SK");
+    }
+
+    @Test
+    @DisplayName("Should refuse missing country with IllegalArgumentException")
+    void shouldRefuseMissingCountry() {
+        assertThatThrownBy(() -> new Nationality(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("required");
+    }
+
+    @Test
+    @DisplayName("Should convert null-tolerantly to and from code")
+    void shouldConvertNullTolerantly() {
+        assertThat(Nationality.ofNullable(null)).isNull();
+        assertThat(Nationality.ofNullable("sk")).isEqualTo(Nationality.of("SK"));
+        assertThat(Nationality.codeOf(null)).isNull();
+        assertThat(Nationality.codeOf(Nationality.of("SK"))).isEqualTo("SK");
     }
 }

@@ -4,6 +4,7 @@ import com.dpolach.api.orisclient.dto.ClubMember;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Country;
+import com.klabis.members.domain.Nationality;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
@@ -83,14 +84,14 @@ final class MemberProjectionMapper {
                 blankToNull(member.getLastName()),
                 member.getDateOfBirth(),
                 member.getGender(),
-                member.getNationality() != null ? member.getNationality().code() : null,
+                Nationality.codeOf(member.getNationality()),
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
                 member.getEmail() != null ? member.getEmail().value() : null,
                 member.getPhone() != null ? member.getPhone().value() : null,
                 address != null ? blankToNull(address.street()) : null,
                 address != null ? blankToNull(address.city()) : null,
                 address != null ? blankToNull(address.postalCode()) : null,
-                address != null ? address.country().code() : null,
+                address != null ? Country.codeOf(address.country()) : null,
                 blankToNull(member.getChipNumber())
         );
     }
