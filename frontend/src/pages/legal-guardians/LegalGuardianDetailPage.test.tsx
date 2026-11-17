@@ -59,9 +59,9 @@ describe('LegalGuardianDetailPage', () => {
         expect(screen.getByTestId('hal-form-button')).toHaveTextContent('updateLegalGuardian');
     });
 
-    it('shows an error alert on failure', () => {
+    it('shows the page-level error for a 404', () => {
         renderPage(null, {error: new ApiError(404, {type: '/errors/legal-guardian-not-found', detail: 'Boom'})});
-        expect(screen.getByText('Zákonný zástupce nebyl nalezen.')).toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
         expect(screen.queryByText('Boom')).not.toBeInTheDocument();
     });
 

@@ -190,7 +190,7 @@ describe('LegalGuardianGroupDetailPage', () => {
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
 
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
         expect(navigate).not.toHaveBeenCalled();
     });

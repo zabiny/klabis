@@ -337,7 +337,7 @@ describe('SyncOverviewPage attention tab', () => {
 });
 
 describe('SyncOverviewPage load error', () => {
-    it('shows the Czech text of the error instead of the HTTP status', () => {
+    it('shows the page-level error for a 403', () => {
         const data = pageData(null);
         vi.mocked(useHalPageData).mockReturnValue({
             ...data,
@@ -352,7 +352,7 @@ describe('SyncOverviewPage load error', () => {
             </QueryClientProvider>
         );
 
-        expect(screen.getByText('K této akci nemáte oprávnění.')).toBeInTheDocument();
+        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
         expect(screen.queryByText(/HTTP 403/)).not.toBeInTheDocument();
     });
 });

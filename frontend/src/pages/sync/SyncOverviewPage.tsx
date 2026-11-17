@@ -1,20 +1,20 @@
 import {type ReactElement, useMemo} from 'react';
 import {Link, useSearchParams} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {KlabisTableWithQuery, TableCell} from '../../components/KlabisTable';
-import {Alert, Skeleton, TabButton} from '../../components/UI';
+import {TabButton} from '../../components/UI';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import type {components} from '../../api/klabisApi';
-import type {HalResourceLinks} from '../../api';
+import type {HalResourceLinks, HalResponse} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
 import {attemptColumns, enumCell} from '../../components/sync/syncAttemptColumns.tsx';
 import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
 import {toQuery, type SyncAttemptFilters} from './syncAttemptsQuery.ts';
 import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type SyncRecordItem = components['schemas']['SyncRecordSummaryResponse'];
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
@@ -113,8 +113,7 @@ const AttentionTab = ({href}: {href: string}): ReactElement => (
 
 type TabId = 'attempts' | 'attention';
 
-export const SyncOverviewPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData();
+const SyncOverviewContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab: TabId = searchParams.get('tab') === 'attention' ? 'attention' : 'attempts';
     const setActiveTab = (tab: TabId) => setSearchParams((prev) => {
@@ -123,15 +122,7 @@ export const SyncOverviewPage = (): ReactElement => {
         return params;
     });
 
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    const attentionLink = resourceData?._links?.recordsNeedingAttention;
+    const attentionLink = resourceData._links?.recordsNeedingAttention;
     const showAttention = activeTab === 'attention';
     const attentionHref = attentionLink ? toHref(attentionLink) : undefined;
 
@@ -158,3 +149,9 @@ export const SyncOverviewPage = (): ReactElement => {
         </div>
     );
 };
+
+export const SyncOverviewPage = (): ReactElement => (
+    <HalPageGate>
+        {(resourceData) => <SyncOverviewContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

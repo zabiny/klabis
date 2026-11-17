@@ -1,10 +1,10 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Skeleton} from '../../components/UI';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import type {FeeSelectionCampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
-import {labels, describeError} from '../../localization';
+import {labels} from '../../localization';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 const FeeSelectionCampaignDetailContent = (): ReactElement => {
     const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
@@ -26,20 +26,8 @@ const FeeSelectionCampaignDetailContent = (): ReactElement => {
     );
 };
 
-export const FeeSelectionCampaignDetailPage = (): ReactElement => {
-    const {isLoading, error, resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <FeeSelectionCampaignDetailContent/>;
-};
+export const FeeSelectionCampaignDetailPage = (): ReactElement => (
+    <HalPageGate<FeeSelectionCampaignDetail>>
+        {() => <FeeSelectionCampaignDetailContent/>}
+    </HalPageGate>
+);

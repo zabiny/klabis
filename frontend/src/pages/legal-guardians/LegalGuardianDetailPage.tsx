@@ -1,13 +1,14 @@
 import type {ReactElement} from 'react';
 import {Pencil, UserPlus} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, DetailRow, Skeleton} from '../../components/UI';
+import {Button, Card, DetailRow} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import type {GetLegalGuardianResource} from '../../api';
 import {asLinkArray, selfHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath.ts';
 import type {TakeOverState} from '../members/useTakeOverRegistration.ts';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 const LegalGuardianDetailContent = ({resourceData}: {resourceData: GetLegalGuardianResource}): ReactElement => {
     const {navigateToResource} = useHalPageData();
@@ -52,16 +53,8 @@ const LegalGuardianDetailContent = ({resourceData}: {resourceData: GetLegalGuard
     );
 };
 
-export const LegalGuardianDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GetLegalGuardianResource>();
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (isLoading || !resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <LegalGuardianDetailContent resourceData={resourceData}/>;
-};
+export const LegalGuardianDetailPage = (): ReactElement => (
+    <HalPageGate<GetLegalGuardianResource>>
+        {(resourceData) => <LegalGuardianDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

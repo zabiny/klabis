@@ -356,20 +356,10 @@ describe('EventDetailPage', () => {
         expect(screen.queryByTestId('subresource-coordinator')).not.toBeInTheDocument();
     });
 
-    it('shows loading placeholder while loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
-    });
-
     it('shows Czech text of the error when fetch fails', () => {
         renderPage(createMockPageData(null, {error: new ApiError(500, {detail: 'Internal failure'})}));
         expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
         expect(screen.queryByText(/Internal failure/)).not.toBeInTheDocument();
-    });
-
-    it('shows loading placeholder when resourceData is null and not loading', () => {
-        renderPage(createMockPageData(null));
-        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
     });
 
     describe('action buttons via HAL affordances', () => {

@@ -93,14 +93,9 @@ describe('FeeSelectionCampaignDetailPage', () => {
         vi.clearAllMocks();
     });
 
-    it('shows skeleton loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-
-    it('shows Czech text when the resource is not found', () => {
+    it('shows the page-level error for a 404', () => {
         renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 

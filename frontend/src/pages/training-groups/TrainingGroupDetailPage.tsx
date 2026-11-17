@@ -1,7 +1,6 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, Skeleton} from '../../components/UI';
+import {Button, Card} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
@@ -11,11 +10,12 @@ import type {
     GetTrainingGroupTrainersItemResource,
     HalFormsTemplate,
 } from '../../api';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
 import {halResource, type HalTemplateAction} from '../../api/halResource';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGroupResource}): ReactElement => {
     const navigate = useNavigate();
@@ -191,20 +191,8 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
     );
 };
 
-export const TrainingGroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GetTrainingGroupResource>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <TrainingGroupDetailContent resourceData={resourceData}/>;
-};
+export const TrainingGroupDetailPage = (): ReactElement => (
+    <HalPageGate<GetTrainingGroupResource>>
+        {(resourceData) => <TrainingGroupDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

@@ -8,9 +8,9 @@
 
 ## 2. Detail pages
 
-- [ ] 2.1 Migrate the eleven detail pages to the gate: `MemberDetailPage`, `EventDetailPage`, `GroupDetailPage`, `TrainingGroupDetailPage`, `LegalGuardianDetailPage`, `LegalGuardianGroupDetailPage`, `MembershipFeeTierDetailPage`, `FeeSelectionCampaignDetailPage`, `MembershipFeeGroupDetailPage`, `MemberFeeHistoryPage`, `SyncOverviewPage`
-- [ ] 2.2 Keep page-specific error assertions (e.g. a page-level `ErrorPage` case) and remove the per-page duplicated loading/absent assertions
-- [ ] 2.3 Verify: detail-page slice tests green
+- [x] 2.1 Migrate the eleven detail pages to the gate: `MemberDetailPage`, `EventDetailPage`, `GroupDetailPage`, `TrainingGroupDetailPage`, `LegalGuardianDetailPage`, `LegalGuardianGroupDetailPage`, `MembershipFeeTierDetailPage`, `FeeSelectionCampaignDetailPage`, `MembershipFeeGroupDetailPage`, `MemberFeeHistoryPage`, `SyncOverviewPage`
+- [x] 2.2 Keep page-specific error assertions (e.g. a page-level `ErrorPage` case) and remove the per-page duplicated loading/absent assertions
+- [x] 2.3 Verify: detail-page slice tests green
 
 ## 3. List, admin, calendar and newly gated pages
 

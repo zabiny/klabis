@@ -1,9 +1,9 @@
 import {type ReactElement, type ReactNode, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Badge, Button, Card, DetailRow, Skeleton} from '../../components/UI';
+import {Badge, Button, Card, DetailRow} from '../../components/UI';
 import {EventRegistrationDialog} from '../../components/events/EventRegistrationDialog.tsx';
-import {ErrorPage} from '../ErrorPage.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
@@ -63,23 +63,11 @@ const CoordinatorDisplay = (): ReactElement => {
     );
 };
 
-export const EventDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<EventDetail>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <ErrorPage error={error}/>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <EventDetailContent resourceData={resourceData}/>;
-};
+export const EventDetailPage = (): ReactElement => (
+    <HalPageGate<EventDetail>>
+        {(resourceData) => <EventDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);
 
 interface RegistrationsTableProps {
     event: EventDetail;

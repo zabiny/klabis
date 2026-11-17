@@ -1,9 +1,7 @@
 import {type ReactElement} from 'react';
 import {Link, useParams} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Skeleton} from '../../components/UI';
 import {KlabisTable, TableCell} from '../../components/KlabisTable';
-import {ErrorPage} from '../ErrorPage.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath.ts';
 import {getEnumLabel, labels} from '../../localization';
@@ -14,13 +12,8 @@ const l = labels.memberFee;
 
 type FeeAssignment = NonNullable<GetFeeHistoryResource['assignments']>[number];
 
-export const MemberFeeHistoryPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GetFeeHistoryResource>();
+const MemberFeeHistoryContent = ({resourceData}: {resourceData: GetFeeHistoryResource}): ReactElement => {
     const {memberId = ''} = useParams();
-
-    if (isLoading) return <Skeleton/>;
-    if (error) return <ErrorPage error={error}/>;
-    if (!resourceData) return <Skeleton/>;
 
     const memberLink = resourceData._links?.member;
     const feeSummaryLink = resourceData._links?.feeSummary;
@@ -61,3 +54,9 @@ export const MemberFeeHistoryPage = (): ReactElement => {
         </div>
     );
 };
+
+export const MemberFeeHistoryPage = (): ReactElement => (
+    <HalPageGate<GetFeeHistoryResource>>
+        {(resourceData) => <MemberFeeHistoryContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

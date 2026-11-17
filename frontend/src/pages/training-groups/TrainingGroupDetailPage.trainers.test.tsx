@@ -230,13 +230,13 @@ describe('TrainingGroupDetailPage — trainees and deletion', () => {
 });
 
 describe('TrainingGroupDetailPage load error', () => {
-    it('shows the Czech text of the error instead of the HTTP status', () => {
+    it('shows the page-level error for a 404', () => {
         renderDetailPage(<TrainingGroupDetailPage/>, null, {
             pathname: '/training-groups/tg-1',
             error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'}),
         });
 
-        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

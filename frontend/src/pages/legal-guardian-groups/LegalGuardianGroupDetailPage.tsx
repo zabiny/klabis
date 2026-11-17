@@ -1,13 +1,14 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Skeleton} from '../../components/UI';
+import {Skeleton} from '../../components/UI';
 import {LegalGuardiansSection} from '../../components/legal-guardians/LegalGuardiansSection.tsx';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import type {GetLegalGuardianGroupResource, HalResourceLinks} from '../../api';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
 import {ApiError} from '../../api/apiError.ts';
 import {useToast} from '../../contexts/toastContext.ts';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
     resourceData: GetLegalGuardianGroupResource;
@@ -52,7 +53,7 @@ const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
 };
 
 export const LegalGuardianGroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GetLegalGuardianGroupResource>();
+    const {error} = useHalPageData<GetLegalGuardianGroupResource>();
     const navigate = useNavigate();
     const {addToast} = useToast();
     const [guardiansEdited, setGuardiansEdited] = useState(false);
@@ -70,13 +71,11 @@ export const LegalGuardianGroupDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    if (isLoading || (!error && !resourceData)) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    return <LegalGuardianGroupDetailContent resourceData={resourceData!} onEditStarted={() => setGuardiansEdited(true)}/>;
+    return (
+        <HalPageGate<GetLegalGuardianGroupResource>>
+            {(resourceData) => (
+                <LegalGuardianGroupDetailContent resourceData={resourceData} onEditStarted={() => setGuardiansEdited(true)}/>
+            )}
+        </HalPageGate>
+    );
 };
