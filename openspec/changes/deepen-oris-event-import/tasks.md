@@ -1,9 +1,9 @@
 ## 1. Module skeleton and the presence rule
 
-- [ ] 1.1 Red: test `ImportOrisEventsButton` — a resource with no import template renders nothing; a resource with only `importEvent` renders the button; a resource with `importEventsBatch` renders the button
-- [ ] 1.2 Green: create `components/events/ImportOrisEventsButton.tsx` with the `{resource}` interface, template derivation via `halResource` (batch first), and the trigger button
-- [ ] 1.3 Green: `GLOSSARY.md` gains the **ORIS event import** entry
-- [ ] 1.4 Verify: module slice tests green
+- [x] 1.1 Red: test `ImportOrisEventsButton` — a resource with no import template renders nothing; a resource with only `importEvent` renders the button; a resource with `importEventsBatch` renders the button
+- [x] 1.2 Green: create `components/events/ImportOrisEventsButton.tsx` with the `{resource}` interface, template derivation via `halResource` (batch first), and the trigger button
+- [x] 1.3 Green: `GLOSSARY.md` gains the **ORIS event import** entry
+- [x] 1.4 Verify: module slice tests green
 
 ## 2. Dialog flow
 
