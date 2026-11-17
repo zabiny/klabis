@@ -14,49 +14,35 @@ import {isMultipleProperty} from '../HalNavigator2/halforms/utils';
 
 const DEFAULT_SELECTION_LIMIT = 50;
 
+const ORIS_REGION_OPTIONS = ORIS_REGION_KEYS.map(key => ({value: key, label: labels.orisRegions[key]}));
+
 type FeedState = 'loading' | 'success' | 'error';
 
-interface ImportFlow {
-    isOpen: boolean;
-    open: () => void;
-    close: () => void;
-    events: OrisEvent[];
-    feedState: FeedState;
-    selectedRegion: string;
-    changeRegion: (region: string) => void;
-    isSubmitting: boolean;
-    submitError: string | null;
-    selectedIds: ReadonlySet<number>;
-    toggleId: (id: number) => void;
-    toggleAll: () => void;
-    submit: () => void;
-    result: BulkImportResult | null;
-    isAllSelected: boolean;
-    isSomeSelected: boolean;
-    canSubmit: boolean;
-    selectionLimit: number;
-    isSelectionLimitReached: boolean;
-}
+const emptyImportState = () => ({
+    selectedRegion: ORIS_REGION_KEYS[0],
+    selectedIds: new Set<number>() as ReadonlySet<number>,
+    submitError: null as string | null,
+    result: null as BulkImportResult | null,
+});
 
 interface ImportOrisEventsButtonProps {
     resource: HalResponse;
 }
 
-function useImportFlow(template: HalFormsTemplate | undefined): ImportFlow {
+function useImportFlow(template: HalFormsTemplate) {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedRegion, setSelectedRegion] = useState<string>(ORIS_REGION_KEYS[0]);
-    const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(() => new Set<number>());
+    const [selectedRegion, setSelectedRegion] = useState<string>(() => emptyImportState().selectedRegion);
+    const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(() => emptyImportState().selectedIds);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null);
-    const [result, setResult] = useState<BulkImportResult | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(() => emptyImportState().submitError);
+    const [result, setResult] = useState<BulkImportResult | null>(() => emptyImportState().result);
 
-    const importTarget = template?.target;
-    const submitMethod = template?.method ?? 'POST';
-    const multiProperty = template?.properties.find(isMultipleProperty);
+    const submitMethod = template.method ?? 'POST';
+    const multiProperty = template.properties.find(isMultipleProperty);
     const selectionLimit = multiProperty?.max ?? DEFAULT_SELECTION_LIMIT;
     const bodyKey = multiProperty?.name ?? 'orisIds';
 
-    const eventsUrl = isOpen && importTarget
+    const eventsUrl = isOpen
         ? `/api/oris/events?region=${encodeURIComponent(selectedRegion)}`
         : undefined;
 
@@ -65,25 +51,21 @@ function useImportFlow(template: HalFormsTemplate | undefined): ImportFlow {
 
     const events = data ?? [];
     const feedState: FeedState = isError ? 'error' : isSuccess ? 'success' : 'loading';
-    const isSelectionLimitReached = selectedIds.size >= selectionLimit;
-    const isAllSelected = events.length > 0 && selectedIds.size === events.length;
-    const isSomeSelected = selectedIds.size > 0 && !isAllSelected;
-    const canSubmit = feedState === 'success' && events.length > 0 && selectedIds.size > 0 && !isSubmitting;
-
-    const open = () => {
-        setSelectedRegion(ORIS_REGION_KEYS[0]);
-        setSelectedIds(new Set<number>());
-        setSubmitError(null);
-        setResult(null);
-        setIsOpen(true);
-    };
-
-    const close = () => setIsOpen(false);
 
     const changeRegion = (region: string) => {
         setSelectedRegion(region);
         setSelectedIds(new Set<number>());
     };
+
+    const open = () => {
+        const fresh = emptyImportState();
+        changeRegion(fresh.selectedRegion);
+        setSubmitError(fresh.submitError);
+        setResult(fresh.result);
+        setIsOpen(true);
+    };
+
+    const close = () => setIsOpen(false);
 
     const toggleId = (id: number) => {
         setSelectedIds((previous) => {
@@ -110,7 +92,7 @@ function useImportFlow(template: HalFormsTemplate | undefined): ImportFlow {
     };
 
     const submit = () => {
-        if (selectedIds.size === 0 || !importTarget) {
+        if (selectedIds.size === 0 || !template.target) {
             return;
         }
 
@@ -118,7 +100,7 @@ function useImportFlow(template: HalFormsTemplate | undefined): ImportFlow {
         setSubmitError(null);
 
         mutate(
-            {url: importTarget, data: {[bodyKey]: Array.from(selectedIds)}},
+            {url: template.target, data: {[bodyKey]: Array.from(selectedIds)}},
             {
                 onSuccess: ({data: payload}) => {
                     setIsSubmitting(false);
@@ -154,16 +136,18 @@ function useImportFlow(template: HalFormsTemplate | undefined): ImportFlow {
         toggleAll,
         submit,
         result,
-        isAllSelected,
-        isSomeSelected,
-        canSubmit,
         selectionLimit,
-        isSelectionLimitReached,
     };
 }
 
+type ImportFlow = ReturnType<typeof useImportFlow>;
+
 const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
     const selectedCount = flow.selectedIds.size;
+    const isSelectionLimitReached = selectedCount >= flow.selectionLimit;
+    const isAllSelected = flow.events.length > 0 && selectedCount === flow.events.length;
+    const isSomeSelected = selectedCount > 0 && !isAllSelected;
+    const canSubmit = flow.feedState === 'success' && flow.events.length > 0 && selectedCount > 0 && !flow.isSubmitting;
 
     const footer = (
         <div className="flex items-center justify-between w-full">
@@ -171,7 +155,7 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
                 <Button variant="secondary" onClick={flow.close} disabled={flow.isSubmitting}>
                     {labels.buttons.cancel}
                 </Button>
-                <Button onClick={flow.submit} disabled={!flow.canSubmit} loading={flow.isSubmitting}>
+                <Button onClick={flow.submit} disabled={!canSubmit} loading={flow.isSubmitting}>
                     {flow.isSubmitting
                         ? labels.buttons.importing
                         : labels.orisImport.importSelected(selectedCount)}
@@ -192,7 +176,7 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
             <div className="mb-3">
                 <RadioGroup
                     name="orisRegion"
-                    options={ORIS_REGION_KEYS.map(key => ({value: key, label: labels.orisRegions[key]}))}
+                    options={ORIS_REGION_OPTIONS}
                     value={flow.selectedRegion}
                     onChange={(value) => flow.changeRegion(String(value))}
                     direction="horizontal"
@@ -225,9 +209,9 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
                             type="checkbox"
                             id="select-all-events"
                             aria-label={labels.orisImport.selectAll}
-                            checked={flow.isAllSelected}
+                            checked={isAllSelected}
                             ref={(element) => {
-                                if (element) element.indeterminate = flow.isSomeSelected;
+                                if (element) element.indeterminate = isSomeSelected;
                             }}
                             onChange={flow.toggleAll}
                             className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
@@ -243,7 +227,7 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
                         )}
                     </div>
 
-                    {flow.isSelectionLimitReached && (
+                    {isSelectionLimitReached && (
                         <p className="text-xs text-text-secondary px-1">
                             {labels.orisImport.limitReachedHint(flow.selectionLimit)}
                         </p>
@@ -252,7 +236,7 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
                     <ul className="flex flex-col max-h-96 overflow-y-auto divide-y divide-border">
                         {flow.events.map((event) => {
                             const isSelected = flow.selectedIds.has(event.id);
-                            const isCheckboxDisabled = flow.isSubmitting || (!isSelected && flow.isSelectionLimitReached);
+                            const isCheckboxDisabled = flow.isSubmitting || (!isSelected && isSelectionLimitReached);
                             return (
                                 <li
                                     key={event.id}
@@ -294,65 +278,62 @@ const ImportSelectionDialog = ({flow}: {flow: ImportFlow}): ReactElement => {
     );
 };
 
-const ImportResultDialog = ({flow}: {flow: ImportFlow}): ReactElement | null => {
-    const result = flow.result;
+const ImportResultDialog = ({result, onClose}: {result: BulkImportResult; onClose: () => void}): ReactElement => (
+    <Modal
+        isOpen
+        onClose={onClose}
+        title={labels.orisImport.resultTitle}
+        size="lg"
+        footer={
+            <Button variant="secondary" onClick={onClose}>
+                {labels.orisImport.done}
+            </Button>
+        }
+    >
+        <div className="flex flex-col gap-4">
+            <p className="text-text-primary font-medium">
+                {labels.orisImport.resultSummary(result.successCount, result.totalProcessed)}
+            </p>
 
-    if (!result) {
-        return null;
-    }
-
-    return (
-        <Modal
-            isOpen
-            onClose={flow.close}
-            title={labels.orisImport.resultTitle}
-            size="lg"
-            footer={
-                <Button variant="secondary" onClick={flow.close}>
-                    {labels.orisImport.done}
-                </Button>
-            }
-        >
-            <div className="flex flex-col gap-4">
-                <p className="text-text-primary font-medium">
-                    {labels.orisImport.resultSummary(result.successCount, result.totalProcessed)}
-                </p>
-
-                <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto">
-                    {result.results.map((item) => (
-                        <li key={item.orisId} className="flex items-start gap-3 py-1.5 border-b border-border last:border-0">
-                            {item.status === 'IMPORTED' ? (
-                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"/>
-                            ) : (
-                                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"/>
+            <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto">
+                {result.results.map((item) => (
+                    <li key={item.orisId} className="flex items-start gap-3 py-1.5 border-b border-border last:border-0">
+                        {item.status === 'IMPORTED' ? (
+                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"/>
+                        ) : (
+                            <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"/>
+                        )}
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className={`font-medium text-sm ${item.status === 'FAILED' ? 'text-red-700' : 'text-text-primary'}`}>
+                                {item.name ?? `ORIS #${item.orisId}`}
+                            </span>
+                            {item.date && (
+                                <span className="text-xs text-text-secondary">{item.date}</span>
                             )}
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                                <span className={`font-medium text-sm ${item.status === 'FAILED' ? 'text-red-700' : 'text-text-primary'}`}>
-                                    {item.name ?? `ORIS #${item.orisId}`}
-                                </span>
-                                {item.date && (
-                                    <span className="text-xs text-text-secondary">{item.date}</span>
-                                )}
-                                {item.error && (
-                                    <span className="text-xs text-text-secondary">{item.error}</span>
-                                )}
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        </Modal>
-    );
-};
+                            {item.error && (
+                                <span className="text-xs text-text-secondary">{item.error}</span>
+                            )}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </Modal>
+);
 
 export function ImportOrisEventsButton({resource}: ImportOrisEventsButtonProps): ReactElement | null {
     const actions = halResource(resource);
-    const importTemplate = actions.template('importEventsBatch')?.template ?? actions.template('importEvent')?.template;
-    const flow = useImportFlow(importTemplate);
+    const importTemplate = actions.template('importEventsBatch') ?? actions.template('importEvent');
 
     if (!importTemplate) {
         return null;
     }
+
+    return <ImportOrisEventsButtonInner template={importTemplate.template}/>;
+}
+
+const ImportOrisEventsButtonInner = ({template}: {template: HalFormsTemplate}): ReactElement => {
+    const flow = useImportFlow(template);
 
     return (
         <>
@@ -360,8 +341,8 @@ export function ImportOrisEventsButton({resource}: ImportOrisEventsButtonProps):
                 {labels.templates.importEvent}
             </Button>
             {flow.isOpen && (flow.result
-                ? <ImportResultDialog flow={flow}/>
+                ? <ImportResultDialog result={flow.result} onClose={flow.close}/>
                 : <ImportSelectionDialog flow={flow}/>)}
         </>
     );
-}
+};

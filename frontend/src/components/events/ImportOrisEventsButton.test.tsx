@@ -7,6 +7,7 @@ import type {UseQueryResult} from '@tanstack/react-query';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ImportOrisEventsButton} from './ImportOrisEventsButton';
 import {mockHalFormsTemplate, mockHalResponse} from '../../__mocks__/halData';
+import {createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {ApiError} from '../../api/apiError';
@@ -32,10 +33,8 @@ const importTemplate = (overrides: Partial<HalFormsTemplate> = {}): HalFormsTemp
         ...overrides,
     });
 
-const eventsResource = (templates: Record<string, HalFormsTemplate> = {}): HalResponse => ({
-    ...mockHalResponse(),
-    _templates: templates,
-});
+const eventsResource = (templates: Record<string, HalFormsTemplate> = {}): HalResponse =>
+    mockHalResponse({_templates: templates});
 
 const batchResource = (template: HalFormsTemplate = importTemplate()): HalResponse =>
     eventsResource({importEventsBatch: template});
@@ -53,6 +52,23 @@ const FEED: OrisEvent[] = [
     {id: 202, name: 'Letní závod', date: '2025-07-20', location: null, organizer: 'HBT'},
     {id: 303, name: 'Podzimní tour', date: '2025-09-15', location: 'Praha', organizer: 'SKP'},
 ];
+
+const MIXED_RESULT: BulkImportResult = {
+    totalProcessed: 2,
+    successCount: 1,
+    failureCount: 1,
+    results: [
+        {orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'},
+        {orisId: 404, name: null, date: null, status: 'FAILED', error: 'Duplikátní import'},
+    ],
+};
+
+const SUCCESS_RESULT: BulkImportResult = {
+    totalProcessed: 1,
+    successCount: 1,
+    failureCount: 0,
+    results: [{orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'}],
+};
 
 const importButton = () => screen.queryByRole('button', {name: /importovat z oris/i});
 const checkbox = (name: string) => screen.getByRole('checkbox', {name});
@@ -79,8 +95,18 @@ describe('ImportOrisEventsButton', () => {
             </QueryClientProvider>,
         );
 
-    const openDialog = async (user: UserEvent) => {
+    const openModule = async ({
+        resource = batchResource(),
+        feed = {data: FEED, isSuccess: true},
+    }: {
+        resource?: HalResponse;
+        feed?: {data?: OrisEvent[]; isError?: boolean; isSuccess?: boolean};
+    } = {}): Promise<UserEvent> => {
+        const user = userEvent.setup();
+        stubFeed(feed);
+        renderModule(resource);
         await user.click(importButton() as HTMLElement);
+        return user;
     };
 
     const importTwoEvents = async (user: UserEvent) => {
@@ -90,7 +116,7 @@ describe('ImportOrisEventsButton', () => {
     };
 
     beforeEach(() => {
-        queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        queryClient = createTestQueryClient();
         vi.mocked(useAuthorizedQuery).mockReset();
         vi.mocked(authorizedFetch).mockReset();
         stubFeed();
@@ -124,42 +150,28 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('loads the ORIS feed for the default region when the dialog opens', async () => {
-            const user = userEvent.setup();
-            renderModule();
-
-            await openDialog(user);
+            await openModule();
 
             expect(useAuthorizedQuery).toHaveBeenLastCalledWith('/api/oris/events?region=JIHOMORAVSKA');
             expect(screen.getByTestId('modal-title')).toHaveTextContent('Importovat z ORIS');
         });
 
         it('shows the loading state while the feed is being fetched', async () => {
-            const user = userEvent.setup();
-            renderModule();
-
-            await openDialog(user);
+            await openModule({feed: {}});
 
             expect(screen.getByText(/komunikuji s oris/i)).toBeInTheDocument();
             expect(submitButton(0)).toBeDisabled();
         });
 
         it('shows the failure text when the feed cannot be loaded', async () => {
-            const user = userEvent.setup();
-            stubFeed({isError: true});
-            renderModule();
-
-            await openDialog(user);
+            await openModule({feed: {isError: true}});
 
             expect(screen.getByText('Nepodařilo se načíst akce z ORIS.')).toBeInTheDocument();
             expect(submitButton(0)).toBeDisabled();
         });
 
         it('shows the empty state when the region offers no events', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: [], isSuccess: true});
-            renderModule();
-
-            await openDialog(user);
+            await openModule({feed: {data: [], isSuccess: true}});
 
             expect(screen.getByText('Žádné závody k importu')).toBeInTheDocument();
             expect(screen.getByText('Zkuste změnit oblast.')).toBeInTheDocument();
@@ -167,11 +179,7 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('renders one row per feed event with name, date, organizer and location', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule();
-
-            await openDialog(user);
+            await openModule();
 
             expect(screen.getByText('Jarní sprint')).toBeInTheDocument();
             expect(screen.getAllByText(/2025-04-10/)[0]).toBeInTheDocument();
@@ -181,21 +189,15 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('shows the shown-of counter only when more than ten events are offered', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: Array.from({length: 11}, (_, i) => orisEvent(i + 1, `Závod ${i + 1}`)), isSuccess: true});
-            renderModule();
-
-            await openDialog(user);
+            await openModule({
+                feed: {data: Array.from({length: 11}, (_, i) => orisEvent(i + 1, `Závod ${i + 1}`)), isSuccess: true},
+            });
 
             expect(screen.getByText('zobrazeno 11 z 11')).toBeInTheDocument();
         });
 
         it('hides the shown-of counter for a short list', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule();
-
-            await openDialog(user);
+            await openModule();
 
             expect(screen.queryByText(/zobrazeno/i)).not.toBeInTheDocument();
         });
@@ -203,10 +205,7 @@ describe('ImportOrisEventsButton', () => {
 
     describe('region switch', () => {
         it('refetches the feed for the picked region', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
 
             await user.click(screen.getByRole('radio', {name: 'ČR'}));
 
@@ -214,10 +213,7 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('clears the selection when the region changes', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
             await user.click(checkbox('Jarní sprint'));
             expect(submitButton(1)).toBeEnabled();
 
@@ -234,10 +230,7 @@ describe('ImportOrisEventsButton', () => {
         }));
 
         it('takes the limit from the multi property max', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule(limitedResource(2));
-            await openDialog(user);
+            const user = await openModule({resource: limitedResource(2)});
 
             await user.click(checkbox('Jarní sprint'));
             await user.click(checkbox('Letní závod'));
@@ -247,12 +240,12 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('falls back to a limit of 50 when the multi property has no max', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: Array.from({length: 51}, (_, i) => orisEvent(i + 1, `Závod ${i + 1}`)), isSuccess: true});
-            renderModule(batchResource(importTemplate({
-                properties: [{name: 'orisIds', type: 'array', multi: true}],
-            })));
-            await openDialog(user);
+            const user = await openModule({
+                resource: batchResource(importTemplate({
+                    properties: [{name: 'orisIds', type: 'array', multi: true}],
+                })),
+                feed: {data: Array.from({length: 51}, (_, i) => orisEvent(i + 1, `Závod ${i + 1}`)), isSuccess: true},
+            });
 
             await user.click(selectAllCheckbox());
 
@@ -261,10 +254,7 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('does not add another event once the limit is reached, but allows removing one', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule(limitedResource(2));
-            await openDialog(user);
+            const user = await openModule({resource: limitedResource(2)});
             await user.click(checkbox('Jarní sprint'));
             await user.click(checkbox('Letní závod'));
 
@@ -277,10 +267,7 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('select-all selects at most the limit and leaves the box indeterminate', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule(limitedResource(2));
-            await openDialog(user);
+            const user = await openModule({resource: limitedResource(2)});
 
             await user.click(selectAllCheckbox());
 
@@ -290,10 +277,7 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('select-all deselects everything when the limit is reached', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            renderModule(limitedResource(2));
-            await openDialog(user);
+            const user = await openModule({resource: limitedResource(2)});
             await user.click(selectAllCheckbox());
             expect(submitButton(2)).toBeInTheDocument();
 
@@ -305,22 +289,9 @@ describe('ImportOrisEventsButton', () => {
     });
 
     describe('submitting the batch import', () => {
-        const result = (): BulkImportResult => ({
-            totalProcessed: 2,
-            successCount: 1,
-            failureCount: 1,
-            results: [
-                {orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'},
-                {orisId: 404, name: null, date: null, status: 'FAILED', error: 'Duplikátní import'},
-            ],
-        });
-
         it('submits the selection to the template target and renders the per-event result', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(result()));
-            renderModule();
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(MIXED_RESULT));
+            const user = await openModule();
 
             await importTwoEvents(user);
 
@@ -339,9 +310,23 @@ describe('ImportOrisEventsButton', () => {
             expect(screen.queryByLabelText('Vybrat vše')).not.toBeInTheDocument();
         });
 
+        it('submits to the batch template target when both import templates are present', async () => {
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(SUCCESS_RESULT));
+            const user = await openModule({
+                resource: eventsResource({
+                    importEventsBatch: importTemplate({target: '/api/events/import-batch'}),
+                    importEvent: importTemplate({target: '/api/events/import-single'}),
+                }),
+            });
+
+            await user.click(checkbox('Jarní sprint'));
+            await user.click(submitButton(1));
+
+            await waitFor(() => expect(authorizedFetch).toHaveBeenCalled());
+            expect(vi.mocked(authorizedFetch).mock.calls[0][0]).toBe('/api/events/import-batch');
+        });
+
         it('normalises a lowercase imported status into the success rendering', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
             vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse({
                 totalProcessed: 2,
                 successCount: 1,
@@ -351,8 +336,7 @@ describe('ImportOrisEventsButton', () => {
                     {orisId: 202, name: 'Letní závod', date: '2025-07-20', status: 'failed'},
                 ],
             } as unknown as BulkImportResult));
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
 
             await importTwoEvents(user);
 
@@ -366,11 +350,8 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('falls back to POST when the template carries no method', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(result()));
-            renderModule(batchResource(importTemplate({method: undefined})));
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(MIXED_RESULT));
+            const user = await openModule({resource: batchResource(importTemplate({method: undefined}))});
 
             await importTwoEvents(user);
 
@@ -379,11 +360,8 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('uses the template method when it is not POST', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(result()));
-            renderModule(batchResource(importTemplate({method: 'PUT'})));
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(MIXED_RESULT));
+            const user = await openModule({resource: batchResource(importTemplate({method: 'PUT'}))});
 
             await importTwoEvents(user);
 
@@ -392,13 +370,12 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('uses the multi property name as the body key', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(result()));
-            renderModule(batchResource(importTemplate({
-                properties: [{name: 'eventOrisIds', type: 'array', multi: true, max: 10}],
-            })));
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(MIXED_RESULT));
+            const user = await openModule({
+                resource: batchResource(importTemplate({
+                    properties: [{name: 'eventOrisIds', type: 'array', multi: true, max: 10}],
+                })),
+            });
             await user.click(checkbox('Jarní sprint'));
 
             await user.click(submitButton(1));
@@ -409,11 +386,8 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('falls back to orisIds as the body key when the template has no multi property', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(result()));
-            renderModule(batchResource(importTemplate({properties: []})));
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(MIXED_RESULT));
+            const user = await openModule({resource: batchResource(importTemplate({properties: []}))});
             await user.click(checkbox('Jarní sprint'));
 
             await user.click(submitButton(1));
@@ -424,11 +398,8 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('shows the failure text and keeps the selection when the submit fails', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
             vi.mocked(authorizedFetch).mockRejectedValue(new ApiError(500));
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
 
             await importTwoEvents(user);
 
@@ -438,11 +409,8 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('shows progress and disables closing while the import runs', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
             vi.mocked(authorizedFetch).mockReturnValue(new Promise<Response>(() => undefined));
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
             await user.click(checkbox('Jarní sprint'));
 
             await user.click(submitButton(1));
@@ -453,19 +421,9 @@ describe('ImportOrisEventsButton', () => {
     });
 
     describe('reopening the dialog', () => {
-        const successfulImport = () => createMockResponse({
-            totalProcessed: 1,
-            successCount: 1,
-            failureCount: 0,
-            results: [{orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'}],
-        });
-
         it('clears the previous result, the selection and the region', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(successfulImport());
-            renderModule();
-            await openDialog(user);
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(SUCCESS_RESULT));
+            const user = await openModule();
             await user.click(screen.getByRole('radio', {name: 'ČR'}));
             await user.click(checkbox('Jarní sprint'));
             await user.click(submitButton(1));
@@ -474,7 +432,7 @@ describe('ImportOrisEventsButton', () => {
             await user.click(screen.getByRole('button', {name: 'Hotovo'}));
             expect(screen.queryByText('Výsledek importu')).not.toBeInTheDocument();
 
-            await openDialog(user);
+            await user.click(importButton() as HTMLElement);
 
             expect(screen.queryByText('Výsledek importu')).not.toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'Jihomoravská'})).toBeChecked();
@@ -484,17 +442,14 @@ describe('ImportOrisEventsButton', () => {
         });
 
         it('clears a submit error', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
             vi.mocked(authorizedFetch).mockRejectedValue(new ApiError(500));
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
             await user.click(checkbox('Jarní sprint'));
             await user.click(submitButton(1));
             await screen.findByText('Import se nezdařil. Zkuste to prosím znovu.');
 
             await user.click(screen.getByRole('button', {name: 'Zrušit'}));
-            await openDialog(user);
+            await user.click(importButton() as HTMLElement);
 
             expect(screen.queryByText('Import se nezdařil. Zkuste to prosím znovu.')).not.toBeInTheDocument();
         });
@@ -502,17 +457,9 @@ describe('ImportOrisEventsButton', () => {
 
     describe('cache invalidation', () => {
         it('refetches the authorized queries after a successful batch import', async () => {
-            const user = userEvent.setup();
-            stubFeed({data: FEED, isSuccess: true});
-            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse({
-                totalProcessed: 1,
-                successCount: 1,
-                failureCount: 0,
-                results: [{orisId: 101, name: 'Jarní sprint', date: '2025-04-10', status: 'IMPORTED'}],
-            }));
+            vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(SUCCESS_RESULT));
             const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
-            renderModule();
-            await openDialog(user);
+            const user = await openModule();
 
             await user.click(checkbox('Jarní sprint'));
             await user.click(submitButton(1));
