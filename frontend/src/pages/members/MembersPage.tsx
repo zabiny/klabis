@@ -6,6 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {Badge, Button} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
@@ -53,7 +54,7 @@ export const MembersPage = (): ReactElement => {
         onSubmitError: onSuspendSubmitError,
     } = useSuspendMemberAction();
 
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: '2xl',
         title: (template, name) => template.title ?? name,
         onSubmitError: onSuspendSubmitError,
@@ -83,8 +84,8 @@ export const MembersPage = (): ReactElement => {
         const hasEditTemplate = !!member._templates?.updateMember;
         const hasPermissionsLink = !!member._links?.permissions;
         const hasAccountLink = !!member._links?.account;
-        const hasSuspendTemplate = !!member._templates?.suspendMember;
-        const hasResumeTemplate = !!member._templates?.resumeMember;
+        const hasSuspendTemplate = halResource(member).template('suspendMember') !== undefined;
+        const hasResumeTemplate = halResource(member).template('resumeMember') !== undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -140,7 +141,8 @@ export const MembersPage = (): ReactElement => {
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member, 'suspendMember');
+                            const action = halResource(member).template('suspendMember');
+                            if (action) actionDialog.open(action, {initialData: member as unknown as Record<string, unknown>});
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -154,7 +156,8 @@ export const MembersPage = (): ReactElement => {
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member, 'resumeMember');
+                            const action = halResource(member).template('resumeMember');
+                            if (action) actionDialog.open(action, {initialData: member as unknown as Record<string, unknown>});
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>

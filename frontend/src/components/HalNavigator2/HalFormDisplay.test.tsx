@@ -1107,6 +1107,64 @@ describe('HalFormDisplay Component', () => {
         });
     });
 
+    describe('href prop — authoritative action URL', () => {
+        const renderWithHref = (href: string, resourceUrl?: string) => {
+            const template = mockHalFormsTemplate({
+                title: 'Edit',
+                target: '/api/elsewhere',
+                method: 'PUT',
+                properties: [{name: 'name', prompt: 'Name', type: 'text'}],
+            });
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="edit"
+                        resourceData={{id: 1, name: 'Existing'}}
+                        href={href}
+                        resourceUrl={resourceUrl}
+                        onClose={vi.fn()}
+                    />
+                </Wrapper>
+            );
+        };
+
+        const submitAndFindPutCall = async () => {
+            const user = userEvent.setup();
+            await waitFor(() => expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument());
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(fetchSpy.mock.calls.some(([, init]) => (init as RequestInit)?.method === 'PUT')).toBe(true));
+            return fetchSpy.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'PUT')![0] as string;
+        };
+
+        it('submits to href even when the template target points elsewhere', async () => {
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createOptionsResponse(['GET', 'PUT']);
+                if (init?.method === 'PUT') return createMockResponse({}, 200);
+                return createMockResponse({name: 'Prefill'}, 200);
+            });
+
+            renderWithHref('/api/actions/1');
+
+            expect(await submitAndFindPutCall()).toContain('/api/actions/1');
+        });
+
+        it('prefers href over resourceUrl', async () => {
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createOptionsResponse(['GET', 'PUT']);
+                if (init?.method === 'PUT') return createMockResponse({}, 200);
+                return createMockResponse({name: 'Prefill'}, 200);
+            });
+
+            renderWithHref('/api/actions/1', '/api/resource/x');
+
+            expect(await submitAndFindPutCall()).toContain('/api/actions/1');
+        });
+    });
+
     describe('navigateOnSuccess prop', () => {
         // target '/api/category-presets' normalizes to '/category-presets' which equals pathname
         // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.

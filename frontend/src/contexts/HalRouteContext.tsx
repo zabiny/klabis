@@ -5,6 +5,7 @@ import type {NavigateToResource} from './halRouteContext';
 import {toRoutePath} from '../api/apiPath';
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
+import {halResource} from "../api/halResource.ts";
 import {HalRouteContext, useHalRoute} from './halRouteContext';
 import {useIsAuthReady} from '../hooks/useIsAuthReady';
 
@@ -109,22 +110,8 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     }
 
     const getLink = (linkName = 'self') => {
-        if (!data?._links?.[linkName]) {
-            return null
-        }
-
-        const link = data?._links?.[linkName]
-        const resolvedLink = Array.isArray(link)
-            ? link.find(l => !l.templated) ?? null
-            : link
-
-        const href = resolvedLink?.href
-
-        if (!href) {
-            return null
-        }
-
-        return {href} as Link
+        const action = halResource(data).link(linkName);
+        return action ? {href: action.href} as Link : null
     }
 
     const contextValue = {

@@ -2,6 +2,7 @@ import type {ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import {halResource} from '../../api/halResource';
 import type {HalFormsTemplate, ListGroupRulesResource, ListRulesItemResource, ListRulesResource, OptionItem} from '../../api';
 import {labels} from '../../localization';
 import {Pencil, Plus, X} from 'lucide-react';
@@ -74,22 +75,16 @@ export const RulesTable = (): ReactElement => {
     const {getById: getEventTypeById} = useEventTypes();
 
     const rules = embeddedItems<PaymentRuleItem>(resourceData ?? undefined);
-    const addRuleTemplate = (resourceData?._templates?.addRule ?? null) as HalFormsTemplate | null;
+    const addRuleAction = halResource(resourceData).template('addRule');
+    const addRuleTemplate = (addRuleAction?.template ?? null) as HalFormsTemplate | null;
     const rankingLabelLookup = buildRankingLabelLookup(addRuleTemplate);
     const getRankingLabel = (code: string): string => rankingLabelLookup.get(code) ?? code;
-    const addRuleDialog = useTemplateDialog('addRule', {
-        resource: resourceData,
-        title: (template) => template.title ?? 'Přidat pravidlo',
+    const addRuleDialog = useTemplateDialog({
         navigateOnSuccess: false,
+        initialData: resourceData as unknown as Record<string, unknown> | undefined,
     });
-    const editRuleDialog = useTemplateDialog('editRule', {
-        title: 'Upravit pravidlo',
-        navigateOnSuccess: false,
-    });
-    const removeRuleDialog = useTemplateDialog('removeRule', {
-        title: 'Smazat pravidlo',
-        navigateOnSuccess: false,
-    });
+    const editRuleDialog = useTemplateDialog({navigateOnSuccess: false});
+    const removeRuleDialog = useTemplateDialog({navigateOnSuccess: false});
 
     return (
         <div className="bg-surface rounded-xl border border-border-subtle overflow-hidden">
@@ -117,26 +112,38 @@ export const RulesTable = (): ReactElement => {
                             </td>
                         </tr>
                     ) : (
-                        rules.map((rule) => (
-                            <RuleRow
-                                key={`${rule.eventTypeId}-${rule.rankingShortName}`}
-                                rule={rule}
-                                getRankingLabel={getRankingLabel}
-                                getEventTypeById={getEventTypeById}
-                                onEdit={editRuleDialog.availableOn(rule) ? () => editRuleDialog.open(rule) : undefined}
-                                onRemove={removeRuleDialog.availableOn(rule) ? () => removeRuleDialog.open(rule) : undefined}
-                            />
-                        ))
+                        rules.map((rule) => {
+                            const editAction = halResource(rule).template('editRule');
+                            const removeAction = halResource(rule).template('removeRule');
+                            return (
+                                <RuleRow
+                                    key={`${rule.eventTypeId}-${rule.rankingShortName}`}
+                                    rule={rule}
+                                    getRankingLabel={getRankingLabel}
+                                    getEventTypeById={getEventTypeById}
+                                    onEdit={editAction ? () => editRuleDialog.open(editAction, {
+                                        title: 'Upravit pravidlo',
+                                        initialData: rule as Record<string, unknown>,
+                                    }) : undefined}
+                                    onRemove={removeAction ? () => removeRuleDialog.open(removeAction, {
+                                        title: 'Smazat pravidlo',
+                                        initialData: rule as Record<string, unknown>,
+                                    }) : undefined}
+                                />
+                            );
+                        })
                     )}
                 </tbody>
             </table>
 
-            {addRuleDialog.available && (
+            {addRuleAction && (
                 <>
                     <div className="border-t border-border-subtle"/>
                     <button
                         type="button"
-                        onClick={() => addRuleDialog.open()}
+                        onClick={() => addRuleDialog.open(addRuleAction, {
+                            title: (template) => template.title ?? 'Přidat pravidlo',
+                        })}
                         className="w-full flex items-center gap-2 px-5 bg-bg-subtle hover:bg-bg-subtle transition-colors text-primary font-bold text-sm"
                         style={{height: '48px'}}
                     >

@@ -4,6 +4,7 @@ import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {useRootNavigation} from "../../hooks/useRootNavigation.ts";
 import ForbiddenPage from "../ForbiddenPage.tsx";
 import {labels} from "../../localization";
@@ -28,18 +29,19 @@ export const CategoryPresetsPage = (): ReactElement | null => {
 };
 
 const CategoryPresetsContent = (): ReactElement => {
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: 'md',
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
     });
 
     const openActionModal = (item: CategoryPresetListItem, templateName: string) => {
-        actionDialog.open(item, templateName);
+        const action = halResource(item).template(templateName);
+        if (action) actionDialog.open(action, {initialData: item as unknown as Record<string, unknown>});
     };
 
     const renderActionsCell = ({item: preset}: TableCellRenderProps<CategoryPresetListItem>) => {
-        const hasEditTemplate = !!preset._templates?.updateCategoryPreset;
-        const hasDeleteTemplate = !!preset._templates?.deleteCategoryPreset;
+        const hasEditTemplate = halResource(preset).template('updateCategoryPreset') !== undefined;
+        const hasDeleteTemplate = halResource(preset).template('deleteCategoryPreset') !== undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

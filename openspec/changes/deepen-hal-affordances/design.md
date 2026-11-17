@@ -51,7 +51,7 @@ Today:
 
 **D8 — Client-state conjunctions stay at call sites.** Three places combine server truth with page state (`status === 'EDITABLE' && template present`, `votingOpen`, `currentGroup`). Without a catalogue there is nowhere to declare them, and they are page policy, not resource facts.
 
-**D9 — `useTemplateDialog` accepts the resolved action.** `open(action, overrides)` replaces `(resource, name)`; `TemplateDialogOptions.resource`, `templateOf`, `available`/`availableOn` leave the hook (call sites use `halResource(...).template(...)`). Portal, `HalFormDisplay` wiring, success/error handling and the existing per-open overrides stay. `size`, `note`, `submitLabel`, `fieldsFactory`, `initialData`, `onSubmitError` remain call-site concerns.
+**D9 — `useTemplateDialog` accepts the resolved action.** `open(action, overrides)` replaces `(resource, name)`; `TemplateDialogOptions.resource`, `templateOf`, `available`/`availableOn` leave the hook (call sites use `halResource(...).template(...)`). Portal, `HalFormDisplay` wiring, success/error handling and the existing per-open overrides stay. `size`, `note`, `submitLabel`, `fieldsFactory`, `initialData`, `onSubmitError` remain call-site concerns. Because the action cannot carry the source resource, `TemplateDialogOverrides` also accepts `initialData`: row and late-bound dialogs previously passed the resource that way, and without it their templates — which have no `target` — would open empty.
 
 **D10 — `HalFormButton` resolves through the module.** It keeps its props (`modal`, `label`, `icon`, `variant`, `dialogTitle`, `navigateOnSuccess`, `hideLabel`, `fieldsFactory`); its internal `!resourceData?._templates?.[name]` check becomes an action lookup.
 

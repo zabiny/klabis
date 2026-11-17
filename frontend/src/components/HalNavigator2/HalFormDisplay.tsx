@@ -44,6 +44,11 @@ export interface HalFormDisplayProps {
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
     /**
+     * Resolved submission URL of the action (see `halResource(...).template(...)`). When supplied it is
+     * authoritative — the template target / resource self link / route chain is not rebuilt.
+     */
+    href?: string;
+    /**
      * URL of the resource being acted on; wins over the self link of resourceData and the current route.
      * Used as submission URL fallback when template.target is absent (e.g. embedded item affordances).
      * Absolute URLs are stripped to path so requests go through the Vite dev proxy.
@@ -77,6 +82,7 @@ export const HalFormDisplay = ({
                                    fieldsFactory,
                                    submitButtonLabel,
                                    submitIcon,
+                                   href,
                                    resourceUrl,
                                    navigateOnSuccess = true,
                                    refineValidationSchema,
@@ -97,17 +103,17 @@ export const HalFormDisplay = ({
     );
 
     const routePathname = useContext(HalRouteContext)?.pathname;
-    const currentResourceUrl = resourceUrl || selfHref(resourceData) || routePathname || '';
+    const resolvedResourceUrl = href ?? (resourceUrl || selfHref(resourceData) || routePathname || '');
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
         resourceData,
-        currentResourceUrl
+        resolvedResourceUrl
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const url = template.target || currentResourceUrl;
+        const url = href ?? (template.target || resolvedResourceUrl);
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');

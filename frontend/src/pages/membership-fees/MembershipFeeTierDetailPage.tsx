@@ -4,6 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import {halResource} from '../../api/halResource';
 import type {GetTierResource} from '../../api';
 import {labels, describeError} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
@@ -15,14 +16,13 @@ type FeeTierDetail = GetTierResource;
 const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const deleteDialog = useTemplateDialog('deleteTier', {
-        resource: resourceData,
-        title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
+    const deleteTierAction = halResource(resourceData).template('deleteTier');
+    const deleteDialog = useTemplateDialog({
+        initialData: resourceData as unknown as Record<string, unknown>,
         onSubmitSuccess: () => navigate('/membership-fee-tiers'),
     });
 
     const editTemplate = resourceData._templates?.editTier ?? null;
-    const deleteTemplate = resourceData._templates?.deleteTier ?? null;
 
     return (
         <div className="flex flex-col gap-6">
@@ -69,10 +69,12 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                     {labels.buttons.edit}
                                 </button>
                             )}
-                            {deleteTemplate && (
+                            {deleteTierAction && (
                                 <button
                                     type="button"
-                                    onClick={() => deleteDialog.open()}
+                                    onClick={() => deleteDialog.open(deleteTierAction, {
+                                        title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
+                                    })}
                                     className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>

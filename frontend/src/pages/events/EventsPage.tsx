@@ -4,6 +4,7 @@ import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {asLinkArray, toHref} from "../../api/hateoas.ts";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
@@ -12,7 +13,7 @@ import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../ut
 import {getActionVariant} from "../../utils/actionVariants.ts";
 import {EventRegistrationDialog} from "../../components/events/EventRegistrationDialog.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {getDialogTitleLabel, getEnumLabel, getTemplateLabel, labels} from "../../localization";
+import {getEnumLabel, labels} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
@@ -96,10 +97,7 @@ export const EventsPage = (): ReactElement => {
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
-    const actionDialog = useTemplateDialog(undefined, {
-        size: '2xl',
-        title: (template, name) => getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title ?? name,
-    });
+    const actionDialog = useTemplateDialog({size: '2xl'});
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
     const coordinatorOptionsLink = resourceData?._links?.coordinatorOptions;
@@ -147,18 +145,21 @@ export const EventsPage = (): ReactElement => {
                         <UserPen className="w-4 h-4"/>
                     </Button>
                 )}
-                {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => templates?.[name] && (
-                    <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
-                        e.stopPropagation();
-                        if (name === 'updateEvent') {
-                            navigateToResource(event, {state: {editing: true}});
-                        } else {
-                            actionDialog.open(event, name);
-                        }
-                    }}>
-                        <Icon className="w-4 h-4"/>
-                    </Button>
-                ))}
+                {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => {
+                    const action = halResource(event).template(name);
+                    return action && (
+                        <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
+                            e.stopPropagation();
+                            if (name === 'updateEvent') {
+                                navigateToResource(event, {state: {editing: true}});
+                            } else {
+                                actionDialog.open(action, {initialData: event as unknown as Record<string, unknown>});
+                            }
+                        }}>
+                            <Icon className="w-4 h-4"/>
+                        </Button>
+                    );
+                })}
                 {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );

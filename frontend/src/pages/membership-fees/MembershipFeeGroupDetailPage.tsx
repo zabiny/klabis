@@ -5,6 +5,7 @@ import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import {halResource} from '../../api/halResource';
 import type {GetFeeGroupResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {getEnumLabel, labels, describeError} from '../../localization';
@@ -60,11 +61,10 @@ const StatusBadge = ({status}: {status: 'EDITABLE' | 'FROZEN'}): ReactElement =>
 
 const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: MembershipFeeGroupDetail}): ReactElement => {
     const [isEditing, setIsEditing] = useState(false);
-    const assignMemberDialog = useTemplateDialog('assignMember', {
-        resource: resourceData,
-        title: labels.templates.assignMember,
-        successMessage: labels.ui.savedSuccessfully,
+    const assignMemberAction = halResource(resourceData).template('assignMember');
+    const assignMemberDialog = useTemplateDialog({
         navigateOnSuccess: false,
+        initialData: resourceData as unknown as Record<string, unknown>,
     });
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
@@ -103,10 +103,13 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                 {labels.buttons.edit}
                             </button>
                         )}
-                        {assignMemberDialog.available && (
+                        {assignMemberAction && (
                             <button
                                 type="button"
-                                onClick={() => assignMemberDialog.open()}
+                                onClick={() => assignMemberDialog.open(assignMemberAction, {
+                                    title: labels.templates.assignMember,
+                                    successMessage: labels.ui.savedSuccessfully,
+                                })}
                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
                                 style={{background: 'var(--color-primary)'}}
                             >

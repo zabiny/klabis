@@ -4,6 +4,7 @@ import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {labels} from "../../localization";
 import {Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
@@ -12,13 +13,14 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 type EventTypeListItem = ListEventTypesItemResource;
 
 export const EventTypesPage = (): ReactElement => {
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: 'md',
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
     });
 
     const openActionModal = (item: EventTypeListItem, templateName: string) => {
-        actionDialog.open(item, templateName);
+        const action = halResource(item).template(templateName);
+        if (action) actionDialog.open(action, {initialData: item as unknown as Record<string, unknown>});
     };
 
     const renderColorSwatch = ({value}: TableCellRenderProps) => {
@@ -34,8 +36,8 @@ export const EventTypesPage = (): ReactElement => {
     };
 
     const renderActionsCell = ({item: eventType}: TableCellRenderProps<EventTypeListItem>) => {
-        const hasEditTemplate = !!eventType._templates?.updateEventType;
-        const hasDeleteTemplate = !!eventType._templates?.deleteEventType;
+        const hasEditTemplate = halResource(eventType).template('updateEventType') !== undefined;
+        const hasDeleteTemplate = halResource(eventType).template('deleteEventType') !== undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

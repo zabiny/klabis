@@ -1,16 +1,17 @@
 import type {ReactElement} from 'react';
 import {Pencil} from 'lucide-react';
 import {Button, Card, DetailRow} from '../UI';
-import {type TemplateResource, useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import {halResource} from '../../api/halResource';
 import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import type {HalResourceLinks, Link} from '../../api';
+import type {HalEnvelope, HalResourceLinks, Link} from '../../api';
 import {getTemplateLabel, labels} from '../../localization';
 
 interface LegalGuardiansSectionProps {
     guardiansLink?: HalResourceLinks;
     /** Page resource holding the guardians-replacing template; the edit action is offered only when it has it. */
-    resource?: TemplateResource | null;
+    resource?: HalEnvelope | null;
     editTemplateName?: string;
     onEditStarted?: () => void;
 }
@@ -24,12 +25,19 @@ export const LegalGuardiansSection = ({
     const {guardians, isLoading} = useLegalGuardians(guardiansLink);
     const {navigateToResource} = useHalPageData();
     const editLabel = getTemplateLabel(editTemplateName) ?? '';
-    const editDialog = useTemplateDialog(editTemplateName, {
-        resource,
+    const editAction = halResource(resource).template(editTemplateName);
+    const editDialog = useTemplateDialog({
         initialData: {legalGuardians: guardians.map(guardian => ({userId: guardian.userId}))},
-        title: editLabel,
-        successMessage: labels.ui.savedSuccessfully,
     });
+
+    const openEditDialog = () => {
+        if (!editAction) return;
+        onEditStarted?.();
+        editDialog.open(editAction, {
+            title: editLabel,
+            successMessage: labels.ui.savedSuccessfully,
+        });
+    };
 
     return (
         <Card className="p-6">
@@ -37,14 +45,11 @@ export const LegalGuardiansSection = ({
                 <h3 className="text-xs uppercase font-semibold text-text-secondary">
                     {labels.sections.legalGuardians}
                 </h3>
-                {editDialog.available && (
+                {editAction && (
                     <Button
                         variant="secondary"
                         disabled={isLoading}
-                        onClick={() => {
-                            onEditStarted?.();
-                            editDialog.open();
-                        }}
+                        onClick={openEditDialog}
                         startIcon={<Pencil className="w-4 h-4"/>}
                     >
                         {editLabel}

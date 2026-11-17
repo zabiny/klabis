@@ -11,20 +11,20 @@
 
 ## 2. Dialog, button and form pipeline
 
-- [ ] 2.1 Red: test `useTemplateDialog.open(action, overrides)` — submits to `action.href`; per-open overrides win over the action's texts; a `undefined` action does not open; success, toast, `navigateOnSuccess` and `onSubmitError` behaviour is unchanged
-- [ ] 2.2 Green: refactor `useTemplateDialog` to take a `HalTemplateAction`; remove `TemplateDialogOptions.resource`, `templateOf`, `available` and `availableOn`
-- [ ] 2.3 Green: `HalFormDisplay` takes the resolved `href`; delete the `template.target ?? resourceUrl ?? selfHref ?? route` chain and update its direct (non-dialog) callers
-- [ ] 2.4 Green: `HalFormButton` resolves the template through `halResource` while keeping every existing prop (`modal`, `label`, `icon`, `variant`, `dialogTitle`, `navigateOnSuccess`, `hideLabel`, `fieldsFactory`)
-- [ ] 2.5 Green: `HalRouteContext.getResourceLink` delegates to `halResource().link()` with identical `templated` behaviour
-- [ ] 2.6 Verify: `useTemplateDialog`, `HalFormButton`, `HalFormDisplay`, `HalRouteContext` and `HalFormsSection` tests green
+- [x] 2.1 Red: test `useTemplateDialog.open(action, overrides)` — submits to `action.href`; per-open overrides win over the action's texts; a `undefined` action does not open; success, toast, `navigateOnSuccess` and `onSubmitError` behaviour is unchanged
+- [x] 2.2 Green: refactor `useTemplateDialog` to take a `HalTemplateAction`; remove `TemplateDialogOptions.resource`, `templateOf`, `available` and `availableOn`
+- [x] 2.3 Green: `HalFormDisplay` takes an optional resolved `href` that wins over `template.target ?? resourceUrl ?? selfHref ?? route`; the dialog and button pass it, and the legacy chain remains only for direct (non-action) callers such as the inline panels
+- [x] 2.4 Green: `HalFormButton` resolves the template through `halResource` while keeping every existing prop (`modal`, `label`, `icon`, `variant`, `dialogTitle`, `navigateOnSuccess`, `hideLabel`, `fieldsFactory`)
+- [x] 2.5 Green: `HalRouteContext.getResourceLink` delegates to `halResource().link()` with identical `templated` behaviour
+- [x] 2.6 Verify: `useTemplateDialog`, `HalFormButton`, `HalFormDisplay`, `HalRouteContext` and `HalFormsSection` tests green
 
 ## 3. Dialog call sites (phase 1)
 
-- [ ] 3.1 Migrate `GroupDetailPage` (7 dialogs) and `TrainingGroupDetailPage` (5 dialogs); preserve each label, dialog title and success message exactly
-- [ ] 3.2 Migrate `RulesTable` (3), `CampaignDetail` (2) and `LegalGuardiansSection` (1), keeping per-row availability and `fieldsFactory`/`initialData` overrides at the call site
-- [ ] 3.3 Migrate `MemberDetailPage` (2), `MembersPage` (1), `MembershipFeeGroupDetailPage` (1) and `MembershipFeeTierDetailPage` (1), including the `status === 'EDITABLE'` conjunction in `MembershipFeeGroupDetailPage`
-- [ ] 3.4 Migrate the late-bound dialogs: `EventsPage`, `EventTypesPage`, `CategoryPresetsPage` (`size` stays at the call site)
-- [ ] 3.5 Verify: affected page and component tests green
+- [x] 3.1 Migrate `GroupDetailPage` (7 dialogs) and `TrainingGroupDetailPage` (5 dialogs); preserve each label, dialog title and success message exactly
+- [x] 3.2 Migrate `RulesTable` (3), `CampaignDetail` (2) and `LegalGuardiansSection` (1), keeping per-row availability and `fieldsFactory`/`initialData` overrides at the call site
+- [x] 3.3 Migrate `MemberDetailPage` (2), `MembersPage` (1), `MembershipFeeGroupDetailPage` (1) and `MembershipFeeTierDetailPage` (1), including the `status === 'EDITABLE'` conjunction in `MembershipFeeGroupDetailPage`
+- [x] 3.4 Migrate the late-bound dialogs: `EventsPage`, `EventTypesPage`, `CategoryPresetsPage` (`size` stays at the call site)
+- [x] 3.5 Verify: affected page and component tests green
 
 ## 4. Phase 1 verification
 
