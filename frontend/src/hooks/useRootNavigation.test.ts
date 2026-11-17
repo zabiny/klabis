@@ -43,6 +43,18 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
+describe('useRootNavigation — non-menu rels', () => {
+    it('never turns the club key link into a menu item', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'orisClubKey']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.map(i => i.rel)).toEqual(['events']);
+    });
+});
+
 describe('useRootNavigation — section assignment', () => {
     it('assigns the profile link to the personal section so it stays out of the menu', async () => {
         mockFetchWithResponse(buildHalResponse(['events', 'profile']));

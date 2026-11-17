@@ -16,6 +16,8 @@ export interface NavigationItem {
 
 const ADMIN_RELS = new Set(['admin', 'training-groups', 'category-presets', 'legalGuardianGroups', 'event-types', 'membership-fees', 'disciplines', 'syncOverview']);
 
+const NON_MENU_RELS = new Set(['orisClubKey']);
+
 const PERSONAL_RELS = new Set(['profile', 'notifications']);
 
 const navLabels = labels.nav as Record<string, string>;
@@ -30,7 +32,7 @@ function convertItems(response: HalResponse): NavigationItem[] {
     const systemRels = new Set(['self', 'curies']);
 
     Object.entries(response._links).forEach(([rel, linkOrLinks]) => {
-        if (systemRels.has(rel)) {
+        if (systemRels.has(rel) || NON_MENU_RELS.has(rel)) {
             return;
         }
 

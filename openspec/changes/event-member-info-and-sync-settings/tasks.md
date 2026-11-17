@@ -27,11 +27,11 @@
 
 ## 4. Synchronisation tabs and club key settings (#367)
 
-- [ ] 4.1 `useRootNavigation`: skip the non-menu rel `orisClubKey`, with a unit test asserting it never becomes a menu item. Verify with test-runner.
-- [ ] 4.2 `SyncOverviewPage` tabs, test first: order "Vyžaduje pozornost" (default, no `tab`), "Všechny pokusy" (`tab=attempts`), "Nastavení synchronizace" (`tab=settings`); each tab only when its source exists; no tab bar with a single tab; an unknown `tab` falls back to the default; attempts filters keep working under `tab=attempts`. Update the existing `SyncOverviewPage.test.tsx` cases that assume attempts are the default. Verify with test-runner.
-- [ ] 4.3 "Klíč klubu ORIS" section in the settings tab: reads `orisClubKey` from the root query, shows held / not held, and offers `setClubKey` / `clearClubKey` through `useTemplateDialog` without leaving the tab; labels in `labels.ts`. Cover with component tests (state rendering, actions shown only when templates exist) and verify with test-runner.
-- [ ] 4.4 Update the E2E feature `application-navigation.feature` only if a scenario lists the club key or relies on attempts being the default tab, and verify the navigation scenarios pass.
-- [ ] 4.5 Manually verify on http://localhost:3000 as an admin with the `oris` profile: the club key is not in the menu, the synchronisation page opens on "Vyžaduje pozornost", and supplying or discarding the key in "Nastavení synchronizace" updates the state in place.
+- [x] 4.1 `useRootNavigation`: skip the non-menu rel `orisClubKey`, with a unit test asserting it never becomes a menu item. Verify with test-runner.
+- [x] 4.2 `SyncOverviewPage` tabs, test first: order "Vyžaduje pozornost" (default, no `tab`), "Všechny pokusy" (`tab=attempts`), "Nastavení synchronizace" (`tab=settings`); each tab only when its source exists; no tab bar with a single tab; an unknown `tab` falls back to the default; attempts filters keep working under `tab=attempts`. Update the existing `SyncOverviewPage.test.tsx` cases that assume attempts are the default. Verify with test-runner.
+- [x] 4.3 "Klíč klubu ORIS" section in the settings tab: reads `orisClubKey` from the root query, shows held / not held, and offers `setClubKey` / `clearClubKey` through `useTemplateDialog` without leaving the tab; labels in `labels.ts`. Cover with component tests (state rendering, actions shown only when templates exist) and verify with test-runner.
+- [x] 4.4 Update the E2E feature `application-navigation.feature` only if a scenario lists the club key or relies on attempts being the default tab, and verify the navigation scenarios pass.
+- [x] 4.5 Manually verify on http://localhost:3000 as an admin with the `oris` profile: the club key is not in the menu, the synchronisation page opens on "Vyžaduje pozornost", and supplying or discarding the key in "Nastavení synchronizace" updates the state in place.
 
 ## 5. Integration checks
 

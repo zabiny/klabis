@@ -258,16 +258,16 @@ describe('SyncOverviewPage attention tab', () => {
 
     const openAttentionTab = () => fireEvent.click(screen.getByRole('tab', {name: 'Vyžaduje pozornost'}));
 
-    it('shows attempts tab first and switches to attention tab', () => {
+    it('opens on the attention tab by default and switches to attempts', () => {
         renderWithAttention([record()]);
-
-        expect(screen.getByRole('tab', {name: 'Všechny pokusy'})).toHaveAttribute('aria-selected', 'true');
-        expect(screen.queryByText('Selhaných pokusů')).not.toBeInTheDocument();
-
-        openAttentionTab();
 
         expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
         expect(screen.getByRole('columnheader', {name: 'Selhaných pokusů'})).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('tab', {name: 'Všechny pokusy'}));
+
+        expect(screen.getByRole('tab', {name: 'Všechny pokusy'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.queryByText('Selhaných pokusů')).not.toBeInTheDocument();
     });
 
     it('follows the recordsNeedingAttention link', () => {
@@ -324,11 +324,144 @@ describe('SyncOverviewPage attention tab', () => {
         expect(panel).toHaveAttribute('aria-labelledby', tab.id);
     });
 
-    it('restores the attention tab from the URL and keeps attempt filters', () => {
-        renderWithAttention([record()], '/sync/attempts?tab=attention&outcome=FAILED');
+    it('restores the attempts tab from the URL and keeps attempt filters', () => {
+        renderWithAttention([record()], '/sync/attempts?tab=attempts&outcome=FAILED');
+
+        expect(screen.getByRole('tab', {name: 'Všechny pokusy'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByLabelText('Výsledek')).toHaveValue('FAILED');
+    });
+
+    it('falls back to the default tab for an unknown tab value', () => {
+        renderWithAttention([record()], '/sync/attempts?tab=bogus');
 
         expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
-        fireEvent.click(screen.getByRole('tab', {name: 'Všechny pokusy'}));
-        expect(screen.getByLabelText('Výsledek')).toHaveValue('FAILED');
+    });
+
+    it('shows no tab bar when only the attempts tab is available', () => {
+        renderPage([attempt()]);
+
+        expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+        expect(screen.getByRole('columnheader', {name: 'Kdy'})).toBeInTheDocument();
+    });
+});
+
+describe('SyncOverviewPage settings tab', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const clubKeyUrl = 'http://localhost/api/oris/club-key';
+
+    const clubKeyState = (isSet: boolean, templates: string[] = ['setClubKey', 'clearClubKey']) => ({
+        isSet,
+        _links: {self: {href: clubKeyUrl}},
+        _templates: Object.fromEntries(templates.map(name => [name, {
+            method: 'PUT',
+            target: clubKeyUrl,
+            properties: [],
+        }])),
+    });
+
+    const renderWithSettings = (
+        {state = clubKeyState(false), attention = true, rootLinks = {orisClubKey: {href: clubKeyUrl}}, initialEntry = '/sync/attempts?tab=settings'}:
+            {state?: unknown; attention?: boolean; rootLinks?: Record<string, unknown>; initialEntry?: string} = {}) => {
+        const attempts: HalResponse = {
+            _links: {
+                self: {href: 'http://localhost/api/sync/attempts'},
+                ...(attention ? {recordsNeedingAttention: {href: 'http://localhost/api/sync/records'}} : {}),
+            },
+            _embedded: {syncAttempts: [attempt()]},
+            page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
+        };
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+            if (url === '/api') return {data: {_links: rootLinks}, error: null};
+            if (url.includes('/oris/club-key')) return {data: state, error: null};
+            if (url.includes('/sync/records')) return {data: {_links: {}, _embedded: {syncRecords: []}}, error: null};
+            return {data: attempts, error: null};
+        }) as unknown as typeof useAuthorizedQuery);
+        vi.mocked(useHalPageData).mockReturnValue(pageData(attempts));
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[initialEntry]}>
+                    <SyncOverviewPage/>
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+    };
+
+    it('offers the tabs in order attention, attempts, settings', () => {
+        renderWithSettings();
+
+        expect(screen.getAllByRole('tab').map(t => t.textContent))
+            .toEqual(['Vyžaduje pozornost', 'Všechny pokusy', 'Nastavení synchronizace']);
+    });
+
+    it('selects the settings tab from tab=settings and switches to it on click', () => {
+        renderWithSettings({initialEntry: '/sync/attempts'});
+        expect(screen.queryByText('Klíč klubu ORIS')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('tab', {name: 'Nastavení synchronizace'}));
+
+        expect(screen.getByRole('tab', {name: 'Nastavení synchronizace'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByText('Klíč klubu ORIS')).toBeInTheDocument();
+    });
+
+    it('does not offer the settings tab without the orisClubKey root link', () => {
+        renderWithSettings({rootLinks: {}, initialEntry: '/sync/attempts'});
+
+        expect(screen.queryByRole('tab', {name: 'Nastavení synchronizace'})).not.toBeInTheDocument();
+    });
+
+    it('omits the attention tab when its link is missing', () => {
+        renderWithSettings({attention: false, initialEntry: '/sync/attempts'});
+
+        expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Všechny pokusy', 'Nastavení synchronizace']);
+    });
+
+    it('falls back to the default tab when settings is requested but unavailable', () => {
+        renderWithSettings({rootLinks: {}, initialEntry: '/sync/attempts?tab=settings'});
+
+        expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('reports that the club key is not held and offers to supply it', () => {
+        renderWithSettings({state: clubKeyState(false, ['setClubKey'])});
+
+        expect(screen.getByText('Klíč klubu není nastaven.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Nastavit klíč klubu'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Zahodit klíč klubu'})).not.toBeInTheDocument();
+    });
+
+    it('reports that the club key is held and offers to discard it', () => {
+        renderWithSettings({state: clubKeyState(true, ['setClubKey', 'clearClubKey'])});
+
+        expect(screen.getByText('Klíč klubu je nastaven.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Zahodit klíč klubu'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Nastavit klíč klubu'})).toBeInTheDocument();
+    });
+
+    it('labels the actions in Czech instead of by template name, also in the dialog title', () => {
+        renderWithSettings({state: clubKeyState(true)});
+
+        expect(screen.queryByRole('button', {name: /setClubKey|clearClubKey/})).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', {name: 'Zahodit klíč klubu'}));
+
+        expect(within(screen.getByRole('dialog')).getByText('Zahodit klíč klubu')).toBeInTheDocument();
+    });
+
+    it('offers no actions when the club key resource carries no templates', () => {
+        renderWithSettings({state: clubKeyState(true, [])});
+
+        expect(screen.getByText('Klíč klubu je nastaven.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /klíč klubu/i})).not.toBeInTheDocument();
+    });
+
+    it('opens the supply form in a dialog and stays on the settings tab', () => {
+        renderWithSettings({state: clubKeyState(false, ['setClubKey'])});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Nastavit klíč klubu'}));
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByRole('tab', {name: 'Nastavení synchronizace'})).toHaveAttribute('aria-selected', 'true');
     });
 });
