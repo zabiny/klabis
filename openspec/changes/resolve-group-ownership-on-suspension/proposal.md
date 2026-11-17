@@ -16,7 +16,6 @@ When suspending a member who is the last owner of a group, the "Varování: Spr�
 - All blocking reasons are shown in one dialog (#418): a member who is the last owner of a group and has a negative balance no longer gets the "Záporný zůstatek" dialog over the group warning; the balance and the groups are listed together, and "Ukončit členství" is offered only once no negative balance is reported.
 - After all listed groups are resolved the admin finishes suspension with an explicit confirmation button in the dialog (no automatic resubmission).
 - The suspension-blocked response links each affected group to its resource so the dialog can discover available actions.
-- The Membership Suspension requirement named a non-existent permission `MEMBERS:UPDATE`; it is corrected to `MEMBERS:MANAGE` (what the operation actually requires).
 
 ## Capabilities
 
@@ -26,7 +25,7 @@ None.
 
 ### Modified Capabilities
 
-- `members`: Membership Suspension - in-dialog resolution of group ownership blockers, per-type rules, finishing the suspension, permission name correction.
+- `members`: Membership Suspension - in-dialog resolution of group ownership blockers, per-type rules, finishing the suspension.
 - `legal-guardians`: Suspension of a legal guardian - suspended guardian is removed from guardian lists of groups with other guardians.
 - `user-groups`: Warning on Last Owner Deactivation (per-type resolution options, who may resolve), Group Owner Management and Group Deletion (MEMBERS:MANAGE holders may add an owner to / dissolve a free group), Free Group Detail View (viewable by MEMBERS:MANAGE holders), new Owners Hold Owner Permission Over Their Group (all group types).
 
@@ -36,7 +35,7 @@ None.
 - API spec: `docs/openapi/spec/members.yaml` (`AffectedGroup.groupLink`, `SuspendMembershipRequest.cascadeGroupIds`, per-member blockers in `SuspensionBlockedWarning`), `docs/openapi/spec/groups.yaml` (`x-klabis-authority` on all owner-only operations, `MEMBERS_MANAGE` added for `addGroupOwner`/`deleteGroup`, `getGroup` access, acting-member arguments); regenerate bundle and frontend types.
 - Frontend: `SuspensionWarningDialog` (absorbs `NegativeBalanceSuspensionDialog`), `useSuspendMemberAction`, `MemberDetailPage`, `MembersPage`, labels.
 - Docs: one new ADR (free-group authorization via the GROUPS:OWNER relationship authority, MEMBERS:MANAGE override).
-- Not touched: `non-functional-requirements` still mentions `MEMBERS:UPDATE` in two unrelated scenarios (follow-up cleanup).
+- Depends on `fix-stale-members-permission-names` (implemented first): it corrects the stale permission names `MEMBERS:UPDATE`/`MEMBERS:CREATE` to `MEMBERS:MANAGE` in the specs, including Membership Suspension, which this change builds on.
 
 ```mermaid
 flowchart LR
