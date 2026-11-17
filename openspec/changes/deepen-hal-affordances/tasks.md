@@ -43,7 +43,17 @@
 
 ## 6. Phase 2 verification
 
-- [ ] 6.1 Full frontend unit suite green
-- [ ] 6.2 `npm run build` (type check) and `npm run lint` green
-- [ ] 6.3 E2E smoke of the affected journeys — member list, event list and detail, event types, category presets, finances
-- [ ] 6.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+- [x] 6.1 Full frontend unit suite green
+- [x] 6.2 `npm run build` (type check) and `npm run lint` green
+- [x] 6.3 E2E smoke of the affected journeys — member list, event list and detail, event types, category presets, finances
+- [x] 6.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+
+## 7. Review fixes
+
+- [x] 7.1 Carry the source resource on `HalTemplateAction` and prefill the dialog from it; delete the `initialData` casts; keep `initialData?: object` for genuine prefill
+- [x] 7.2 Restore the target-data prefill by feeding `useHalFormData` the source URL, not the resolved `href`; regression test proves the OPTIONS/GET prefill runs
+- [x] 7.3 One rule per text (`templateLabel`, `templateDialogTitle`, `savedMessage`, `getLinkLabel` in `labels.ts`); delete `defaultDialogTitle`
+- [x] 7.4 Delete the call-site title/success-message overrides that only restate the action's defaults; keep the genuinely different ones
+- [x] 7.5 `link(rel)` reuses `asLinkArray`; one `halResource(...)` per row and per gate+handler pair
+- [x] 7.6 Replace the fabricated envelope in `openCancelInvitation` with a per-open `template` override
+- [x] 7.7 Verify: full unit suite, build, lint and E2E smoke green after the fixes

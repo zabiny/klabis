@@ -148,6 +148,25 @@ describe('useTemplateDialog', () => {
         });
     });
 
+    describe('target data prefill', () => {
+        it('prefills from the template target when the dialog supplies a resolved href', async () => {
+            const user = userEvent.setup();
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createMockResponse(null, 200, {Allow: 'GET, POST'});
+                return createMockResponse({reason: 'Předvyplněno'}, 200);
+            });
+            const res = {publishEvent: template({target: '/api/members/1/prefill'})};
+            renderHarness({action: actionFor(res, 'publishEvent', '/api/members/1')});
+
+            await user.click(screen.getByText('open'));
+
+            expect(await screen.findByDisplayValue('Předvyplněno')).toBeInTheDocument();
+            expect(fetchSpy.mock.calls.some(([url, init]) =>
+                (init as RequestInit | undefined)?.method !== 'OPTIONS' && String(url).includes('/prefill')))
+                .toBe(true);
+        });
+    });
+
     describe('dialog title', () => {
         it('defaults to the action dialog title', async () => {
             const user = userEvent.setup();

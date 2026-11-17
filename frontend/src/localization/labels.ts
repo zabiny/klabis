@@ -1265,6 +1265,23 @@ export function getDialogTitleLabel(templateName: string): string | undefined {
     return dialogTitleLabels[templateName];
 }
 
+export function templateLabel(templateName: string, template: { title?: string }): string {
+    return getTemplateLabel(templateName) ?? template.title ?? templateName;
+}
+
+export function templateDialogTitle(templateName: string, template: { title?: string }): string {
+    return getDialogTitleLabel(templateName) ?? templateLabel(templateName, template);
+}
+
+export function savedMessage(template: { title?: string }): string {
+    return template.title ? `${template.title} — úspěšně uloženo` : labels.ui.savedSuccessfully;
+}
+
+export function getLinkLabel(rel: string): string | undefined {
+    const linkLabels = labels.links as Record<string, string>;
+    return linkLabels[rel];
+}
+
 export function getNavLabel(rel: string): string {
     const navLabels = labels.nav as Record<string, string>;
     return navLabels[rel] ?? rel;

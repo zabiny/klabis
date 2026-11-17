@@ -79,10 +79,7 @@ export const RulesTable = (): ReactElement => {
     const addRuleTemplate = (addRuleAction?.template ?? null) as HalFormsTemplate | null;
     const rankingLabelLookup = buildRankingLabelLookup(addRuleTemplate);
     const getRankingLabel = (code: string): string => rankingLabelLookup.get(code) ?? code;
-    const addRuleDialog = useTemplateDialog({
-        navigateOnSuccess: false,
-        initialData: resourceData as unknown as Record<string, unknown> | undefined,
-    });
+    const addRuleDialog = useTemplateDialog({navigateOnSuccess: false});
     const editRuleDialog = useTemplateDialog({navigateOnSuccess: false});
     const removeRuleDialog = useTemplateDialog({navigateOnSuccess: false});
 
@@ -113,22 +110,17 @@ export const RulesTable = (): ReactElement => {
                         </tr>
                     ) : (
                         rules.map((rule) => {
-                            const editAction = halResource(rule).template('editRule');
-                            const removeAction = halResource(rule).template('removeRule');
+                            const ruleActions = halResource(rule);
+                            const editAction = ruleActions.template('editRule');
+                            const removeAction = ruleActions.template('removeRule');
                             return (
                                 <RuleRow
                                     key={`${rule.eventTypeId}-${rule.rankingShortName}`}
                                     rule={rule}
                                     getRankingLabel={getRankingLabel}
                                     getEventTypeById={getEventTypeById}
-                                    onEdit={editAction ? () => editRuleDialog.open(editAction, {
-                                        title: 'Upravit pravidlo',
-                                        initialData: rule as Record<string, unknown>,
-                                    }) : undefined}
-                                    onRemove={removeAction ? () => removeRuleDialog.open(removeAction, {
-                                        title: 'Smazat pravidlo',
-                                        initialData: rule as Record<string, unknown>,
-                                    }) : undefined}
+                                    onEdit={editAction ? () => editRuleDialog.open(editAction) : undefined}
+                                    onRemove={removeAction ? () => removeRuleDialog.open(removeAction) : undefined}
                                 />
                             );
                         })

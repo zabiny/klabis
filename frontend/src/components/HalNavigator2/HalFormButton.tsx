@@ -100,7 +100,6 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
         size: '2xl',
         navigateOnSuccess,
         fieldsFactory,
-        initialData: (resourceData ?? undefined) as Record<string, unknown> | undefined,
     });
     const action = halResource(resourceData).template(name);
 

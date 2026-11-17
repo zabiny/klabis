@@ -6,7 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
-import {halResource} from "../../api/halResource";
+import {halResource, type HalLinkAction} from "../../api/halResource";
 import {Badge, Button} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
@@ -70,13 +70,11 @@ export const MembersPage = (): ReactElement => {
     const filterValue = values as MembersFilterValue;
     const extraParams = useMemo(() => toQuery(filterValue), [filterValue]);
 
-    const openPermissionsDialog = (member: MemberSummaryData) => {
-        const permissionsAction = halResource(member).link('permissions');
-        if (!permissionsAction) return;
+    const openPermissionsDialog = (member: MemberSummaryData, permissionsAction: HalLinkAction) => {
         setPermissionsDialog({member, permissionsUrl: permissionsAction.href});
     };
 
-    useTakeOverRegistration(resourceData?._templates?.registerMember);
+    useTakeOverRegistration(resourceData);
 
     const renderActionsCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         const actions = halResource(member);
@@ -124,7 +122,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-gray-500"
                         onClick={(e) => {
                             e.stopPropagation();
-                            openPermissionsDialog(member);
+                            openPermissionsDialog(member, permissionsAction);
                         }}
                     >
                         <Shield className="w-4 h-4"/>
@@ -138,7 +136,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(suspendAction, {initialData: member as unknown as Record<string, unknown>});
+                            actionDialog.open(suspendAction);
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -152,7 +150,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(resumeAction, {initialData: member as unknown as Record<string, unknown>});
+                            actionDialog.open(resumeAction);
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>

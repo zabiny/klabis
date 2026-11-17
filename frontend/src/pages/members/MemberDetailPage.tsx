@@ -93,7 +93,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
         size: '2xl',
         note: <p className="text-text-secondary">{labels.accountActivation.confirm}</p>,
         submitLabel: labels.templates.sendMemberAccountActivation,
-        initialData: resourceData as unknown as Record<string, unknown>,
     });
 
     const {
@@ -106,7 +105,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
     const suspendDialog = useTemplateDialog({
         size: '2xl',
         onSubmitError: onSuspendSubmitError,
-        initialData: resourceData as unknown as Record<string, unknown>,
     });
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
@@ -364,9 +362,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                             {hasEditTemplate && suspendAction && (
                                 <Button
                                     variant="danger"
-                                    onClick={() => suspendDialog.open(suspendAction, {
-                                        title: labels.dialogTitles.suspendMember,
-                                    })}
+                                    onClick={() => suspendDialog.open(suspendAction)}
                                     startIcon={<UserX className="w-4 h-4"/>}
                                 >
                                     {labels.templates.suspendMember}
@@ -377,7 +373,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                                 <Button
                                     variant="secondary"
                                     onClick={() => accountActivationDialog.open(accountActivationAction, {
-                                        title: labels.dialogTitles.sendMemberAccountActivation,
                                         successMessage: labels.accountActivation.sent,
                                     })}
                                     startIcon={<UserPlus className="w-4 h-4"/>}

@@ -32,7 +32,7 @@ Today:
 
 **D3 — Two methods, one parameter each.** `template(name)` and `link(rel)` — the same names HAL uses. Each returns `undefined` when the resource carries no such entry; callers gate rendering on that, exactly as `.available` does today.
 
-**D4 — The action carries every fact the catalogue would have.** A template action returns `{name, template, href, label, dialogTitle, successMessage}`; a link action returns `{rel, link, href, label}`. Returning raw `_templates`/`_links` entries would leave the 27 call sites resolving texts and `href` themselves.
+**D4 — The action carries every fact the catalogue would have.** A template action returns `{name, template, resource, href, label, dialogTitle, successMessage}`; a link action returns `{rel, link, href, label}`. Returning raw `_templates`/`_links` entries would leave the 27 call sites resolving texts and `href` themselves. `resource` is the envelope the action was resolved from: the dialog prefills from it and needs its self link as the source URL, so carrying it removes the twenty `initialData` overrides and their casts that would otherwise restate it at every call site.
 
 **D5 — Texts come from naming convention, with never-breaking fallbacks.**
 
@@ -43,15 +43,15 @@ Today:
 | `successMessage` | today's rule: `template.title ? "<title> — úspěšně uloženo" : labels.ui.savedSuccessfully` |
 | link `label` | `getLinkLabel(rel) ?? link.title ?? rel` |
 
-`labels.links` exists but is typed and only partly populated (`trainingGroup`, `legalGuardians`); `getLinkLabel(rel)` reads it as `Record<string, string>` and falls back. The success-message rule is reproduced verbatim, not replaced by a generic text, because the toast is user-visible and must not change.
+`labels.links` exists but is typed and only partly populated (`trainingGroup`, `legalGuardians`); `getLinkLabel(rel)` sits beside `getTemplateLabel`/`getDialogTitleLabel` in `labels.ts`, reads the map as `Record<string, string>` and falls back. `templateLabel`, `templateDialogTitle` and `savedMessage` are exported from the same place, so `halResource`, `HalFormTemplateButton` and `HalFormDisplay` call one rule each instead of three drifting copies. The success-message rule is reproduced verbatim, not replaced by a generic text, because the toast is user-visible and must not change.
 
-**D6 — `href` is resolved inside the module.** Template `href = template.target ?? selfHref(resource)`; link `href = link.href`. `templateTarget` is deleted and `HalFormDisplay` accepts the resolved `href` instead of rebuilding the chain.
+**D6 — `href` is resolved inside the module.** Template `href = template.target ?? selfHref(resource)`; link `href = link.href`. `templateTarget` is deleted and `HalFormDisplay` accepts the resolved `href` for submission. The form keeps a separate *source* URL (`resourceUrl`, else the resource self link, else the route) for the target-data prefill probe: comparing `template.target` against the action `href` would compare it with itself and silently switch the OPTIONS/GET prefill off.
 
 **D7 — `link(rel)` returns the first non-`templated` link.** A relation that carries several links is either a templated link and a concrete one, or a collection; an action needs the concrete target. This is the rule `HalRouteContext.getLink` already implements and `getResourceLink` now delegates to it.
 
 **D8 — Client-state conjunctions stay at call sites.** Three places combine server truth with page state (`status === 'EDITABLE' && template present`, `votingOpen`, `currentGroup`). Without a catalogue there is nowhere to declare them, and they are page policy, not resource facts.
 
-**D9 — `useTemplateDialog` accepts the resolved action.** `open(action, overrides)` replaces `(resource, name)`; `TemplateDialogOptions.resource`, `templateOf`, `available`/`availableOn` leave the hook (call sites use `halResource(...).template(...)`). Portal, `HalFormDisplay` wiring, success/error handling and the existing per-open overrides stay. `size`, `note`, `submitLabel`, `fieldsFactory`, `initialData`, `onSubmitError` remain call-site concerns. Because the action cannot carry the source resource, `TemplateDialogOverrides` also accepts `initialData`: row and late-bound dialogs previously passed the resource that way, and without it their templates — which have no `target` — would open empty.
+**D9 — `useTemplateDialog` accepts the resolved action.** `open(action, overrides)` replaces `(resource, name)`; `TemplateDialogOptions.resource`, `templateOf`, `available`/`availableOn` leave the hook (call sites use `halResource(...).template(...)`). Portal, `HalFormDisplay` wiring, success/error handling and the existing per-open overrides stay. `size`, `note`, `submitLabel`, `fieldsFactory`, `onSubmitError` remain call-site concerns. `initialData?: object` is a per-open override for the rare genuine prefill (`LegalGuardiansSection`); everything else prefills from `action.resource`. `overrides.template` exists so a caller that needs one extra property (`GroupDetailPage`'s cancel-invitation reason) passes a template variant instead of fabricating a HAL envelope.
 
 **D10 — `HalFormButton` resolves through the module.** It keeps its props (`modal`, `label`, `icon`, `variant`, `dialogTitle`, `navigateOnSuccess`, `hideLabel`, `fieldsFactory`); its internal `!resourceData?._templates?.[name]` check becomes an action lookup.
 

@@ -6,7 +6,7 @@ import {halResource} from '../../api/halResource';
 import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import type {HalEnvelope, HalResourceLinks, Link} from '../../api';
-import {getTemplateLabel, labels} from '../../localization';
+import {labels} from '../../localization';
 
 interface LegalGuardiansSectionProps {
     guardiansLink?: HalResourceLinks;
@@ -24,8 +24,8 @@ export const LegalGuardiansSection = ({
                                       }: LegalGuardiansSectionProps): ReactElement => {
     const {guardians, isLoading} = useLegalGuardians(guardiansLink);
     const {navigateToResource} = useHalPageData();
-    const editLabel = getTemplateLabel(editTemplateName) ?? '';
     const editAction = halResource(resource).template(editTemplateName);
+    const editLabel = editAction?.label ?? '';
     const editDialog = useTemplateDialog({
         initialData: {legalGuardians: guardians.map(guardian => ({userId: guardian.userId}))},
     });
@@ -34,7 +34,6 @@ export const LegalGuardiansSection = ({
         if (!editAction) return;
         onEditStarted?.();
         editDialog.open(editAction, {
-            title: editLabel,
             successMessage: labels.ui.savedSuccessfully,
         });
     };

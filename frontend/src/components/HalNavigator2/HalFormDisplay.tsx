@@ -12,7 +12,7 @@ import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {toRoutePath} from '../../api/apiPath';
-import {withTemplateFieldPrompts} from '../../localization';
+import {savedMessage, withTemplateFieldPrompts} from '../../localization';
 import {HalRouteContext} from '../../contexts/halRouteContext';
 
 /**
@@ -103,20 +103,22 @@ export const HalFormDisplay = ({
     );
 
     const routePathname = useContext(HalRouteContext)?.pathname;
-    const resolvedResourceUrl = href ?? (resourceUrl || selfHref(resourceData) || routePathname || '');
+    // The source is where the form's data lives; it is never the submit target. Keeping them apart
+    // lets the OPTIONS/GET prefill probe detect a template target that differs from the resource.
+    const sourceUrl = resourceUrl || selfHref(resourceData) || routePathname || '';
+    const submitUrl = href ?? template.target ?? sourceUrl;
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
         resourceData,
-        resolvedResourceUrl
+        sourceUrl
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const url = href ?? (template.target || resolvedResourceUrl);
-        submitForm({url, data: processed}, {
+        submitForm({url: submitUrl, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
-                const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
+                const toastMessage = successMessage ?? savedMessage(template);
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
                 const willNavigate = navigateOnSuccess && template.method?.toUpperCase() === 'POST' && location != null;

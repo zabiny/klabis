@@ -18,10 +18,8 @@ export const CampaignDetail = (): ReactElement | null => {
     const campaignActions = halResource(resourceData);
     const changeDeadlineAction = campaignActions.template('changeDeadline');
     const closeCampaignAction = campaignActions.template('closeCampaign');
-    // The deadline form is prefilled from the campaign itself, exactly as the resource used to be passed.
     const changeDeadlineDialog = useTemplateDialog({
         navigateOnSuccess: false,
-        initialData: resourceData as Record<string, unknown> | undefined,
     });
     const closeCampaignDialog = useTemplateDialog({navigateOnSuccess: false});
 
@@ -53,9 +51,7 @@ export const CampaignDetail = (): ReactElement | null => {
                         {changeDeadlineAction && (
                             <button
                                 type="button"
-                                onClick={() => changeDeadlineDialog.open(changeDeadlineAction, {
-                                    title: labels.templates.changeDeadline,
-                                })}
+                                onClick={() => changeDeadlineDialog.open(changeDeadlineAction)}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-text-secondary bg-surface border border-border-subtle hover:bg-bg-subtle transition-colors"
                                 aria-label={labels.templates.changeDeadline}
                             >
@@ -66,9 +62,7 @@ export const CampaignDetail = (): ReactElement | null => {
                         {closeCampaignAction && (
                             <button
                                 type="button"
-                                onClick={() => closeCampaignDialog.open(closeCampaignAction, {
-                                    title: labels.templates.closeCampaign,
-                                })}
+                                onClick={() => closeCampaignDialog.open(closeCampaignAction)}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-error hover:brightness-110 transition-colors"
                                 aria-label={labels.templates.closeCampaign}
                             >

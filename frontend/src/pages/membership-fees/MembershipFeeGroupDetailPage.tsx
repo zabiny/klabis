@@ -64,7 +64,6 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     const assignMemberAction = halResource(resourceData).template('assignMember');
     const assignMemberDialog = useTemplateDialog({
         navigateOnSuccess: false,
-        initialData: resourceData as unknown as Record<string, unknown>,
     });
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
@@ -107,7 +106,6 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                             <button
                                 type="button"
                                 onClick={() => assignMemberDialog.open(assignMemberAction, {
-                                    title: labels.templates.assignMember,
                                     successMessage: labels.ui.savedSuccessfully,
                                 })}
                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"

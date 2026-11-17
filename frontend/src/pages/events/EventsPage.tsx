@@ -152,7 +152,7 @@ export const EventsPage = (): ReactElement => {
                             if (name === 'updateEvent') {
                                 navigateToResource(event, {state: {editing: true}});
                             } else {
-                                actionDialog.open(action, {initialData: event as unknown as Record<string, unknown>});
+                                actionDialog.open(action);
                             }
                         }}>
                             <Icon className="w-4 h-4"/>

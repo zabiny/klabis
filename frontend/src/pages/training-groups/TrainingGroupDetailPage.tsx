@@ -12,7 +12,7 @@ import type {
     HalFormsTemplate,
 } from '../../api';
 import {describeError, labels} from '../../localization';
-import {halResource} from '../../api/halResource';
+import {halResource, type HalTemplateAction} from '../../api/halResource';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
@@ -40,34 +40,22 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
     const addTrainerAction = trainingGroupActions.template('addTrainer');
     const deleteTrainingGroupAction = trainingGroupActions.template('deleteTrainingGroup');
 
-    const trainingGroupInitialData = trainingGroup as Record<string, unknown>;
-    const addMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory, initialData: trainingGroupInitialData});
+    const addMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory});
     const removeMemberDialog = useTemplateDialog();
-    const addTrainerDialog = useTemplateDialog({fieldsFactory: addTrainerFactory, initialData: trainingGroupInitialData});
+    const addTrainerDialog = useTemplateDialog({fieldsFactory: addTrainerFactory});
     const removeTrainerDialog = useTemplateDialog();
     const deleteDialog = useTemplateDialog({
-        initialData: trainingGroupInitialData,
         onSubmitSuccess: () => navigate('/training-groups'),
     });
 
-    const openRemoveMember = (member: GetTrainingGroupMembersItemResource) => {
-        const action = halResource(member).template('removeTrainingGroupMember');
-        if (!action) return;
+    const openRemoveMember = (action: HalTemplateAction) => {
         removeMemberDialog.open(action, {
             title: (template) => template.title ?? labels.templates.removeTrainingGroupMember,
-            successMessage: labels.ui.savedSuccessfully,
-            initialData: member as unknown as Record<string, unknown>,
         });
     };
 
-    const openRemoveTrainer = (trainer: GetTrainingGroupTrainersItemResource) => {
-        const action = halResource(trainer).template('removeTrainer');
-        if (!action) return;
-        removeTrainerDialog.open(action, {
-            title: labels.templates.removeTrainer,
-            successMessage: labels.ui.savedSuccessfully,
-            initialData: trainer as unknown as Record<string, unknown>,
-        });
+    const openRemoveTrainer = (action: HalTemplateAction) => {
+        removeTrainerDialog.open(action);
     };
 
     return (
@@ -138,7 +126,6 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => addTrainerDialog.open(addTrainerAction, {
-                                    title: labels.templates.addTrainer,
                                     successMessage: labels.ui.savedSuccessfully,
                                 })}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
@@ -149,14 +136,15 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
                     </div>
                     <dl>
                         {trainers.map((trainer) => {
-                            const canRemove = halResource(trainer).template('removeTrainer') !== undefined && trainer._links?.self;
+                            const removeTrainerAction = halResource(trainer).template('removeTrainer');
+                            const canRemove = removeTrainerAction !== undefined && trainer._links?.self !== undefined;
                             return (
                                 <MemberRowWithRemove
                                     key={trainer.memberId}
                                     memberId={trainer.memberId ?? ''}
                                     memberLink={trainer._links?.member}
                                     removeAriaLabel={labels.templates.removeTrainer}
-                                    onRemove={canRemove ? () => openRemoveTrainer(trainer) : undefined}
+                                    onRemove={canRemove && removeTrainerAction ? () => openRemoveTrainer(removeTrainerAction) : undefined}
                                 />
                             );
                         })}
@@ -170,10 +158,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
                     {addMemberAction && (
                         <Button
                             variant="primary"
-                            onClick={() => addMemberDialog.open(addMemberAction, {
-                                title: labels.templates.addTrainingGroupMember,
-                                successMessage: labels.ui.savedSuccessfully,
-                            })}
+                            onClick={() => addMemberDialog.open(addMemberAction)}
                             startIcon={<UserPlus className="w-4 h-4"/>}
                         >
                             {labels.templates.addTrainingGroupMember}
@@ -183,13 +168,17 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGr
 
                 <GroupMembersTable
                     emptyMessage="Skupina nemá žádné členy."
-                    members={members.map((member) => ({
-                        memberId: member.memberId ?? '',
-                        joinedAt: member.joinedAt ?? '',
-                        memberLink: member._links?.member,
-                        removeAriaLabel: labels.templates.removeTrainingGroupMember,
-                        onRemove: halResource(member).template('removeTrainingGroupMember') && member._links?.self ? () => openRemoveMember(member) : undefined,
-                    }))}
+                    members={members.map((member) => {
+                        const removeMemberAction = halResource(member).template('removeTrainingGroupMember');
+                        const canRemove = removeMemberAction !== undefined && member._links?.self !== undefined;
+                        return {
+                            memberId: member.memberId ?? '',
+                            joinedAt: member.joinedAt ?? '',
+                            memberLink: member._links?.member,
+                            removeAriaLabel: labels.templates.removeTrainingGroupMember,
+                            onRemove: canRemove && removeMemberAction ? () => openRemoveMember(removeMemberAction) : undefined,
+                        };
+                    })}
                 />
             </div>
 

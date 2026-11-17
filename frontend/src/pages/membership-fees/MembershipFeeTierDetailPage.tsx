@@ -18,7 +18,6 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     const [isEditing, setIsEditing] = useState(false);
     const deleteTierAction = halResource(resourceData).template('deleteTier');
     const deleteDialog = useTemplateDialog({
-        initialData: resourceData as unknown as Record<string, unknown>,
         onSubmitSuccess: () => navigate('/membership-fee-tiers'),
     });
 
@@ -74,8 +73,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                     type="button"
                                     onClick={() => deleteDialog.open(deleteTierAction, {
                                         title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
-                                    })}
-                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
+                                    })}                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>
                                     {labels.templates.deleteMembershipFeeTier}

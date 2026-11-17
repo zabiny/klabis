@@ -34,38 +34,34 @@ const CategoryPresetsContent = (): ReactElement => {
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
     });
 
-    const openActionModal = (item: CategoryPresetListItem, templateName: string) => {
-        const action = halResource(item).template(templateName);
-        if (action) actionDialog.open(action, {initialData: item as unknown as Record<string, unknown>});
-    };
-
     const renderActionsCell = ({item: preset}: TableCellRenderProps<CategoryPresetListItem>) => {
-        const hasEditTemplate = halResource(preset).template('updateCategoryPreset') !== undefined;
-        const hasDeleteTemplate = halResource(preset).template('deleteCategoryPreset') !== undefined;
+        const actions = halResource(preset);
+        const editAction = actions.template('updateCategoryPreset');
+        const deleteAction = actions.template('deleteCategoryPreset');
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {hasEditTemplate && (
+                {editAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.buttons.edit}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(preset, 'updateCategoryPreset');
+                            actionDialog.open(editAction);
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasDeleteTemplate && (
+                {deleteAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.templates.deleteCategoryPreset}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(preset, 'deleteCategoryPreset');
+                            actionDialog.open(deleteAction);
                         }}
                     >
                         <Trash2 className="w-4 h-4"/>
