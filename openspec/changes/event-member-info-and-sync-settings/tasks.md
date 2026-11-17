@@ -17,13 +17,13 @@
 
 ## 3. Informace pro členy on an event (#75)
 
-- [ ] 3.1 Add `memberInfo` to `docs/openapi/spec/events.yaml` (`EventDto`, `CreateEventRequest`, `UpdateEventRequest`) per the design's REST API table, following the `klabis-api-spec` skill. Regenerate the bundle and frontend types (`npm run openapi`) and verify the backend compiles against the generated interfaces.
-- [ ] 3.2 Domain, test first: `Event.create` and `Event.update` carry `memberInfo` (blank stored as absent; update refused for FINISHED/CANCELLED like other fields); `syncFromOris` leaves it unchanged; the `OrisEventProjection` of an event is unaffected by it. Verify the domain tests pass (test-runner, events module).
-- [ ] 3.3 Persistence: add `member_info VARCHAR(2000) NULL` to `events.events` in V001 (with a column comment) and map it in `EventMemento`. Verify with the event repository integration test round-tripping the value.
-- [ ] 3.4 REST: create converter, `UpdateEventRequestMapper` overlay (absent keeps, null clears, value sets), and detail DTO mapping. Cover with `@WebMvcTest`: a coordinator without EVENTS:MANAGE can change it; a 2001-character value is rejected with a field error; the detail returns it. Verify with test-runner (events module).
-- [ ] 3.5 Frontend: show the "Informace pro členy" section on `EventDetailPage` with line breaks kept and hidden when empty; include the textarea in the event create/edit form and inline edit; add labels to `labels.ts`. Cover with component tests and verify with test-runner.
-- [ ] 3.6 Manually verify on http://localhost:3000: a coordinator writes multi-line information, a regular member reads it on the detail page, and clearing it removes the section.
-- [ ] 3.7 Add the `BackendCompleted` label to issue #75.
+- [x] 3.1 Add `memberInfo` to `docs/openapi/spec/events.yaml` (`EventDto`, `CreateEventRequest`, `UpdateEventRequest`) per the design's REST API table, following the `klabis-api-spec` skill. Regenerate the bundle and frontend types (`npm run openapi`) and verify the backend compiles against the generated interfaces.
+- [x] 3.2 Domain, test first: `Event.create` and `Event.update` carry `memberInfo` (blank stored as absent; update refused for FINISHED/CANCELLED like other fields); `syncFromOris` leaves it unchanged; the `OrisEventProjection` of an event is unaffected by it. Verify the domain tests pass (test-runner, events module).
+- [x] 3.3 Persistence: add `member_info VARCHAR(2000) NULL` to `events.events` in V001 (with a column comment) and map it in `EventMemento`. Verify with the event repository integration test round-tripping the value.
+- [x] 3.4 REST: create converter, `UpdateEventRequestMapper` overlay (absent keeps, null clears, value sets), and detail DTO mapping. Cover with `@WebMvcTest`: a coordinator without EVENTS:MANAGE can change it; a 2001-character value is rejected with a field error; the detail returns it. Verify with test-runner (events module).
+- [x] 3.5 Frontend: show the "Informace pro členy" section on `EventDetailPage` with line breaks kept and hidden when empty; include the textarea in the event create/edit form and inline edit; add labels to `labels.ts`. Cover with component tests and verify with test-runner.
+- [x] 3.6 Manually verify on http://localhost:3000: a coordinator writes multi-line information, a regular member reads it on the detail page, and clearing it removes the section.
+- [x] 3.7 Add the `BackendCompleted` label to issue #75.
 
 ## 4. Synchronisation tabs and club key settings (#367)
 

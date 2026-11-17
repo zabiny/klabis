@@ -669,6 +669,78 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("Member info")
+    class MemberInfoOfEvent {
+
+        @Test
+        @DisplayName("create() stores the member info")
+        void createStoresMemberInfo() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .memberInfo("Sraz v 8:00 u nádraží").build());
+
+            assertThat(event.getMemberInfo()).contains("Sraz v 8:00 u nádraží");
+        }
+
+        @Test
+        @DisplayName("create() stores blank member info as absent")
+        void createStoresBlankAsAbsent() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .memberInfo("   ").build());
+
+            assertThat(event.getMemberInfo()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("update() sets and clears the member info")
+        void updateSetsAndClears() {
+            Event event = Event.create(defaultCreateEvent());
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .memberInfo("Vezměte svačinu").build());
+            assertThat(event.getMemberInfo()).contains("Vezměte svačinu");
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .memberInfo("").build());
+            assertThat(event.getMemberInfo()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("UpdateEvent.from() carries the current member info")
+        void updateFromCarriesMemberInfo() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .memberInfo("Parkování u hřiště").build());
+
+            assertThat(Event.UpdateEvent.from(event).memberInfo()).isEqualTo("Parkování u hřiště");
+        }
+
+        @Test
+        @DisplayName("update() is refused for a FINISHED event")
+        void updateRefusedForFinished() {
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
+            event.finish();
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .memberInfo("Pozdě").build()))
+                    .isInstanceOf(EventNotUpdatableException.class);
+        }
+
+        @Test
+        @DisplayName("syncFromOris() leaves the member info untouched")
+        void syncFromOrisKeepsMemberInfo() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .memberInfo("Sraz v 8:00").build());
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Renamed").eventDate(DEFAULT_DATE).location("Forest").organizer("OOB")
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getMemberInfo()).contains("Sraz v 8:00");
+        }
+    }
+
+    @Nested
     @DisplayName("Shared transport / accommodation offer flags")
     class SharedServiceOfferFlags {
 

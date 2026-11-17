@@ -121,6 +121,37 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should pass member info to the create command")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassMemberInfoToCreateCommand() throws Exception {
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class)))
+                    .thenReturn(EventTestDataBuilder.anEvent().build());
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"memberInfo\":\"Sraz v 8:00\"}"))
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    "Sraz v 8:00".equals(cmd.memberInfo())));
+        }
+
+        @Test
+        @DisplayName("should return 400 for member info longer than 2000 characters")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400ForTooLongMemberInfo() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"memberInfo\":\"" + "x".repeat(2001) + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.memberInfo").exists());
+        }
+
+        @Test
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
@@ -610,6 +641,67 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("coordinator can change the member info without EVENTS:MANAGE")
+        @AsEventCoordinator
+        void coordinatorCanChangeMemberInfo() throws Exception {
+            Event coordinatorEvent = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"memberInfo\":\"Sraz v 8:00\"}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    "Sraz v 8:00".equals(cmd.memberInfo())));
+        }
+
+        @Test
+        @DisplayName("PATCH without memberInfo keeps it, null clears it")
+        @AsEventCoordinator
+        void patchKeepsOrClearsMemberInfo() throws Exception {
+            Event coordinatorEvent = aCoordinatedEvent().withMemberInfo("Původní").build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"location\":\"Les\"}"))
+                    .andExpect(status().isNoContent());
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    "Původní".equals(cmd.memberInfo())));
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"memberInfo\":null}"))
+                    .andExpect(status().isNoContent());
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.memberInfo() == null));
+        }
+
+        @Test
+        @DisplayName("member info longer than 2000 characters is rejected with a field error")
+        @AsEventCoordinator
+        void tooLongMemberInfoIsRejected() throws Exception {
+            Event coordinatorEvent = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"memberInfo\":\"" + "x".repeat(2001) + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.memberInfo").exists());
+        }
+
+        @Test
         @DisplayName("regression: PATCH with eventTypeId field must return 204 (not 405)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldAcceptPatchWithEventTypeId() throws Exception {
@@ -887,6 +979,18 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
                     .andExpect(jsonPath("$.page").exists());
+        }
+
+        @Test
+        @DisplayName("detail returns the member info")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void detailReturnsMemberInfo() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean()))
+                    .thenReturn(EventTestDataBuilder.anEvent().withMemberInfo("Sraz v 8:00").build());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.memberInfo").value("Sraz v 8:00"));
         }
 
         @Test

@@ -206,6 +206,11 @@ const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactEl
                                             {renderInput('deadlines')}
                                         </Section>
                                     )}
+                                    {hasField('memberInfo') && (
+                                        <Section title={labels.sections.memberInfo}>
+                                            <DetailRow label={labels.fields.memberInfo}>{renderInput('memberInfo')}</DetailRow>
+                                        </Section>
+                                    )}
                                     {hasField('categories') && (
                                         <Section title={labels.sections.eventCategories}>
                                             {renderInput('categories')}

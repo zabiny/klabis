@@ -124,6 +124,22 @@ class EventJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("should round-trip member info")
+        void shouldRoundTripMemberInfo() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Info Race")
+                    .eventDate(LocalDate.of(2026, 6, 15))
+                    .organizer("OOB")
+                    .memberInfo("Sraz v 8:00 u nádraží")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+
+            assertThat(eventRepository.findById(saved.getId()).orElseThrow().getMemberInfo())
+                    .contains("Sraz v 8:00 u nádraží");
+        }
+
+        @Test
         @DisplayName("should save and find event with all fields including optional")
         void shouldSaveAndFindEventWithAllFieldsIncludingOptional() {
             // Given

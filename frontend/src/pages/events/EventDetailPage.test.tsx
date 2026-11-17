@@ -1585,6 +1585,59 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('member info', () => {
+        const memberInfoTemplate = mockHalFormsTemplate({
+            method: 'PUT',
+            target: '/api/events/1',
+            title: 'Upravit závod',
+            properties: [
+                {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                {name: 'memberInfo', prompt: 'Informace pro členy', type: 'textarea', value: 'Sraz v 8:00'},
+            ],
+        });
+
+        it('shows the section with line breaks preserved', () => {
+            renderPage(createMockPageData(mockEventDetailData({memberInfo: 'Sraz v 8:00\nKlubové stany'})));
+
+            expect(screen.getByText(labels.sections.memberInfo)).toBeInTheDocument();
+            const text = screen.getByText(/Sraz v 8:00/);
+            expect(text.textContent).toBe('Sraz v 8:00\nKlubové stany');
+            expect(text).toHaveClass('whitespace-pre-line');
+        });
+
+        it('hides the section when member info is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByText(labels.sections.memberInfo)).not.toBeInTheDocument();
+        });
+
+        it('hides the section when member info is empty', () => {
+            renderPage(createMockPageData(mockEventDetailData({memberInfo: ''})));
+            expect(screen.queryByText(labels.sections.memberInfo)).not.toBeInTheDocument();
+        });
+
+        it('offers a textarea for member info in inline edit when the template carries it', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                memberInfo: 'Sraz v 8:00',
+                _templates: {updateEvent: memberInfoTemplate},
+            })));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            const field = screen.getByLabelText(labels.fields.memberInfo);
+            expect(field.tagName).toBe('TEXTAREA');
+            expect(field).toHaveValue('Sraz v 8:00');
+        });
+
+        it('offers member info in inline edit even when the event has none yet', () => {
+            renderPage(createMockPageData(mockEventDetailData({_templates: {updateEvent: memberInfoTemplate}})));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByLabelText(labels.fields.memberInfo)).toBeInTheDocument();
+        });
+    });
+
     describe('categories display (event-category-identity)', () => {
         it('shows a badge per category using its name', () => {
             renderPage(createMockPageData(mockEventDetailData({

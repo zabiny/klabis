@@ -330,6 +330,7 @@ CREATE TABLE events.events
     name                 VARCHAR(200) NOT NULL,
     event_date           DATE         NOT NULL,
     location             VARCHAR(200) NULL,
+    member_info          VARCHAR(2000) NULL,
     organizer            VARCHAR(10)  NOT NULL,
     website_url          VARCHAR(500) NULL,
     status               VARCHAR(20)  NOT NULL,
@@ -381,6 +382,7 @@ COMMENT ON COLUMN events.events.id IS 'Unique event identifier (UUID)';
 COMMENT ON COLUMN events.events.name IS 'Name of the event';
 COMMENT ON COLUMN events.events.event_date IS 'Date when the event takes place';
 COMMENT ON COLUMN events.events.location IS 'Location description (city, venue, etc.) — nullable, not all events have a known location';
+COMMENT ON COLUMN events.events.member_info IS 'Practical information for club members (meeting time and place, what to bring) — Klabis-owned, never synchronised from ORIS; blank is stored as NULL';
 COMMENT ON COLUMN events.events.organizer IS 'Organizer code (e.g., OOB for OOB Zdar nad Sazavou)';
 COMMENT ON COLUMN events.events.website_url IS 'Optional URL to event website or ORIS';
 COMMENT ON COLUMN events.events.registration_deadline IS 'First (earliest) registration deadline; null means no deadlines configured';

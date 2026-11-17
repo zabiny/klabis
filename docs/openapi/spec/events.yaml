@@ -1853,6 +1853,8 @@ components:
           type: string
         websiteUrl:
           type: string
+        memberInfo:
+          type: string
         coordinators:
           type: array
           items:
@@ -1961,6 +1963,10 @@ components:
         websiteUrl:
           type: string
           x-klabis-url: true
+        memberInfo:
+          type: string
+          maxLength: 2000
+          x-hal-input-type: textarea
         coordinators:
           type: array
           uniqueItems: true
@@ -2059,6 +2065,10 @@ components:
         websiteUrl:
           type: [string, 'null']
           x-klabis-url: true
+        memberInfo:
+          type: [string, 'null']
+          maxLength: 2000
+          x-hal-input-type: textarea
         # Only EVENTS_MANAGE changes coordinators: the coordinator role unlocks registrants' SI card
         # numbers and notes, so it must not propagate itself. EVENTS_READ is held by every user, so the
         # coordinator sees the field read-only.

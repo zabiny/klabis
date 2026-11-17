@@ -15,6 +15,7 @@ import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {useAuth} from '../../contexts/authContext';
 import {labels} from '../../localization';
+import {useHalForm} from '../../contexts/halFormContext';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -777,6 +778,42 @@ describe('EventsPage', () => {
             await user.click(screen.getByRole('button', {name: labels.templates.syncAllUpcomingFromOris}));
 
             expect(screen.getByTestId('bulk-sync-oris-modal')).toBeInTheDocument();
+        });
+    });
+
+    describe('create form member info', () => {
+        const openCreateForm = async (properties: Array<{name: string; prompt: string; type: string}>) => {
+            const displayHalForm = vi.fn();
+            vi.mocked(useHalForm).mockReturnValue({displayHalForm, currentFormRequest: null, closeForm: vi.fn()} as unknown as ReturnType<typeof useHalForm>);
+            const resourceData: HalResponse = {
+                _links: {self: {href: '/api/events'}},
+                _templates: {createEvent: mockHalFormsTemplate({method: 'POST', title: 'Přidat závod', properties})},
+            };
+            renderPage(createMockPageData(resourceData));
+            await userEvent.setup().click(screen.getByTestId('form-template-button-createEvent'));
+            const {children} = displayHalForm.mock.calls[0][0];
+            const fields = new Set(properties.map(p => p.name));
+            return render(children({
+                renderInput: (name: string) => <input data-testid={`input-${name}`}/>,
+                renderField: () => null,
+                hasField: (name: string) => fields.has(name),
+            }));
+        };
+
+        it('lays out the member info field when the createEvent template carries it', async () => {
+            await openCreateForm([
+                {name: 'name', prompt: 'Název', type: 'text'},
+                {name: 'memberInfo', prompt: 'Informace pro členy', type: 'textarea'},
+            ]);
+
+            expect(screen.getByTestId('input-memberInfo')).toBeInTheDocument();
+            expect(screen.getAllByText(labels.fields.memberInfo)).toHaveLength(2);
+        });
+
+        it('omits the member info field when the template does not carry it', async () => {
+            await openCreateForm([{name: 'name', prompt: 'Název', type: 'text'}]);
+
+            expect(screen.queryByTestId('input-memberInfo')).not.toBeInTheDocument();
         });
     });
 

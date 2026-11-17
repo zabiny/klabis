@@ -41,6 +41,7 @@ public class EventTestDataBuilder {
     private boolean sharedTransportEnabled = false;
     private boolean sharedAccommodationEnabled = false;
     private SiPolicy siPolicy = SiPolicy.defaultPolicy();
+    private String memberInfo = null;
 
     private EventTestDataBuilder() {
     }
@@ -62,6 +63,11 @@ public class EventTestDataBuilder {
 
     public EventTestDataBuilder addRegistrations(List<EventRegistration> registrations) {
         this.registrations.addAll(registrations);
+        return this;
+    }
+
+    public EventTestDataBuilder withMemberInfo(String memberInfo) {
+        this.memberInfo = memberInfo;
         return this;
     }
 
@@ -216,7 +222,7 @@ public class EventTestDataBuilder {
             AuditMetadata auditMetadata) {
         return Event.reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
                 registrationDeadlines, status, cancellationReason, categories, ranking, baseEntryFee,
-                false, false, SiPolicy.defaultPolicy(), registrations, auditMetadata);
+                false, false, SiPolicy.defaultPolicy(), null, registrations, auditMetadata);
     }
 
     public Event build() {
@@ -237,6 +243,7 @@ public class EventTestDataBuilder {
                 sharedTransportEnabled,
                 sharedAccommodationEnabled,
                 siPolicy,
+                memberInfo,
                 registrations,
                 auditMetadata);
     }
