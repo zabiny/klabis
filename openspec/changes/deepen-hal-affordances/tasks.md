@@ -35,11 +35,11 @@
 
 ## 5. Row actions (phase 2)
 
-- [ ] 5.1 Migrate `MembersPage` and `EventsPage` `_actions` columns to `halResource(row)` for both template and link actions
-- [ ] 5.2 Migrate `EventTypesPage` and `CategoryPresetsPage` `_actions` columns; keep the submit target fallback to the row self link
-- [ ] 5.3 Migrate `FinancesPage` and `EventDetailPage` `_actions` columns, including the `template.target` presence checks
-- [ ] 5.4 Add the `labels.links` entries the migrated columns need so every rendered label stays identical
-- [ ] 5.5 Verify: affected page tests green
+- [x] 5.1 Migrate `MembersPage` and `EventsPage` `_actions` columns to `halResource(row)` for both template and link actions
+- [x] 5.2 Migrate `EventTypesPage` and `CategoryPresetsPage` `_actions` columns; keep the submit target fallback to the row self link (both were already on the module after phase 1)
+- [x] 5.3 Migrate `FinancesPage` and `EventDetailPage` `_actions` columns, including the `template.target` presence checks (`FinancesPage` was already migrated in 1.7)
+- [x] 5.4 Add the `labels.links` entries the migrated columns need so every rendered label stays identical
+- [x] 5.5 Verify: affected page tests green
 
 ## 6. Phase 2 verification
 

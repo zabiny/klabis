@@ -1084,6 +1084,7 @@ export const labels = {
     links: {
         trainingGroup: 'Tréninková skupina',
         legalGuardians: 'Zákonní zástupci',
+        newRegistration: 'Přihlásit se',
     },
 
     events: {
