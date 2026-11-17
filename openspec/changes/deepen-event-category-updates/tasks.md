@@ -20,6 +20,6 @@
 
 ## 4. Verification
 
-- [ ] 4.1 `com.klabis.events` module slice green
-- [ ] 4.2 Full backend suite green (`SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true --rerun-tasks`)
-- [ ] 4.3 `openspec validate deepen-event-category-updates --strict` passes
+- [x] 4.1 `com.klabis.events` module slice green
+- [x] 4.2 Full backend suite green (`SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true --rerun-tasks`)
+- [x] 4.3 `openspec validate deepen-event-category-updates --strict` passes

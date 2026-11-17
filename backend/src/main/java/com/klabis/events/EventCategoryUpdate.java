@@ -1,7 +1,6 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.Money;
-import org.springframework.util.Assert;
 
 /**
  * One requested category on an event update: a new category when {@code id} is null, otherwise the
@@ -11,8 +10,4 @@ import org.springframework.util.Assert;
  * resolved by the aggregate that owns the categories.
  */
 public record EventCategoryUpdate(EventCategoryId id, String name, Money fee) {
-
-    public EventCategoryUpdate {
-        Assert.hasText(name, "Event category name is required");
-    }
 }

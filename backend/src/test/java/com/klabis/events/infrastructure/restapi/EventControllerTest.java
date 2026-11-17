@@ -407,6 +407,17 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
         }
 
+        private UUID eventWithCategories(EventCategory... categories) {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .withCategories(List.of(categories))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+            return defaultExistingEvent.getId().value();
+        }
+
         @Test
         @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
@@ -785,14 +796,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void categoryWithIdUpdatesExisting() throws Exception {
             EventCategory existingCategory = EventCategory.create("M21");
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .withCategories(List.of(existingCategory))
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
+            UUID eventId = eventWithCategories(existingCategory);
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -816,15 +820,7 @@ class EventControllerTest {
         @DisplayName("category without id is passed as a new change")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void categoryWithoutIdIsPassedAsNewChange() throws Exception {
-            EventCategory existing = EventCategory.create("M21");
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .withCategories(List.of(existing))
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
+            UUID eventId = eventWithCategories();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -849,14 +845,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void absentCategoriesKeepsBaselineChanges() throws Exception {
             EventCategory existingCategory = EventCategory.create("M21");
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .withCategories(List.of(existingCategory))
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
+            UUID eventId = eventWithCategories(existingCategory);
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)

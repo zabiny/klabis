@@ -649,8 +649,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalArgumentException if validation fails
      */
     public void update(UpdateEvent command) {
-        // Resolved before the status check so an unknown category id is reported ahead of
-        // "not updatable" — the REST adapter resolved it before the service was called.
+        // Resolved before the status guards so a request that is both invalid and rejected for
+        // its status keeps the category error.
         List<EventCategory> resolvedCategories = resolveCategories(command.categoryChanges());
 
         if (status == EventStatus.FINISHED) {
@@ -676,7 +676,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.coordinators = command.coordinators() != null ? new LinkedHashSet<>(command.coordinators()) : new LinkedHashSet<>();
         this.eventTypeId = command.eventTypeId();
         this.registrationDeadlines = deadlines;
-        this.categories = new ArrayList<>(resolvedCategories);
+        this.categories = resolvedCategories;
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
         this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
@@ -730,20 +730,16 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     private List<EventCategory> resolveCategories(List<EventCategoryUpdate> categoryChanges) {
         List<EventCategoryUpdate> changes = categoryChanges != null ? categoryChanges : List.of();
-        Map<EventCategoryId, EventCategory> currentById = this.categories.stream()
-                .collect(Collectors.toMap(EventCategory::id, c -> c));
 
         List<EventCategory> resolved = new ArrayList<>();
         for (EventCategoryUpdate change : changes) {
             if (change.id() == null) {
-                resolved.add(new EventCategory(EventCategoryId.generate(), null, change.name(), change.fee()));
-                continue;
+                resolved.add(EventCategory.create(change.name(), change.fee()));
+            } else {
+                resolved.add(findCategory(change.id())
+                        .orElseThrow(() -> new UnknownEventCategoryException(change.id()))
+                        .renamed(change.name(), change.fee()));
             }
-            EventCategory existing = currentById.get(change.id());
-            if (existing == null) {
-                throw new UnknownEventCategoryException(change.id());
-            }
-            resolved.add(new EventCategory(existing.id(), existing.orisId(), change.name(), change.fee()));
         }
         return resolved;
     }
@@ -766,7 +762,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         for (EventCategory incomingCategory : incoming) {
             EventCategory existing = existingByOrisId.get(incomingCategory.orisId());
             if (existing != null) {
-                merged.add(new EventCategory(existing.id(), existing.orisId(), incomingCategory.name(), existing.feeOverride()));
+                merged.add(existing.renamed(incomingCategory.name(), existing.feeOverride()));
             } else {
                 merged.add(incomingCategory);
             }
