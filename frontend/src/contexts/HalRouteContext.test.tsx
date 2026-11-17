@@ -4,7 +4,7 @@ import {useHalRoute} from './halRouteContext';
 import {AuthContext} from './authContext';
 import {mockHalResponse} from '../__mocks__/halData';
 import {createDelayedMockResponse, createMockResponse} from '../__mocks__/mockFetch';
-import {BrowserRouter} from 'react-router-dom';
+import {BrowserRouter, MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import {type Mock, vi} from 'vitest';
@@ -253,7 +253,50 @@ describe('useHalRoute Hook', () => {
                 wrapper: createWrapper(),
             });
 
-            expect(['idle', 'pending']).toContain(result.current.queryState);
+            expect(result.current.queryState).toBe('pending');
+        });
+
+        it('should be idle while authentication is not ready', async () => {
+            const {result} = renderHook(() => useHalRoute(), {
+                wrapper: ({children}: { children: React.ReactNode }) => (
+                    <QueryClientProvider client={queryClient}>
+                        <BrowserRouter>
+                            <AuthContext.Provider
+                                value={{
+                                    isAuthenticated: false,
+                                    isLoading: true,
+                                    login: vi.fn(),
+                                    logout: vi.fn(),
+                                    getUser: () => null
+                                }}>
+                                <HalRouteProvider>{children}</HalRouteProvider>
+                            </AuthContext.Provider>
+                        </BrowserRouter>
+                    </QueryClientProvider>
+                ),
+            });
+
+            await waitFor(() => {
+                expect(result.current.queryState).toBe('idle');
+            });
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should be idle on the /login route', async () => {
+            const {result} = renderHook(() => useHalRoute(), {
+                wrapper: ({children}: { children: React.ReactNode }) => (
+                    <QueryClientProvider client={queryClient}>
+                        <MemoryRouter initialEntries={['/login']}>
+                            <HalRouteProvider>{children}</HalRouteProvider>
+                        </MemoryRouter>
+                    </QueryClientProvider>
+                ),
+            });
+
+            await waitFor(() => {
+                expect(result.current.queryState).toBe('idle');
+            });
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
 
         it('should have success state after loading', async () => {

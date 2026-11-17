@@ -38,6 +38,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
+    queryState: 'success' as const,
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),

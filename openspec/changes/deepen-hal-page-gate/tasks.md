@@ -1,10 +1,10 @@
 ## 1. Page gate module + idle state
 
-- [ ] 1.1 Red: test `HalPageGate` — loading renders the default `Skeleton`; a `loading` prop replaces it; an error renders `ErrorPage` (404 → not-found page, 401/403 → forbidden page, other → error card); a missing resource without an error renders the loading view; `queryState: 'idle'` renders nothing; the child receives the non-null resource
-- [ ] 1.2 Red: test `HalRouteProvider`'s `queryState` — `idle` before auth is ready and on `/login`, `pending`/`success`/`error` from the query afterwards — and that `useHalPageData` exposes it together with `resourceData`, `isLoading` and `error`
-- [ ] 1.3 Green: fix the `queryState` derivation in `contexts/HalRouteContext.tsx` (`idle` when `!shouldFetch`) and return it from `hooks/useHalPageData.ts`
-- [ ] 1.4 Green: implement `src/pages/HalPageGate.tsx` with the interface from design D1–D6
-- [ ] 1.5 Verify: module tests green
+- [x] 1.1 Red: test `HalPageGate` — loading renders the default `Skeleton`; a `loading` prop replaces it; an error renders `ErrorPage` (404 → not-found page, 401/403 → forbidden page, other → error card); a missing resource without an error renders the loading view; `queryState: 'idle'` renders nothing; the child receives the non-null resource
+- [x] 1.2 Red: test `HalRouteProvider`'s `queryState` — `idle` before auth is ready and on `/login`, `pending`/`success`/`error` from the query afterwards — and that `useHalPageData` exposes it together with `resourceData`, `isLoading` and `error`
+- [x] 1.3 Green: fix the `queryState` derivation in `contexts/HalRouteContext.tsx` (`idle` when `!shouldFetch`) and return it from `hooks/useHalPageData.ts`
+- [x] 1.4 Green: implement `src/pages/HalPageGate.tsx` with the interface from design D1–D6
+- [x] 1.5 Verify: module tests green
 
 ## 2. Detail pages
 

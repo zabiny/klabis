@@ -83,6 +83,7 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
+    queryState: 'success' as const,
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),

@@ -76,17 +76,9 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         retry: 0,
     });
 
-    // Convert React Query status to context queryState
-    let queryState: 'idle' | 'pending' | 'success' | 'error';
-    if (status === 'pending') {
-        queryState = 'pending';
-    } else if (status === 'error') {
-        queryState = 'error';
-    } else if (status === 'success') {
-        queryState = 'success';
-    } else {
-        queryState = 'idle';
-    }
+    // A disabled query reports 'pending' in React Query, so only the query itself can say
+    // whether it has started: when it does not fetch, the route is idle, not pending.
+    const queryState: 'idle' | 'pending' | 'success' | 'error' = shouldFetch ? status : 'idle';
 
     const navigateToResource: NavigateToResource = (resource, options) => {
         let targetLink: Link;
