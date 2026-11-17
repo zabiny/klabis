@@ -741,6 +741,91 @@ describe('EventRegistrationDialog', () => {
         );
     });
 
+    describe('event without categories', () => {
+        const templateWithCategory = (categoryProp: Record<string, unknown>) => mockHalFormsTemplate({
+            method: 'POST',
+            target: '/api/events/evt-1/registrations',
+            title: 'Přihlásit se',
+            properties: [
+                {name: 'siCardNumber', prompt: 'SI čip', type: 'text', regex: '\\d{6,7}'},
+                {name: 'categoryId', prompt: 'Kategorie', type: 'text', ...categoryProp},
+            ],
+        });
+
+        const openWith = (categoryProp: Record<string, unknown>) => {
+            mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === PREFILL_URL) {
+                    return jsonOk(prefillData({_templates: {registerForEvent: templateWithCategory(categoryProp)}}));
+                }
+                return jsonOk(eventData({sharedTransportEnabled: false, sharedAccommodationEnabled: false}));
+            });
+            renderDialog();
+        };
+
+        it('hides the category field and submits without categoryId when inline options are empty', async () => {
+            const user = userEvent.setup();
+            openWith({required: true, options: {inline: []}});
+
+            await screen.findByLabelText(/SI čip/);
+            expect(screen.queryByLabelText(/Kategorie/)).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+            await waitFor(() => {
+                const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
+                    (options as RequestInit | undefined)?.method === 'POST');
+                expect(postCall).toBeDefined();
+                expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toEqual({siCardNumber: '1234567'});
+            });
+        });
+
+        it('hides the category field and omits categoryId when the property has no options at all', async () => {
+            const user = userEvent.setup();
+            openWith({});
+
+            await screen.findByLabelText(/SI čip/);
+            expect(screen.queryByLabelText(/Kategorie/)).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+            await waitFor(() => {
+                const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
+                    (options as RequestInit | undefined)?.method === 'POST');
+                expect(postCall).toBeDefined();
+                expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toEqual({siCardNumber: '1234567'});
+            });
+        });
+
+        it('hides the category field when link options resolve to an empty list', async () => {
+            const optionsUrl = '/api/events/evt-1/category-options';
+            mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === optionsUrl) return jsonOk([]);
+                if (url === PREFILL_URL) {
+                    return jsonOk(prefillData({
+                        _templates: {registerForEvent: templateWithCategory({required: true, options: {link: {href: optionsUrl}}})},
+                    }));
+                }
+                return jsonOk(eventData({sharedTransportEnabled: false, sharedAccommodationEnabled: false}));
+            });
+            renderDialog();
+
+            await screen.findByLabelText(/SI čip/);
+            await waitFor(() => expect(screen.queryByLabelText(/Kategorie/)).not.toBeInTheDocument());
+        });
+
+        it('marks the category field as required only when the template property is required', async () => {
+            openWith({required: true, options: CATEGORY_OPTIONS});
+            const select = await screen.findByLabelText(/Kategorie/);
+            expect(document.querySelector(`label[for="${select.id}"]`)).toHaveTextContent('*');
+        });
+
+        it('shows no required marker on the category field when the template property is not required', async () => {
+            openWith({options: CATEGORY_OPTIONS});
+            const select = await screen.findByLabelText(/Kategorie/);
+            expect(document.querySelector(`label[for="${select.id}"]`)).not.toHaveTextContent('*');
+        });
+    });
+
     it('shows prefill load error alert and no form when the registration fetch fails', async () => {
         mockRoutes(() => Promise.reject(new ApiError(500)));
         renderDialog();

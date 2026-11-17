@@ -325,7 +325,7 @@ The system SHALL offer a user with the synchronisation permission a synchronisat
 
 #### Scenario: Sync manager opens the synchronisation overview
 
-- **WHEN** a user with the synchronisation permission opens "Synchronizace" from the main menu
+- **WHEN** a user with the synchronisation permission opens "Synchronizace" from the main menu and selects "Všechny pokusy"
 - **THEN** they see a list of recorded synchronisation attempts across members, events, disciplines and registrations
 - **AND** the most recent attempt is shown first
 
@@ -521,3 +521,29 @@ When a user with the synchronisation permission opens the synchronisation state 
 - **WHEN** a sync manager opens the synchronisation state of an entity whose attempts have all been removed by retention
 - **THEN** they are told no attempts are recorded within the retention period
 - **AND** the entity's last successful synchronisation remains visible
+
+### Requirement: Synchronisation Overview Is Organised Into Tabs
+
+The synchronisation overview SHALL be organised into tabs in this order: "Vyžaduje pozornost", "Všechny pokusy" and "Nastavení synchronizace". Opening the overview SHALL show "Vyžaduje pozornost". A tab SHALL be offered only when the user may see its content; a tab bar with a single tab SHALL NOT be shown.
+
+#### Scenario: Sync manager lands on what needs attention
+
+- **WHEN** a user with the synchronisation permission opens "Synchronizace" from the main menu
+- **THEN** the overview shows the tabs "Vyžaduje pozornost", "Všechny pokusy" and "Nastavení synchronizace" in this order
+- **AND** the "Vyžaduje pozornost" tab is selected
+
+#### Scenario: Sync manager switches to the list of attempts
+
+- **WHEN** a sync manager on the synchronisation overview selects "Všechny pokusy"
+- **THEN** they see the list of recorded synchronisation attempts
+
+#### Scenario: Selected tab survives a page reload
+
+- **GIVEN** a sync manager has selected the "Nastavení synchronizace" tab
+- **WHEN** they reload the page or share its address
+- **THEN** the "Nastavení synchronizace" tab is selected again
+
+#### Scenario: Settings tab is absent when there is nothing to set
+
+- **WHEN** the application runs without the ORIS integration
+- **THEN** the synchronisation overview does not offer the "Nastavení synchronizace" tab

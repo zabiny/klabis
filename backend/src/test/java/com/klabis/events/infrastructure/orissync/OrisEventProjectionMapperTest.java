@@ -20,6 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OrisEventProjectionMapperTest {
 
     @Test
+    void memberInfoDoesNotAffectProjection() {
+        Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                .name("Spring Sprint")
+                .eventDate(LocalDate.of(2026, 5, 1))
+                .organizer("OOB")
+                .build());
+        OrisEventProjection before = OrisEventProjectionMapper.fromEvent(event);
+
+        event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                .memberInfo("Sraz v 8:00").build());
+
+        assertThat(OrisEventProjectionMapper.fromEvent(event)).isEqualTo(before);
+    }
+
+    @Test
     @DisplayName("maps an Event's ORIS-owned fields into the projection")
     void fromEvent_mapsOrisOwnedFields() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()

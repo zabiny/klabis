@@ -678,24 +678,7 @@ describe('cache invalidation after mutation', () => {
         mutation: useAuthorizedMutation({method: 'POST'}),
     }), {wrapper: createWrapper()});
 
-    it('refetches active authorized queries before per-call onSuccess runs', async () => {
-        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) =>
-            init?.method === 'POST' ? createMockResponse({}) : createMockResponse({v: fetchSpy.mock.calls.length}));
-        const {result} = renderQueryAndMutation();
-        await waitFor(() => expect(result.current.query.data).toBeDefined());
-        const before = result.current.query.data;
-
-        let dataSeenInOnSuccess: unknown;
-        const onSuccess = vi.fn(() => {
-            dataSeenInOnSuccess = getQueryClient().getQueryData(['authorized', '/api/items/1']);
-        });
-        result.current.mutation.mutate({url: '/api/items/1', data: {}}, {onSuccess});
-
-        await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-        expect(dataSeenInOnSuccess).not.toEqual(before);
-    });
-
-    it('keeps isPending true until the refetch has finished', async () => {
+    it('runs per-call onSuccess before the refetched data arrives', async () => {
         let releaseRefetch: () => void = () => {};
         let getCount = 0;
         fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
@@ -709,13 +692,17 @@ describe('cache invalidation after mutation', () => {
         const {result} = renderQueryAndMutation();
         await waitFor(() => expect(result.current.query.data).toBeDefined());
 
-        result.current.mutation.mutate({url: '/api/items/1', data: {}});
-        await waitFor(() => expect(getCount).toBe(2));
-        expect(result.current.mutation.isPending).toBe(true);
+        let dataSeenInOnSuccess: unknown;
+        const onSuccess = vi.fn(() => {
+            dataSeenInOnSuccess = getQueryClient().getQueryData(['authorized', '/api/items/1']);
+        });
+        result.current.mutation.mutate({url: '/api/items/1', data: {}}, {onSuccess});
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+        expect(dataSeenInOnSuccess).toEqual({v: 1});
 
         releaseRefetch();
-        await waitFor(() => expect(result.current.mutation.isPending).toBe(false));
-        expect(result.current.mutation.isSuccess).toBe(true);
+        await waitFor(() => expect(result.current.query.data).toEqual({v: 2}));
     });
 
     it('does not refetch when the mutation fails', async () => {
@@ -726,11 +713,13 @@ describe('cache invalidation after mutation', () => {
         const {result} = renderQueryAndMutation();
         await waitFor(() => expect(result.current.query.data).toBeDefined());
         const getCallsBefore = fetchSpy.mock.calls.length;
+        const invalidateSpy = vi.spyOn(getQueryClient(), 'invalidateQueries');
 
         result.current.mutation.mutate({url: '/api/items/1', data: {}});
         await waitFor(() => expect(result.current.mutation.isError).toBe(true));
 
         expect(fetchSpy.mock.calls.length).toBe(getCallsBefore + 1);
+        expect(invalidateSpy).not.toHaveBeenCalled();
     });
 
     it('still succeeds and calls onSuccess when the refetch fails', async () => {

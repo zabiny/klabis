@@ -63,6 +63,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("location")
     private String location;
 
+    @Column("member_info")
+    private String memberInfo;
+
     @Column("organizer")
     private String organizer;
 
@@ -197,6 +200,7 @@ class EventMemento implements Persistable<UUID> {
         memento.name = event.getName();
         memento.eventDate = event.getEventDate();
         memento.location = event.getLocation();
+        memento.memberInfo = event.getMemberInfo().orElse(null);
         memento.organizer = event.getOrganizer();
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
         memento.coordinators = toCoordinatorMap(event.getCoordinators());
@@ -301,6 +305,7 @@ class EventMemento implements Persistable<UUID> {
                 this.sharedTransportEnabled,
                 this.sharedAccommodationEnabled,
                 SiPolicy.of(SiUsage.valueOf(this.siUsage), this.siRentalAllowed),
+                this.memberInfo,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

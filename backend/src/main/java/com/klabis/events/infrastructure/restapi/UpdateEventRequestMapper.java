@@ -37,6 +37,7 @@ class UpdateEventRequestMapper {
         overlayNonNull(request.organizer(), b::organizer);
 
         overlay(request.location(), b::location);
+        overlay(request.memberInfo(), b::memberInfo);
         overlay(request.websiteUrl(), b::websiteUrl);
         overlay(request.eventTypeId(), v -> b.eventTypeId(EventRequestConversions.toEventTypeId(v)));
         overlay(request.ranking(), v -> b.ranking(toRanking(v)));

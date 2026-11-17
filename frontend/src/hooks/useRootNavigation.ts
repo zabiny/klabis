@@ -27,10 +27,10 @@ function convertItems(response: HalResponse): NavigationItem[] {
     }
 
     const items: NavigationItem[] = [];
-    const systemRels = new Set(['self', 'curies']);
+    const skippedRels = new Set(['self', 'curies', 'orisClubKey']);
 
     Object.entries(response._links).forEach(([rel, linkOrLinks]) => {
-        if (systemRels.has(rel)) {
+        if (skippedRels.has(rel)) {
             return;
         }
 
@@ -56,21 +56,23 @@ function convertItems(response: HalResponse): NavigationItem[] {
     return items;
 }
 
+export function useRootResource<T = HalResponse>(select?: (root: HalResponse) => T) {
+    const isAuthReady = useIsAuthReady();
+
+    return useAuthorizedQuery<T>('/api', {
+        enabled: isAuthReady,
+        select: select as ((data: unknown) => T) | undefined,
+        staleTime: 5 * 60 * 1000,
+        retry: 1,
+    });
+}
+
 /**
  * Hook to fetch and parse root navigation links from /api HAL endpoint
  *
  * Returns menu items derived from the root resource's _links, filtering out
  * system links and using title attributes when available.
- *
- * @returns {Object} with items array, loading state, and error state
  */
 export function useRootNavigation() {
-    const isAuthReady = useIsAuthReady();
-
-    return useAuthorizedQuery('/api', {
-        enabled: isAuthReady,
-        select: (data) => convertItems(data as HalResponse),
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
-    });
+    return useRootResource(convertItems);
 }

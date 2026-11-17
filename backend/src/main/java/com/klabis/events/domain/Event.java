@@ -72,6 +72,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private boolean sharedTransportEnabled;
     private boolean sharedAccommodationEnabled;
     private SiPolicy siPolicy;
+    private String memberInfo;
 
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
@@ -103,21 +104,16 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             List<EventCategory> categories,
             Boolean sharedTransportEnabled,
             Boolean sharedAccommodationEnabled,
-            SiPolicy siPolicy
+            SiPolicy siPolicy,
+
+            @Size(max = 2000, message = "Informace pro členy nesmí být delší než 2000 znaků")
+            String memberInfo
     ) {
         public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
                            LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
                            RegistrationDeadlines registrationDeadlines, List<EventCategory> categories) {
             this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
-                    categories, false, false, null);
-        }
-
-        public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
-                           LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
-                           RegistrationDeadlines registrationDeadlines, List<EventCategory> categories,
-                           Boolean sharedTransportEnabled, Boolean sharedAccommodationEnabled) {
-            this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
-                    categories, sharedTransportEnabled, sharedAccommodationEnabled, null);
+                    categories, false, false, null, null);
         }
     }
 
@@ -149,7 +145,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             Money baseEntryFee,
             Boolean sharedTransportEnabled,
             Boolean sharedAccommodationEnabled,
-            SiPolicy siPolicy
+            SiPolicy siPolicy,
+
+            @Size(max = 2000, message = "Informace pro členy nesmí být delší než 2000 znaků")
+            String memberInfo
     ) {
         public static UpdateEvent from(Event event) {
             return new UpdateEvent(
@@ -168,7 +167,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.baseEntryFee,
                     event.sharedTransportEnabled,
                     event.sharedAccommodationEnabled,
-                    event.siPolicy
+                    event.siPolicy,
+                    event.memberInfo
             );
         }
     }
@@ -291,6 +291,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             boolean sharedTransportEnabled,
             boolean sharedAccommodationEnabled,
             SiPolicy siPolicy,
+            String memberInfo,
             AuditMetadata auditMetadata) {
 
         this.id = id;
@@ -310,6 +311,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.sharedTransportEnabled = sharedTransportEnabled;
         this.sharedAccommodationEnabled = sharedAccommodationEnabled;
         this.siPolicy = siPolicy;
+        this.memberInfo = StringUtils.hasText(memberInfo) ? memberInfo : null;
         updateAuditMetadata(auditMetadata);
     }
 
@@ -348,6 +350,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             boolean sharedTransportEnabled,
             boolean sharedAccommodationEnabled,
             SiPolicy siPolicy,
+            String memberInfo,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
 
@@ -369,6 +372,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 sharedTransportEnabled,
                 sharedAccommodationEnabled,
                 siPolicy,
+                memberInfo,
                 auditMetadata
         );
         event.registrations.addAll(registrations);
@@ -412,6 +416,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 Boolean.TRUE.equals(command.sharedTransportEnabled()),
                 Boolean.TRUE.equals(command.sharedAccommodationEnabled()),
                 command.siPolicy() != null ? command.siPolicy() : SiPolicy.defaultPolicy(),
+                command.memberInfo(),
                 null
         );
 
@@ -453,6 +458,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 false,
                 false,
                 SiPolicy.defaultPolicy(),
+                null,
                 null
         );
 
@@ -523,6 +529,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     public String getLocation() {
         return location;
+    }
+
+    public Optional<String> getMemberInfo() {
+        return Optional.ofNullable(memberInfo);
     }
 
     public String getOrganizer() {
@@ -685,6 +695,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         if (command.siPolicy() != null) {
             this.siPolicy = command.siPolicy();
         }
+        this.memberInfo = StringUtils.hasText(command.memberInfo()) ? command.memberInfo() : null;
 
         registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.MANUAL));
     }

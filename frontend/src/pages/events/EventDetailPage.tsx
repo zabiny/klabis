@@ -402,6 +402,15 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     </dl>
                 </Card>
 
+                {(isEditing ? enrichedFieldNames.has('memberInfo') : !!event.memberInfo) && (
+                    <Card className="p-6">
+                        <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.memberInfo}</h3>
+                        {isEditing
+                            ? <DetailRow label={labels.fields.memberInfo}>{ri('memberInfo')}</DetailRow>
+                            : <p className="whitespace-pre-line text-text-primary">{event.memberInfo}</p>}
+                    </Card>
+                )}
+
                 {isEditing && (
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
                         <Button variant="secondary" onClick={cancelEditing}>
