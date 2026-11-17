@@ -7,14 +7,14 @@
 
 ## 2. Dialog flow
 
-- [ ] 2.1 Red: opening the dialog loads the ORIS feed for the default region and renders loading, error, empty and populated states
-- [ ] 2.2 Red: switching region refetches the feed and clears the selection
-- [ ] 2.3 Red: the selection limit comes from the affordance's multi property `max`, falls back to 50; toggling cannot exceed it; select-all selects at most the limit and deselects when the limit is reached
-- [ ] 2.4 Red: submitting uses the template's `target`, its `method` (POST when absent) and the multi property's name as the body key (`orisIds` when absent); lowercase statuses are normalised to uppercase; the per-event result screen renders; a failed submit shows the failure text
-- [ ] 2.5 Red: reopening the dialog clears region, selection, submit error and the previous result
-- [ ] 2.6 Green: implement the internal state function and the two dialog screens in the module's file, with no props relayed between them
-- [ ] 2.7 Red: a completed batch import invalidates the `['authorized']` queries (events list refetches) with no `onImported` callback
-- [ ] 2.8 Verify: module slice tests green
+- [x] 2.1 Red: opening the dialog loads the ORIS feed for the default region and renders loading, error, empty and populated states
+- [x] 2.2 Red: switching region refetches the feed and clears the selection
+- [x] 2.3 Red: the selection limit comes from the affordance's multi property `max`, falls back to 50; toggling cannot exceed it; select-all selects at most the limit and deselects when the limit is reached
+- [x] 2.4 Red: submitting uses the template's `target`, its `method` (POST when absent) and the multi property's name as the body key (`orisIds` when absent); lowercase statuses are normalised to uppercase; the per-event result screen renders; a failed submit shows the failure text
+- [x] 2.5 Red: reopening the dialog clears region, selection, submit error and the previous result
+- [x] 2.6 Green: implement the internal state function and the two dialog screens in the module's file, with no props relayed between them
+- [x] 2.7 Red: a completed batch import invalidates the `['authorized']` queries (events list refetches) with no `onImported` callback
+- [x] 2.8 Verify: module slice tests green
 
 ## 3. Page migration
 
