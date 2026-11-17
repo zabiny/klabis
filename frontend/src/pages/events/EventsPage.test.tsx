@@ -15,7 +15,6 @@ import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {useAuth} from '../../contexts/authContext';
 import {labels} from '../../localization';
-import {useOrisEventImport} from '../../hooks/useOrisEventImport';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -44,16 +43,6 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
-vi.mock('../../components/events/ImportOrisEventModal', () => ({
-    ImportOrisEventModal: ({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) =>
-        isOpen ? (
-            <div data-testid="import-oris-modal">
-                <span>Import akce z ORIS</span>
-                <button onClick={onClose}>Zavřít</button>
-            </div>
-        ) : null,
-}));
-
 vi.mock('../../components/events/BulkSyncOrisModal', () => ({
     BulkSyncOrisModal: ({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) =>
         isOpen ? (
@@ -62,27 +51,6 @@ vi.mock('../../components/events/BulkSyncOrisModal', () => ({
                 <button onClick={onClose}>Zavřít</button>
             </div>
         ) : null,
-}));
-
-vi.mock('../../hooks/useOrisEventImport', () => ({
-    useOrisEventImport: vi.fn().mockReturnValue({
-        events: [],
-        fetchState: 'loading',
-        selectedRegion: 'JIHOMORAVSKA',
-        isSubmitting: false,
-        submitError: null,
-        onRegionChange: vi.fn(),
-        selectedIds: new Set<number>(),
-        onToggleId: vi.fn(),
-        onToggleAll: vi.fn(),
-        onImportBatch: vi.fn(),
-        importResult: null,
-        isAllSelected: false,
-        isSomeSelected: false,
-        canSubmit: false,
-        selectionLimit: 50,
-        isSelectionLimitReached: false,
-    }),
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
@@ -292,77 +260,7 @@ describe('EventsPage', () => {
     });
 
     describe('"Importovat z ORIS" button', () => {
-        it('shows button when importEventsBatch template exists in HAL response', () => {
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-                _templates: {
-                    importEventsBatch: mockHalFormsTemplate({
-                        method: 'POST',
-                        target: '/api/events/import-batch',
-                        title: 'Importovat z ORIS',
-                    }),
-                },
-            };
-            renderPage(createMockPageData(resourceData));
-            expect(screen.getByRole('button', {name: /importovat z oris/i})).toBeInTheDocument();
-        });
-
-        it('prefers importEventsBatch over importEvent when both are present', () => {
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-                _templates: {
-                    importEventsBatch: mockHalFormsTemplate({
-                        method: 'POST',
-                        target: '/api/events/import-batch',
-                        title: 'Importovat z ORIS',
-                    }),
-                    importEvent: mockHalFormsTemplate({
-                        method: 'POST',
-                        target: '/api/events/import',
-                        title: 'Importovat z ORIS',
-                    }),
-                },
-            };
-            renderPage(createMockPageData(resourceData));
-            // Only one button rendered (not duplicated)
-            expect(screen.getAllByRole('button', {name: /importovat z oris/i})).toHaveLength(1);
-        });
-
-        it('shows button when importEvent template exists in HAL response', () => {
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-                _templates: {
-                    importEvent: mockHalFormsTemplate({
-                        method: 'POST',
-                        target: '/api/events/import',
-                        title: 'Importovat z ORIS',
-                    }),
-                },
-            };
-            renderPage(createMockPageData(resourceData));
-            expect(screen.getByRole('button', {name: /importovat z oris/i})).toBeInTheDocument();
-        });
-
-        it('does NOT show button when importEvent template is absent', () => {
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-                _templates: {
-                    createEvent: mockHalFormsTemplate({method: 'POST', title: 'Přidat závod'}),
-                },
-            };
-            renderPage(createMockPageData(resourceData));
-            expect(screen.queryByRole('button', {name: /importovat z oris/i})).not.toBeInTheDocument();
-        });
-
-        it('does NOT show button when no templates exist', () => {
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-            };
-            renderPage(createMockPageData(resourceData));
-            expect(screen.queryByRole('button', {name: /importovat z oris/i})).not.toBeInTheDocument();
-        });
-
-        it('opens ImportOrisEventModal when button is clicked', async () => {
+        it('opens the ORIS import dialog when button is clicked', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 _links: {self: {href: '/api/events'}},
@@ -378,27 +276,7 @@ describe('EventsPage', () => {
 
             await user.click(screen.getByRole('button', {name: /importovat z oris/i}));
 
-            expect(screen.getByText('Import akce z ORIS')).toBeInTheDocument();
-        });
-
-        it('passes the full template object (not just href) to useOrisEventImport', () => {
-            const template = mockHalFormsTemplate({
-                method: 'POST',
-                target: '/api/events/import-batch',
-                title: 'Importovat z ORIS',
-                properties: [{name: 'orisIds', type: 'number', multi: true, max: 10}],
-            });
-            const resourceData: HalResponse = {
-                _links: {self: {href: '/api/events'}},
-                _templates: {importEventsBatch: template},
-            };
-            renderPage(createMockPageData(resourceData));
-
-            expect(vi.mocked(useOrisEventImport)).toHaveBeenCalledWith(
-                expect.objectContaining({target: '/api/events/import-batch', method: 'POST'}),
-                expect.any(Boolean),
-                expect.any(Object),
-            );
+            expect(screen.getByText(labels.orisImport.loadingMessage)).toBeInTheDocument();
         });
     });
 

@@ -26,6 +26,10 @@ _Avoid_: campaign year, publication
 
 ### Synchronisation
 
+**ORIS event import**:
+Bringing events from the ORIS feed into Klabis in one batch, with a per-event result; events Klabis already has are not offered.
+_Avoid_: ORIS sync, ORIS event sync, event import
+
 **Sync pairing**:
 The link between a Klabis entity and its counterpart in an external system. An entity's pairing is either none, active or retired.
 _Avoid_: enrollment, enrolled, sync binding
