@@ -28,7 +28,7 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Full frontend unit suite green
-- [ ] 5.2 `npm run build` (type check) and `npm run lint` green
-- [ ] 5.3 E2E smoke of affected journeys (member list and detail, event list and detail, membership fees admin, calendar, account with transactions, notification settings) against the local environment
-- [ ] 5.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+- [x] 5.1 Full frontend unit suite green
+- [x] 5.2 `npm run build` (type check) and `npm run lint` green
+- [x] 5.3 E2E smoke of affected journeys (member list and detail, event list and detail, membership fees admin, calendar, account with transactions, notification settings) against the local environment
+- [x] 5.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
