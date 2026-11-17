@@ -59,6 +59,7 @@ Consequences of C:
 - `getGroup` for a manager: name, owners, members; no pending invitations, no invitation management - needed so the dialog can discover templates and the member picker. MEMBERS:MANAGE already reads every member's data, so no new data class is exposed.
 - Side effect, accepted by the user decision: a MEMBERS:MANAGE holder may add an owner to / dissolve any free group at any time, not only inside a suspension flow. It is the same trust level as managing all members.
 - The `invite` gap (Context) is closed by the guard.
+- Applies to every group type (user decision 17. 11. 2026, option A: one notion of ownership, no new powers). A new `TrainingGroupRelationshipSource` grants `GROUPS_OWNER` to trainers, `LegalGuardianGroupRelationshipSource` also grants it to guardians. All group types share one table, so a group id is unique and one `TargetType.GROUP` serves all. Guards of training group operations (`GROUPS_TRAINING`) and legal guardian group operations (`MEMBERS_MANAGE`) do not change; the imperative trainer check in `getTrainingGroup` (`isMemberOf(group::hasTrainer)`) becomes `has(GROUPS_OWNER, group)`. Free groups cannot delegate it: delegatable authorities are filtered to target type MEMBER.
 
 ### D2: What happens on dissolution
 
@@ -169,6 +170,9 @@ classDiagram
 |---|---|
 | `TargetType`, `TargetRef`, `Authority` | New `TargetType.GROUP`, `TargetRef.group(uuid)`, `Authority.GROUPS_OWNER` (SPECIFIC only). |
 | `FreeGroupRelationshipSource` | Also returns `GROUPS_OWNER` over each owned group. |
+| `TrainingGroupRelationshipSource` (new, `groups.traininggroup.infrastructure`) | Returns `GROUPS_OWNER` over each group the user trains. |
+| `LegalGuardianGroupRelationshipSource` | Also returns `GROUPS_OWNER` over each group the user is guardian of. |
+| `TrainingGroupController.getTrainingGroup` | Trainer check through `AuthorizationEvaluator`; behavior unchanged. |
 | `FreeGroup` | No authorization: `requireOwner` and actor parameters removed; `addOwner(memberId)` override rejects a non-member (`CannotPromoteNonMemberToOwnerException`). |
 | `FreeGroupManagementService` / `FreeGroupManagementPort` | Actor parameters removed except `inviteMember` (`invitedBy`) and `removeMember` (self-or-owner check via `AuthorizationEvaluator`). |
 | `OwnedGroup` (members root, public) | Add `groupLink` (URI of the group resource). |

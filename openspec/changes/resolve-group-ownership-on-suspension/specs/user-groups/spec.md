@@ -171,3 +171,34 @@ The system SHALL provide a detail page for each free group showing its name, own
 - **THEN** the system asks for confirmation
 - **AND** offers an optional free-text field for the cancellation reason
 - **AND** only submits the cancellation after the owner confirms
+
+## ADDED Requirements
+
+### Requirement: Owners Hold Owner Permission Over Their Group
+
+The system SHALL give every owner of a group the GROUPS:OWNER permission over that group, for every group type: owners of a free group, trainers of a training group and legal guardians of a legal guardian group. The permission concerns the group itself, not its members. It is never assigned by hand and never delegated. What it allows depends on the group type: free group owners manage their group through it, trainers and legal guardians gain no management action through it.
+
+#### Scenario: Owner permission follows ownership
+
+- **GIVEN** a member is promoted to owner of a free group
+- **WHEN** the member opens the group's detail page
+- **THEN** the actions for managing the group are offered
+- **AND** a person who stopped being an owner is no longer offered them
+
+#### Scenario: Trainer gains no management action through ownership
+
+- **GIVEN** a trainer of a training group without GROUPS:TRAINING permission
+- **WHEN** the trainer opens the training group's detail page
+- **THEN** the trainer sees the group
+- **AND** no action for editing the group, adding a trainer or deleting the group is offered
+
+#### Scenario: Legal guardian gains no management action through ownership
+
+- **GIVEN** a legal guardian without MEMBERS:MANAGE permission
+- **WHEN** the guardian views their legal guardian group
+- **THEN** no action for changing the group's guardians is offered
+
+#### Scenario: Owner permission cannot be assigned or delegated
+
+- **WHEN** an administrator edits a user's permissions, or a member creates a free group and chooses its delegated permissions
+- **THEN** GROUPS:OWNER is not offered
