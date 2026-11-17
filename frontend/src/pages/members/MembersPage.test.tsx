@@ -119,7 +119,7 @@ const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<Retu
         _embedded: {memberSummaryResponseList: members},
         page: {size: 10, totalElements: members.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
     const pageData = createMockPageData(resourceData, routeOverrides);
     return renderPage(pageData);
 };
@@ -474,7 +474,7 @@ describe('MembersPage — filter bar integration', () => {
                 registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 
@@ -491,7 +491,7 @@ describe('MembersPage — filter bar integration', () => {
                 registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 
@@ -508,7 +508,7 @@ describe('MembersPage — filter bar integration', () => {
                 registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 
@@ -520,7 +520,7 @@ describe('MembersPage — filter bar integration', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         const pageData = createMockPageData(resourceData);
         renderPageWithSearchReader('/members?status=ACTIVE', pageData);
 
@@ -548,7 +548,7 @@ describe('MembersPage — data-incomplete badge', () => {
             },
             page: {size: 10, totalElements: 2, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         renderPage(createMockPageData(resourceData));
 
         const badges = screen.getAllByText(labels.membersFilter.incompleteBadge)
@@ -566,7 +566,7 @@ describe('MembersPage — data-incomplete badge', () => {
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
         renderPage(createMockPageData(resourceData));
 
         expect(screen.queryByText(labels.membersFilter.incompleteBadge)).not.toBeInTheDocument();
@@ -781,7 +781,7 @@ describe('MembersPage — page reset on filter change', () => {
             page: {size: 10, totalElements: 30, totalPages: 3, number: 0},
         };
         vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resource) : resource, error: null})) as unknown as typeof useAuthorizedQuery);
         renderPage(createMockPageData(resource));
 
         await userEvent.click(screen.getByRole('button', {name: /Další/}));

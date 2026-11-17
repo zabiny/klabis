@@ -16,8 +16,8 @@ import {parseHalHref, serializeHalHref} from '../../api/hateoas'
  * Props for HalEmbeddedTable component
  */
 export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
-    /** Name of the collection in _embedded object */
-    collectionName: string
+    /** Optional override of the collection name inside _embedded (inferred from the single embedded key when omitted) */
+    collectionName?: string
 
     /** Callback when a row is clicked */
     onRowClick?: (item: T) => void

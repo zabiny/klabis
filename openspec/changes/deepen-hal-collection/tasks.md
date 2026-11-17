@@ -24,11 +24,11 @@
 
 ## 4. Table adapter
 
-- [ ] 4.1 Red: test `useHalTableQuery` — returns `items`, `pageMetadata`, `currentPage`/`setPage`/`rowsPerPage`/`setRowsPerPage`; no `rows`, `pageData` or `page` attributes; a response without `_embedded` (including a former `content`/`data` shape) yields empty `items`; a `collection` override is honoured
-- [ ] 4.2 Green: rename `useHalCollectionQuery` → `useHalTableQuery`, compose `useHalCollection`, delete the `content`/`data` fallback and the explicit `retry`/`gcTime`
-- [ ] 4.3 Migrate `KlabisTableWithQuery` and `FinancesPage` to the new return shape; pass `collectionName` through as `collection` and make it optional on `HalEmbeddedTable` (existing call sites unchanged)
-- [ ] 4.4 Delete the old hook and its test file
-- [ ] 4.5 Verify: table slice tests green
+- [x] 4.1 Red: test `useHalTableQuery` — returns `items`, `pageMetadata`, `currentPage`/`setPage`/`rowsPerPage`/`setRowsPerPage`; no `rows`, `pageData` or `page` attributes; a response without `_embedded` (including a former `content`/`data` shape) yields empty `items`; a `collection` override is honoured
+- [x] 4.2 Green: rename `useHalCollectionQuery` → `useHalTableQuery`, compose `useHalCollection`, delete the `content`/`data` fallback and the explicit `retry`/`gcTime`
+- [x] 4.3 Migrate `KlabisTableWithQuery` and `FinancesPage` to the new return shape; pass `collectionName` through as `collection` and make it optional on `HalEmbeddedTable` (existing call sites unchanged)
+- [x] 4.4 Delete the old hook and its test file
+- [x] 4.5 Verify: table slice tests green
 
 ## 5. Verification
 

@@ -50,7 +50,10 @@ const renderPage = (items: unknown[], page = {size: 10, totalElements: items.len
         _embedded: {syncAttempts: items},
         page,
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({
+        data: options?.select ? options.select(resourceData) : resourceData,
+        error: null,
+    })) as unknown as typeof useAuthorizedQuery);
     vi.mocked(useHalPageData).mockReturnValue(pageData(resourceData) as unknown as ReturnType<typeof useHalPageData>);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -238,10 +241,13 @@ describe('SyncOverviewPage attention tab', () => {
             _links: {self: {href: 'http://localhost/api/sync/records?status=CONFLICT&status=FAILED'}},
             _embedded: {syncRecords: records},
         };
-        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
-            data: url.includes('/sync/records') ? recordsData : attempts,
-            error: null,
-        })) as unknown as typeof useAuthorizedQuery);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string, options?: {select?: (raw: unknown) => unknown}) => {
+            const data = url.includes('/sync/records') ? recordsData : attempts;
+            return {
+                data: options?.select ? options.select(data) : data,
+                error: null,
+            };
+        }) as unknown as typeof useAuthorizedQuery);
         vi.mocked(useHalPageData).mockReturnValue(pageData(attempts) as unknown as ReturnType<typeof useHalPageData>);
         const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
         return render(

@@ -21,11 +21,15 @@ const attempt = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const mockResponse = (items: unknown[]) => {
-    vi.mocked(useAuthorizedQuery).mockReturnValue({
-        data: {_embedded: {syncAttempts: items}, page: {size: 10, totalElements: items.length, totalPages: 1, number: 0}},
+    const envelope = {
+        _embedded: {syncAttempts: items},
+        page: {size: 10, totalElements: items.length, totalPages: 1, number: 0},
+    };
+    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({
+        data: options?.select ? options.select(envelope) : envelope,
         isLoading: false,
         error: null,
-    } as unknown as ReturnType<typeof useAuthorizedQuery>);
+    })) as unknown as typeof useAuthorizedQuery);
 };
 
 const renderHistory = (href = '/api/events/1/sync/attempts') =>

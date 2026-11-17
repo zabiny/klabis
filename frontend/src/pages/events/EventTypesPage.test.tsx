@@ -104,7 +104,7 @@ const renderPageWithEventTypes = (eventTypes: unknown[]) => {
         _embedded: {eventTypeDtoList: eventTypes},
         page: {size: 10, totalElements: eventTypes.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
     const pageData = createMockPageData(resourceData);
     return renderPage(pageData);
 };
@@ -242,7 +242,7 @@ describe('EventTypesPage', () => {
                 _embedded: {eventTypeDtoList: [buildEventTypeRow()]},
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+            vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
             renderPage(createMockPageData(resourceData, {navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/event-types'})}));
 
             fireEvent.click(screen.getByText('Trénink'));

@@ -104,7 +104,10 @@ describe('TierCatalogSection', () => {
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({
+            data: options?.select ? options.select(resourceData) : resourceData,
+            error: null,
+        })) as unknown as typeof useAuthorizedQuery);
         renderSection(createMockPageData(resourceData));
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
     });
@@ -123,7 +126,10 @@ describe('TierCatalogSection', () => {
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({
+            data: options?.select ? options.select(resourceData) : resourceData,
+            error: null,
+        })) as unknown as typeof useAuthorizedQuery);
         renderSection(createMockPageData(resourceData, {
             navigateToResource,
             refetch: async () => {},

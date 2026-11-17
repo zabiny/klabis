@@ -1,17 +1,30 @@
 import {useMemo, useState} from 'react';
-import type {HalCollectionResponse} from '../api';
+import type {PageMetadata} from '../api';
 import {parseHalHref, serializeHalHref} from '../api/hateoas';
-import type {TablePageData} from '../components/KlabisTable/types';
-import {useAuthorizedQuery} from './useAuthorizedFetch';
+import {useHalCollection} from './useHalCollection';
 import {usePersistedState} from './usePersistedState';
 import type {SortState} from './useTableSort';
 
-export function useHalCollectionQuery<T>(
+export interface HalTableQueryResult<T> {
+    items: T[];
+    pageMetadata: PageMetadata | undefined;
+    error: Error | null;
+    currentPage: number;
+    setPage: (page: number) => void;
+    rowsPerPage: number;
+    setRowsPerPage: (size: number) => void;
+}
+
+/**
+ * Paginated, sorted view of the HAL collection behind `link`. Paging and sorting state is
+ * applied to the link's query string; the rows themselves come from {@link useHalCollection}.
+ */
+export function useHalTableQuery<T>(
     link: {href: string},
     sort: SortState | undefined,
     collectionName?: string,
     defaultRowsPerPage = 10,
-) {
+): HalTableQueryResult<T> {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPageState] = usePersistedState('klabis-table-rows-per-page', defaultRowsPerPage);
     const [previousHref, setPreviousHref] = useState(link.href);
@@ -34,26 +47,15 @@ export function useHalCollectionQuery<T>(
         return serializeHalHref(url);
     }, [link.href, currentPage, rowsPerPage, sort]);
 
-    const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {
+    const {items, pageMetadata, error} = useHalCollection<T>(queryUrl, {
+        collection: collectionName,
         staleTime: 30000,
-        gcTime: 1000 * 60 * 5,
-        retry: 1,
     });
-
-    const rows = useMemo(() => {
-        if (!response) return [] as T[];
-        if (collectionName && response._embedded) {
-            return (response._embedded[collectionName] as T[]) || [];
-        }
-        return (response.content as T[]) || (response.data as T[]) || [];
-    }, [response, collectionName]);
-
-    const pageData = useMemo(() => (response?.page ? (response.page as TablePageData) : undefined), [response?.page]);
 
     const setRowsPerPage = (size: number) => {
         setRowsPerPageState(size);
         setPage(0);
     };
 
-    return {rows, pageData, error, page: currentPage, setPage, rowsPerPage, setRowsPerPage};
+    return {items, pageMetadata, error, currentPage, setPage, rowsPerPage, setRowsPerPage};
 }

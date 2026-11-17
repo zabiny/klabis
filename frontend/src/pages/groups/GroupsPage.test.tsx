@@ -88,7 +88,7 @@ const renderPageWithGroups = (groups: unknown[], routeOverrides?: Record<string,
         _embedded: {groupSummaryResponseList: groups},
         page: {size: 10, totalElements: groups.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
     const pageData = createMockPageData(resourceData, routeOverrides);
     return renderPage(pageData);
 };

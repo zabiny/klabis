@@ -3,7 +3,7 @@ import type {ListTransactionsItemResource} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {useHalCollectionQuery} from "../../hooks/useHalCollectionQuery.ts";
+import {useHalTableQuery} from "../../hooks/useHalTableQuery.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
@@ -95,8 +95,8 @@ const TransactionsTableContent = ({
         return {href: serializeHalHref(url)};
     }, [selfHref, extraParams]);
 
-    const {rows: tableData, pageData, error, page, setPage, rowsPerPage, setRowsPerPage} =
-        useHalCollectionQuery<TransactionItem>(link, sort, 'transactions');
+    const {items: tableData, pageMetadata, error, currentPage, setPage, rowsPerPage, setRowsPerPage} =
+        useHalTableQuery<TransactionItem>(link, sort, 'transactions');
 
     // Build a set of transaction IDs that have been reversed (i.e. another tx on this page targets them).
     // The list endpoint does not include per-item _links.reversedBy, so we derive it from
@@ -195,7 +195,7 @@ const TransactionsTableContent = ({
     return (
         <KlabisTable<TransactionItem>
             data={tableData}
-            page={pageData}
+            page={pageMetadata}
             error={error}
             onSortChange={(column, direction) => {
                 setSort({by: column, direction});
@@ -204,7 +204,7 @@ const TransactionsTableContent = ({
             onSortReset={reset}
             onPageChange={setPage}
             onRowsPerPageChange={setRowsPerPage}
-            currentPage={page}
+            currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             currentSort={sort}
             defaultOrderBy="occurredAt"
