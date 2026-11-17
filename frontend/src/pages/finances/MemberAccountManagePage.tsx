@@ -9,7 +9,8 @@ import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
 import {ReverseConfirmModal} from "./ReverseConfirmModal.tsx";
 import {Banknote} from "lucide-react";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
-import type {HalResponse, Link} from "../../api/types.ts";
+import type {Link} from "../../api/types.ts";
+import type {GetAccountResource} from "../../api";
 import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
 import {HalPageGate} from "../HalPageGate.tsx";
 
@@ -28,7 +29,7 @@ const TRANSACTION_FILTERS = {
     occurredAtTo: {type: 'string'},
 } as const;
 
-const MemberAccountManageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
+const MemberAccountManageContent = ({resourceData}: {resourceData: GetAccountResource}): ReactElement => {
     const {values, setValues} = useUrlFilters(TRANSACTION_FILTERS);
     const extraParams = useMemo(
         () => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== '')),
@@ -41,8 +42,8 @@ const MemberAccountManageContent = ({resourceData}: {resourceData: HalResponse})
         setReverseTarget(tx);
     }, []);
 
-    const balance = resourceData.balance as number | undefined;
-    const currency = resourceData.currency as string | undefined;
+    const balance = resourceData.balance;
+    const currency = resourceData.currency;
 
     const hasDepositTemplate = !!resourceData._templates?.deposit;
     const hasChargeTemplate = !!resourceData._templates?.charge;
@@ -117,7 +118,7 @@ const MemberAccountManageContent = ({resourceData}: {resourceData: HalResponse})
 };
 
 export const MemberAccountManagePage = (): ReactElement => (
-    <HalPageGate>
+    <HalPageGate<GetAccountResource>>
         {(resourceData) => <MemberAccountManageContent resourceData={resourceData}/>}
     </HalPageGate>
 );

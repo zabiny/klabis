@@ -9,6 +9,7 @@ import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {EventDetailPage} from './EventDetailPage';
 import {labels} from '../../localization';
 import {vi} from 'vitest';
@@ -252,16 +253,12 @@ const mockEventDetailData = (overrides?: Partial<HalResponse>): HalResponse => (
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<UseHalPageDataReturn> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
+        ...overrides,
+    });
 
 const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);

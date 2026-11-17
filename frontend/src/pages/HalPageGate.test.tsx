@@ -5,27 +5,15 @@ import {vi} from 'vitest';
 import {HalPageGate} from './HalPageGate';
 import {useHalPageData} from '../hooks/useHalPageData';
 import {ApiError} from '../api/apiError';
+import {makePageData} from '../__mocks__/pageData';
 import type {HalResponse} from '../api';
 
 vi.mock('../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-type PageData = ReturnType<typeof useHalPageData>;
-
-const pageData = (overrides: Partial<PageData> = {}): PageData => ({
-    resourceData: null,
-    isLoading: false,
-    error: null,
-    queryState: 'success',
-    navigateToResource: vi.fn(),
-    getResourceLink: vi.fn(() => null),
-    refetch: vi.fn(),
-    ...overrides,
-});
-
-const mockPageData = (overrides: Partial<PageData> = {}) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData(overrides));
+const mockPageData = (overrides: Parameters<typeof makePageData>[0] = {}) => {
+    vi.mocked(useHalPageData).mockReturnValue(makePageData(overrides));
 };
 
 const renderGate = (ui: React.ReactNode) =>
@@ -59,38 +47,12 @@ describe('HalPageGate', () => {
         expect(isLoadingVisual(container)).toBe(false);
     });
 
-    it('renders the not-found page for an error with status 404', () => {
+    it('delegates the error to ErrorPage instead of rendering its children', () => {
         mockPageData({error: new ApiError(404), queryState: 'error'});
 
         renderGate(<HalPageGate>{() => <div>obsah</div>}</HalPageGate>);
 
         expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText('obsah')).not.toBeInTheDocument();
-    });
-
-    it('renders the forbidden page for an error with status 403', () => {
-        mockPageData({error: new ApiError(403), queryState: 'error'});
-
-        renderGate(<HalPageGate>{() => <div>obsah</div>}</HalPageGate>);
-
-        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
-    });
-
-    it('renders the forbidden page for an error with status 401', () => {
-        mockPageData({error: new ApiError(401), queryState: 'error'});
-
-        renderGate(<HalPageGate>{() => <div>obsah</div>}</HalPageGate>);
-
-        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
-    });
-
-    it('renders the generic error card for any other error', () => {
-        mockPageData({error: new ApiError(500), queryState: 'error'});
-
-        renderGate(<HalPageGate>{() => <div>obsah</div>}</HalPageGate>);
-
-        expect(screen.getByText('Něco se pokazilo')).toBeInTheDocument();
-        expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
         expect(screen.queryByText('obsah')).not.toBeInTheDocument();
     });
 

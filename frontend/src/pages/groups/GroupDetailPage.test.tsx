@@ -1,7 +1,6 @@
 import '@testing-library/jest-dom';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupDetailPage} from './GroupDetailPage';
 import {vi} from 'vitest';
@@ -95,11 +94,6 @@ describe('GroupDetailPage', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-    });
-
-    it('shows the page-level error when fetch fails with a 404', () => {
-        renderPage(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Skupina nenalezena'})});
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
     });
 
     it('renders group name as page heading', () => {

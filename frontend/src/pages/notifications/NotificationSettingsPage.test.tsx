@@ -4,7 +4,8 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
+import type {HalResponse} from '../../api';
 import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
 import {getRegisteredEndpoint, setRegisteredEndpoint} from '../../pwa/pushSubscriptionStore';
 import {labels} from '../../localization';
@@ -58,15 +59,11 @@ const TEMPLATE_TARGET = '/api/notifications/devices';
 
 const withTemplate = {
     ...settings,
-    _templates: {registerNotificationDevice: {method: 'POST', target: TEMPLATE_TARGET, properties: []}},
+    _templates: {registerNotificationDevice: {method: 'POST' as const, target: TEMPLATE_TARGET, properties: []}},
 };
 
-const renderPage = (resourceData: unknown = settings) => {
-    vi.mocked(useHalPageData).mockReturnValue({
-        resourceData,
-        isLoading: false,
-        error: null,
-    } as unknown as UseHalPageDataReturn);
+const renderPage = (resourceData: HalResponse = settings) => {
+    vi.mocked(useHalPageData).mockReturnValue(makePageData({resourceData}));
     return render(<NotificationSettingsPage/>);
 };
 
@@ -92,11 +89,11 @@ describe('NotificationSettingsPage', () => {
     });
 
     it('shows the page-level error when the settings cannot be loaded', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({
             resourceData: null,
-            isLoading: false,
             error: new ApiError(500, {type: '/errors/internal', detail: 'Boom'}),
-        } as unknown as UseHalPageDataReturn);
+            queryState: 'error',
+        }));
         render(<NotificationSettingsPage/>);
 
         expect(screen.getByText('Něco se pokazilo')).toBeInTheDocument();
@@ -242,7 +239,7 @@ describe('NotificationSettingsPage', () => {
     });
     describe('disabling and removing devices', () => {
         const removeTemplate = () => ({
-            removeNotificationDevice: {method: 'DELETE', properties: []},
+            removeNotificationDevice: {method: 'DELETE' as const, properties: []},
         });
         const withRemovable = {
             ...settings,
@@ -311,7 +308,7 @@ describe('NotificationSettingsPage', () => {
         const testLabel = labels.notifications.sendTest;
         const withTestTemplate = {
             ...settings,
-            _templates: {sendTestNotification: {method: 'POST', target: TEST_TARGET, properties: []}},
+            _templates: {sendTestNotification: {method: 'POST' as const, target: TEST_TARGET, properties: []}},
         };
 
         it('hides the button without the template', async () => {

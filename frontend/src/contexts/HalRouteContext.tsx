@@ -1,7 +1,7 @@
 import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import type {HalEnvelope, HalResourceLinks, HalResponse, Link} from '../api';
-import type {NavigateToResource} from './halRouteContext';
+import type {HalRouteContextValue, NavigateToResource} from './halRouteContext';
 import {toRoutePath} from '../api/apiPath';
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
@@ -78,7 +78,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
 
     // A disabled query reports 'pending' in React Query, so only the query itself can say
     // whether it has started: when it does not fetch, the route is idle, not pending.
-    const queryState: 'idle' | 'pending' | 'success' | 'error' = shouldFetch ? status : 'idle';
+    const queryState: HalRouteContextValue['queryState'] = shouldFetch ? status : 'idle';
 
     const navigateToResource: NavigateToResource = (resource, options) => {
         let targetLink: Link;

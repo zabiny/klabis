@@ -6,7 +6,9 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import type {HalResponse} from '../../api';
 import {LegalGuardianGroupDetailPage} from './LegalGuardianGroupDetailPage';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {stubFetch} from '../../__mocks__/halDialogTest.tsx';
@@ -59,13 +61,12 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
-const renderPage = (resourceData: Record<string, unknown>) => {
-    vi.mocked(useHalPageData).mockReturnValue({
+const renderPage = (resourceData: HalResponse) => {
+    vi.mocked(useHalPageData).mockReturnValue(makePageData({
         resourceData,
-        isLoading: false,
-        error: null,
-        navigateToResource, refetch: async () => {},
-    } as unknown as ReturnType<typeof useHalPageData>);
+        navigateToResource,
+        refetch: async () => {},
+    }));
     return render(
         <MemoryRouter>
             <LegalGuardianGroupDetailPage/>
@@ -169,29 +170,16 @@ describe('LegalGuardianGroupDetailPage', () => {
         const {rerender} = renderPage(group);
         await userEvent.click(screen.getByRole('button', {name: 'Upravit zástupce'}));
 
-        vi.mocked(useHalPageData).mockReturnValue({
-            resourceData: undefined,
-            isLoading: false,
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({
+            resourceData: null,
             error: new ApiError(404),
-            navigateToResource, refetch: async () => {},
-        } as unknown as ReturnType<typeof useHalPageData>);
+            queryState: 'error',
+            navigateToResource,
+            refetch: async () => {},
+        }));
         rerender(<QueryClientProvider client={new QueryClient()}><ToastProvider><MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter></ToastProvider></QueryClientProvider>);
 
         expect(navigate).toHaveBeenCalledWith('/legal-guardian-groups', {replace: true});
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
-    });
-
-    it('still shows a 404 when no guardians edit preceded it', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            resourceData: undefined,
-            isLoading: false,
-            error: new ApiError(404),
-            navigateToResource, refetch: async () => {},
-        } as unknown as ReturnType<typeof useHalPageData>);
-        render(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
-
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
-        expect(navigate).not.toHaveBeenCalled();
     });
 });

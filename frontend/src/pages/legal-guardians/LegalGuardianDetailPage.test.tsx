@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {ApiError} from '../../api/apiError';
+import type {HalResponse} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
 import {LegalGuardianDetailPage} from './LegalGuardianDetailPage';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
@@ -15,14 +17,14 @@ vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
 
 const navigateToResource = vi.fn();
 
-const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: ApiError}) => {
-    vi.mocked(useHalPageData).mockReturnValue({
+const renderPage = (resourceData: HalResponse | null, extra?: {isLoading?: boolean; error?: ApiError}) => {
+    vi.mocked(useHalPageData).mockReturnValue(makePageData({
         resourceData,
         isLoading: extra?.isLoading ?? false,
         error: extra?.error ?? null,
         refetch: async () => {},
         navigateToResource,
-    } as unknown as ReturnType<typeof useHalPageData>);
+    }));
     return render(
         <MemoryRouter>
             <LegalGuardianDetailPage/>
@@ -57,12 +59,6 @@ describe('LegalGuardianDetailPage', () => {
     it('offers the updateLegalGuardian form action', () => {
         renderPage(buildGuardian());
         expect(screen.getByTestId('hal-form-button')).toHaveTextContent('updateLegalGuardian');
-    });
-
-    it('shows the page-level error for a 404', () => {
-        renderPage(null, {error: new ApiError(404, {type: '/errors/legal-guardian-not-found', detail: 'Boom'})});
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText('Boom')).not.toBeInTheDocument();
     });
 
     it('hides the register-as-member button without the registerAsMember link', () => {

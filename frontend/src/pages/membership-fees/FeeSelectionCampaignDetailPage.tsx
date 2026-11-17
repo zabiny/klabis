@@ -1,14 +1,15 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import type {FeeSelectionCampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import {labels} from '../../localization';
 import {HalPageGate} from '../HalPageGate.tsx';
 
-const FeeSelectionCampaignDetailContent = (): ReactElement => {
-    const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
+interface FeeSelectionCampaignDetailContentProps {
+    resourceData: FeeSelectionCampaignDetail;
+}
 
+const FeeSelectionCampaignDetailContent = ({resourceData}: FeeSelectionCampaignDetailContentProps): ReactElement => {
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -16,10 +17,10 @@ const FeeSelectionCampaignDetailContent = (): ReactElement => {
                     {labels.ui.backToList}
                 </Link>
                 <span>/</span>
-                <span className="text-text-primary font-medium">{resourceData?.year}</span>
+                <span className="text-text-primary font-medium">{resourceData.year}</span>
             </div>
 
-            <h1 className="text-[28px] font-bold text-text-primary">{resourceData?.year}</h1>
+            <h1 className="text-[28px] font-bold text-text-primary">{resourceData.year}</h1>
 
             <CampaignDetail/>
         </div>
@@ -28,6 +29,6 @@ const FeeSelectionCampaignDetailContent = (): ReactElement => {
 
 export const FeeSelectionCampaignDetailPage = (): ReactElement => (
     <HalPageGate<FeeSelectionCampaignDetail>>
-        {() => <FeeSelectionCampaignDetailContent/>}
+        {resourceData => <FeeSelectionCampaignDetailContent resourceData={resourceData}/>}
     </HalPageGate>
 );

@@ -10,6 +10,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
+import {makePageData} from '../../__mocks__/pageData';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -96,18 +97,14 @@ const mockMemberDetailData = (overrides?: Partial<HalResponse & Record<string, u
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<ReturnType<typeof useHalPageData>>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockImplementation((rel: string) =>
-        resourceData?._links?.[rel as keyof typeof resourceData._links] ?? null
-    ),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockImplementation((rel: string) =>
+            resourceData?._links?.[rel] ?? null
+        ),
+        ...overrides,
+    });
 
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);

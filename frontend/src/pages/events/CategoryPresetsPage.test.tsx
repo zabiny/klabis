@@ -7,6 +7,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {CategoryPresetsPage} from './CategoryPresetsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -70,16 +71,12 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<UseHalPageDataReturn> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'}),
+        ...overrides,
+    });
 
 const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);

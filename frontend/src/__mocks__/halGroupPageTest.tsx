@@ -7,6 +7,7 @@ import {useHalPageData} from '../hooks/useHalPageData';
 import {ToastProvider} from '../contexts/ToastContext.tsx';
 import {createTestQueryClient, LocationProbe, ToastProbe} from './halDialogTest.tsx';
 import {mockHalFormsTemplate} from './halData';
+import {makePageData} from './pageData';
 import type {HalFormsTemplate, HalResponse} from '../api';
 
 export const MEMBER_OPTIONS = [
@@ -41,14 +42,12 @@ export const renderDetailPage = (
     resourceData: HalResponse | null,
     options: {pathname: string; refetch?: () => Promise<void>; isLoading?: boolean; error?: Error | null},
 ) => {
-    vi.mocked(useHalPageData).mockReturnValue({
+    vi.mocked(useHalPageData).mockReturnValue(makePageData({
         resourceData,
         isLoading: options.isLoading ?? false,
         error: options.error ?? null,
-        navigateToResource: vi.fn(),
         refetch: options.refetch ?? (async () => {}),
-        getResourceLink: vi.fn(),
-    } as unknown as ReturnType<typeof useHalPageData>);
+    }));
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>

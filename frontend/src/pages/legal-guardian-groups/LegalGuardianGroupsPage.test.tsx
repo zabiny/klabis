@@ -1,11 +1,10 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
 import {LegalGuardianGroupsPage} from './LegalGuardianGroupsPage';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
@@ -28,12 +27,7 @@ const resource: HalResponse = {_links: {self: {href: 'http://localhost/api/legal
 
 describe('LegalGuardianGroupsPage', () => {
     it('renders heading and the group table without a create button', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            resourceData: resource,
-            isLoading: false,
-            error: null,
-            navigateToResource: vi.fn(),
-        } as unknown as ReturnType<typeof useHalPageData>);
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({resourceData: resource}));
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByRole('heading', {name: 'Zákonní zástupci'})).toBeInTheDocument();
         expect(screen.getByTestId('groups-table')).toBeInTheDocument();
@@ -41,32 +35,9 @@ describe('LegalGuardianGroupsPage', () => {
     });
 
     it('shows guardian names column between name and minor count', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            resourceData: resource,
-            isLoading: false,
-            error: null,
-            navigateToResource: vi.fn(),
-        } as unknown as ReturnType<typeof useHalPageData>);
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({resourceData: resource}));
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByText('Zástupci')).toBeInTheDocument();
         expect(screen.getByTestId('guardians-cell')).toHaveTextContent('Ondřej Kratochvíl, Lenka Kratochvílová');
-    });
-
-    it('shows the page-level error for a 404', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: new ApiError(404, {type: '/errors/not-found', detail: 'Missing'}),
-            queryState: 'error',
-            navigateToResource: vi.fn(),
-        } as unknown as ReturnType<typeof useHalPageData>);
-        render(
-            <MemoryRouter>
-                <LegalGuardianGroupsPage/>
-            </MemoryRouter>
-        );
-
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

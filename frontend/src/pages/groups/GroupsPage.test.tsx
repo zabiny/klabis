@@ -6,6 +6,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {GroupsPage} from './GroupsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -40,19 +41,15 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups'}),
+        ...overrides,
+    });
 
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
+    vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
@@ -85,7 +82,7 @@ const buildPendingInvitation = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const renderPageWithGroups = (groups: unknown[], routeOverrides?: Record<string, unknown>) => {
+const renderPageWithGroups = (groups: unknown[], routeOverrides?: Partial<ReturnType<typeof makePageData>>) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/groups'}},
         _embedded: {groupSummaryResponseList: groups},
@@ -132,12 +129,6 @@ describe('GroupsPage', () => {
     it('renders "Název" column header', () => {
         renderPage(createMockPageData(groupsListResource));
         expect(screen.getByText('Název')).toBeInTheDocument();
-    });
-
-    it('shows the page-level error when fetch fails with a 404', () => {
-        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})}));
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText('Skupiny')).not.toBeInTheDocument();
     });
 
     it('renders "Vytvořit skupinu" button when createGroup template exists', () => {

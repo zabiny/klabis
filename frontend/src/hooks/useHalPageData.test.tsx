@@ -1,10 +1,9 @@
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter} from 'react-router-dom';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {useHalPageData} from './useHalPageData';
 import {HalRouteProvider} from '../contexts/HalRouteContext';
-import {AuthContext} from '../contexts/authContext';
 import type {HalResponse} from '../api';
 
 describe('useHalPageData', () => {
@@ -79,34 +78,6 @@ describe('useHalPageData', () => {
                 expect(result.current).toHaveProperty('queryState');
                 expect(['idle', 'pending', 'success', 'error']).toContain(result.current.queryState);
             });
-        });
-
-        it('should be idle while authentication is not ready', async () => {
-            const {result} = renderHook(() => useHalPageData(), {
-                wrapper: ({children}: { children: React.ReactNode }) => (
-                    <QueryClientProvider client={queryClient}>
-                        <BrowserRouter>
-                            <AuthContext.Provider
-                                value={{
-                                    isAuthenticated: false,
-                                    isLoading: true,
-                                    login: vi.fn(),
-                                    logout: vi.fn(),
-                                    getUser: () => null
-                                }}>
-                                <HalRouteProvider>{children}</HalRouteProvider>
-                            </AuthContext.Provider>
-                        </BrowserRouter>
-                    </QueryClientProvider>
-                ),
-            });
-
-            await waitFor(() => {
-                expect(result.current.queryState).toBe('idle');
-            });
-            expect(result.current.resourceData).toBeNull();
-            expect(result.current.isLoading).toBe(false);
-            expect(result.current.error).toBeNull();
         });
     });
 

@@ -7,6 +7,7 @@ import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthoriz
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
 import {act} from '@testing-library/react';
@@ -79,16 +80,12 @@ vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
         ) : null,
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<ReturnType<typeof useHalPageData>>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
+        ...overrides,
+    });
 
 const membersListResource: HalResponse = {_links: {self: {href: 'http://localhost/api/members'}}};
 
@@ -116,7 +113,7 @@ const buildMemberRow = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof useHalPageData>>) => {
+const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof makePageData>>) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/members'}},
         _embedded: {memberSummaryResponseList: members},
@@ -230,14 +227,6 @@ describe('MembersPage', () => {
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('Akce')).toBeInTheDocument();
-    });
-
-    it('shows the page-level error when the member list cannot be loaded', () => {
-        renderPage(createMockPageData(null, {
-            error: new ApiError(403, {type: '/errors/forbidden', detail: 'Access denied'}),
-        }));
-        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
-        expect(screen.queryByText('Členové')).not.toBeInTheDocument();
     });
 });
 

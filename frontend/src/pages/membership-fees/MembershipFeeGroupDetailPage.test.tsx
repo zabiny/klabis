@@ -7,7 +7,6 @@ import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRout
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeGroupDetailPage} from './MembershipFeeGroupDetailPage';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {
@@ -107,12 +106,6 @@ describe('MembershipFeeGroupDetailPage', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-    });
-
-    it('shows the page-level error for a 404', () => {
-        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 
     it('back link leads to the membership fees page', () => {

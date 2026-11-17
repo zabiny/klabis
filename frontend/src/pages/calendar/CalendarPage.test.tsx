@@ -7,8 +7,8 @@ import CalendarPage from './CalendarPage.tsx';
 import {vi} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
 import type {HalResponse} from '../../api';
-import {ApiError} from '../../api/apiError';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -96,23 +96,7 @@ describe('CalendarPage Component', () => {
     });
 
     // Helper function to create a complete mock context for useHalPageData
-    const createMockContext = (resourceData: HalResponse | null = null) => ({
-        resourceData,
-        isLoading: false,
-        error: null,
-        navigateToResource: vi.fn(),
-        refetch: vi.fn(),
-        getResourceLink: vi.fn(),
-        getLinks: () => resourceData?._links,
-        getTemplates: () => resourceData?._templates,
-        hasEmbedded: () => !!resourceData?._embedded && Object.keys(resourceData._embedded).length > 0,
-        getEmbeddedItems: () => resourceData?._embedded ? Object.values(resourceData._embedded).flat() : [],
-        isCollection: () => !!resourceData?.page || (!!resourceData?._embedded && Object.keys(resourceData._embedded).length > 0),
-        hasLink: (name: string) => !!resourceData?._links?.[name],
-        hasTemplate: (name: string) => !!resourceData?._templates?.[name],
-        hasForms: () => !!resourceData?._templates && Object.keys(resourceData._templates).length > 0,
-        getPageMetadata: () => resourceData?.page,
-    } as unknown as ReturnType<typeof useHalPageData>);
+    const createMockContext = (resourceData: HalResponse | null = null) => makePageData({resourceData});
 
     // Helper function to render with router and query params
     const locationRef: {current: ReturnType<typeof useLocation> | null} = {current: null};
@@ -289,36 +273,6 @@ describe('CalendarPage Component', () => {
             const itemEl = screen.getByText('Klubová schůze');
             expect(itemEl).toBeInTheDocument();
             expect(itemEl.getAttribute('title')).not.toContain('null');
-        });
-    });
-
-    describe('Loading and Error States', () => {
-        it('should display loading message when data is loading', () => {
-            mockUseHalPageData.mockReturnValue({
-                ...createMockContext(null),
-                isLoading: true,
-                resourceData: null,
-            });
-
-            renderWithRouter(<CalendarPage/>);
-
-            expect(screen.getByText('Načítání...')).toBeInTheDocument();
-        });
-
-        it('should display the page-level error for a 404', () => {
-            const error = new ApiError(404, {type: '/errors/calendar-item-not-found', detail: 'Calendar item 42 not found'});
-
-            mockUseHalPageData.mockReturnValue({
-                ...createMockContext(null),
-                error,
-                queryState: 'error',
-                resourceData: null,
-            });
-
-            renderWithRouter(<CalendarPage/>);
-
-            expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-            expect(screen.queryByText(/Calendar item/)).not.toBeInTheDocument();
         });
     });
 

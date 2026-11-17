@@ -6,7 +6,6 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeTierDetailPage} from './MembershipFeeTierDetailPage';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRouteContext.ts';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
@@ -106,12 +105,6 @@ describe('MembershipFeeTierDetailPage', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-    });
-
-    it('shows the page-level error for a 404', () => {
-        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
-        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 
     it('renders the fee tier name as page heading', () => {

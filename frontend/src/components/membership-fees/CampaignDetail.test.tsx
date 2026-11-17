@@ -8,6 +8,7 @@ import {CampaignDetail} from './CampaignDetail';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 
@@ -46,18 +47,14 @@ const buildCampaignDetail = (overrides?: Partial<HalResponse>): HalResponse => (
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
-});
+const createMockPageData = (resourceData: HalResponse | null) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
+    });
 
 const renderComponent = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
+    vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>

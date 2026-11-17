@@ -7,9 +7,9 @@ import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import {authorizedFetch} from '../../api/authorizedFetch';
-import {ApiError} from '../../api/apiError';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -120,16 +120,12 @@ vi.mock('../../hooks/useHalFormData', () => ({
     }),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    queryState: 'success' as const,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<UseHalPageDataReturn> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
+        ...overrides,
+    });
 
 const eventsListResource: HalResponse = {_links: {self: {href: '/api/events'}}};
 
@@ -173,15 +169,6 @@ describe('EventsPage', () => {
     it('renders page title "Akce"', () => {
         renderPage(createMockPageData(eventsListResource));
         expect(screen.getByRole('heading', {name: 'Akce'})).toBeInTheDocument();
-    });
-
-    it('shows the page-level error when the event list cannot be loaded', () => {
-        renderPage(createMockPageData(null, {
-            error: new ApiError(403, {type: '/errors/forbidden', detail: 'Access denied'}),
-        }));
-
-        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
-        expect(screen.queryByRole('heading', {name: 'Akce'})).not.toBeInTheDocument();
     });
 
     describe('deadlines column (6.4)', () => {

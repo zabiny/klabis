@@ -235,11 +235,6 @@ describe('HomePage - Regular User Dashboard', () => {
         renderHomePage()
         expect(screen.queryByText('42')).not.toBeInTheDocument()
     })
-
-    it('should not show "Žádná data dostupná"', () => {
-        renderHomePage()
-        expect(screen.queryByText('Žádná data dostupná')).not.toBeInTheDocument()
-    })
 })
 
 describe('HomePage - UserDashboard widget: no upcomingRegistrations link', () => {

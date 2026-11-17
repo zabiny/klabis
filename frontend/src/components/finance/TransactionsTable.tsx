@@ -1,7 +1,6 @@
 import {type ReactElement, useCallback, useMemo} from "react";
 import type {ListTransactionsItemResource} from "../../api";
 import {KlabisTable, TableCell} from "../KlabisTable";
-import {Spinner} from "../UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useHalTableQuery} from "../../hooks/useHalTableQuery.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
@@ -226,17 +225,8 @@ export const TransactionsTable = ({
     extraParams?: Record<string, string>;
     onReverseRequest?: (tx: TransactionReverseRequest) => void;
 }): ReactElement => {
-    const {isLoading, getResourceLink} = useHalPageData();
+    const {getResourceLink} = useHalPageData();
     const selfLink = getResourceLink();
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center gap-2 py-4">
-                <Spinner />
-                <span>Načítání transakcí...</span>
-            </div>
-        );
-    }
 
     if (!selfLink?.href) {
         return <div className="text-sm text-text-secondary py-4">{labels.finance.noTransactions}</div>;
