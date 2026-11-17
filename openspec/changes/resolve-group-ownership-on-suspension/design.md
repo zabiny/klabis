@@ -72,7 +72,7 @@ Consequences of C:
 | Group type | Successor | Picker |
 |---|---|---|
 | Training | any active member (trainers need not be trainees); a trainee promoted to trainer leaves the trainee list (existing rule) | `addTrainer` template, existing remote member options |
-| Free | a current member of that group (existing rule) | `addGroupOwner` template, same picker as the existing group detail page |
+| Free | a current member of that group (existing rule) | `addGroupOwner` template; its options come from `listGroupMemberOptions` (D7) |
 | Legal guardian | another guardian (member or new non-member), or no successor at all when the whole group is suspended (D6) | existing guardian form on the group page |
 
 "Group without other members" (free): `addGroupOwner` can never succeed, so the dialog hides "Určit nástupce" and offers only dissolve. The dialog learns it from the group resource (`members` empty), not from a separate flag. Picking the member being suspended again is harmless: the group stays blocked and the final resubmission reports it.
@@ -124,7 +124,7 @@ sequenceDiagram
 
 **Reason and note.** The same reason and note apply to all suspended members (one form, one decision); `suspendedBy` is the acting admin. Alternative of a different reason per minor rejected as needless.
 
-**Blockers of dependents are not resolvable in the dialog.** They concern other members (a minor's debt, a minor owning a free group). The dialog only reports them; the admin undoes the cascade for that group or fixes the cause elsewhere, then retries. A minor who is the last owner of a free group could technically be handled by the same row actions, but this is rare and deferred (see Open Questions).
+**Blockers of dependents are not resolvable in the dialog.** They concern other members (a minor's debt, a minor owning a free group). The dialog only reports them; the admin undoes the cascade for that group or fixes the cause elsewhere, then retries. A minor who is the last owner of a free group could technically be handled by the same row actions, but this is rare and out of scope (Open Question 6, resolved).
 
 **Confirmation.** Choosing "Pozastavit celou skupinu" first shows a confirmation listing the guardian and the minors (names from the group resource). Confirming marks the row; the final "Ukončit členství" executes. No second confirmation at execution.
 
@@ -138,7 +138,18 @@ sequenceDiagram
 | Boolean flag | Coarser (all groups or none); the list costs nothing extra. |
 | New endpoint (suspend legal guardian group) | A second route for the same business operation with its own blockers/409 body; rejected. |
 
-**Invariant (alternative handling).** Today nothing prevents a suspended member from staying a guardian: the guardian picker excludes suspended members, but existing guardian links are untouched, and no listener reacts to `MemberSuspendedEvent` in the legal guardian module. For a group with other guardians the suspended person would stay listed as guardian (and, via `LegalGuardianGroupRelationshipSource`, keep delegated edit rights over the minors, if the account were still usable) - this exists today independently of this change. Recommendation: a listener in `members.legalguardiangroup` reacts to `MemberSuspendedEvent` and removes the member from the guardians of every group that still has other guardians (the existing `changeGuardians` handles renaming and merging). A group whose sole guardian is suspended is left alone (its minors are suspended together, D6, or a successor was set before). Resume does not restore the link. If the user does not choose the cascade and sets a successor via the group page, the old guardian is typically replaced there; if they keep both, the listener removes the suspended one. Alternative - a domain invariant refusing to save a group with a suspended guardian - was rejected: it would break resumption and past groups.
+**Invariant (decided by the user 18. 11. 2026: remove, do not restore).** Today nothing prevents a suspended member from staying a guardian: the guardian picker excludes suspended members, but existing guardian links are untouched, and no listener reacts to `MemberSuspendedEvent` in the legal guardian module. For a group with other guardians the suspended person would stay listed as guardian (and, via `LegalGuardianGroupRelationshipSource`, keep delegated edit rights over the minors, if the account were still usable) - this exists today independently of this change. Decision: a listener in `members.legalguardiangroup` reacts to `MemberSuspendedEvent` and removes the member from the guardians of every group that still has other guardians (the existing `changeGuardians` handles renaming and merging). A group whose sole guardian is suspended is left alone (its minors are suspended together, D6, or a successor was set before). Resume does not restore the link. If the user does not choose the cascade and sets a successor via the group page, the old guardian is typically replaced there; if they keep both, the listener removes the suspended one. Alternative - a domain invariant refusing to save a group with a suspended guardian - was rejected: it would break resumption and past groups. Such groups never block, so no warning dialog opens for them; the suspension form instead carries a fixed note: "Je-li člen zákonným zástupcem nezletilého, který má i jiného zástupce, bude ze zástupců odebrán." A note shown only to affected members was rejected: it needs a new member-detail field for a rare case.
+
+### D7: Member options of a group
+
+Today the `addGroupOwner` template offers remote options from `GET /api/members/options` (every member, MEMBERS:READ) and `GroupDetailPage` narrows them on the client with `includeOnlyMemberIds`. The dialog would be the second place repeating that client-side filter, so the narrowing moves to the server - generically for every group type, because owners and members are common notions of `MemberGroup` stored in one table (`groups.user_groups` with `user_group_owners` / `user_group_members`) and a group id is unique across types (user decision 18. 11. 2026).
+
+- New `GET /api/groups/{id}/member-options` (`listGroupMemberOptions`) for a group of any type; optional query `role` (`GroupRole: [OWNER, MEMBER]`, owner = free group owner / trainer / guardian, member = member / trainee / minor); absent = both. Response: array of `MemberOptionResponse` (`value`/`prompt`), same as `listMemberOptions`; `value` is the person's id (equal to the member id for members). Unknown id -> 404. Precedent for the filter: `listLegalGuardianOptions?kind=`.
+- Lives in the shared kernel: controller in `common.groups.infrastructure.restapi` (precedent `GroupsExceptionHandler`), reading the group by id regardless of type through `GroupJdbcRepository`. Specified in `groups.yaml` under its own tag; the URL shares the free-group prefix, which is harmless with unique ids.
+- Names: `common` must not depend on `members`, so `common.groups` defines a port (`GroupParticipantNames`: ids -> display names) implemented by the members module; it resolves members and non-member legal guardians alike.
+- Access: `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]`, `x-klabis-target-id: GROUP` - an owner of any group reads its options, MEMBERS:MANAGE reads all (it already reads every member's data). GROUPS:TRAINING is not added until a screen needs it.
+- The `addGroupOwner` template's `memberId` remote options point to `listGroupMemberOptions(id, MEMBER)`. Both the dialog and `GroupDetailPage` take the picker from the template; `includeOnlyMemberIds` is removed from `GroupDetailPage` and, having no other user, from `HalFormDisplay` / `KlabisFieldsFactory` / `HalFormsMemberId`. `excludeMemberIds` (invitations, training groups) is a different filter ("everybody but") and stays.
+- Alternatives rejected: keeping the client-side filter in the dialog (two copies of the rule); one endpoint per group type (three implementations of the same notion).
 
 ## Domain model changes
 
@@ -175,6 +186,7 @@ classDiagram
 | `TrainingGroupController.getTrainingGroup` | Trainer check through `AuthorizationEvaluator`; behavior unchanged. |
 | `FreeGroup` | No authorization: `requireOwner` and actor parameters removed; `addOwner(memberId)` override rejects a non-member (`CannotPromoteNonMemberToOwnerException`). |
 | `FreeGroupManagementService` / `FreeGroupManagementPort` | Actor parameters removed except `inviteMember` (`invitedBy`) and `removeMember` (self-or-owner check via `AuthorizationEvaluator`). |
+| `common.groups`: group member options + `GroupParticipantNames` port | New read of owners/members of any group by id; names through the port, implemented in the members module (D7). |
 | `OwnedGroup` (members root, public) | Add `groupLink` (URI of the group resource). |
 | `ManagementService.suspendMember` | Accepts the requested legal guardian group ids; builds the member set; checks every member; suspends all in one transaction. |
 | `SuspensionBlockedException` | Carries blockers per member (the requested member plus dependents). |
@@ -196,7 +208,8 @@ classDiagram
 | `GET /api/groups/{id}` (`getGroup`) | Also allowed for callers with MEMBERS:MANAGE (documented in description; no `x-klabis-authority`, imperative). `x-spring-provide-args` `@ActingUser CurrentUserData` replaces `@ActingMember`. Self-link templates for a manager: `addGroupOwner`, `deleteGroup` only. |
 | `PATCH /api/groups/{id}` (`updateGroup`), `DELETE /api/groups/{id}/owners/{memberId}` (`removeGroupOwner`), `DELETE /api/groups/{id}/invitations/{invitationId}` (`cancelInvitation`) | `x-klabis-authority: GROUPS_OWNER`; `x-spring-provide-args` acting member removed. |
 | `POST /api/groups/{id}/invitations` (`inviteMember`) | `x-klabis-authority: GROUPS_OWNER`; acting member kept (`invitedBy`). |
-| `POST /api/groups/{id}/owners` (`addGroupOwner`), `DELETE /api/groups/{id}` (`deleteGroup`) | `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]`; acting member removed. Request `{memberId}` unchanged; 400 when not a current member. |
+| `GET /api/groups/{id}/member-options` (`listGroupMemberOptions`) | **New**, any group type (own tag, implemented in `common.groups`). Query `role` (`GroupRole: [OWNER, MEMBER]`, optional, both when absent); response array of `MemberOptionResponse`; 404 for an unknown id; `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]`, `x-klabis-target-id: GROUP` (D7). |
+| `POST /api/groups/{id}/owners` (`addGroupOwner`), `DELETE /api/groups/{id}` (`deleteGroup`) | `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]`; acting member removed. Request `{memberId}` unchanged; 400 when not a current member. Template options for `memberId`: `listGroupMemberOptions` with `role=MEMBER`. |
 | `DELETE /api/groups/{id}/members/{memberId}` (`removeGroupMember`), accept/reject invitation | Unchanged contract (imperative check, acting member kept). |
 | Training group operations | Unchanged (`addTrainer`, `getTrainingGroup`). |
 | `setLegalGuardianGroupGuardians` | Unchanged. |
@@ -217,16 +230,16 @@ The `id` path parameter of the owner-only operations gets `x-klabis-target-id: G
 
 ## Migration Plan
 
-No data migration (GROUPS:OWNER is derived, never stored). API change is additive (`groupLink`, wider access) except that a non-owner can no longer invite (closes the gap, matches the spec). Deploy backend and frontend together; the old frontend ignores the new field. Rollback = redeploy previous version.
+No data migration (GROUPS:OWNER is derived, never stored). API change is additive (`groupLink`, `listGroupMemberOptions`, wider access) except that a non-owner can no longer invite (closes the gap, matches the spec). Deploy backend and frontend together; the old frontend ignores the new field. Rollback = redeploy previous version.
 
 ## Open Questions
 
 1. **Authority name.** RESOLVED (user, 18. 11. 2026): all stale `MEMBERS:UPDATE`/`MEMBERS:CREATE` occurrences are corrected in the separate change `fix-stale-members-permission-names`, implemented first; this change no longer carries the correction.
 2. **Legal guardian groups.** ANSWERED by the user: never dissolved; offer "Pozastavit celou skupinu" (D6). "Určit nástupce" (link to the group page) is kept beside it - CONFIRMED by the user (18. 11. 2026): both actions stay.
-3. **Contact info for training groups.** Recommendation: fixed text naming the role (správce tréninkových skupin). Alternative: list the users holding GROUPS:TRAINING (needs a new query across modules; not recommended at club size).
-4. **Manager view of free groups.** Recommendation: MEMBERS:MANAGE may open any free group's detail (read-only plus add-owner/delete). Alternative: keep the detail closed and give the dialog the member list in the 409 (needs member names in the groups adapter and a new owner-candidates option source). Confirm the broader read access is acceptable.
-5. **Free group picker.** The spec says only current group members are candidates (and owners hidden); today's picker is the generic member list and a wrong choice is rejected by the server. Reuse as is (recommended) or restrict options on the server in this change?
-6. **Resolving a dependent minor's own blocker in the dialog** (e.g. minor is sole owner of a free group): recommendation - report only, not resolvable from the dialog (rare).
-7. **Invariant for suspended guardians.** Recommendation (planned in slice 3): on suspension remove the member from guardian lists of groups with other guardians; resume does not restore. Alternatives: do nothing in this change (pre-existing gap), or restore on resume. Confirm scope.
-8. **Cascade to groups where the guardian is not the sole guardian.** Recommendation: not offered (such groups never block; the minors keep their other guardian). Confirm.
-9. **Cascade when the minor already is suspended.** Recommendation: skipped silently (already suspended minors are not an error).
+3. **Contact info for training groups.** RESOLVED (user, 18. 11. 2026): when the current user lacks GROUPS:TRAINING, the row shows a fixed text naming the role (správce tréninkových skupin); no list of people.
+4. **Manager view of free groups.** RESOLVED (user, 18. 11. 2026): MEMBERS:MANAGE may open any free group's detail (name, owners, members; no invitations) with only the add-owner and delete actions.
+5. **Free group picker.** RESOLVED (user, 18. 11. 2026): new server-side member options of a free group (D7), used by the dialog and the group detail page.
+6. **Resolving a dependent minor's own blocker in the dialog** (e.g. minor is sole owner of a free group): RESOLVED (user, 18. 11. 2026): reported only, not resolvable from the dialog.
+7. **Invariant for suspended guardians.** RESOLVED (user, 18. 11. 2026): on suspension the member is removed from guardian lists of groups with other guardians; resume does not restore; the suspension form carries a fixed note about it (D6).
+8. **Cascade to groups where the guardian is not the sole guardian.** RESOLVED (user, 18. 11. 2026): not offered (such groups never block; the minors keep their other guardian); such an id in `cascadeGroupIds` -> 400.
+9. **Cascade when the minor already is suspended.** RESOLVED (user, 18. 11. 2026): skipped silently; the minor keeps the original suspension reason and note.

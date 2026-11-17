@@ -17,6 +17,11 @@ The system SHALL NOT keep a suspended member as a legal guardian of a group that
 - **WHEN** an admin suspends "Jan Novák"
 - **THEN** the minors of group A join group B
 
+#### Scenario: Suspension form tells about the removal
+
+- **WHEN** an admin opens the suspension form of a member
+- **THEN** the form says that a member who is a legal guardian of a minor with another guardian will be removed from the guardians
+
 #### Scenario: Resuming a guardian does not restore the guardian role
 
 - **GIVEN** a suspended member was removed from the guardians of a group
