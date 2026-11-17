@@ -31,7 +31,15 @@ public record EventCategory(
     }
 
     public static EventCategory create(String name) {
-        return new EventCategory(EventCategoryId.generate(), null, name, null);
+        return create(name, null);
+    }
+
+    public static EventCategory create(String name, Money fee) {
+        return new EventCategory(EventCategoryId.generate(), null, name, fee);
+    }
+
+    public EventCategory renamed(String name, Money fee) {
+        return new EventCategory(id, orisId, name, fee);
     }
 
     public static EventCategory createFromOris(String orisId, String name) {

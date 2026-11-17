@@ -144,7 +144,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventTypeId eventTypeId,
 
             RegistrationDeadlines registrationDeadlines,
-            List<EventCategory> categories,
+            List<EventCategoryUpdate> categoryChanges,
             EventRanking ranking,
             Money baseEntryFee,
             Boolean sharedTransportEnabled,
@@ -161,7 +161,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     new LinkedHashSet<>(event.coordinators),
                     event.eventTypeId,
                     event.registrationDeadlines,
-                    event.categories,
+                    event.categories.stream()
+                            .map(c -> new EventCategoryUpdate(c.id(), c.name(), c.feeOverride()))
+                            .toList(),
                     event.ranking,
                     event.baseEntryFee,
                     event.sharedTransportEnabled,
@@ -647,6 +649,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalArgumentException if validation fails
      */
     public void update(UpdateEvent command) {
+        // Resolved before the status guards so a request that is both invalid and rejected for
+        // its status keeps the category error.
+        List<EventCategory> resolvedCategories = resolveCategories(command.categoryChanges());
+
         if (status == EventStatus.FINISHED) {
             throw EventNotUpdatableException.finished();
         }
@@ -660,7 +666,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         RegistrationDeadlines deadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
-        validateCategories(command.categories());
+        validateCategories(resolvedCategories);
 
         this.name = command.name();
         this.eventDate = command.eventDate();
@@ -670,7 +676,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.coordinators = command.coordinators() != null ? new LinkedHashSet<>(command.coordinators()) : new LinkedHashSet<>();
         this.eventTypeId = command.eventTypeId();
         this.registrationDeadlines = deadlines;
-        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.categories = resolvedCategories;
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
         this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
@@ -718,6 +724,27 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     /**
+     * A change naming an id updates that category and keeps its {@code orisId}; a change without an
+     * id adds a category; a current category no change names is dropped. An id that names no current
+     * category is rejected.
+     */
+    private List<EventCategory> resolveCategories(List<EventCategoryUpdate> categoryChanges) {
+        List<EventCategoryUpdate> changes = categoryChanges != null ? categoryChanges : List.of();
+
+        List<EventCategory> resolved = new ArrayList<>();
+        for (EventCategoryUpdate change : changes) {
+            if (change.id() == null) {
+                resolved.add(EventCategory.create(change.name(), change.fee()));
+            } else {
+                resolved.add(findCategory(change.id())
+                        .orElseThrow(() -> new UnknownEventCategoryException(change.id()))
+                        .renamed(change.name(), change.fee()));
+            }
+        }
+        return resolved;
+    }
+
+    /**
      * Merges incoming ORIS categories with the event's current categories, matching by {@code orisId}.
      * <p>
      * A match keeps the existing category's local id (so registrations stay attached) and adopts the
@@ -735,7 +762,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         for (EventCategory incomingCategory : incoming) {
             EventCategory existing = existingByOrisId.get(incomingCategory.orisId());
             if (existing != null) {
-                merged.add(new EventCategory(existing.id(), existing.orisId(), incomingCategory.name(), existing.feeOverride()));
+                merged.add(existing.renamed(incomingCategory.name(), existing.feeOverride()));
             } else {
                 merged.add(incomingCategory);
             }

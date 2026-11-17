@@ -9,6 +9,7 @@ import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryUpdate;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.OrisBulkSyncPort;
@@ -307,9 +308,9 @@ class OrisEventSyncScenarioIntegrationTest {
             EventCategory m21 = event.getCategories().stream()
                     .filter(c -> "M21".equals(c.orisId()))
                     .findFirst().orElseThrow();
-            EventCategory withOverride = new EventCategory(m21.id(), m21.orisId(), m21.name(), Money.ofCzk(new BigDecimal("500")));
+            EventCategoryUpdate withOverride = new EventCategoryUpdate(m21.id(), m21.name(), Money.ofCzk(new BigDecimal("500")));
             Event.UpdateEvent corrected = EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
-                    .categories(List.of(withOverride))
+                    .categoryChanges(List.of(withOverride))
                     .build();
             eventManagementPort.updateEvent(eventId, corrected);
 
@@ -330,7 +331,7 @@ class OrisEventSyncScenarioIntegrationTest {
         void manuallyAddedCategoryRaisesNoConflict() {
             Event event = eventManagementPort.getEvent(eventId, true);
             Event.UpdateEvent withExtraCategory = EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
-                    .categories(List.of(EventCategory.create("Doprovodný závod")))
+                    .categoryChanges(List.of(new EventCategoryUpdate(null, "Doprovodný závod", null)))
                     .build();
             eventManagementPort.updateEvent(eventId, withExtraCategory);
 

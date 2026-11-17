@@ -407,6 +407,17 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
         }
 
+        private UUID eventWithCategories(EventCategory... categories) {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .withCategories(List.of(categories))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+            return defaultExistingEvent.getId().value();
+        }
+
         @Test
         @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
@@ -785,14 +796,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void categoryWithIdUpdatesExisting() throws Exception {
             EventCategory existingCategory = EventCategory.create("M21");
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .withCategories(List.of(existingCategory))
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
+            UUID eventId = eventWithCategories(existingCategory);
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -806,25 +810,17 @@ class EventControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
-                    cmd.categories().size() == 1
-                    && cmd.categories().get(0).id().equals(existingCategory.id())
-                    && cmd.categories().get(0).name().equals("M21-renamed")
+                    cmd.categoryChanges().size() == 1
+                    && cmd.categoryChanges().get(0).id().equals(existingCategory.id())
+                    && cmd.categoryChanges().get(0).name().equals("M21-renamed")
             ));
         }
 
         @Test
-        @DisplayName("category without id is created as new; category missing from list is removed")
+        @DisplayName("category without id is passed as a new change")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void categoryWithoutIdIsNewAndMissingIsRemoved() throws Exception {
-            EventCategory toBeRemoved = EventCategory.create("M21");
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .withCategories(List.of(toBeRemoved))
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
+        void categoryWithoutIdIsPassedAsNewChange() throws Exception {
+            UUID eventId = eventWithCategories();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -838,35 +834,34 @@ class EventControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
-                    cmd.categories().size() == 1
-                    && cmd.categories().get(0).name().equals("W21")
-                    && !cmd.categories().get(0).id().equals(toBeRemoved.id())
+                    cmd.categoryChanges().size() == 1
+                    && cmd.categoryChanges().get(0).id() == null
+                    && cmd.categoryChanges().get(0).name().equals("W21")
             ));
         }
 
         @Test
-        @DisplayName("category id that does not belong to this event is rejected with 400")
+        @DisplayName("absent categories field keeps the baseline changes")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void categoryIdNotBelongingToEventIsRejected() throws Exception {
-            defaultExistingEvent = EventTestDataBuilder.anEvent()
-                    .withName("Existing Event")
-                    .withDate(LocalDate.of(2026, 5, 1))
-                    .withOrganizer("OOB")
-                    .build();
-            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
-            UUID eventId = defaultExistingEvent.getId().value();
-            UUID foreignCategoryId = UUID.randomUUID();
+        void absentCategoriesKeepsBaselineChanges() throws Exception {
+            EventCategory existingCategory = EventCategory.create("M21");
+            UUID eventId = eventWithCategories(existingCategory);
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name":"Existing Event","eventDate":"2026-05-01","organizer":"OOB",
-                                             "categories":[{"id":"%s","name":"M21"}]}
-                                            """.formatted(foreignCategoryId))
+                                            {"name":"Existing Event","eventDate":"2026-05-01","organizer":"OOB"}
+                                            """)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    cmd.categoryChanges().size() == 1
+                    && cmd.categoryChanges().get(0).id().equals(existingCategory.id())
+                    && cmd.categoryChanges().get(0).name().equals("M21")
+            ));
         }
     }
 

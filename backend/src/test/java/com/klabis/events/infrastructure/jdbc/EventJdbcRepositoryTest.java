@@ -4,6 +4,7 @@ import com.klabis.CleanupTestData;
 import com.klabis.events.EventAssert;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
+import com.klabis.events.EventCategoryUpdate;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
@@ -2392,9 +2393,9 @@ class EventJdbcRepositoryTest {
             Event saved = eventRepository.save(event);
             Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
 
-            EventCategory renamed = new EventCategory(original.id(), null, "M21-renamed", null);
+            EventCategoryUpdate renamed = new EventCategoryUpdate(original.id(), "M21-renamed", null);
             reloaded.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(reloaded))
-                    .categories(List.of(renamed))
+                    .categoryChanges(List.of(renamed))
                     .build());
             eventRepository.save(reloaded);
 

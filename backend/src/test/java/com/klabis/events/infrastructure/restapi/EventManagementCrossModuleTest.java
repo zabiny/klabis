@@ -4,6 +4,8 @@ import com.klabis.CrossModuleTest;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventTypeManagementPort;
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -462,6 +465,41 @@ class EventManagementCrossModuleTest extends SecurityTestBase {
                 )
                 .andDo(print())
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Event update: a category id belonging to another event is rejected with 400")
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+    void shouldRejectCategoryIdFromAnotherEvent() throws Exception {
+        // Given — two events, each with its own category
+        Event ownEvent = eventManagementPort.createEvent(EventCreateEventBuilder.builder()
+                .name("Event With Own Category")
+                .eventDate(LocalDate.of(2027, 6, 1))
+                .location("Forest")
+                .organizer("OOB")
+                .categories(List.of(EventCategory.create("M21")))
+                .build());
+        Event otherEvent = eventManagementPort.createEvent(EventCreateEventBuilder.builder()
+                .name("Event With Foreign Category")
+                .eventDate(LocalDate.of(2027, 6, 2))
+                .location("Forest")
+                .organizer("OOB")
+                .categories(List.of(EventCategory.create("W21")))
+                .build());
+        EventCategoryId foreignCategoryId = otherEvent.getCategories().get(0).id();
+
+        // When — the PATCH names the other event's category id
+        mockMvc.perform(
+                        patch("/api/events/{id}", ownEvent.getId().value())
+                                .contentType("application/json")
+                                .content("""
+                                        {"name":"Event With Own Category","eventDate":"2027-06-01","organizer":"OOB",
+                                         "categories":[{"id":"%s","name":"M21"}]}
+                                        """.formatted(foreignCategoryId.value()))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value("/errors/unknown-event-category"));
     }
 
     @Test

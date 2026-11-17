@@ -4,6 +4,20 @@ Club management for an orienteering club: members, events, registrations, fees, 
 
 ## Language
 
+### Events
+
+**Event category**:
+A fee level of an event — for example a class a competitor registers for. It has a name, an optional fee and a stable identity that survives a rename, so a registration stays attached to the same category.
+_Avoid_: class, event class, price group
+
+**Category identity** (identita kategorie):
+The rule that ties a requested category row to an existing one: a row carrying an id means that category renamed and repriced, a row without an id is a new category, and a category of the event that no row names is removed from the event.
+_Avoid_: category merge, category matching
+
+**Category change**:
+A requested name and fee for a known category, or a new category when no id is named.
+_Avoid_: category update DTO, category patch
+
 ### Membership fees
 
 **Fee year** (příspěvkový rok):

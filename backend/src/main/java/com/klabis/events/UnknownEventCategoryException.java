@@ -1,11 +1,11 @@
-package com.klabis.events.infrastructure.restapi;
+package com.klabis.events;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.exceptions.UserFacingError;
 
-class UnknownEventCategoryException extends BusinessRuleViolationException implements UserFacingError {
+public class UnknownEventCategoryException extends BusinessRuleViolationException implements UserFacingError {
 
-    UnknownEventCategoryException(Object categoryId) {
+    public UnknownEventCategoryException(EventCategoryId categoryId) {
         super("Category id '" + categoryId + "' does not belong to this event");
     }
 }
