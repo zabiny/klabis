@@ -25,7 +25,7 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Full frontend unit suite green
-- [ ] 4.2 `npm run build` (type check) and `npm run lint` green
-- [ ] 4.3 E2E smoke of `events` and `application-navigation` against the local instance
-- [ ] 4.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+- [x] 4.1 Full frontend unit suite green
+- [x] 4.2 `npm run build` (type check) and `npm run lint` green
+- [x] 4.3 E2E smoke of `events` and `application-navigation` against the local instance
+- [x] 4.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
