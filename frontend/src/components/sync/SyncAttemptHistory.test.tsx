@@ -21,8 +21,12 @@ const attempt = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const mockResponse = (items: unknown[]) => {
+    const envelope = {
+        _embedded: {syncAttempts: items},
+        page: {size: 10, totalElements: items.length, totalPages: 1, number: 0},
+    };
     vi.mocked(useAuthorizedQuery).mockReturnValue({
-        data: {_embedded: {syncAttempts: items}, page: {size: 10, totalElements: items.length, totalPages: 1, number: 0}},
+        data: envelope,
         isLoading: false,
         error: null,
     } as unknown as ReturnType<typeof useAuthorizedQuery>);

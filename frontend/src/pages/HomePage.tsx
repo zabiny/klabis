@@ -23,8 +23,7 @@ const UserDashboard = ({profileHref, menuItems}: {
     const upcomingRegistrationsHref = dashboardData?.upcomingRegistrationsHref
     const upcomingDeadlinesHref = dashboardData?.upcomingDeadlinesHref
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null)
-    const {data: registrationsData, refetch: refetchRegistrations} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
-    const registrationItems = registrationsData?.items ?? []
+    const {items: registrationItems, refetch: refetchRegistrations} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
     const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href ?? null
 
     return (

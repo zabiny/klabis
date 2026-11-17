@@ -6,6 +6,8 @@
 - [Event aggregate signature growth](project_event_aggregate_signature_growth.md) — add fields to Event/EventRegistration factories via delegating overloads + non-canonical record constructor; ~60 positional call sites otherwise
 - [SyncEntityType addition (spec-first)](project_sync_entity_type_addition.md) — edit sync.yaml SyncEntityTypeParam enum, regen via openapiBundle+compileJava, then add domain SyncEntityType constant by hand
 - [Member sync projection mapping quirks](project_member_sync_projection.md) — si==0→null chip, blank→null, phone needs CZ-only E.164 normalization, Member.register() never sets chipNumber
+- [FeeYearLifecycleService clock scoping](project_fee_year_lifecycle_clock_scoping.md) — merged test needs per-nested-class clock overrides; read queries live on MemberFeeHistoryPort, not the lifecycle port
+- [MDC userId leak from auth event listener](project_mdc_user_id_leak.md) — only RequestLoggingFilter may write userId, inside its /api try/finally; global AuthenticationSuccessEvent listener polluted pooled threads
 
 ## Project patterns confirmed
 
@@ -41,6 +43,10 @@
 ### Never use Optional as method parameter
 - See [feedback_optional_parameter.md](feedback_optional_parameter.md)
 - Use `boolean flag + @Nullable T value` instead for tri-state parameters
+
+### One test-runner at a time
+- See [feedback_no_duplicate_test_runner.md](feedback_no_duplicate_test_runner.md)
+- A second test-runner started to "wait for" the first can fire a concurrent Gradle run; wait for the completion notification instead
 
 ### Field-level authorization on records (Jackson BeanSerializerModifier)
 - See [feedback_field_level_auth_pattern.md](feedback_field_level_auth_pattern.md) for full pattern

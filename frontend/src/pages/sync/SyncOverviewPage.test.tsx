@@ -14,7 +14,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({mutate: vi.fn(), isPending: false, error: null}),
 }));
 
@@ -50,7 +50,10 @@ const renderPage = (items: unknown[], page = {size: 10, totalElements: items.len
         _embedded: {syncAttempts: items},
         page,
     };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({
+        data: resourceData,
+        error: null,
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
     vi.mocked(useHalPageData).mockReturnValue(pageData(resourceData) as unknown as ReturnType<typeof useHalPageData>);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
@@ -238,10 +241,13 @@ describe('SyncOverviewPage attention tab', () => {
             _links: {self: {href: 'http://localhost/api/sync/records?status=CONFLICT&status=FAILED'}},
             _embedded: {syncRecords: records},
         };
-        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
-            data: url.includes('/sync/records') ? recordsData : attempts,
-            error: null,
-        })) as unknown as typeof useAuthorizedQuery);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+            const data = url.includes('/sync/records') ? recordsData : attempts;
+            return {
+                data,
+                error: null,
+            };
+        }) as unknown as typeof useAuthorizedQuery);
         vi.mocked(useHalPageData).mockReturnValue(pageData(attempts) as unknown as ReturnType<typeof useHalPageData>);
         const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
         return render(

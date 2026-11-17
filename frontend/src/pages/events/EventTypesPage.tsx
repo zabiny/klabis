@@ -79,7 +79,6 @@ export const EventTypesPage = (): ReactElement => {
                     <HalFormButton name="createEventType" modal={true} label={labels.templates.createEventType} navigateOnSuccess={false}/>
                 </div>
                 <HalEmbeddedTable<EventTypeListItem>
-                    collectionName={"eventTypeDtoList"}
                     tableId="event-types"
                     defaultOrderBy={"sortOrder"}
                 >

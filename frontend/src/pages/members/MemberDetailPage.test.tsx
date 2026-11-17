@@ -1019,11 +1019,14 @@ describe('MemberDetailPage', () => {
         };
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
-                data: url.includes('/guardians') ? guardiansResponse : undefined,
-                isLoading: false,
-                error: null,
-            })) as unknown as typeof useAuthorizedQuery);
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+                const envelope = url.includes('/guardians') ? guardiansResponse : undefined;
+                return {
+                    data: envelope,
+                    isLoading: false,
+                    error: null,
+                };
+            }) as unknown as typeof useAuthorizedQuery);
         });
 
         afterEach(() => {

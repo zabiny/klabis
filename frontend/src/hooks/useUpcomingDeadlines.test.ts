@@ -1,194 +1,121 @@
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
-import React from 'react';
-import {useUpcomingDeadlines} from './useUpcomingDeadlines';
+import {renderHook} from '@testing-library/react';
 import {vi} from 'vitest';
+import {type UpcomingDeadlineItem, useUpcomingDeadlines} from './useUpcomingDeadlines';
 
-vi.mock('../api/klabisUserManager', () => ({
-    klabisAuthUserManager: {
-        getUser: vi.fn().mockReturnValue({
-            access_token: 'test-token',
-            token_type: 'Bearer',
-        }),
-    },
+vi.mock('./useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn(),
 }));
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {queries: {retry: false, gcTime: 0}},
-    });
-    return ({children}: {children: ReactNode}) =>
-        React.createElement(QueryClientProvider, {client: queryClient}, children);
-};
+import {useAuthorizedQuery} from './useAuthorizedFetch';
 
-const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => data,
-        headers: new Headers(),
-        clone: function () { return this; },
-    } as unknown as Response);
-};
+const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
-afterEach(() => {
-    delete (globalThis as Record<string, unknown>).fetch;
-    vi.clearAllMocks();
+const HREF = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
+
+interface EventFixture {
+    id?: string;
+    name?: string;
+    eventDate?: string;
+    deadlines?: string[];
+    _links: {self?: {href: string}; newRegistration?: {href: string}};
+}
+
+const eventRow = (overrides: Partial<EventFixture> = {}): EventFixture => ({
+    id: 'evt-1',
+    name: 'Jarní závod',
+    eventDate: '2026-05-20',
+    deadlines: ['2026-05-14'],
+    _links: {self: {href: '/api/events/evt-1'}},
+    ...overrides,
 });
 
-const buildEventsResponse = (events: {
-    id: string;
-    name: string;
-    eventDate: string;
-    deadlines: string[];
-    location?: string;
-    sharedTransportEnabled?: boolean;
-    sharedAccommodationEnabled?: boolean;
-    newRegistrationHref?: string;
-}[]) => ({
-    _embedded: {
-        eventSummaryDtoList: events.map(e => ({
-            id: {value: e.id},
-            name: e.name,
-            eventDate: e.eventDate,
-            ...(e.location !== undefined ? {location: e.location} : {}),
-            deadlines: e.deadlines,
-            ...(e.sharedTransportEnabled !== undefined ? {sharedTransportEnabled: e.sharedTransportEnabled} : {}),
-            ...(e.sharedAccommodationEnabled !== undefined ? {sharedAccommodationEnabled: e.sharedAccommodationEnabled} : {}),
-            _links: {
-                self: {href: `/api/events/${e.id}`},
-                ...(e.newRegistrationHref ? {newRegistration: {href: e.newRegistrationHref}} : {}),
-            },
-        })),
-    },
-    _links: {self: {href: '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc'}},
-    page: {size: 5, totalElements: events.length, totalPages: 1, number: 0},
-});
+const respondWithEvents = (events: EventFixture[], totalElements?: number) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
+            _links: {self: {href: HREF}},
+            _embedded: {eventSummaryDtoList: events},
+            ...(totalElements === undefined ? {} : {page: {size: 5, totalElements, totalPages: 1, number: 0}}),
+        },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
+};
+
+const item = (result: { current: { items: UpcomingDeadlineItem[] } }, index: number) => result.current.items[index];
 
 describe('useUpcomingDeadlines', () => {
-    it('fetches events when href is provided and maps to UpcomingDeadlineItem', async () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        mockFetchWithResponse(buildEventsResponse([
-            {
-                id: 'evt-1',
-                name: 'Jarní závod',
-                eventDate: '2026-05-20',
-                location: 'Brno',
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('projects a captured event row to an upcoming deadline item', () => {
+        respondWithEvents([
+            eventRow({
                 deadlines: ['2026-05-14'],
-                sharedTransportEnabled: true,
-                sharedAccommodationEnabled: false,
-                newRegistrationHref: '/api/events/evt-1/registrations/new',
-            },
-            {
-                id: 'evt-2',
-                name: 'Letní kemp',
-                eventDate: '2026-06-10',
-                deadlines: ['2026-05-15'],
-            },
-        ]));
+                _links: {
+                    self: {href: '/api/events/evt-1'},
+                    newRegistration: {href: '/api/events/evt-1/registrations/new'},
+                },
+            }),
+            eventRow({id: 'evt-2', name: 'Letní kemp', eventDate: '2026-06-10', deadlines: ['2026-05-15']}),
+        ], 2);
 
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        const items = result.current.data?.items ?? [];
-        expect(items).toHaveLength(2);
-        expect(items[0].name).toBe('Jarní závod');
-        expect(items[0].eventDate).toBe('2026-05-20');
-        expect(items[0].selfHref).toBe('/api/events/evt-1');
-        expect(items[0].deadline).toBe('2026-05-14');
-        expect(items[0].newRegistration).toEqual({href: '/api/events/evt-1/registrations/new'});
-        expect(items[1].newRegistration).toBeUndefined();
-    });
-
-    it('does not fetch when href is undefined (query is disabled)', () => {
-        (globalThis as Record<string, unknown>).fetch = vi.fn();
-
-        const {result} = renderHook(() => useUpcomingDeadlines(undefined), {wrapper: createWrapper()});
-
-        expect(result.current.fetchStatus).toBe('idle');
-        expect((globalThis as Record<string, unknown>).fetch).not.toHaveBeenCalled();
-    });
-
-    it('returns empty items array when response has no embedded events', async () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        mockFetchWithResponse({
-            _embedded: {eventSummaryDtoList: []},
-            _links: {self: {href}},
-            page: {size: 5, totalElements: 0, totalPages: 0, number: 0},
+        expect(result.current.items).toHaveLength(2);
+        expect(item(result, 0)).toEqual({
+            selfHref: '/api/events/evt-1',
+            name: 'Jarní závod',
+            eventDate: '2026-05-20',
+            deadline: '2026-05-14',
+            newRegistration: {href: '/api/events/evt-1/registrations/new'},
         });
-
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
-
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        expect(result.current.data?.items).toHaveLength(0);
+        expect(item(result, 1).newRegistration).toBeUndefined();
     });
 
-    it('picks the first deadline >= today when event has multiple deadlines', async () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        const today = new Date().toISOString().slice(0, 10);
+    it('skips events without a self link', () => {
+        respondWithEvents([
+            eventRow({name: 'Bez odkazu', _links: {}}),
+            eventRow({name: 'S odkazem'}),
+        ], 2);
+
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
+
+        expect(result.current.items.map(i => i.name)).toEqual(['S odkazem']);
+    });
+
+    it('picks the first deadline not in the past when an event has several', () => {
         const futureDate1 = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         const futureDate2 = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        mockFetchWithResponse(buildEventsResponse([
-            {
-                id: 'evt-1',
-                name: 'Multi-deadline event',
-                eventDate: '2026-06-01',
-                deadlines: [futureDate1, futureDate2],
-            },
-        ]));
+        respondWithEvents([eventRow({deadlines: [futureDate1, futureDate2]})]);
 
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        expect(result.current.data?.items[0].deadline).toBe(futureDate1);
-        void today;
+        expect(item(result, 0).deadline).toBe(futureDate1);
     });
 
-    it('falls back to last deadline when all deadlines are in the past', async () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        const pastDate1 = '2026-01-01';
-        const pastDate2 = '2026-02-01';
-        mockFetchWithResponse(buildEventsResponse([
-            {
-                id: 'evt-1',
-                name: 'Past-deadline event',
-                eventDate: '2026-06-01',
-                deadlines: [pastDate1, pastDate2],
-            },
-        ]));
+    it('falls back to the last deadline when every deadline is in the past', () => {
+        respondWithEvents([eventRow({deadlines: ['2026-01-01', '2026-02-01']})]);
 
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        expect(result.current.data?.items[0].deadline).toBe(pastDate2);
+        expect(item(result, 0).deadline).toBe('2026-02-01');
     });
 
-    it('extracts totalElements from page metadata', async () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        const response = buildEventsResponse([
-            {id: 'evt-1', name: 'Akce', eventDate: '2026-05-20', deadlines: ['2026-05-14']},
-        ]);
-        response.page = {size: 5, totalElements: 12, totalPages: 3, number: 0};
-        mockFetchWithResponse(response);
+    it('exposes totalElements from the page metadata', () => {
+        respondWithEvents([eventRow()], 12);
 
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        expect(result.current.data?.totalElements).toBe(12);
+        expect(result.current.totalElements).toBe(12);
     });
 
-    it('returns loading state while fetching', () => {
-        const href = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
-        (globalThis as Record<string, unknown>).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    it('defaults totalElements to 0 without page metadata', () => {
+        respondWithEvents([eventRow()]);
 
-        const {result} = renderHook(() => useUpcomingDeadlines(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpcomingDeadlines(HREF));
 
-        expect(result.current.isLoading).toBe(true);
+        expect(result.current.totalElements).toBe(0);
     });
 });

@@ -66,7 +66,9 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
     describe('Data Fetching', () => {
         it('fetches data from link href on mount', async () => {
             const mockData = {
-                content: mockMemberData,
+                _embedded: {
+                    membersList: mockMemberData
+                },
                 page: mockPageData
             }
 
@@ -88,7 +90,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             )
         })
 
-        it('uses collectionName to extract embedded data', async () => {
+        it('infers the embedded collection from the single _embedded key', async () => {
             const mockData = {
                 _embedded: {
                     membersList: mockMemberData
@@ -99,7 +101,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
@@ -109,7 +111,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             })
         })
 
-        it('handles missing _embedded property gracefully', async () => {
+        it('renders the empty message for a response without _embedded, ignoring a content shape', async () => {
             const mockData = {
                 content: mockMemberData,
                 page: mockPageData
@@ -118,18 +120,18 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
 
-            // Should not crash and should show empty table or message
             await waitFor(() => {
-                expect(fetchSpy).toHaveBeenCalled()
+                expect(screen.getByText('Žádná data')).toBeInTheDocument()
             })
+            expect(screen.queryByText('Alice')).not.toBeInTheDocument()
         })
 
-        it('handles null _embedded.membersList gracefully', async () => {
+        it('renders the error state when the embedded collection is not an array', async () => {
             const mockData = {
                 _embedded: {
                     membersList: null
@@ -140,14 +142,13 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
 
-            // Should not crash
             await waitFor(() => {
-                expect(fetchSpy).toHaveBeenCalled()
+                expect(screen.getByText('Data se nepodařilo načíst.')).toBeInTheDocument()
             })
         })
 
@@ -162,20 +163,20 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
 
             await waitFor(() => {
-                expect(fetchSpy).toHaveBeenCalled()
+                expect(screen.getByText('Žádná data')).toBeInTheDocument()
             })
         })
     })
 
     describe('Query Parameter Building', () => {
         it('builds correct URL with pagination parameters', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery link={mockHalLink}>
@@ -198,8 +199,14 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('updates URL when page changes', async () => {
-            const page0Data = {content: mockMemberData, page: {size: 10, totalElements: 50, totalPages: 5, number: 0}}
-            const page1Data = {content: mockMemberData, page: {size: 10, totalElements: 50, totalPages: 5, number: 1}}
+            const page0Data = {
+                _embedded: {membersList: mockMemberData},
+                page: {size: 10, totalElements: 50, totalPages: 5, number: 0}
+            }
+            const page1Data = {
+                _embedded: {membersList: mockMemberData},
+                page: {size: 10, totalElements: 50, totalPages: 5, number: 1}
+            }
 
             // Return different data for page 0 and page 1
             fetchSpy
@@ -239,7 +246,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('includes sort parameters in URL', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery
@@ -265,7 +272,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
 
     describe('Relative HAL link href', () => {
         it('builds the query URL from a relative link href without throwing (regression: Invalid URL)', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery link={{href: '/api/members'}}>
@@ -285,7 +292,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('preserves existing query params on a relative link href', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery link={{href: '/api/events?year=2026&when=budouci'}}>
@@ -324,7 +331,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
 
     describe('Props Passthrough', () => {
         it('passes UI props through to KlabisTable', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             const onRowClick = vi.fn()
 
@@ -353,7 +360,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('respects rowsPerPageOptions prop', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery
@@ -381,8 +388,8 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
     describe('Sorting Integration', () => {
         it('passes sort callbacks to KlabisTable', async () => {
             fetchSpy
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             const user = userEvent.setup()
 
@@ -424,8 +431,8 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
     describe('Persisted rowsPerPage', () => {
         it('persists rowsPerPage to localStorage when changed', async () => {
             fetchSpy
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             const user = userEvent.setup()
 
@@ -461,7 +468,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             // Pre-populate localStorage
             localStorage.setItem('klabis-table-rows-per-page', '50')
 
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery link={mockHalLink}>
@@ -479,7 +486,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('uses defaultRowsPerPage when localStorage is empty', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQuery(
                 <KlabisTableWithQuery link={mockHalLink} defaultRowsPerPage={25}>
@@ -512,8 +519,8 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             // Pre-populate a non-default sort (desc) to simulate a previously persisted preference
             localStorage.setItem('klabis.table.test-table.sort', 'name,desc')
 
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             const user = userEvent.setup()
 
@@ -556,7 +563,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         })
 
         it('does not show reset button when tableId is NOT provided', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+            fetchSpy.mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             renderWithQueryAndRouter(
                 <KlabisTableWithQuery
@@ -577,8 +584,8 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
 
         it('writes sort to localStorage with correct key when tableId is provided and sort changes', async () => {
             fetchSpy
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
-                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({_embedded: {membersList: mockMemberData}, page: mockPageData}))
 
             const user = userEvent.setup()
 

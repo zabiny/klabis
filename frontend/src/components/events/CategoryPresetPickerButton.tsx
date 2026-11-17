@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import {useFormikContext} from 'formik';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {useHalRoute} from '../../contexts/halRouteContext.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {Button, Modal} from '../UI';
@@ -12,12 +12,6 @@ interface CategoryPreset {
     categories?: string[];
 }
 
-interface CategoryPresetsResponse {
-    _embedded?: {
-        categoryPresetDtoList?: CategoryPreset[];
-    };
-}
-
 export const CategoryPresetPickerButton = (): ReactElement | null => {
     const {setFieldValue} = useFormikContext<Record<string, unknown>>();
     const [isOpen, setIsOpen] = useState(false);
@@ -25,11 +19,9 @@ export const CategoryPresetPickerButton = (): ReactElement | null => {
     const {resourceData} = useHalRoute();
     const presetsLink = resourceData?._links?.categoryPresets;
 
-    const {data} = useAuthorizedQuery<CategoryPresetsResponse>(presetsLink ? toHref(presetsLink) : undefined, {
+    const {items: presets} = useHalCollection<CategoryPreset>(presetsLink ? toHref(presetsLink) : undefined, {
         staleTime: 5 * 60 * 1000,
     });
-
-    const presets = data?._embedded?.categoryPresetDtoList ?? [];
 
     if (presets.length === 0) {
         return null;

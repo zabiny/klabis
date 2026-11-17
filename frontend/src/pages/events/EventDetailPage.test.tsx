@@ -147,6 +147,13 @@ vi.mock('../../hooks/useHalFormData', () => ({
     }),
 }));
 
+const mockQueryData = (data: unknown) =>
+    vi.mocked(useAuthorizedQuery).mockReturnValue({
+        data,
+        isLoading: false,
+        error: null,
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
+
 vi.mock('../../contexts/ToastContext', () => ({
     ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
@@ -279,11 +286,14 @@ describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockNavigate.mockReset();
-        vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
-            data: resolveDialogQueryData(url),
-            isLoading: false,
-            error: null,
-        }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
+            const data = resolveDialogQueryData(url);
+            return {
+                data,
+                isLoading: false,
+                error: null,
+            };
+        }) as unknown as typeof useAuthorizedQuery);
     });
 
     it('renders back link to events list', () => {
@@ -744,7 +754,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 expect(screen.getByRole('button', {name: /sort by datum přihlášení/i})).toBeInTheDocument();
@@ -757,21 +767,18 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 expect(screen.queryByRole('button', {name: /sort by datum přihlášení/i})).not.toBeInTheDocument();
             });
 
             it('clicking firstName sort button sends sort=firstName,asc query param', () => {
-                vi.mocked(useAuthorizedQuery).mockReturnValue({
-                    data: {
-                        _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
-                        _embedded: {registrationDtoList: [buildRegistrationRow()]},
-                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    },
-                    error: null,
-                } as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData({
+                    _links: {self: {href: 'http://localhost:8443/api/events/1/registrations'}},
+                    _embedded: {registrationDtoList: [buildRegistrationRow()]},
+                    page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                });
                 renderPage(createMockPageData(mockEventWithRegistrationsLink()));
 
                 fireEvent.click(screen.getByRole('button', {name: /sort by jméno/i}));
@@ -820,7 +827,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.queryByRole('columnheader', {name: /datum přihlášení/i})).not.toBeInTheDocument();
@@ -837,7 +844,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
@@ -854,7 +861,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: rows},
                     page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(resourceData));
 
                 expect(screen.getByRole('columnheader', {name: /datum přihlášení/i})).toBeInTheDocument();
@@ -951,13 +958,16 @@ describe('EventDetailPage', () => {
                 _embedded: {registrationDtoList: rows},
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
-                data: url?.includes('newRegistration=true') || url?.includes('/registrations/member-1')
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
+                const data = url?.includes('newRegistration=true') || url?.includes('/registrations/member-1')
                     ? resolveDialogQueryData(url)
-                    : registrationsListData,
-                isLoading: false,
-                error: null,
-            }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+                    : registrationsListData;
+                return {
+                    data,
+                    isLoading: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
+            });
             return renderPage(createMockPageData(resourceData));
         };
 
@@ -1136,7 +1146,7 @@ describe('EventDetailPage', () => {
                     _embedded: {registrationDtoList: [row]},
                     page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
                 };
-                vi.mocked(useAuthorizedQuery).mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+                mockQueryData(registrationsListData);
                 renderPage(createMockPageData(resourceData));
 
                 fireEvent.click(screen.getByRole('button', {name: /provést finanční transakci/i}));
@@ -1486,20 +1496,22 @@ describe('EventDetailPage', () => {
 
     describe('event type badge (B7.3)', () => {
         const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
+            const eventTypesEnvelope = {_embedded: {eventTypeDtoList: eventTypes}};
             vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: {_embedded: {eventTypeDtoList: eventTypes}},
+                        data: eventTypesEnvelope,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
+                const fallback = {
+                    _embedded: {registrationDtoList: []},
+                    page: {totalElements: 0, totalPages: 0, size: 10, number: 0},
+                    _links: {self: {href: url}},
+                };
                 return {
-                    data: {
-                        _embedded: {registrationDtoList: []},
-                        page: {totalElements: 0, totalPages: 0, size: 10, number: 0},
-                        _links: {self: {href: url}},
-                    },
+                    data: fallback,
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;

@@ -26,7 +26,6 @@ export const TierCatalogSection = (): ReactElement => {
 
             <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
                 <HalEmbeddedTable<FeeTierSummary>
-                    collectionName="membershipFeeTierSummaryResponseList"
                     tableId="membership-fee-tiers"
                     defaultOrderBy="name"
                     onRowClick={navigateToResource}

@@ -10,36 +10,28 @@ import {useAuthorizedQuery} from './useAuthorizedFetch';
 
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
+const respondWithTiers = (tiers: {id?: string; name?: string}[]) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
+            _links: {self: {href: '/api/membership-fee-tiers'}},
+            _embedded: {membershipFeeTierSummaryResponseList: tiers},
+        },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
+};
+
 describe('useMembershipFeeTierOptions', () => {
-
-    it('should return empty array when data is loading', () => {
-        mockUseAuthorizedQuery.mockReturnValue({data: undefined, isLoading: true} as ReturnType<typeof useAuthorizedQuery>);
-
-        const {result} = renderHook(() => useMembershipFeeTierOptions());
-
-        expect(result.current).toEqual([]);
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    it('should return empty array when embedded list is absent', () => {
-        mockUseAuthorizedQuery.mockReturnValue({data: {}, isLoading: false} as ReturnType<typeof useAuthorizedQuery>);
-
-        const {result} = renderHook(() => useMembershipFeeTierOptions());
-
-        expect(result.current).toEqual([]);
-    });
-
-    it('should map tiers to value/prompt options', () => {
-        mockUseAuthorizedQuery.mockReturnValue({
-            data: {
-                _embedded: {
-                    membershipFeeTierSummaryResponseList: [
-                        {id: 'uuid-1', name: 'Základní'},
-                        {id: 'uuid-2', name: 'Premium'},
-                    ],
-                },
-            },
-            isLoading: false,
-        } as ReturnType<typeof useAuthorizedQuery>);
+    it('maps tiers to value/prompt options', () => {
+        respondWithTiers([
+            {id: 'uuid-1', name: 'Základní'},
+            {id: 'uuid-2', name: 'Premium'},
+        ]);
 
         const {result} = renderHook(() => useMembershipFeeTierOptions());
 
@@ -49,47 +41,36 @@ describe('useMembershipFeeTierOptions', () => {
         ]);
     });
 
-    it('should filter out entries with missing id', () => {
-        mockUseAuthorizedQuery.mockReturnValue({
-            data: {
-                _embedded: {
-                    membershipFeeTierSummaryResponseList: [
-                        {id: undefined, name: 'No ID tier'},
-                        {id: 'uuid-valid', name: 'Valid tier'},
-                    ],
-                },
-            },
-            isLoading: false,
-        } as ReturnType<typeof useAuthorizedQuery>);
+    it('filters out tiers with a missing id', () => {
+        respondWithTiers([
+            {id: undefined, name: 'No ID tier'},
+            {id: 'uuid-valid', name: 'Valid tier'},
+        ]);
 
         const {result} = renderHook(() => useMembershipFeeTierOptions());
 
         expect(result.current).toEqual([{value: 'uuid-valid', prompt: 'Valid tier'}]);
     });
 
-    it('should filter out entries with missing name', () => {
-        mockUseAuthorizedQuery.mockReturnValue({
-            data: {
-                _embedded: {
-                    membershipFeeTierSummaryResponseList: [
-                        {id: 'uuid-no-name', name: undefined},
-                        {id: 'uuid-ok', name: 'OK tier'},
-                    ],
-                },
-            },
-            isLoading: false,
-        } as ReturnType<typeof useAuthorizedQuery>);
+    it('filters out tiers with a missing name', () => {
+        respondWithTiers([
+            {id: 'uuid-no-name', name: undefined},
+            {id: 'uuid-ok', name: 'OK tier'},
+        ]);
 
         const {result} = renderHook(() => useMembershipFeeTierOptions());
 
         expect(result.current).toEqual([{value: 'uuid-ok', prompt: 'OK tier'}]);
     });
 
-    it('should call useAuthorizedQuery with /api/membership-fee-tiers endpoint', () => {
-        mockUseAuthorizedQuery.mockReturnValue({data: undefined, isLoading: false} as ReturnType<typeof useAuthorizedQuery>);
+    it('queries /api/membership-fee-tiers with a 5-minute staleTime', () => {
+        respondWithTiers([]);
 
         renderHook(() => useMembershipFeeTierOptions());
 
-        expect(mockUseAuthorizedQuery).toHaveBeenCalledWith('/api/membership-fee-tiers', expect.any(Object));
+        expect(mockUseAuthorizedQuery).toHaveBeenCalledWith(
+            '/api/membership-fee-tiers',
+            expect.objectContaining({staleTime: 5 * 60 * 1000}),
+        );
     });
 });

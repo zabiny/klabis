@@ -1,13 +1,12 @@
 import '@testing-library/jest-dom';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider, type UseQueryResult} from '@tanstack/react-query';
-import type {ApiError} from '../../api/authorizedFetch';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import React, {type ComponentProps} from 'react';
 import {UpcomingDeadlinesWidget} from './UpcomingDeadlinesWidget';
 import * as UseUpcomingDeadlinesModule from '../../hooks/useUpcomingDeadlines';
-import {type UpcomingDeadlineItem, type UpcomingDeadlinesData} from '../../hooks/useUpcomingDeadlines';
+import {type UpcomingDeadlineItem} from '../../hooks/useUpcomingDeadlines';
 import type {EventRegistrationDialog as EventRegistrationDialogComponent} from '../events/EventRegistrationDialog';
 
 type EventRegistrationDialogProps = ComponentProps<typeof EventRegistrationDialogComponent>;
@@ -27,31 +26,6 @@ vi.mock('../events/EventRegistrationDialog', () => ({
 }));
 
 const useUpcomingDeadlines = vi.mocked(UseUpcomingDeadlinesModule.useUpcomingDeadlines);
-
-function createMockQueryResult(data?: UpcomingDeadlinesData | null): UseQueryResult<UpcomingDeadlinesData | undefined, ApiError>;
-function createMockQueryResult<T>(data?: T | null): UseQueryResult<T | undefined, ApiError>;
-function createMockQueryResult<T>(data: T | null = null): UseQueryResult<T | undefined, ApiError> {
-    return {
-        data: data ?? undefined,
-        isLoading: false,
-        isError: false,
-        isPending: false,
-        error: null,
-        status: 'success' as const,
-        fetchStatus: 'idle' as const,
-        isFetched: true,
-        isStale: false,
-        isFetching: false,
-        isPlaceholderData: false,
-        isRefetching: false,
-        refetch: vi.fn(),
-        failureCount: 0,
-        failureReason: null,
-        errorUpdateCount: 0,
-        errorUpdatedAt: null,
-        dataUpdatedAt: Date.now(),
-    } as unknown as UseQueryResult<T | undefined, ApiError>;
-}
 
 const renderWidget = (href: string | undefined = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc') => {
     const queryClient = new QueryClient({
@@ -84,8 +58,11 @@ const makeItems = (count: number): UpcomingDeadlineItem[] =>
         newRegistration: {href: `/api/events/evt-${i + 1}/registrations/new`},
     }));
 
-const makeMockResult = (items: UpcomingDeadlineItem[], totalElements?: number) =>
-    createMockQueryResult({items, totalElements: totalElements ?? items.length});
+const makeMockResult = (items: UpcomingDeadlineItem[], totalElements?: number) => ({
+    items,
+    totalElements: totalElements ?? items.length,
+    refetch: vi.fn(),
+});
 
 describe('UpcomingDeadlinesWidget', () => {
     beforeEach(() => {
@@ -181,7 +158,7 @@ describe('UpcomingDeadlinesWidget', () => {
 
     describe('when href is undefined (no member profile)', () => {
         beforeEach(() => {
-            useUpcomingDeadlines.mockReturnValue(createMockQueryResult(undefined));
+            useUpcomingDeadlines.mockReturnValue(makeMockResult([], 0));
         });
 
         it('does not render the widget', () => {
@@ -212,10 +189,7 @@ describe('UpcomingDeadlinesWidget', () => {
 
     describe('deadline format', () => {
         it('formats deadline as "DD. MM." with Uzávěrka: prefix', () => {
-            useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
-                items: [makeItem({deadline: '2026-05-14'})],
-                totalElements: 1,
-            }));
+            useUpcomingDeadlines.mockReturnValue(makeMockResult([makeItem({deadline: '2026-05-14'})], 1));
             renderWidget();
             expect(screen.getByText(/Uzávěrka:/)).toBeInTheDocument();
             expect(screen.getByText(/14\. 5\. 2026/)).toBeInTheDocument();
@@ -224,13 +198,10 @@ describe('UpcomingDeadlinesWidget', () => {
 
     describe('"Přihlásit se" opens the customized registration dialog', () => {
         it('opens EventRegistrationDialog with the row new-registration link', () => {
-            useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
-                items: [makeItem({
-                    name: 'Test akce',
-                    newRegistration: {href: '/api/events/evt-1/registrations/new'},
-                })],
-                totalElements: 1,
-            }));
+            useUpcomingDeadlines.mockReturnValue(makeMockResult([makeItem({
+                name: 'Test akce',
+                newRegistration: {href: '/api/events/evt-1/registrations/new'},
+            })], 1));
             renderWidget();
 
             fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));

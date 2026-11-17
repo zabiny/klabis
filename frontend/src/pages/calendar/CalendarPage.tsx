@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Alert, Button, Spinner} from '../../components/UI';
-import {hasCalendarItems} from '../../api';
+import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath';
@@ -73,11 +73,7 @@ const CalendarPage = () => {
         return new Date();
     }, [resourceData, searchParams]);
 
-    // Extract calendar items from resource data using type guard
-    let calendarItems: CalendarItem[] = [];
-    if (resourceData && hasCalendarItems(resourceData)) {
-        calendarItems = resourceData._embedded.calendarItemDtoList || [];
-    }
+    const calendarItems = embeddedItems<CalendarItem>(resourceData ?? undefined);
 
     // Calculate month properties
     const year = currentDate.getFullYear();

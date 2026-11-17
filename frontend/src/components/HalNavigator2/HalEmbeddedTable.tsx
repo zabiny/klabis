@@ -16,9 +16,6 @@ import {parseHalHref, serializeHalHref} from '../../api/hateoas'
  * Props for HalEmbeddedTable component
  */
 export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
-    /** Name of the collection in _embedded object */
-    collectionName: string
-
     /** Callback when a row is clicked */
     onRowClick?: (item: T) => void
 
@@ -51,9 +48,8 @@ export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
  * and displays it using KlabisTableWithQuery with pagination and sorting support.
  *
  * @example
- * // Display members list from _embedded.membersApiResponseList
+ * // Display members from the resource's embedded collection
  * <HalEmbeddedTable
- *   collectionName="membersApiResponseList"
  *   defaultOrderBy="lastName"
  *   defaultOrderDirection="asc"
  *   onRowClick={(member) => navigate(`/members/${member.id}`)}
@@ -64,7 +60,6 @@ export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
  * </HalEmbeddedTable>
  */
 export function HalEmbeddedTable<T extends object = Record<string, unknown>>({
-                                                                              collectionName,
                                                                               onRowClick,
                                                                               defaultOrderBy,
                                                                               defaultOrderDirection = 'asc',
@@ -118,7 +113,6 @@ export function HalEmbeddedTable<T extends object = Record<string, unknown>>({
     return (
         <KlabisTableWithQuery<T>
             link={tableLink}
-            collectionName={collectionName}
             onRowClick={onRowClick}
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}

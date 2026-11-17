@@ -140,7 +140,7 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
     };
 
     return (
-        <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
+        <HalEmbeddedTable<RegistrationData> hideEmptyColumns defaultOrderBy="registrationTime">
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
             <TableCell<RegistrationData>
                 column="lastName"

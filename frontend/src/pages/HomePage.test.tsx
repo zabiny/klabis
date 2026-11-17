@@ -9,6 +9,7 @@ import * as RootNavigationModule from '../hooks/useRootNavigation';
 import * as AuthContextModule from '../contexts/authContext';
 import * as UseDashboardModule from '../hooks/useDashboard';
 import * as UseMyUpcomingRegistrationsModule from '../hooks/useMyUpcomingRegistrations';
+import type {UpcomingRegistrationItem} from '../hooks/useMyUpcomingRegistrations';
 import * as UpcomingDeadlinesWidgetModule from '../components/dashboard/UpcomingDeadlinesWidget';
 import HomePage from './HomePage';
 
@@ -56,6 +57,10 @@ const useAuth = vi.mocked(AuthContextModule.useAuth)
 const useDashboard = vi.mocked(UseDashboardModule.useDashboard)
 const useMyUpcomingRegistrations = vi.mocked(UseMyUpcomingRegistrationsModule.useMyUpcomingRegistrations)
 const UpcomingDeadlinesWidget = vi.mocked(UpcomingDeadlinesWidgetModule.UpcomingDeadlinesWidget)
+
+const mockRegistrations = (items: UpcomingRegistrationItem[], refetch: () => void = vi.fn()) => {
+    useMyUpcomingRegistrations.mockReturnValue({items, refetch})
+}
 
 function createMockQueryResult<T>(data: T | null = null, overrides: Record<string, unknown> = {}) {
     return {
@@ -129,7 +134,7 @@ describe('HomePage - Admin/DEVELOPER user gets standard dashboard', () => {
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
+        mockRegistrations([])
     })
 
     it('does not render the admin dashboard welcome heading on home page', () => {
@@ -169,7 +174,7 @@ describe('HomePage - Regular User Dashboard', () => {
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
+        mockRegistrations([])
     })
 
     it('should not display welcome message heading', () => {
@@ -255,7 +260,7 @@ describe('HomePage - UserDashboard widget: no upcomingRegistrations link', () =>
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
+        mockRegistrations([])
     })
 
     it('does not render the "Moje nadcházející akce" section', () => {
@@ -289,13 +294,11 @@ describe('HomePage - UserDashboard widget: link present, events returned', () =>
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({
-            items: [
-                {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha'},
-                {selfHref: '/api/events/evt-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
-                {selfHref: '/api/events/evt-3', name: 'Podzimní turnaj', eventDate: '2026-09-10', location: 'Ostrava'},
-            ],
-        }))
+        mockRegistrations([
+            {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha'},
+            {selfHref: '/api/events/evt-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
+            {selfHref: '/api/events/evt-3', name: 'Podzimní turnaj', eventDate: '2026-09-10', location: 'Ostrava'},
+        ])
     })
 
     it('renders the "Moje nadcházející akce" section heading', () => {
@@ -350,12 +353,10 @@ describe('HomePage - UserDashboard widget: edit registration action', () => {
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({
-            items: [
-                {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha', editRegistrationTarget: '/api/events/evt-1/registrations/me'},
-                {selfHref: '/api/events/evt-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
-            ],
-        }, {refetch}))
+        mockRegistrations([
+            {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha', editRegistrationTarget: '/api/events/evt-1/registrations/me'},
+            {selfHref: '/api/events/evt-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
+        ], refetch)
     })
 
     it('shows the edit button only for rows with the editRegistration affordance', () => {
@@ -399,7 +400,7 @@ describe('HomePage - UserDashboard widget: link present, no events (empty state)
             logout: vi.fn(),
         })
         useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({items: []}))
+        mockRegistrations([])
     })
 
     it('renders the "Moje nadcházející akce" section heading', () => {
@@ -445,7 +446,7 @@ describe('HomePage - UserDashboard: UpcomingDeadlinesWidget integration', () => 
             }),
             logout: vi.fn(),
         })
-        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({items: []}))
+        mockRegistrations([])
     })
 
     it('passes upcomingDeadlinesHref to UpcomingDeadlinesWidget when member profile exists', () => {

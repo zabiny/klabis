@@ -222,8 +222,7 @@ export const MembersPage = (): ReactElement => {
                     onChange={setValues}
                     hasManageAuthority={hasManageAuthority}
                 />
-                <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
-                                                      tableId="members"
+                <HalEmbeddedTable<MemberSummaryData> tableId="members"
                                                       defaultOrderBy={"lastName"}
                                                       hideEmptyColumns
                                                       extraParams={extraParams}

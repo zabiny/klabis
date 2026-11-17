@@ -14,7 +14,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({
         mutate: vi.fn(),
         isPending: false,
@@ -104,7 +104,10 @@ describe('TierCatalogSection', () => {
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: resourceData,
+            error: null,
+        } as unknown as ReturnType<typeof useAuthorizedQuery>);
         renderSection(createMockPageData(resourceData));
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
     });
@@ -123,7 +126,10 @@ describe('TierCatalogSection', () => {
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({
+            data: resourceData,
+            error: null,
+        } as unknown as ReturnType<typeof useAuthorizedQuery>);
         renderSection(createMockPageData(resourceData, {
             navigateToResource,
             refetch: async () => {},

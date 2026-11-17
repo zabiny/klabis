@@ -11,3 +11,4 @@
 - [TableCell column key collision](feedback_tablecell_key_collision.md) — two `<TableCell column="_links">` siblings trigger React duplicate-key warning; use unique column id like `_links-sync` since column is just a React key + sort field, dataRender does its own extraction
 - [Modal close button scope](feedback_modal_close_button_scope.md) — Modal renders close button OUTSIDE children wrapper; use screen.getByTestId not within(overlay)
 - [HalRouteProvider + useRootNavigation test setup](feedback_test_setup_hal_route_provider.md) — 4 wrappers needed (Query/MemoryRouter/HalRoute/HalForm/HalFormsPageLayout) + useRootNavigation mock for overlay-with-HalFormButton components
+- [Mocking useAuthorizedQuery must apply select](feedback_mocking_useauthorizedquery_select.md) — honour select, but skip it for null data (TanStack never selects undefined; useHalCollection select reads .page)

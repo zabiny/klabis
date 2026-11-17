@@ -17,10 +17,8 @@ export interface UpcomingDeadlinesWidgetProps {
 
 export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlinesWidgetProps): ReactElement | null => {
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
-    const {data, refetch} = useUpcomingDeadlines(upcomingDeadlinesHref);
+    const {items, totalElements, refetch} = useUpcomingDeadlines(upcomingDeadlinesHref);
 
-    const items = data?.items ?? [];
-    const totalElements = data?.totalElements ?? 0;
     const hasMore = totalElements > items.length;
 
     if (!upcomingDeadlinesHref || items.length === 0) {

@@ -1,18 +1,18 @@
 import {type ReactElement, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {authorizedFetch} from '../../api/authorizedFetch.ts';
 import {Button, Skeleton} from '../../components/UI';
 import {ErrorPage} from '../ErrorPage.tsx';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {Download, Printer} from 'lucide-react';
-import type {GetAccommodationListResource, GetEventResource} from '../../api';
+import type {GetEventResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {toHref} from '../../api/hateoas.ts';
 
 type AccommodationListItem = components['schemas']['AccommodationListItemDto'];
-type AccommodationListResponse = GetAccommodationListResource;
 type EventData = GetEventResource;
 
 function formatAddress(item: AccommodationListItem): string | null {
@@ -45,8 +45,8 @@ export const AccommodationListPage = (): ReactElement => {
     const accommodationListLink = eventData?._links?.['accommodation-list'];
     const accommodationListUrl = accommodationListLink ? toHref(accommodationListLink) : undefined;
 
-    const {data: listData, isLoading: listLoading, error: listError} =
-        useAuthorizedQuery<AccommodationListResponse>(accommodationListUrl);
+    const {items, isLoading: listLoading, error: listError} =
+        useHalCollection<AccommodationListItem>(accommodationListUrl);
 
     if (eventLoading || listLoading) {
         return <Skeleton/>;
@@ -61,7 +61,6 @@ export const AccommodationListPage = (): ReactElement => {
         return <ErrorPage error={{status: 403}}/>;
     }
 
-    const items = listData?._embedded?.accommodationList ?? [];
     const eventName = eventData?.name ?? '';
 
     const handleDownloadCsv = async () => {

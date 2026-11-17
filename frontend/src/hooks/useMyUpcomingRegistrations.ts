@@ -1,6 +1,6 @@
-import type {HalResponse} from '../api';
-import {toHref} from '../api/hateoas';
-import {useAuthorizedQuery} from './useAuthorizedFetch';
+import {selfHref} from '../api/hateoas';
+import {useHalCollection} from './useHalCollection';
+import type {EventSummaryRow} from './eventSummaryRow';
 
 export interface UpcomingRegistrationItem {
     selfHref: string;
@@ -10,38 +10,28 @@ export interface UpcomingRegistrationItem {
     editRegistrationTarget?: string;
 }
 
-export interface UpcomingRegistrationsData {
+export interface UseMyUpcomingRegistrationsResult {
     items: UpcomingRegistrationItem[];
+    refetch: () => void;
 }
 
-function toUpcomingRegistrationsData(response: HalResponse): UpcomingRegistrationsData {
-    const embedded = response._embedded as {
-        eventSummaryDtoList?: Array<{
-            id?: {value?: string};
-            name?: string;
-            eventDate?: string;
-            location?: string;
-            _links?: {self?: {href: string}};
-            _templates?: {editRegistration?: {target?: string}};
-        }>;
-    } | undefined;
-
-    const rawItems = embedded?.eventSummaryDtoList ?? [];
-    const items: UpcomingRegistrationItem[] = rawItems
-        .filter(e => e._links?.self?.href)
-        .map(e => ({
-            selfHref: toHref(e._links!.self!),
+const toUpcomingRegistrationItems = (events: EventSummaryRow[]): UpcomingRegistrationItem[] =>
+    events.flatMap(e => {
+        const href = selfHref(e);
+        if (href === undefined) return [];
+        return [{
+            selfHref: href,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             location: e.location ?? '',
             editRegistrationTarget: e._templates?.editRegistration?.target,
-        }));
-
-    return {items};
-}
-
-export function useMyUpcomingRegistrations(href: string | undefined) {
-    return useAuthorizedQuery(href, {
-        select: (data) => toUpcomingRegistrationsData(data as HalResponse),
+        }];
     });
+
+export function useMyUpcomingRegistrations(href: string | undefined): UseMyUpcomingRegistrationsResult {
+    const {items, refetch} = useHalCollection<EventSummaryRow, UpcomingRegistrationItem>(href, {
+        select: toUpcomingRegistrationItems,
+    });
+
+    return {items, refetch};
 }

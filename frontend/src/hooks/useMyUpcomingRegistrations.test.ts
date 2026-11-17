@@ -1,134 +1,84 @@
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
-import React from 'react';
-import {useMyUpcomingRegistrations} from './useMyUpcomingRegistrations';
+import {renderHook} from '@testing-library/react';
 import {vi} from 'vitest';
+import {useMyUpcomingRegistrations} from './useMyUpcomingRegistrations';
 
-vi.mock('../api/klabisUserManager', () => ({
-    klabisAuthUserManager: {
-        getUser: vi.fn().mockReturnValue({
-            access_token: 'test-token',
-            token_type: 'Bearer',
-        }),
-    },
+vi.mock('./useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn(),
 }));
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {queries: {retry: false, gcTime: 0}},
-    });
-    return ({children}: {children: ReactNode}) =>
-        React.createElement(QueryClientProvider, {client: queryClient}, children);
+import {useAuthorizedQuery} from './useAuthorizedFetch';
+
+const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
+
+const HREF = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
+
+interface EventFixture {
+    name?: string;
+    eventDate?: string;
+    location?: string;
+    _links: {self?: {href: string}};
+    _templates?: {editRegistration?: {target?: string}};
+}
+
+const respondWithEvents = (events: EventFixture[]) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
+            _links: {self: {href: HREF}},
+            _embedded: {eventSummaryDtoList: events},
+        },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
-const mockFetchWithResponse = (data: unknown) => {
-    (globalThis as Record<string, unknown>).fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => data,
-        headers: new Headers(),
-        clone: function () { return this; },
-    } as unknown as Response);
-};
-
-afterEach(() => {
-    delete (globalThis as Record<string, unknown>).fetch;
-    vi.clearAllMocks();
-});
-
-const buildEventsPageResponse = (events: { id: string; name: string; eventDate: string; location: string }[]) => ({
-    _embedded: {
-        eventSummaryDtoList: events.map(e => ({
-            id: {value: e.id},
-            name: e.name,
-            eventDate: e.eventDate,
-            location: e.location,
-            _links: {self: {href: `/api/events/${e.id}`}},
-        })),
-    },
-    _links: {self: {href: '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3'}},
-    page: {size: 3, totalElements: events.length, totalPages: 1, number: 0},
+const eventRow = (overrides: Partial<EventFixture> = {}): EventFixture => ({
+    name: 'Jarní závod',
+    eventDate: '2026-05-01',
+    location: 'Praha',
+    _links: {self: {href: '/api/events/event-1'}},
+    ...overrides,
 });
 
 describe('useMyUpcomingRegistrations', () => {
-    it('fetches events when href is provided and returns event items', async () => {
-        const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
-        mockFetchWithResponse(buildEventsPageResponse([
-            {id: 'event-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha'},
-            {id: 'event-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
-        ]));
-
-        const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
-
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        const items = result.current.data?.items ?? [];
-        expect(items).toHaveLength(2);
-        expect(items[0].name).toBe('Jarní závod');
-        expect(items[0].eventDate).toBe('2026-05-01');
-        expect(items[0].location).toBe('Praha');
-        expect(items[0].selfHref).toBe('/api/events/event-1');
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    it('exposes editRegistration template target when the embedded event carries it', async () => {
-        const href = '/api/events?registeredBy=me&size=3';
-        mockFetchWithResponse({
-            _embedded: {
-                eventSummaryDtoList: [
-                    {
-                        name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha',
-                        _links: {self: {href: '/api/events/event-1'}},
-                        _templates: {editRegistration: {method: 'PUT', target: '/api/events/event-1/registrations/me'}},
-                    },
-                    {
-                        name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno',
-                        _links: {self: {href: '/api/events/event-2'}},
-                    },
-                ],
-            },
-            _links: {self: {href}},
-        });
+    it('projects a captured event row to an upcoming registration item', () => {
+        respondWithEvents([
+            eventRow(),
+            eventRow({name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno', _links: {self: {href: '/api/events/event-2'}}}),
+        ]);
 
-        const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useMyUpcomingRegistrations(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        const items = result.current.data?.items ?? [];
-        expect(items[0].editRegistrationTarget).toBe('/api/events/event-1/registrations/me');
-        expect(items[1].editRegistrationTarget).toBeUndefined();
+        expect(result.current.items).toEqual([
+            {selfHref: '/api/events/event-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha', editRegistrationTarget: undefined},
+            {selfHref: '/api/events/event-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno', editRegistrationTarget: undefined},
+        ]);
     });
 
-    it('does not fetch when href is undefined (query is disabled)', () => {
-        (globalThis as Record<string, unknown>).fetch = vi.fn();
+    it('skips events without a self link', () => {
+        respondWithEvents([
+            eventRow({name: 'Bez odkazu', _links: {}}),
+            eventRow({name: 'S odkazem'}),
+        ]);
 
-        const {result} = renderHook(() => useMyUpcomingRegistrations(undefined), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useMyUpcomingRegistrations(HREF));
 
-        expect(result.current.fetchStatus).toBe('idle');
-        expect((globalThis as Record<string, unknown>).fetch).not.toHaveBeenCalled();
+        expect(result.current.items.map(i => i.name)).toEqual(['S odkazem']);
     });
 
-    it('returns empty items array when response has no embedded events', async () => {
-        const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
-        mockFetchWithResponse({
-            _embedded: {eventSummaryDtoList: []},
-            _links: {self: {href}},
-            page: {size: 3, totalElements: 0, totalPages: 0, number: 0},
-        });
+    it('exposes the editRegistration template target when the event carries it', () => {
+        respondWithEvents([
+            eventRow({_templates: {editRegistration: {target: '/api/events/event-1/registrations/me'}}}),
+            eventRow({name: 'Letní kemp', _links: {self: {href: '/api/events/event-2'}}}),
+        ]);
 
-        const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useMyUpcomingRegistrations(HREF));
 
-        await waitFor(() => expect(result.current.data).toBeDefined());
-
-        expect(result.current.data?.items).toHaveLength(0);
-    });
-
-    it('returns loading state while fetching', () => {
-        const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
-        (globalThis as Record<string, unknown>).fetch = vi.fn().mockReturnValue(new Promise(() => {}));
-
-        const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
-
-        expect(result.current.isLoading).toBe(true);
+        expect(result.current.items[0].editRegistrationTarget).toBe('/api/events/event-1/registrations/me');
+        expect(result.current.items[1].editRegistrationTarget).toBeUndefined();
     });
 });

@@ -7,7 +7,7 @@
 
 import {type ReactElement, useState} from 'react'
 import type {SortDirection} from '../../api'
-import {useHalCollectionQuery} from '../../hooks/useHalCollectionQuery'
+import {useHalTableQuery} from '../../hooks/useHalTableQuery'
 import {useTableSort, type SortState} from '../../hooks/useTableSort'
 import {KlabisTable} from './KlabisTable'
 
@@ -24,9 +24,6 @@ export interface Link {
 export interface KlabisTableWithQueryProps<T extends object = Record<string, unknown>> {
     // Data source (HAL Link)
     link: Link
-
-    // Optional: Extract data from _embedded[collectionName] instead of content
-    collectionName?: string
 
     // UI props (passed through to KlabisTable)
     onRowClick?: (item: T) => void
@@ -46,7 +43,6 @@ export interface KlabisTableWithQueryProps<T extends object = Record<string, unk
 
 interface KlabisTableCoreProps<T extends object = Record<string, unknown>> {
     link: Link
-    collectionName?: string
     onRowClick?: (item: T) => void
     defaultOrderBy?: string
     defaultOrderDirection?: SortDirection
@@ -66,7 +62,6 @@ interface KlabisTableCoreProps<T extends object = Record<string, unknown>> {
  */
 function KlabisTableCore<T extends object = Record<string, unknown>>({
     link,
-    collectionName,
     onRowClick,
     defaultOrderBy,
     defaultOrderDirection = 'asc',
@@ -79,8 +74,8 @@ function KlabisTableCore<T extends object = Record<string, unknown>>({
     onSortChange,
     onSortReset,
 }: KlabisTableCoreProps<T>): ReactElement {
-    const {rows, pageData, error, page, setPage, rowsPerPage, setRowsPerPage} =
-        useHalCollectionQuery<T>(link, sort, collectionName, defaultRowsPerPage)
+    const {items, pageMetadata, error, currentPage, setPage, rowsPerPage, setRowsPerPage} =
+        useHalTableQuery<T>(link, sort, defaultRowsPerPage)
 
     const handleSortChange = (column: string, direction: SortDirection) => {
         onSortChange(column, direction)
@@ -89,15 +84,15 @@ function KlabisTableCore<T extends object = Record<string, unknown>>({
 
     return (
         <KlabisTable<T>
-            data={rows}
-            page={pageData}
+            data={items}
+            page={pageMetadata}
             error={error}
             onSortChange={handleSortChange}
             onSortReset={onSortReset}
             onPageChange={setPage}
             onRowsPerPageChange={setRowsPerPage}
             onRowClick={onRowClick}
-            currentPage={page}
+            currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             currentSort={sort}
             defaultOrderBy={defaultOrderBy}

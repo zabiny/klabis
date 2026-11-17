@@ -54,7 +54,6 @@ const AttemptsTab = (): ReactElement => {
         <>
             <SyncAttemptFilterBar value={filters} onChange={setValues}/>
             <HalEmbeddedTable<SyncAttemptItem>
-                collectionName="syncAttempts"
                 tableId="sync.attempts"
                 emptyMessage={Object.keys(extraParams).length > 0
                     ? labels.syncOverview.emptyFiltered
@@ -85,7 +84,6 @@ const AttemptsTab = (): ReactElement => {
 const AttentionTab = ({href}: {href: string}): ReactElement => (
     <KlabisTableWithQuery<SyncRecordItem>
         link={{href}}
-        collectionName="syncRecords"
         tableId="sync.attention"
         emptyMessage={labels.syncOverview.attentionEmpty}
     >

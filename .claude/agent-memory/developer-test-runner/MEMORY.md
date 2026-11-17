@@ -1,5 +1,28 @@
 # Test Runner Agent Memory
 
+- [Frontend test run (2026-11-17) FULL suite after review-fix refactor](frontend_test_run_2026_11_17_full_after_review_fix_refactor.md) — 2932 tests, 0 failed, 2 todo, 172 files green, 32.5s
+- [Frontend test run (2026-11-17) FULL suite, deepen-hal-collection](frontend_test_run_2026_11_17_full_deepen_hal_collection.md) — 2933/2936, 1 real failure (MemberDetailPage select-mock), 2 it.todo listed as failures
+- [Frontend test run (2026-11-17) iteration 4, seven files](frontend_test_run_2026_11_17_iteration4_seven_files.md) — 182/182 passed, all green
+- [Frontend test run (2026-11-17) iteration 3, nine files](frontend_test_run_2026_11_17_iteration3_nine_files.md) — 148/148 passed across 9 files, all green
+- [Frontend test run (2026-11-17) iteration 2, six files](frontend_test_run_2026_11_17_iteration2_six_files.md) — 65/65 passed, one file per command, ~3s each
+- [Backend test run (2026-11-16) common.logging package](backend_test_run_2026_11_16_common_logging.md) — 5/5 passed (2 classes), ~1 min
+
+- [Backend test run (2026-11-16) full suite after review fixes](backend_test_run_2026_11_16_full_after_review_fixes.md) — 4895 tests, same MdcFilterIntegrationTest failure, 14 skipped, 5m40s
+- [Backend test run (2026-11-16) FINAL full suite after MDC fix](backend_test_run_2026_11_16_full_final_after_mdc_fix.md) — 4899/4899 passed, 14 skipped, fully green, ~6 min
+- [Backend test run (2026-11-16) FINAL full suite + modulith skip](backend_test_run_2026_11_16_full_final_modulith_skip.md) — 4893 tests, 1 fail (MdcFilterIntegrationTest, passes alone), 14 skipped, 6m09s
+- [Backend test run (2026-11-16) membershipfees slice 369](backend_test_run_2026_11_16_membershipfees_slice_369.md) — 369/369 passed, 2 new tests, no rerun-tasks, ~2 min
+- [Backend test run (2026-11-16) membershipfees verification](backend_test_run_2026_11_16_membershipfees_verification.md) — 367/367 passed, single `gradlew test --tests "com.klabis.membershipfees.*"` invocation
+- [Backend test run (2026-11-16) membershipfees slice, iteration 2](backend_test_run_2026_11_16_membershipfees_iteration2.md) — 367/367 passed on deepen-fee-year-lifecycle, ~2m20s with --rerun-tasks
+- [Backend test run (2026-11-16) membershipfees slice after lifecycle fold](backend_test_run_2026_11_16_membershipfees_after_lifecycle_fold.md) — 367/367 passed post-refactor, ~2 min
+- [Backend test run (2026-11-16) membershipfees slice, 1 failure](backend_test_run_2026_11_16_membershipfees_slice_1fail.md) — 366/367 passed; UnnecessaryStubbingException in MemberFeeHistoryServiceTest, ~1m47s
+- [Backend test run (2026-11-16) whole membershipfees slice](backend_test_run_2026_11_16_membershipfees_full_slice.md) — 367/367 passed via `com.klabis.membershipfees.*` filter, ~2 min incl. recompile
+- [Backend test run (2026-11-16) FeeYearLifecycleServiceTest 47/47](backend_test_run_2026_11_16_fee_year_lifecycle_final.md) — single-class filtered run GREEN, ~1 min
+- [Backend test run (2026-11-16) MemberFeePlacementTest GREEN](backend_test_run_2026_11_16_member_fee_placement_green.md) — 9/9 passed after implementation, <2 min
+- [Backend test run (2026-11-16) MemberFeePlacementTest RED](backend_test_run_2026_11_16_member_fee_placement_red.md) — 0/9 passed, all UnsupportedOperationException stubs, ~50s
+- [Backend test run (2026-11-16) membershipfees package slice](backend_test_run_2026_11_16_membershipfees_slice.md) — 358/358 passed, 120 classes, ~1 min
+- [Backend test run (2026-11-16) FeeYearLifecycleServiceTest GREEN](backend_test_run_2026_11_16_fee_year_lifecycle_green.md) — 21/21 passed after service implementation, ~35s
+- [Backend test run (2026-11-16) FeeYearLifecycleServiceTest RED](backend_test_run_2026_11_16_fee_year_lifecycle_red.md) — 0/21 passed, 3 new tests, intentional RED, ~33s
+- [Backend test run (2026-11-16) FeeYearLifecycleServiceTest RED #2](backend_test_run_2026_11_16_fee_year_lifecycle_red_2.md) — 21/47 passed, 26 failed on 5 UnsupportedOperationException stubs, 51s
 - [Backend test run (2026-10-19) full suite](backend_test_run_2026_10_19_full_suite.md) — 4651/4651 passed on fix/api-session-id-rotation
 
 - [Backend test run (2026-10-04) worktree-next-proposal](backend_test_run_2026_10_04_worktree.md) — 4087/4087 passed

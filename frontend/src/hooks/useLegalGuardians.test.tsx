@@ -1,46 +1,55 @@
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
-import {act} from 'react';
+import {renderHook} from '@testing-library/react';
 import {vi} from 'vitest';
-import {authorizedFetch} from '../api/authorizedFetch';
 import {useLegalGuardians} from './useLegalGuardians';
-import {useAuthorizedMutation} from './useAuthorizedFetch';
 
-vi.mock('../api/authorizedFetch', () => ({authorizedFetch: vi.fn()}));
+vi.mock('./useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn(),
+}));
 
-const respond = (names: string[]) => vi.mocked(authorizedFetch).mockResolvedValue({
-    headers: new Headers(),
-    json: async () => ({
-        _embedded: {legalGuardianGroupGuardianResponseList: names.map((n, i) => ({userId: `u-${i}`, firstName: n}))},
-    }),
-} as Response);
+import {useAuthorizedQuery} from './useAuthorizedFetch';
+
+const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
+
+const respondWithGuardians = (names: string[]) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
+            _links: {self: {href: '/api/legal-guardian-groups/g-1/guardians'}},
+            _embedded: {legalGuardianGroupGuardianResponseList: names.map((n, i) => ({userId: `u-${i}`, firstName: n}))},
+        },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
+};
 
 describe('useLegalGuardians', () => {
-    it('does not fetch without the legalGuardians link', () => {
-        const client = new QueryClient();
-        const wrapper = ({children}: {children: ReactNode}) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-        const {result} = renderHook(() => useLegalGuardians(undefined), {wrapper});
-        expect(result.current.guardians).toEqual([]);
-        expect(authorizedFetch).not.toHaveBeenCalled();
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    it('refetches guardians after a successful mutation', async () => {
-        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
-        const wrapper = ({children}: {children: ReactNode}) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-        respond(['Jana']);
+    it('queries the href behind the legalGuardians link', () => {
+        respondWithGuardians([]);
 
-        const {result} = renderHook(() => ({
-            guardians: useLegalGuardians({href: '/api/legal-guardian-groups/g-1/guardians'}),
-            mutation: useAuthorizedMutation({method: 'POST'}),
-        }), {wrapper});
-        await waitFor(() => expect(result.current.guardians.guardians).toHaveLength(1));
+        renderHook(() => useLegalGuardians({href: '/api/legal-guardian-groups/g-1/guardians'}));
 
-        respond(['Jana', 'Eva']);
-        await act(async () => {
-            await result.current.mutation.mutateAsync({url: '/api/anything', data: {}});
-        });
+        expect(mockUseAuthorizedQuery.mock.calls[0][0]).toBe('/api/legal-guardian-groups/g-1/guardians');
+    });
 
-        await waitFor(() => expect(result.current.guardians.guardians).toHaveLength(2));
+    it('queries nothing and returns no guardians without the legalGuardians link', () => {
+        respondWithGuardians([]);
+
+        const {result} = renderHook(() => useLegalGuardians(undefined));
+
+        expect(mockUseAuthorizedQuery.mock.calls[0][0]).toBeUndefined();
+        expect(result.current.guardians).toEqual([]);
+    });
+
+    it('returns the guardians of the collection', () => {
+        respondWithGuardians(['Jana', 'Eva']);
+
+        const {result} = renderHook(() => useLegalGuardians({href: '/api/legal-guardian-groups/g-1/guardians'}));
+
+        expect(result.current.guardians.map(g => g.firstName)).toEqual(['Jana', 'Eva']);
+        expect(result.current.isLoading).toBe(false);
     });
 });

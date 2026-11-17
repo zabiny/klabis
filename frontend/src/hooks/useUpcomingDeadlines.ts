@@ -1,13 +1,8 @@
-import type {HalResourceLinks, HalResponse, Link} from '../api';
-import {asLinkArray, toHref} from '../api/hateoas';
-import type {components} from '../api/klabisApi';
-import {useAuthorizedQuery} from './useAuthorizedFetch';
+import type {Link} from '../api';
+import {asLinkArray, selfHref} from '../api/hateoas';
+import {useHalCollection} from './useHalCollection';
+import type {EventSummaryRow} from './eventSummaryRow';
 import {getTodayIso} from '../utils/dateUtils';
-
-function linkHref(links: HalResourceLinks | undefined): string | undefined {
-    const link = asLinkArray(links)[0];
-    return link ? toHref(link) : undefined;
-}
 
 export interface UpcomingDeadlineItem {
     selfHref: string;
@@ -17,9 +12,10 @@ export interface UpcomingDeadlineItem {
     newRegistration: Link | undefined;
 }
 
-export interface UpcomingDeadlinesData {
+export interface UseUpcomingDeadlinesResult {
     items: UpcomingDeadlineItem[];
     totalElements: number;
+    refetch: () => void;
 }
 
 function pickNextRelevantDeadline(deadlines: string[] | undefined): string {
@@ -28,30 +24,23 @@ function pickNextRelevantDeadline(deadlines: string[] | undefined): string {
     return deadlines.find(d => d >= today) ?? deadlines[deadlines.length - 1];
 }
 
-function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
-    const embedded = response._embedded as {
-        eventSummaryDtoList?: Array<components['schemas']['EntityModelEventSummaryDto']>;
-    } | undefined;
-
-    const page = (response as {page?: {totalElements?: number}}).page;
-    const totalElements = page?.totalElements ?? 0;
-
-    const rawItems = embedded?.eventSummaryDtoList ?? [];
-    const items: UpcomingDeadlineItem[] = rawItems
-        .filter(e => asLinkArray(e._links?.self)[0])
-        .map(e => ({
-            selfHref: linkHref(e._links?.self)!,
+const toUpcomingDeadlineItems = (events: EventSummaryRow[]): UpcomingDeadlineItem[] =>
+    events.flatMap(e => {
+        const href = selfHref(e);
+        if (href === undefined) return [];
+        return [{
+            selfHref: href,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             deadline: pickNextRelevantDeadline(e.deadlines),
             newRegistration: asLinkArray(e._links?.newRegistration)[0],
-        }));
-
-    return {items, totalElements};
-}
-
-export function useUpcomingDeadlines(href: string | undefined) {
-    return useAuthorizedQuery(href, {
-        select: (data) => toUpcomingDeadlinesData(data as HalResponse),
+        }];
     });
+
+export function useUpcomingDeadlines(href: string | undefined): UseUpcomingDeadlinesResult {
+    const {items, pageMetadata, refetch} = useHalCollection<EventSummaryRow, UpcomingDeadlineItem>(href, {
+        select: toUpcomingDeadlineItems,
+    });
+
+    return {items, totalElements: pageMetadata?.totalElements ?? 0, refetch};
 }
