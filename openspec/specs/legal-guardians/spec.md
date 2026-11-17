@@ -109,7 +109,7 @@ The system SHALL let a user with MEMBERS:MANAGE permission set the complete list
 
 ### Requirement: Legal Guardian Candidates
 
-The system SHALL offer as legal guardian candidates every non-member legal guardian and every active club member aged 18 or older. Candidates SHALL be searchable by name, and each candidate SHALL be shown with enough detail to tell namesakes apart: the registration number for members and the e-mail for non-members. Candidates are available only to users with MEMBERS:CREATE or MEMBERS:MANAGE permission.
+The system SHALL offer as legal guardian candidates every non-member legal guardian and every active club member aged 18 or older. Candidates SHALL be searchable by name, and each candidate SHALL be shown with enough detail to tell namesakes apart: the registration number for members and the e-mail for non-members. Candidates are available only to users with MEMBERS:MANAGE permission.
 
 #### Scenario: Admin searches for a guardian
 

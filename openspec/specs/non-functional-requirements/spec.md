@@ -79,7 +79,7 @@ The system SHALL include hypermedia links in API responses reflecting the curren
 
 - **WHEN** a member is created successfully
 - **THEN** the response includes a `self` link to the member resource
-- **AND** the response includes an `edit` link if the user has MEMBERS:UPDATE permission
+- **AND** the response includes an `edit` link if the user has MEMBERS:MANAGE permission
 - **AND** the response includes a `collection` link to the members list
 
 #### Scenario: Unauthorized user receives limited links
@@ -100,7 +100,7 @@ The system SHALL include hypermedia links in API responses reflecting the curren
 
 #### Scenario: Member details response includes suspend link for active member
 
-- **WHEN** user with MEMBERS:UPDATE permission views an active member
+- **WHEN** user with MEMBERS:MANAGE permission views an active member
 - **THEN** the response includes a `suspend` link
 
 #### Scenario: Suspend link excluded for suspended member
