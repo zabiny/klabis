@@ -22,13 +22,13 @@ flowchart LR
 ```
 
 - **One module, `useHalCollection.ts`**, with two exports:
-  - `embeddedItems(envelope, collection?)` — pure; owns the unwrap, the collection-name inference from the single `_embedded` key, and the guards. A missing `_embedded` is an empty collection (Spring HATEOAS omits it for empty lists); several embedded keys, a missing override key, or a non-array value fail loudly.
-  - `useHalCollection(href, options)` — fetches and returns `{items, pageMetadata, isLoading, error, refetch}` built on `embeddedItems`.
+  - `embeddedItems(envelope)` — pure; owns the unwrap, the collection-name inference from the single `_embedded` key, and the guards. A missing `_embedded` is an empty collection (Spring HATEOAS omits it for empty lists); several embedded keys or a non-array value fail loudly.
+  - `useHalCollection(href, options)` — fetches and returns `{items, pageMetadata, isLoading, error, refetch}` built on `embeddedItems`; the unwrap runs in the hook body, so tests keep mocking the data boundary rather than a `select` callback.
 - **Five hooks become adapters over it**: `useEventTypes`, `useMembershipFeeTierOptions`, `useLegalGuardians`, `useUpcomingDeadlines`, `useMyUpcomingRegistrations`. Their own mapping (`getById`, value/prompt, projections) stays in the adapter. The two projection hooks change their return shape from `{data: {items, …}}` to `{items, …}`.
 - **Eight component call sites stop unwrapping by hand**:
   - fetching a collection → `useHalCollection`: `CategoryPresetPickerButton`, `PastCampaignsSection`, `CampaignDetail`, `GroupsPage`, `AccommodationListPage`;
   - already holding the page's envelope from `useHalPageData` → `embeddedItems`: `RulesTable`, `CalendarPage`, `MembershipFeeGroupDetailPage`.
-- **The table hook composes it**: `useHalCollectionQuery` is renamed `useHalTableQuery`, adds paging and sort state, and returns `items` for the rows (no duplicated rows attribute) plus `pageMetadata`. Its unused `content`/`data` fallback is deleted. `collectionName` on `KlabisTableWithQuery` and `HalEmbeddedTable` becomes an optional override.
+- **The table hook composes it**: `useHalCollectionQuery` is renamed `useHalTableQuery`, adds paging and sort state, and returns `items` for the rows (no duplicated rows attribute) plus `pageMetadata`. Its unused `content`/`data` fallback is deleted. `collectionName` disappears from `KlabisTableWithQuery` and `HalEmbeddedTable` and from their call sites — inference covers every existing envelope.
 - **Query policy stays per call site**: `staleTime` and `select` are passed through, not decided by the module.
 - **Tests stop being repeated**: unwrap, inference and the guards are tested once on `embeddedItems`; adapters keep only their own mapping tests.
 
@@ -46,7 +46,7 @@ flowchart LR
 **Affected code (frontend):**
 - New `src/hooks/useHalCollection.ts` (`embeddedItems` + `useHalCollection`).
 - `src/hooks/{useEventTypes, useMembershipFeeTierOptions, useLegalGuardians, useUpcomingDeadlines, useMyUpcomingRegistrations}.ts` become adapters; consumers of the projection hooks `components/dashboard/UpcomingDeadlinesWidget` and `pages/HomePage` follow the new return shape.
-- `src/hooks/useHalCollectionQuery.ts` → `useHalTableQuery.ts`; consumers `KlabisTableWithQuery`, `FinancesPage`; `HalEmbeddedTable` makes `collectionName` optional. Its 13 existing `collectionName` call sites stay unchanged.
+- `src/hooks/useHalCollectionQuery.ts` → `useHalTableQuery.ts`; consumers `KlabisTableWithQuery`, `FinancesPage`, and the 13 table call sites that stop passing `collectionName`.
 - `src/components/{events/CategoryPresetPickerButton, membership-fees/PastCampaignsSection, membership-fees/CampaignDetail, membership-fees/RulesTable}` and `src/pages/{groups/GroupsPage, events/AccommodationListPage, calendar/CalendarPage, membership-fees/MembershipFeeGroupDetailPage}`.
 - `src/api/types.ts`: `hasCalendarItems` is deleted once `CalendarPage` no longer needs it.
 - Tests: five hook tests shrink to mapping-only; new module test covers `embeddedItems` inference and guards, and the hook's fetch behaviour.

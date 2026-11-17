@@ -37,21 +37,18 @@ flowchart TD
 
 **D1 — Scope: lists, projections, page-data readers and the table hook.** All four groups use the same concept. The table hook composes the core instead of duplicating it; otherwise two modules would answer the same question.
 
-**D2 — Pure core plus a fetching hook, in one module.** Three call sites (`RulesTable`, `CalendarPage`, `MembershipFeeGroupDetailPage`) already hold the envelope from `useHalPageData`; making them fetch it again would add a request. So the unwrap lives in a pure function, and the hook is a thin fetch around it (via `useAuthorizedQuery`'s `select`). Both stay in `useHalCollection.ts` for locality.
+**D2 — Pure core plus a fetching hook, in one module.** Three call sites (`RulesTable`, `CalendarPage`, `MembershipFeeGroupDetailPage`) already hold the envelope from `useHalPageData`; making them fetch it again would add a request. So the unwrap lives in a pure function, and the hook is a thin fetch around it. Both stay in `useHalCollection.ts` for locality.
+
+The hook fetches the **raw envelope** with `useAuthorizedQuery` and unwraps it in its own body, memoised — it does not hand a `select` callback to TanStack Query. A callback would move the seam into the query library and force every consumer test that mocks `useAuthorizedQuery` to replay `options.select`; keeping the unwrap inside the hook keeps the mocked boundary at data level, as everywhere else in the app.
 
 ```ts
-embeddedItems<Row>(
-  envelope: HalResponse | undefined,
-  collection?: string,            // override; normally inferred
-): Row[]
+embeddedItems<Row>(envelope: HalEnvelope | undefined): Row[]
 
 useHalCollection<Row, T = Row>(
   href: string | undefined,
   options?: {
-    collection?: string;
     select?: (rows: Row[]) => T[];
     staleTime?: number;
-    enabled?: boolean;
   },
 ): {
   items: T[];
@@ -62,7 +59,7 @@ useHalCollection<Row, T = Row>(
 }
 ```
 
-`Row` is the generated item type the caller names once; `select` receives typed rows, so adapters do not cast. `select` maps the whole array because projections filter as well as map.
+`Row` is the generated item type the caller names once; `select` receives typed rows, so adapters do not cast. `select` maps the whole array because projections filter as well as map; a caller with no projection names the view type as `Row` and passes no `select`.
 
 **D3 — Collection name inferred from the single `_embedded` key.** 22/22 generated envelopes have exactly one key, so requiring the name from callers is knowledge they cannot express any better than the module can. Rules, in order:
 
@@ -70,15 +67,14 @@ useHalCollection<Row, T = Row>(
 |---|---|
 | `undefined` (not loaded yet) | `[]` |
 | no `_embedded` | `[]` — empty collection |
-| `collection` given | `_embedded[collection]`; key absent → guard error |
 | exactly one key | its value |
-| two or more keys, no override | guard error |
+| two or more keys | guard error |
 | value is not an array | guard error |
 
-The override serves detail resources whose `_embedded` is not the resource's own collection (`MembershipFeeGroupDetailPage` passes `'members'`) and the table's existing `collectionName` props.
+There is no override: the only envelopes with several keys are the deliberately excluded `GenericHalPage` case, and a second embedded block shows up as a guard error naming the href and the keys instead of as a silently empty table.
 
 **D4 — Loud guards, surfaced as an error state.** A guard throws `HalCollectionError` (extends `Error`) whose message names the envelope's self href and the keys found. Silence (`?? []`) is rejected for contract violations: it turns a wrong link or a changed contract into an empty table.
-- In `useHalCollection` the guard runs inside `select`; TanStack Query catches it and returns it as `error`, so the component renders its error state instead of crashing. `error` is typed `Error | null` because it carries both `ApiError` and `HalCollectionError`.
+- `useHalCollection` catches the guard error while decoding and returns it as `error`, so the component renders its error state instead of crashing. `error` is typed `Error | null` because it carries both `ApiError` and `HalCollectionError`.
 - Callers of `embeddedItems` during render (page-data readers) let it propagate to the app's `ErrorBoundary` (`App.tsx` / `ErrorFallback`).
 
 **D5 — Input is `href: string | undefined`.** Undefined already means "nothing to fetch" at three call sites and composes with `toHref`/`parseHalHref`; accepting link objects too would add a second shape to normalise.
@@ -95,21 +91,21 @@ The override serves detail resources whose `_embedded` is not the resource's own
 
 **D11 — Tests concentrate, they are not duplicated.** `embeddedItems` tests cover inference and every row of the D3 table, without a QueryClient. The hook test covers fetch, `select`, `pageMetadata`, the undefined-href rule and that a guard failure arrives as `error`. Adapter tests keep only what the adapter adds: `getById`, value/prompt mapping, projection of a captured row. Component tests that today assert unwrap behaviour rely on the module instead.
 
-**D12 — `collectionName` on table components becomes an optional override.** `KlabisTableWithQuery.collectionName` (already optional) and `HalEmbeddedTable.collectionName` (today required) are passed as `collection`. The 13 existing call sites stay unchanged; `HalEmbeddedTable` fetches the page's self link, so on detail resources (e.g. `EventDetailPage` → `registrationDtoList`) the override is still meaningful. Removing redundant props is a follow-up.
+**D12 — `collectionName` disappears from the table components.** `KlabisTableWithQuery.collectionName` and `HalEmbeddedTable.collectionName` are removed, and the 13 call sites stop passing it. Inference from the single `_embedded` key covers every existing envelope, including detail resources (`EventDetailPage` → `registrationDtoList`, `MembershipFeeGroupDetailPage` → `members`), because each of those responses carries exactly one embedded block. Keeping both mechanisms would leave call sites naming keys the module can infer.
 
 ## Risks / Trade-offs
 
-- **Inference hinges on an invariant.** A future envelope with two embedded collections, or one whose single value is a resource rather than an array, now fails with an error state instead of rendering empty. The guard message names the href and keys so the failure is diagnosable; the override is the escape hatch.
+- **Inference hinges on an invariant.** A future envelope with two embedded collections, or one whose single value is a resource rather than an array, now fails with an error state instead of rendering empty. The guard message names the href and keys so the failure is diagnosable; a genuine multi-key envelope would need the inference rule revisited rather than a per-call override.
 - **Render-time throw for page-data readers.** A contract violation on a page resource replaces the page with the error fallback rather than an empty section. Accepted: it is the same contract violation, and correct responses (including empty ones) never trigger it.
 - **Bundle-wide rename churn.** `useHalTableQuery` touches two consumers and one test file; kept in the same change so no intermediate state has two names.
-- **Slightly wider interface.** Two exports, four options and five results; each was added because a real call site needs it. Anything not needed (retry, gcTime, headers) stays out — callers that need them keep using `useAuthorizedQuery`.
+- **Slightly wider interface.** Two exports, two options and five results; each was added because a real call site needs it. Anything not needed (retry, gcTime, headers, enabled) stays out — callers that need them keep using `useAuthorizedQuery`.
 
 ## Glossary
 
 | Term | Meaning |
 |---|---|
 | HAL collection | A HAL response whose rows sit in `_embedded` under a single key, with optional `page` metadata. Empty when `_embedded` is absent. |
-| Collection name | The single key inside `_embedded`. Inferred by the module, override available. |
+| Collection name | The single key inside `_embedded`. Inferred by the module. |
 | Page metadata | The response's `page` block: `size`, `totalElements`, `totalPages`, `number`. |
 | Page-data reader | A component reading `_embedded` from the envelope it already holds via `useHalPageData`. |
 | Table adapter | `useHalTableQuery`: adds paging and sort state on top of `useHalCollection`. |

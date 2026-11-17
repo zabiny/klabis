@@ -12,7 +12,7 @@ const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const HREF = '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc';
 
-interface EventSummaryRow {
+interface EventFixture {
     id?: string;
     name?: string;
     eventDate?: string;
@@ -20,7 +20,7 @@ interface EventSummaryRow {
     _links: {self?: {href: string}; newRegistration?: {href: string}};
 }
 
-const eventRow = (overrides: Partial<EventSummaryRow> = {}): EventSummaryRow => ({
+const eventRow = (overrides: Partial<EventFixture> = {}): EventFixture => ({
     id: 'evt-1',
     name: 'Jarní závod',
     eventDate: '2026-05-20',
@@ -29,17 +29,17 @@ const eventRow = (overrides: Partial<EventSummaryRow> = {}): EventSummaryRow => 
     ...overrides,
 });
 
-const respondWithEvents = (events: EventSummaryRow[], totalElements?: number) => {
-    mockUseAuthorizedQuery.mockImplementation((_url, options) => ({
-        data: options?.select ? options.select({
+const respondWithEvents = (events: EventFixture[], totalElements?: number) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
             _links: {self: {href: HREF}},
             _embedded: {eventSummaryDtoList: events},
             ...(totalElements === undefined ? {} : {page: {size: 5, totalElements, totalPages: 1, number: 0}}),
-        }) : undefined,
+        },
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-    }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 const item = (result: { current: { items: UpcomingDeadlineItem[] } }, index: number) => result.current.items[index];

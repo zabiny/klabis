@@ -85,7 +85,7 @@ vi.mock('../../hooks/useOrisEventImport', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({
         mutate: vi.fn(),
         isPending: false,
@@ -129,15 +129,11 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     ...overrides,
 });
 
-// useHalCollection reads the rows through select; the mock must apply it or the tables stay empty.
-const applySelect = (data: unknown, options?: {select?: (raw: unknown) => unknown}) =>
-    data == null ? data : options?.select ? options.select(data) : data;
-
 const mockListQuery = (data: unknown) =>
-    vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => ({
+    vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => ({
         data: url === '/api/event-types'
-            ? applySelect({_embedded: {eventTypeDtoList: []}}, options)
-            : applySelect(data, options),
+            ? {_embedded: {eventTypeDtoList: []}}
+            : data,
         isLoading: false,
         error: null,
     })) as unknown as typeof useAuthorizedQuery);
@@ -158,9 +154,9 @@ describe('EventsPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // clearAllMocks keeps implementations, and a leaked events envelope would now feed the
-        // event-type filter through select. Start every test with no query data.
+        // event-type filter. Start every test with no query data.
         vi.mocked(useAuthorizedQuery).mockReset();
-        vi.mocked(useAuthorizedQuery).mockImplementation((() => ({data: null, error: null})) as unknown as typeof useAuthorizedQuery);
+        vi.mocked(useAuthorizedQuery).mockImplementation((() => ({data: undefined, error: null})) as unknown as typeof useAuthorizedQuery);
         vi.mocked(useAuth).mockReturnValue({
             getUser: () => ({memberId: 'M001', firstName: 'Jana', lastName: 'Novak', id: 1, userName: 'ZBM9500'}),
             isAuthenticated: true,
@@ -472,10 +468,10 @@ describe('EventsPage', () => {
                 }
                 return Promise.resolve(createMockResponse({}));
             }) as typeof authorizedFetch);
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: applySelect({_embedded: {eventTypeDtoList: []}}, options),
+                        data: {_embedded: {eventTypeDtoList: []}},
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -495,11 +491,11 @@ describe('EventsPage', () => {
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
-                    data: applySelect({
+                    data: {
                         _links: {self: {href: '/api/events'}},
                         _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
                         page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    }, options),
+                    },
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -606,16 +602,16 @@ describe('EventsPage', () => {
                 _links: {self: {href: '/api/events/evt-edit'}},
                 _templates: templates,
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
                 if (url?.includes('/registrations/')) {
                     return {data: undefined, isLoading: true, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
-                    data: applySelect({
+                    data: {
                         _links: {self: {href: '/api/events'}},
                         _embedded: {eventSummaryDtoList: [eventRow]},
                         page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    }, options),
+                    },
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -775,15 +771,15 @@ describe('EventsPage', () => {
                 {id: 'et-A', name: 'Klub', sortOrder: 1},
                 {id: 'et-B', name: 'Oblastní', sortOrder: 2},
             ]}};
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: options?.select ? options.select(eventTypesEnvelope) : eventTypesEnvelope,
+                        data: eventTypesEnvelope,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
-                return {data: null, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
+                return {data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
             renderPage(createMockPageData(null), '/events?eventTypeId=et-A');
             const group = screen.getByRole('group', {name: labels.eventsFilter.eventTypeFilter});
@@ -794,12 +790,12 @@ describe('EventsPage', () => {
 
     describe('table state follows filters', () => {
         const mockPagedEvents = () => {
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
                 if (url === '/api/event-types') {
-                    return {data: applySelect({_embedded: {eventTypeDtoList: []}}, options), isLoading: false, error: null};
+                    return {data: {_embedded: {eventTypeDtoList: []}}, isLoading: false, error: null};
                 }
                 return {
-                    data: applySelect({
+                    data: {
                         _links: {self: {href: '/api/events'}},
                         _embedded: {eventSummaryDtoList: [{
                             id: 'evt-1',
@@ -809,7 +805,7 @@ describe('EventsPage', () => {
                             _links: {self: {href: '/api/events/evt-1'}},
                         }]},
                         page: {totalElements: 30, totalPages: 3, size: 10, number: 0},
-                    }, options),
+                    },
                     isLoading: false,
                     error: null,
                 };
@@ -921,20 +917,20 @@ describe('EventsPage', () => {
             eventTypes: {id: string; name: string; color?: string; sortOrder: number}[] = []
         ) => {
             const eventTypesEnvelope = {_embedded: {eventTypeDtoList: eventTypes}};
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: options?.select ? options.select(eventTypesEnvelope) : eventTypesEnvelope,
+                        data: eventTypesEnvelope,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
-                    data: applySelect({
+                    data: {
                         _links: {self: {href: '/api/events'}},
                         _embedded: {eventSummaryDtoList: events},
                         page: {totalElements: events.length, totalPages: 1, size: 10, number: 0},
-                    }, options),
+                    },
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -1096,7 +1092,7 @@ describe('EventsPage', () => {
                 title: 'Synchronize',
                 properties: [],
             });
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: unknown, options?: {select?: (raw: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: unknown) => {
                 if (typeof url === 'string' && url.includes('/sync')) {
                     return {
                         data: {
@@ -1111,11 +1107,11 @@ describe('EventsPage', () => {
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
-                    data: applySelect({
+                    data: {
                         _links: {self: {href: '/api/events'}},
                         _embedded: {eventSummaryDtoList: [buildEnrolledEventRow()]},
                         page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    }, options),
+                    },
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;

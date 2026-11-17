@@ -15,7 +15,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
 }));
 
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
@@ -31,10 +31,10 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 }));
 
 const mockQueryData = (envelope: unknown) => {
-    vi.mocked(useAuthorizedQuery).mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => ({
-        data: envelope != null && options?.select ? options.select(envelope) : envelope,
+    vi.mocked(useAuthorizedQuery).mockReturnValue({
+        data: envelope,
         error: null,
-    } as ReturnType<typeof useAuthorizedQuery>));
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 const mockGroups = [

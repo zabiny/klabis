@@ -83,7 +83,6 @@ const CategoryPresetsContent = (): ReactElement => {
                     <HalFormButton name="createCategoryPreset" modal={true} label={labels.templates.createCategoryPreset} navigateOnSuccess={false}/>
                 </div>
                 <HalEmbeddedTable<CategoryPresetListItem>
-                    collectionName={"categoryPresetDtoList"}
                     tableId="category-presets"
                     defaultOrderBy={"name"}
                 >

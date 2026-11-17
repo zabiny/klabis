@@ -30,7 +30,6 @@ export const TrainingGroupsPage = (): ReactElement => {
                     <HalFormButton name="createTrainingGroup" modal={true}/>
                 </div>
                 <HalEmbeddedTable<TrainingGroupSummaryItem>
-                    collectionName="trainingGroupSummaryResponseList"
                     tableId="groups.training"
                     defaultOrderBy="name"
                     onRowClick={navigateToResource}

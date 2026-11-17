@@ -32,7 +32,7 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({
         mutate: vi.fn(),
         isPending: false,
@@ -88,7 +88,7 @@ const renderPageWithGroups = (groups: unknown[], routeOverrides?: Record<string,
         _embedded: {groupSummaryResponseList: groups},
         page: {size: 10, totalElements: groups.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData, routeOverrides);
     return renderPage(pageData);
 };
@@ -98,14 +98,14 @@ const renderPageWithInvitations = (invitations: unknown[]) => {
         _links: {self: {href: 'http://localhost/api/invitations/pending'}},
         _embedded: {pendingInvitationResponseList: invitations},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
         if (url?.includes('invitations/pending')) {
             return {
-                data: options?.select ? options.select(invitationsData) : invitationsData,
+                data: invitationsData,
                 error: null,
-            } as ReturnType<typeof useAuthorizedQuery>;
+            } as unknown as ReturnType<typeof useAuthorizedQuery>;
         }
-        return {data: null, error: null} as ReturnType<typeof useAuthorizedQuery>;
+        return {data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
     });
     const pageData = createMockPageData(null);
     return renderPage(pageData);

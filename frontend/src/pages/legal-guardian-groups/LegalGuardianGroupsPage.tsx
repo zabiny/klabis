@@ -30,7 +30,6 @@ export const LegalGuardianGroupsPage = (): ReactElement => {
             <h1 className="text-3xl font-bold text-text-primary">{labels.sections.legalGuardianGroups}</h1>
 
             <HalEmbeddedTable<LegalGuardianGroupSummaryItem>
-                collectionName="legalGuardianGroupSummaryResponseList"
                 tableId="groups.legalGuardian"
                 defaultOrderBy="name"
                 onRowClick={navigateToResource}

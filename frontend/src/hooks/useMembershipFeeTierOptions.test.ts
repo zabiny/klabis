@@ -11,15 +11,15 @@ import {useAuthorizedQuery} from './useAuthorizedFetch';
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const respondWithTiers = (tiers: {id?: string; name?: string}[]) => {
-    mockUseAuthorizedQuery.mockImplementation((_url, options) => ({
-        data: options?.select ? options.select({
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
             _links: {self: {href: '/api/membership-fee-tiers'}},
             _embedded: {membershipFeeTierSummaryResponseList: tiers},
-        }) : undefined,
+        },
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-    }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 describe('useMembershipFeeTierOptions', () => {

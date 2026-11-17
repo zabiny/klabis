@@ -49,7 +49,7 @@ vi.mock('../../api/klabisUserManager', () => ({
 }));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
+    useAuthorizedQuery: vi.fn().mockReturnValue({data: undefined, error: null}),
     useAuthorizedMutation: vi.fn().mockReturnValue({
         mutate: vi.fn(),
         isPending: false,
@@ -112,7 +112,7 @@ const renderPageWithPresets = (presets: unknown[]) => {
         _embedded: {categoryPresetDtoList: presets},
         page: {size: 10, totalElements: presets.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     const pageData = createMockPageData(resourceData);
     return renderPage(pageData);
 };
@@ -180,7 +180,7 @@ describe('CategoryPresetsPage', () => {
                 _embedded: {categoryPresetDtoList: [buildPresetRow()]},
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({data: options?.select ? options.select(resourceData) : resourceData, error: null})) as unknown as typeof useAuthorizedQuery);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
             renderPage(createMockPageData(resourceData, {navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}));
 
             fireEvent.click(screen.getByText('Základní šablona'));

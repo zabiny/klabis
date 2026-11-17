@@ -858,9 +858,6 @@ Komponenta pro zobrazení HAL `_embedded` kolekce v tabulkovém formátu s autom
 
 ```typescript
 interface HalEmbeddedTableProps<T = any> {
-    /** Jméno kolekce v _embedded objektu */
-    collectionName: string;
-
     /** Callback když uživatel klikne na řádek */
     onRowClick?: (item: T) => void;
 
@@ -886,7 +883,7 @@ interface HalEmbeddedTableProps<T = any> {
 - Podporuje řazení sloupců (prostřednictvím `sort` query parametru)
 - Volá `onRowClick` callback když uživatel klikne na řádek
 - Zobrazuje custom zprávu když nejsou data
-- Automaticky extrahuje data z `_embedded[collectionName]`
+- Kolekci v `_embedded` odvozuje z jediného klíče obálky
 
 #### Architektura
 
@@ -931,7 +928,6 @@ export const MembersPage = () => {
     členů < /h1>
 
     < HalEmbeddedTable<Member>
-    collectionName = "membersApiResponseList"
     defaultOrderBy = "lastName"
     defaultOrderDirection = "asc"
     onRowClick = {handleRowClick}
@@ -954,7 +950,7 @@ export const MembersPage = () => {
 
 1. Hook `useHalRoute()` si vezme aktuální `resourceData`
 2. `HalEmbeddedTable` extrahuje `self` link z `resourceData._links`
-3. Předá link do `KlabisTableWithQuery` s `collectionName`
+3. Předá link do `KlabisTableWithQuery`
 4. `KlabisTableWithQuery` si vezme starosti o:
     - Data fetching z API (useAuthorizedQuery)
     - Pagination state management

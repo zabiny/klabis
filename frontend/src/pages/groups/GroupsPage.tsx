@@ -111,7 +111,6 @@ export const GroupsPage = (): ReactElement => {
                     <HalFormButton name="createGroup" modal={true} fieldsFactory={groupFormFieldsFactory}/>
                 </div>
                 <HalEmbeddedTable<GroupSummary>
-                    collectionName="groupSummaryResponseList"
                     tableId="groups.free"
                     defaultOrderBy="name"
                     onRowClick={navigateToResource}

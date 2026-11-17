@@ -90,7 +90,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             )
         })
 
-        it('uses collectionName to extract embedded data', async () => {
+        it('infers the embedded collection from the single _embedded key', async () => {
             const mockData = {
                 _embedded: {
                     membersList: mockMemberData
@@ -101,7 +101,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
@@ -120,7 +120,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
@@ -142,7 +142,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )
@@ -163,7 +163,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse(mockData))
 
             renderWithQuery(
-                <KlabisTableWithQuery link={mockHalLink} collectionName="membersList">
+                <KlabisTableWithQuery link={mockHalLink}>
                     <TableCell column="name">Name</TableCell>
                 </KlabisTableWithQuery>
             )

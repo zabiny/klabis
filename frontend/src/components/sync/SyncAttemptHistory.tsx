@@ -31,7 +31,6 @@ export const SyncAttemptHistory = ({href}: {href: string}): ReactElement => {
                 <KlabisTableWithQuery<SyncAttempt>
                     key={String(includeUnchanged)}
                     link={{href: buildHistoryHref(href, includeUnchanged)}}
-                    collectionName="syncAttempts"
                     defaultRowsPerPage={HISTORY_SIZE}
                     emptyMessage={labels.sync.historyEmpty}
                 >

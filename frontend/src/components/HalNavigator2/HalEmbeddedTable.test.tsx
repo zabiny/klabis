@@ -13,7 +13,6 @@ vi.mock('../../hooks/useHalPageData', () => ({
 vi.mock('../KlabisTable', () => ({
     KlabisTableWithQuery: ({
                                link,
-                               collectionName,
                                onRowClick,
                                defaultOrderBy,
                                defaultOrderDirection,
@@ -22,7 +21,6 @@ vi.mock('../KlabisTable', () => ({
                            }: KlabisTableWithQueryProps) => (
         <div data-testid="klabis-table-with-query"
              data-link={link.href}
-             data-collection={collectionName}
              data-order-by={defaultOrderBy}
              data-order-direction={defaultOrderDirection}
              data-empty-message={emptyMessage}
@@ -48,43 +46,16 @@ describe('HalEmbeddedTable', () => {
         });
     });
 
-    it('renders table with data from specified collection', () => {
+    it('renders the table for the resource self link', () => {
         render(
-            <HalEmbeddedTable
-                collectionName="testCollection"
-            >
+            <HalEmbeddedTable>
                 {mockTableCell}
             </HalEmbeddedTable>
         );
 
         const table = screen.getByTestId('klabis-table-with-query');
         expect(table).toBeInTheDocument();
-        expect(table).toHaveAttribute('data-collection', 'testCollection');
         expect(table).toHaveAttribute('data-link', '/api/test/resource');
-    });
-
-    it('renders different collection when collectionName changes', () => {
-        const {rerender} = render(
-            <HalEmbeddedTable
-                collectionName="collectionA"
-            >
-                {mockTableCell}
-            </HalEmbeddedTable>
-        );
-
-        let table = screen.getByTestId('klabis-table-with-query');
-        expect(table).toHaveAttribute('data-collection', 'collectionA');
-
-        rerender(
-            <HalEmbeddedTable
-                collectionName="collectionB"
-            >
-                {mockTableCell}
-            </HalEmbeddedTable>
-        );
-
-        table = screen.getByTestId('klabis-table-with-query');
-        expect(table).toHaveAttribute('data-collection', 'collectionB');
     });
 
     it('handles onRowClick callback', () => {
@@ -92,7 +63,6 @@ describe('HalEmbeddedTable', () => {
 
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 onRowClick={mockOnRowClick}
             >
                 {mockTableCell}
@@ -106,7 +76,6 @@ describe('HalEmbeddedTable', () => {
     it('displays empty message when collection has no data', () => {
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 emptyMessage="No items available"
             >
                 {mockTableCell}
@@ -120,7 +89,6 @@ describe('HalEmbeddedTable', () => {
     it('displays custom empty message', () => {
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 emptyMessage="Custom empty state"
             >
                 {mockTableCell}
@@ -134,7 +102,6 @@ describe('HalEmbeddedTable', () => {
     it('handles sorting when defaultOrderBy is provided', () => {
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 defaultOrderBy="name"
                 defaultOrderDirection="desc"
             >
@@ -151,9 +118,7 @@ describe('HalEmbeddedTable', () => {
         mockGetResourceLink.mockReturnValue(null);
 
         render(
-            <HalEmbeddedTable
-                collectionName="testCollection"
-            >
+            <HalEmbeddedTable>
                 {mockTableCell}
             </HalEmbeddedTable>
         );
@@ -165,9 +130,7 @@ describe('HalEmbeddedTable', () => {
 
     it('fetches with pagination parameters', () => {
         render(
-            <HalEmbeddedTable
-                collectionName="testCollection"
-            >
+            <HalEmbeddedTable>
                 {mockTableCell}
             </HalEmbeddedTable>
         );
@@ -183,7 +146,6 @@ describe('HalEmbeddedTable', () => {
 
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 extraParams={{year: '2026', when: 'budouci'}}
             >
                 {mockTableCell}
@@ -199,7 +161,6 @@ describe('HalEmbeddedTable', () => {
 
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 extraParams={{status: ['OPEN', 'CLOSED']}}
             >
                 {mockTableCell}
@@ -215,7 +176,6 @@ describe('HalEmbeddedTable', () => {
 
         render(
             <HalEmbeddedTable
-                collectionName="testCollection"
                 extraParams={{year: '2026'}}
             >
                 {mockTableCell}

@@ -12,7 +12,7 @@ const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const HREF = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3';
 
-interface EventSummaryRow {
+interface EventFixture {
     name?: string;
     eventDate?: string;
     location?: string;
@@ -20,19 +20,19 @@ interface EventSummaryRow {
     _templates?: {editRegistration?: {target?: string}};
 }
 
-const respondWithEvents = (events: EventSummaryRow[]) => {
-    mockUseAuthorizedQuery.mockImplementation((_url, options) => ({
-        data: options?.select ? options.select({
+const respondWithEvents = (events: EventFixture[]) => {
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
             _links: {self: {href: HREF}},
             _embedded: {eventSummaryDtoList: events},
-        }) : undefined,
+        },
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-    }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
-const eventRow = (overrides: Partial<EventSummaryRow> = {}): EventSummaryRow => ({
+const eventRow = (overrides: Partial<EventFixture> = {}): EventFixture => ({
     name: 'Jarní závod',
     eventDate: '2026-05-01',
     location: 'Praha',

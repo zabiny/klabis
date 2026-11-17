@@ -96,7 +96,7 @@ const TransactionsTableContent = ({
     }, [selfHref, extraParams]);
 
     const {items: tableData, pageMetadata, error, currentPage, setPage, rowsPerPage, setRowsPerPage} =
-        useHalTableQuery<TransactionItem>(link, sort, 'transactions');
+        useHalTableQuery<TransactionItem>(link, sort);
 
     // Build a set of transaction IDs that have been reversed (i.e. another tx on this page targets them).
     // The list endpoint does not include per-item _links.reversedBy, so we derive it from

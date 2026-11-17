@@ -11,15 +11,15 @@ import {useAuthorizedQuery} from './useAuthorizedFetch';
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const respondWithGuardians = (names: string[]) => {
-    mockUseAuthorizedQuery.mockImplementation((_url, options) => ({
-        data: options?.select ? options.select({
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: {
             _links: {self: {href: '/api/legal-guardian-groups/g-1/guardians'}},
             _embedded: {legalGuardianGroupGuardianResponseList: names.map((n, i) => ({userId: `u-${i}`, firstName: n}))},
-        }) : undefined,
+        },
         isLoading: false,
         error: null,
         refetch: vi.fn(),
-    }) as unknown as ReturnType<typeof useAuthorizedQuery>);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 describe('useLegalGuardians', () => {

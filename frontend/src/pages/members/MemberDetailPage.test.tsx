@@ -1019,10 +1019,10 @@ describe('MemberDetailPage', () => {
         };
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string, options?: {select?: (data: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
                 const envelope = url.includes('/guardians') ? guardiansResponse : undefined;
                 return {
-                    data: envelope != null && options?.select ? options.select(envelope) : envelope,
+                    data: envelope,
                     isLoading: false,
                     error: null,
                 };

@@ -147,13 +147,12 @@ vi.mock('../../hooks/useHalFormData', () => ({
     }),
 }));
 
-// useHalCollection reads the rows through select; the mock must apply it or the table stays empty.
 const mockQueryData = (data: unknown) =>
-    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => ({
-        data: data == null ? data : options?.select ? options.select(data) : data,
+    vi.mocked(useAuthorizedQuery).mockReturnValue({
+        data,
         isLoading: false,
         error: null,
-    })) as unknown as typeof useAuthorizedQuery);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
 vi.mock('../../contexts/ToastContext', () => ({
     ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
@@ -287,10 +286,10 @@ describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockNavigate.mockReset();
-        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => {
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
             const data = resolveDialogQueryData(url);
             return {
-                data: options?.select ? options.select(data) : data,
+                data,
                 isLoading: false,
                 error: null,
             };
@@ -959,12 +958,12 @@ describe('EventDetailPage', () => {
                 _embedded: {registrationDtoList: rows},
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (raw: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 const data = url?.includes('newRegistration=true') || url?.includes('/registrations/member-1')
                     ? resolveDialogQueryData(url)
                     : registrationsListData;
                 return {
-                    data: options?.select ? options.select(data) : data,
+                    data,
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -1498,10 +1497,10 @@ describe('EventDetailPage', () => {
     describe('event type badge (B7.3)', () => {
         const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
             const eventTypesEnvelope = {_embedded: {eventTypeDtoList: eventTypes}};
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
-                        data: options?.select ? options.select(eventTypesEnvelope) : eventTypesEnvelope,
+                        data: eventTypesEnvelope,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
@@ -1512,7 +1511,7 @@ describe('EventDetailPage', () => {
                     _links: {self: {href: url}},
                 };
                 return {
-                    data: options?.select ? options.select(fallback) : fallback,
+                    data: fallback,
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;

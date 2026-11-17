@@ -9,8 +9,8 @@ import {LegalGuardianGroupsPage} from './LegalGuardianGroupsPage';
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 
 vi.mock('../../components/HalNavigator2/HalEmbeddedTable.tsx', () => ({
-    HalEmbeddedTable: ({collectionName, children}: {collectionName: string; children: React.ReactNode}) => (
-        <div data-testid={`table-${collectionName}`}>
+    HalEmbeddedTable: ({children}: {children: React.ReactNode}) => (
+        <div data-testid="groups-table">
             {React.Children.map(children, (child) => {
                 const {column, dataRender, children: header} = (child as React.ReactElement<{column: string; dataRender: (arg: {value: unknown}) => React.ReactNode; children: React.ReactNode}>).props;
                 return column === 'guardians'
@@ -31,7 +31,7 @@ describe('LegalGuardianGroupsPage', () => {
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByRole('heading', {name: 'Zákonní zástupci'})).toBeInTheDocument();
-        expect(screen.getByTestId('table-legalGuardianGroupSummaryResponseList')).toBeInTheDocument();
+        expect(screen.getByTestId('groups-table')).toBeInTheDocument();
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 

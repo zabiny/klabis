@@ -4,7 +4,6 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
 import type {GetPublicationResource} from '../../api';
-import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {toHref} from '../../api/hateoas.ts';
@@ -12,8 +11,6 @@ import {FeeGroupsTable} from './FeeGroupsTable.tsx';
 import type {FeeGroupSummary} from './FeeGroupsTable.tsx';
 
 export type FeeSelectionCampaignDetail = GetPublicationResource;
-
-type FeeGroupRow = components['schemas']['EntityModelMembershipFeeGroupResponse'];
 
 export const CampaignDetail = (): ReactElement | null => {
     const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
@@ -29,11 +26,7 @@ export const CampaignDetail = (): ReactElement | null => {
     });
 
     const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : undefined;
-    const {items: groups} = useHalCollection<FeeGroupRow, FeeGroupSummary>(levelsHref, {
-        // The rows carry per-row _links added at runtime; FeeGroupsTable's FeeGroupSummary is the
-        // view type for those.
-        select: rows => rows as unknown as FeeGroupSummary[],
-    });
+    const {items: groups} = useHalCollection<FeeGroupSummary>(levelsHref);
 
     if (!resourceData) {
         return null;

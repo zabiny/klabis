@@ -68,7 +68,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     });
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
-    const members = embeddedItems<MembershipFeeGroupMember>(resourceData, 'members');
+    const members = embeddedItems<MembershipFeeGroupMember>(resourceData);
     const canEdit = resourceData.status === 'EDITABLE' && !!editTemplate;
 
     return (

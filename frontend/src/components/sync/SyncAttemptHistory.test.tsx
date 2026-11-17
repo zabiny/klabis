@@ -25,11 +25,11 @@ const mockResponse = (items: unknown[]) => {
         _embedded: {syncAttempts: items},
         page: {size: 10, totalElements: items.length, totalPages: 1, number: 0},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation(((_url: string, options?: {select?: (raw: unknown) => unknown}) => ({
-        data: options?.select ? options.select(envelope) : envelope,
+    vi.mocked(useAuthorizedQuery).mockReturnValue({
+        data: envelope,
         isLoading: false,
         error: null,
-    })) as unknown as typeof useAuthorizedQuery);
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 const renderHistory = (href = '/api/events/1/sync/attempts') =>

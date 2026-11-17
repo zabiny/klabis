@@ -81,10 +81,10 @@ const buildListData = (items: unknown[]) => ({
 });
 
 const setupQueryMocks = (eventData: unknown, listData: unknown) => {
-    vi.mocked(useAuthorizedQuery).mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation((_url: string | undefined) => {
         const envelope = _url?.includes('/api/events/42/accommodation-list') ? listData : eventData;
         return {
-            data: envelope != null && options?.select ? options.select(envelope) : envelope,
+            data: envelope,
             isLoading: false,
             error: null,
         } as unknown as ReturnType<typeof useAuthorizedQuery>;

@@ -31,11 +31,11 @@ const mockUseHalRoute = vi.mocked(useHalRoute);
 const mockUseAuthorizedQuery = vi.mocked(useAuthorizedQuery);
 
 const mockQueryData = (envelope: unknown) => {
-    mockUseAuthorizedQuery.mockImplementation((_url: string | undefined, options?: {select?: (data: unknown) => unknown}) => ({
-        data: envelope != null && options?.select ? options.select(envelope) : envelope,
+    mockUseAuthorizedQuery.mockReturnValue({
+        data: envelope,
         isLoading: false,
         error: null,
-    } as unknown as ReturnType<typeof useAuthorizedQuery>));
+    } as unknown as ReturnType<typeof useAuthorizedQuery>);
 };
 
 const PRESETS = [

@@ -43,16 +43,15 @@ describe('embeddedItems', () => {
         expect(embeddedItems(envelope())).toEqual([]);
     });
 
+    it('returns no items for an empty _embedded block', () => {
+        expect(embeddedItems(envelope({}))).toEqual([]);
+    });
+
     it('infers the collection name from the single embedded key', () => {
         expect(embeddedItems<{id: string}>(envelope({thingList: [{id: 'a'}]}))).toEqual([{id: 'a'}]);
     });
 
-    it('prefers the explicit collection when several are embedded', () => {
-        const response = envelope({members: [{id: 'm'}], others: [{id: 'o'}]});
-        expect(embeddedItems(response, 'others')).toEqual([{id: 'o'}]);
-    });
-
-    it('throws when several embedded collections are present without an override', () => {
+    it('throws when several embedded collections are present', () => {
         const response = envelope({members: [{id: 'm'}], others: [{id: 'o'}]}, '/api/groups/1');
 
         const error = captureError(() => embeddedItems(response));
@@ -61,17 +60,6 @@ describe('embeddedItems', () => {
         expect(error.message).toContain('/api/groups/1');
         expect(error.message).toContain('members');
         expect(error.message).toContain('others');
-    });
-
-    it('throws when the override key is absent from _embedded', () => {
-        const response = envelope({members: [{id: 'm'}]}, '/api/groups/1');
-
-        const error = captureError(() => embeddedItems(response, 'guardians'));
-
-        expect(error).toBeInstanceOf(HalCollectionError);
-        expect(error.message).toContain('/api/groups/1');
-        expect(error.message).toContain('guardians');
-        expect(error.message).toContain('members');
     });
 
     it('throws when the embedded value is not an array', () => {
@@ -112,17 +100,6 @@ describe('useHalCollection', () => {
 
         await waitFor(() => expect(result.current.items).toEqual(['A']));
         expect(select).toHaveBeenCalledWith([{id: 'a'}]);
-    });
-
-    it('honours the collection override', async () => {
-        respond({_links: {self: {href: '/api/things'}}, _embedded: {members: [{id: 'm'}], others: [{id: 'o'}]}});
-
-        const {result} = renderHook(
-            () => useHalCollection<{id: string}>('/api/things', {collection: 'others'}),
-            {wrapper: createWrapper()},
-        );
-
-        await waitFor(() => expect(result.current.items).toEqual([{id: 'o'}]));
     });
 
     it('reports an empty collection without loading when the href is undefined', () => {

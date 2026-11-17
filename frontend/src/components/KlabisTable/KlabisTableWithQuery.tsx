@@ -25,9 +25,6 @@ export interface KlabisTableWithQueryProps<T extends object = Record<string, unk
     // Data source (HAL Link)
     link: Link
 
-    // Optional: override the _embedded collection name (inferred when omitted)
-    collectionName?: string
-
     // UI props (passed through to KlabisTable)
     onRowClick?: (item: T) => void
     defaultOrderBy?: string
@@ -46,7 +43,6 @@ export interface KlabisTableWithQueryProps<T extends object = Record<string, unk
 
 interface KlabisTableCoreProps<T extends object = Record<string, unknown>> {
     link: Link
-    collectionName?: string
     onRowClick?: (item: T) => void
     defaultOrderBy?: string
     defaultOrderDirection?: SortDirection
@@ -66,7 +62,6 @@ interface KlabisTableCoreProps<T extends object = Record<string, unknown>> {
  */
 function KlabisTableCore<T extends object = Record<string, unknown>>({
     link,
-    collectionName,
     onRowClick,
     defaultOrderBy,
     defaultOrderDirection = 'asc',
@@ -80,7 +75,7 @@ function KlabisTableCore<T extends object = Record<string, unknown>>({
     onSortReset,
 }: KlabisTableCoreProps<T>): ReactElement {
     const {items, pageMetadata, error, currentPage, setPage, rowsPerPage, setRowsPerPage} =
-        useHalTableQuery<T>(link, sort, collectionName, defaultRowsPerPage)
+        useHalTableQuery<T>(link, sort, defaultRowsPerPage)
 
     const handleSortChange = (column: string, direction: SortDirection) => {
         onSortChange(column, direction)

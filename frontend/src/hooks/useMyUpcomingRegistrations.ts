@@ -1,8 +1,6 @@
-import {asLinkArray, toHref} from '../api/hateoas';
-import type {components} from '../api/klabisApi';
+import {selfHref} from '../api/hateoas';
 import {useHalCollection} from './useHalCollection';
-
-type EventSummaryRow = components['schemas']['EntityModelEventSummaryDto'];
+import type {EventSummaryRow} from './eventSummaryRow';
 
 export interface UpcomingRegistrationItem {
     selfHref: string;
@@ -18,15 +16,17 @@ export interface UseMyUpcomingRegistrationsResult {
 }
 
 const toUpcomingRegistrationItems = (events: EventSummaryRow[]): UpcomingRegistrationItem[] =>
-    events
-        .filter(e => asLinkArray(e._links?.self)[0])
-        .map(e => ({
-            selfHref: toHref(e._links!.self!),
+    events.flatMap(e => {
+        const href = selfHref(e);
+        if (href === undefined) return [];
+        return [{
+            selfHref: href,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             location: e.location ?? '',
             editRegistrationTarget: e._templates?.editRegistration?.target,
-        }));
+        }];
+    });
 
 export function useMyUpcomingRegistrations(href: string | undefined): UseMyUpcomingRegistrationsResult {
     const {items, refetch} = useHalCollection<EventSummaryRow, UpcomingRegistrationItem>(href, {

@@ -22,7 +22,6 @@ export interface HalTableQueryResult<T> {
 export function useHalTableQuery<T>(
     link: {href: string},
     sort: SortState | undefined,
-    collectionName?: string,
     defaultRowsPerPage = 10,
 ): HalTableQueryResult<T> {
     const [page, setPage] = useState(0);
@@ -47,10 +46,7 @@ export function useHalTableQuery<T>(
         return serializeHalHref(url);
     }, [link.href, currentPage, rowsPerPage, sort]);
 
-    const {items, pageMetadata, error} = useHalCollection<T>(queryUrl, {
-        collection: collectionName,
-        staleTime: 30000,
-    });
+    const {items, pageMetadata, error} = useHalCollection<T>(queryUrl, {staleTime: 30000});
 
     const setRowsPerPage = (size: number) => {
         setRowsPerPageState(size);

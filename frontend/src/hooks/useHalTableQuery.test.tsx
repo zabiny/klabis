@@ -20,12 +20,12 @@ const page = {size: 10, totalElements: 2, totalPages: 1, number: 0};
 
 const render = (
     initial: {href: string},
-    {collectionName, sort}: {collectionName?: string; sort?: SortState} = {},
+    {sort}: {sort?: SortState} = {},
 ) => {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
     const wrapper = ({children}: {children: ReactNode}) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
     return renderHook(
-        ({link}) => useHalTableQuery<{id: string}>(link, sort, collectionName),
+        ({link}) => useHalTableQuery<{id: string}>(link, sort),
         {wrapper, initialProps: {link: initial}},
     );
 };
@@ -36,7 +36,7 @@ describe('useHalTableQuery', () => {
         vi.mocked(authorizedFetch).mockReset();
     });
 
-    it('exposes items and page metadata plus the table state, under no legacy names', async () => {
+    it('exposes items and page metadata plus the table state', async () => {
         respond({_embedded: {thingList: rows}, page});
 
         const {result} = render({href: '/api/things'});
@@ -47,9 +47,6 @@ describe('useHalTableQuery', () => {
         expect(result.current.rowsPerPage).toBe(10);
         expect(result.current.setPage).toBeTypeOf('function');
         expect(result.current.setRowsPerPage).toBeTypeOf('function');
-        expect(result.current).not.toHaveProperty('rows');
-        expect(result.current).not.toHaveProperty('pageData');
-        expect(result.current).not.toHaveProperty('page');
     });
 
     it('requests page, size and sort on top of the link', async () => {
@@ -65,15 +62,6 @@ describe('useHalTableQuery', () => {
         expect(url.searchParams.get('sort')).toBe('name,desc');
     });
 
-    it('honours the explicit collection override', async () => {
-        respond({_embedded: {members: [{id: 'm'}], others: [{id: 'o'}]}, page});
-
-        const {result} = render({href: '/api/things'}, {collectionName: 'others'});
-
-        await waitFor(() => expect(result.current.items).toEqual([{id: 'o'}]));
-        expect(result.current.error).toBeNull();
-    });
-
     it.each([
         ['no _embedded at all', {page}],
         ['a former content shape', {content: rows, page}],
@@ -81,7 +69,7 @@ describe('useHalTableQuery', () => {
     ])('yields empty items for a response with %s', async (_label, body) => {
         respond(body);
 
-        const {result} = render({href: '/api/things'}, {collectionName: 'thingList'});
+        const {result} = render({href: '/api/things'});
 
         await waitFor(() => expect(result.current.pageMetadata).toEqual(page));
         expect(result.current.items).toEqual([]);
