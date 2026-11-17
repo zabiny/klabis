@@ -35,10 +35,10 @@
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `npm run build` and `npm run lint` in `frontend/` and verify both succeed.
-- [ ] 5.2 Run the full backend and frontend test suites through the test-runner (final verification, with the modulith skip optimisations disabled) and verify they are green apart from the known pre-existing failures.
-- [ ] 5.3 Run `npm run refresh-backend-server-resources` and verify the backend static resources are refreshed.
-- [ ] 5.4 Run `openspec validate event-member-info-and-sync-settings --strict` and verify it passes.
+- [x] 5.1 Run `npm run build` and `npm run lint` in `frontend/` and verify both succeed.
+- [x] 5.2 Run the full backend and frontend test suites through the test-runner (final verification, with the modulith skip optimisations disabled) and verify they are green apart from the known pre-existing failures.
+- [x] 5.3 Run `npm run refresh-backend-server-resources` and verify the backend static resources are refreshed.
+- [x] 5.4 Run `openspec validate event-member-info-and-sync-settings --strict` and verify it passes.
 
 ## Workflow follow-up
 
