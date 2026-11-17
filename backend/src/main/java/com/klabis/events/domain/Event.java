@@ -111,26 +111,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     ) {
         public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
                            LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
-                           RegistrationDeadlines registrationDeadlines, List<EventCategory> categories,
-                           Boolean sharedTransportEnabled, Boolean sharedAccommodationEnabled,
-                           SiPolicy siPolicy) {
-            this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
-                    categories, sharedTransportEnabled, sharedAccommodationEnabled, siPolicy, null);
-        }
-
-        public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
-                           LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
                            RegistrationDeadlines registrationDeadlines, List<EventCategory> categories) {
             this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
                     categories, false, false, null, null);
-        }
-
-        public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
-                           LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
-                           RegistrationDeadlines registrationDeadlines, List<EventCategory> categories,
-                           Boolean sharedTransportEnabled, Boolean sharedAccommodationEnabled) {
-            this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
-                    categories, sharedTransportEnabled, sharedAccommodationEnabled, null, null);
         }
     }
 
@@ -328,7 +311,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.sharedTransportEnabled = sharedTransportEnabled;
         this.sharedAccommodationEnabled = sharedAccommodationEnabled;
         this.siPolicy = siPolicy;
-        this.memberInfo = blankToNull(memberInfo);
+        this.memberInfo = StringUtils.hasText(memberInfo) ? memberInfo : null;
         updateAuditMetadata(auditMetadata);
     }
 
@@ -483,10 +466,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     // ========== Validation Methods ==========
-
-    private static String blankToNull(String text) {
-        return text == null || text.isBlank() ? null : text;
-    }
 
     private static void validateName(String name) {
         if (name == null || name.trim().isBlank()) {
@@ -716,7 +695,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         if (command.siPolicy() != null) {
             this.siPolicy = command.siPolicy();
         }
-        this.memberInfo = blankToNull(command.memberInfo());
+        this.memberInfo = StringUtils.hasText(command.memberInfo()) ? command.memberInfo() : null;
 
         registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.MANUAL));
     }

@@ -6,6 +6,7 @@ import {Button, Card, TabButton} from '../../components/UI';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {halResource} from '../../api/halResource';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
+import {useRootResource} from '../../hooks/useRootNavigation.ts';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import type {components} from '../../api/klabisApi';
 import type {HalResourceLinks, HalResponse} from '../../api';
@@ -18,8 +19,6 @@ import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
 import {toQuery, type SyncAttemptFilters} from './syncAttemptsQuery.ts';
 import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
 import {HalPageGate} from '../HalPageGate.tsx';
-
-const ROOT_STALE_TIME = 5 * 60 * 1000;
 
 type SyncRecordItem = components['schemas']['SyncRecordSummaryResponse'];
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
@@ -145,15 +144,13 @@ const ClubKeySection = ({href}: {href: string}): ReactElement => {
 
 type TabId = 'attention' | 'attempts' | 'settings';
 
-const TAB_PARAM: Record<TabId, string | undefined> = {attention: undefined, attempts: 'attempts', settings: 'settings'};
-
 const SyncOverviewContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const {data: root} = useAuthorizedQuery('/api', {staleTime: ROOT_STALE_TIME});
+    const {data: root} = useRootResource();
 
     const attentionLink = resourceData._links?.recordsNeedingAttention;
     const attentionHref = attentionLink ? toHref(attentionLink) : undefined;
-    const clubKeyLink = (root as HalResponse | undefined)?._links?.orisClubKey;
+    const clubKeyLink = root?._links?.orisClubKey;
     const clubKeyHref = clubKeyLink ? toHref(clubKeyLink) : undefined;
 
     const tabs: {id: TabId; label: string}[] = [
@@ -163,12 +160,11 @@ const SyncOverviewContent = ({resourceData}: {resourceData: HalResponse}): React
     ];
 
     const requested = searchParams.get('tab');
-    const activeTab = tabs.find(tab => TAB_PARAM[tab.id] === (requested ?? undefined))?.id ?? tabs[0].id;
+    const activeTab = tabs.find(tab => tab.id === requested)?.id ?? tabs[0].id;
 
     const setActiveTab = (tab: TabId) => setSearchParams((prev) => {
         const params = new URLSearchParams(prev);
-        const value = TAB_PARAM[tab];
-        if (value) params.set('tab', value); else params.delete('tab');
+        if (tab === tabs[0].id) params.delete('tab'); else params.set('tab', tab);
         return params;
     });
 

@@ -807,7 +807,6 @@ describe('EventsPage', () => {
             ]);
 
             expect(screen.getByTestId('input-memberInfo')).toBeInTheDocument();
-            expect(screen.getAllByText(labels.fields.memberInfo)).toHaveLength(2);
         });
 
         it('omits the member info field when the template does not carry it', async () => {

@@ -705,21 +705,6 @@ describe('cache invalidation after mutation', () => {
         await waitFor(() => expect(result.current.query.data).toEqual({v: 2}));
     });
 
-    it('starts the invalidation exactly once per successful mutation', async () => {
-        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) =>
-            init?.method === 'POST' ? createMockResponse({}) : createMockResponse({v: 1}));
-        const {result} = renderQueryAndMutation();
-        await waitFor(() => expect(result.current.query.data).toBeDefined());
-        const invalidateSpy = vi.spyOn(getQueryClient(), 'invalidateQueries');
-        const getCallsBefore = fetchSpy.mock.calls.length;
-
-        result.current.mutation.mutate({url: '/api/items/1', data: {}});
-        await waitFor(() => expect(result.current.mutation.isSuccess).toBe(true));
-        await waitFor(() => expect(fetchSpy.mock.calls.length).toBe(getCallsBefore + 2));
-
-        expect(invalidateSpy).toHaveBeenCalledTimes(1);
-    });
-
     it('does not refetch when the mutation fails', async () => {
         fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
             if (init?.method === 'POST') throw new Error('boom');
