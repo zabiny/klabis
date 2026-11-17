@@ -10,7 +10,7 @@ The system SHALL process member registration by creating a user account and a me
 
 #### Scenario: Admin registers a new adult member
 
-- **WHEN** admin with MEMBERS:CREATE permission navigates to the registration page
+- **WHEN** admin with MEMBERS:MANAGE permission navigates to the registration page
 - **AND** submits the registration form for an adult with valid data
 - **THEN** the new member appears in the member list
 - **AND** a user account awaiting activation is created for the member
@@ -85,7 +85,7 @@ The system SHALL process member registration by creating a user account and a me
 
 #### Scenario: Registration button not shown without permission
 
-- **WHEN** user without MEMBERS:CREATE permission views the member list
+- **WHEN** user without MEMBERS:MANAGE permission views the member list
 - **THEN** the "Registrovat člena" button is not displayed
 
 #### Scenario: Registration form shows validation errors
@@ -287,7 +287,7 @@ The system SHALL show or hide member actions based on the user's permissions.
 
 #### Scenario: Register member button shown to authorized user
 
-- **WHEN** user with MEMBERS:CREATE permission views the member list
+- **WHEN** user with MEMBERS:MANAGE permission views the member list
 - **THEN** the "Registrovat člena" button is displayed
 
 #### Scenario: Unauthenticated user cannot access members
@@ -532,12 +532,12 @@ The system SHALL display complete member details. Inactive members are not acces
 
 #### Scenario: Edit button shown to authorized user
 
-- **WHEN** user with MEMBERS:UPDATE permission, or a user holding "Úprava údajů člena" over the member, views a member detail page
+- **WHEN** user with MEMBERS:MANAGE permission, or a user holding "Úprava údajů člena" over the member, views a member detail page
 - **THEN** an "Upravit profil" button is displayed
 
 #### Scenario: Edit button not shown without permission
 
-- **WHEN** user without MEMBERS:UPDATE permission and without "Úprava údajů člena" over the member views a member detail page
+- **WHEN** user without MEMBERS:MANAGE permission and without "Úprava údajů člena" over the member views a member detail page
 - **THEN** no edit button is shown for modifying the member's data
 
 #### Scenario: Permissions button shown to authorized user
@@ -547,7 +547,7 @@ The system SHALL display complete member details. Inactive members are not acces
 
 #### Scenario: Suspend button shown for active member
 
-- **WHEN** user with MEMBERS:UPDATE permission views an active member's detail page
+- **WHEN** user with MEMBERS:MANAGE permission views an active member's detail page
 - **THEN** an "Ukončit členství" button is displayed
 
 #### Scenario: Suspend button not shown for suspended member
@@ -687,7 +687,7 @@ The system SHALL allow a member's data to be updated by a member administrator o
 
 #### Scenario: Admin updates a minor's information
 
-- **WHEN** user with MEMBERS:UPDATE permission edits a minor member's profile and saves the changes
+- **WHEN** user with MEMBERS:MANAGE permission edits a minor member's profile and saves the changes
 - **THEN** the updated information is saved
 
 #### Scenario: Holder of profile editing updates another member's information
@@ -705,7 +705,7 @@ The system SHALL allow a member's data to be updated by a member administrator o
 
 #### Scenario: Admin updates a member's information
 
-- **WHEN** user with MEMBERS:UPDATE permission edits a member's profile and saves the changes
+- **WHEN** user with MEMBERS:MANAGE permission edits a member's profile and saves the changes
 - **THEN** the updated information is saved including admin-only fields (first name, last name, date of birth, gender, nationality, birth number)
 
 #### Scenario: Member cannot edit another member's profile
@@ -727,7 +727,7 @@ The system SHALL allow a member's data to be updated by a member administrator o
 
 #### Scenario: Admin-only fields
 
-- **WHEN** user with MEMBERS:UPDATE permission opens a member's edit form
+- **WHEN** user with MEMBERS:MANAGE permission opens a member's edit form
 - **THEN** the form additionally shows admin-only fields: first name, last name, date of birth, gender, nationality, birth number
 
 #### Scenario: Member cannot change their own nationality
@@ -832,11 +832,11 @@ The system SHALL allow members to update identity card, driving license, medical
 
 ### Requirement: Membership Suspension
 
-The system SHALL allow users with MEMBERS:UPDATE permission to suspend a member's membership. Before suspension, the system SHALL check group ownership and the state of the member's financial account.
+The system SHALL allow users with MEMBERS:MANAGE permission to suspend a member's membership. Before suspension, the system SHALL check group ownership and the state of the member's financial account.
 
 #### Scenario: Admin suspends an active member
 
-- **WHEN** user with MEMBERS:UPDATE permission submits the suspension form with a valid reason (ODHLASKA, PRESTUP, OTHER)
+- **WHEN** user with MEMBERS:MANAGE permission submits the suspension form with a valid reason (ODHLASKA, PRESTUP, OTHER)
 - **AND** the member is not the last owner of any user group
 - **AND** the member's financial account balance is zero or positive
 - **THEN** the membership is suspended immediately
@@ -892,7 +892,7 @@ The system SHALL allow users with MEMBERS:UPDATE permission to suspend a member'
 
 #### Scenario: Unauthorized user cannot suspend
 
-- **WHEN** user without MEMBERS:UPDATE permission views an active member's detail page
+- **WHEN** user without MEMBERS:MANAGE permission views an active member's detail page
 - **THEN** no "Ukončit členství" button is shown
 
 ### Requirement: Incomplete Member Data
