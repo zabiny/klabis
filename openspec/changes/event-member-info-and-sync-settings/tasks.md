@@ -2,12 +2,12 @@
 
 ## 1. Success handling survives removal of the viewed resource (#417)
 
-- [ ] 1.1 Grep the `useAuthorizedMutation` callers and confirm none reads refreshed query data inside its per-call `onSuccess`. Record the result in the PR description; if one does, stop and raise it before continuing.
-- [ ] 1.2 Rewrite the seam tests in `useAuthorizedFetch.test.ts` first (red): per-call `onSuccess` runs before the refetched data arrives; invalidation is triggered exactly once per successful mutation; no invalidation on a failed write; a failing refetch does not fail the mutation. Verify they fail against the current hook.
-- [ ] 1.3 Change `useAuthorizedMutation` to start `invalidateAuthorizedQueries` without awaiting it (design D3) and update the hook's JSDoc. Verify with the 1.2 tests and the existing `HalFormDisplay` / `useTemplateDialog` tests (test-runner).
-- [ ] 1.4 Add a `GroupDetailPage` test where the post-mutation refetch of the group fails with 404 (delete) and 403 (leave, remove oneself as owner), and assert the navigation to `/groups` still happens. Verify with test-runner.
-- [ ] 1.5 Manually verify in the browser on http://localhost:3000: `ZBM9000` deletes a group and lands on `/groups` with a toast; `ZBM9500` leaves a group and lands on `/groups` without a 403; unregistering from an event closes the dialog with a toast.
-- [ ] 1.6 Run the two E2E scenarios in `e2e/features/event-registrations.feature` (unregister) against the local environment and verify they pass. If they still fail, report the cause; do not patch the scenarios.
+- [x] 1.1 Grep the `useAuthorizedMutation` callers and confirm none reads refreshed query data inside its per-call `onSuccess`. Record the result in the PR description; if one does, stop and raise it before continuing.
+- [x] 1.2 Rewrite the seam tests in `useAuthorizedFetch.test.ts` first (red): per-call `onSuccess` runs before the refetched data arrives; invalidation is triggered exactly once per successful mutation; no invalidation on a failed write; a failing refetch does not fail the mutation. Verify they fail against the current hook.
+- [x] 1.3 Change `useAuthorizedMutation` to start `invalidateAuthorizedQueries` without awaiting it (design D3) and update the hook's JSDoc. Verify with the 1.2 tests and the existing `HalFormDisplay` / `useTemplateDialog` tests (test-runner).
+- [x] 1.4 Add a `GroupDetailPage` test where the post-mutation refetch of the group fails with 404 (delete) and 403 (leave, remove oneself as owner), and assert the navigation to `/groups` still happens. Verify with test-runner.
+- [x] 1.5 Manually verify in the browser on http://localhost:3000: `ZBM9000` deletes a group and lands on `/groups` with a toast; `ZBM9500` leaves a group and lands on `/groups` without a 403; unregistering from an event closes the dialog with a toast.
+- [x] 1.6 Run the two E2E scenarios in `e2e/features/event-registrations.feature` (unregister) against the local environment and verify they pass. If they still fail, report the cause; do not patch the scenarios.
 
 ## 2. Registration without categories (#365)
 

@@ -129,8 +129,11 @@ export interface UseAuthorizedMutationVariables {
  * - Authorization headers (via authorizedFetch)
  * - Loading/error states
  * - Request serialization (JSON by default)
- * - Refetching of active authorized queries after a successful response, before
- *   the per-call onSuccess runs (isPending stays true meanwhile)
+ * - Refetching of active authorized queries after a successful response. The refetch is
+ *   started but not awaited: the per-call onSuccess runs while it is in flight, so it can
+ *   navigate away or close a dialog before a refetch that finds the resource gone (404/403)
+ *   swaps the screen for an error page. It lives in the hook, not in the per-call callbacks,
+ *   because those are skipped once the calling component has unmounted.
  *
  * @param options - Configuration options
  * @returns Mutation result with mutate function and state
@@ -174,7 +177,7 @@ export function useAuthorizedMutation(
                 // No JSON body — leave as null
             }
 
-            await invalidateAuthorizedQueries(queryClient);
+            void invalidateAuthorizedQueries(queryClient).catch(() => undefined);
 
             return {data: parsedData, location};
         },
