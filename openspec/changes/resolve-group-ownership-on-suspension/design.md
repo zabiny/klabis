@@ -7,7 +7,8 @@ See proposal.md, section Why, for the motivation. Current state (verified in cod
 - `ManagementService.suspendMember` asks every `MemberOwnedGroupsPort` (one adapter per group module: training, free, legal guardian) for groups where the member is the last owner/trainer/guardian, checks the finance snapshot, and throws `SuspensionBlockedException`. `MembersExceptionHandler` turns it into a plain-JSON 409 (`SuspensionBlockedWarning` with `debt` and `groups.affectedGroups[{groupId, groupName, groupType}]`) - not HAL, no links.
 - `suspendMember` requires `MEMBERS_MANAGE` (`x-klabis-authority`). `MEMBERS:UPDATE`, used by the members spec, is not in the `Authority` enum - `MEMBERS:MANAGE` is the only matching authority. The user-stated "MEMBERS:MANAGE" is therefore right and the spec text was stale.
 - Training groups: `addTrainer`, `deleteTrainingGroup` carry `x-klabis-authority: GROUPS_TRAINING`; `getTrainingGroup` is allowed for GROUPS:TRAINING holders and group members (imperative), and its self link already offers `addTrainer` (remote member options) and `deleteTrainingGroup`. A trainer need not be a trainee.
-- Free groups: `FreeGroupController` operations have no `x-klabis-authority`; ownership is enforced inside `FreeGroup` (`requireOwner`) from `@ActingMember`. `getGroup` is allowed for owners and members only. The self link offers `addGroupOwner`/`deleteGroup` only to owners. Owner promotion requires the promoted person to be a current member (`CannotPromoteNonMemberToOwnerException`). The existing group detail page already renders the `addGroupOwner` template (member picker).
+- Free groups: `FreeGroupController` operations have no `x-klabis-authority`; ownership is enforced inside `FreeGroup` (`requireOwner`) from `@ActingMember`. `getGroup` is allowed for owners and members only. The self link offers `addGroupOwner`/`deleteGroup` only to owners. Owner promotion requires the promoted person to be a current member (`CannotPromoteNonMemberToOwnerException`). The existing group detail page already renders the `addGroupOwner` template (member picker). Gap: `FreeGroup.invite` has no owner check (no test covers it), so a non-owner member can invite through the API, contrary to the user-groups scenario "Only group owner can invite members".
+- Authorization building blocks (ADR-010): `x-klabis-authority` lists are OR-ed; an authority held over everything passes regardless of the target, a SPECIFIC one only over the `x-klabis-target-id` target. Precedent for a relationship-only authority: `EVENTS_EDIT` from `EventCoordinatorRelationshipSource`. The authorization snapshot is built per request.
 - Legal guardian groups ("family groups" in older specs/the old spec text; ADR-008): cannot be created or deleted by hand (legal-guardians spec). Guardians are replaced as a whole through `setLegalGuardianGroupGuardians` (`MEMBERS_MANAGE`), UI on the "Zákonní zástupci" page. The current dialog and its unit test offer "Rozpustit skupinu" for them - contradicts the specs.
 - Dependency direction is groups -> members (ports in members, adapters in groups); the members module must not reference group APIs.
 - Dialog consumers: `MemberDetailPage` and `MembersPage` via `useSuspendMemberAction`; the 409 is delivered through `HalFormDisplay.onSubmitError`.
@@ -21,30 +22,43 @@ See proposal.md, section Why, for the motivation. Current state (verified in cod
 
 **Non-Goals:**
 - Dissolving training groups or legal guardian groups.
-- Changing the other free-group operations (rename, invite, remove owner/member) - they stay owner-only.
+- Changing who may perform the other free-group operations (rename, invite, remove owner/member, cancel invitation) - they stay owner-only; only the mechanism that enforces it moves (D1).
 - Notifying members of a dissolved group (existing deletion behavior is unchanged).
 - Per-group audit of who dissolved what (no such audit exists for owner deletions either).
 
 ## Decisions
 
-### D1: How MEMBERS:MANAGE coexists with "owner only" on free groups
+### D1: Free group authorization - relationship authority GROUPS:OWNER
 
-The owner check is not expressible declaratively: `x-klabis-authority` is evaluated by the method interceptor *before* the aggregate and combines with it as AND, so `x-klabis-authority: MEMBERS_MANAGE` on `addGroupOwner`/`deleteGroup` would lock out ordinary owners (the very reason groups.yaml leaves these 13 operations without it), and `x-klabis-owner-visible` compares a path *member* id with the caller, not a group-owner set.
+Today the owner check lives inside `FreeGroup` (`requireOwner(actingMember)`), invisible to the method guard. `x-klabis-authority: MEMBERS_MANAGE` alone on `addGroupOwner`/`deleteGroup` would lock out ordinary owners, and `x-klabis-owner-visible` compares a path *member* id with the caller, not a group-owner set.
 
 Options:
 
 | Option | Description | Verdict |
 |---|---|---|
-| A | Separate admin-only operations (new endpoints with `x-klabis-authority: MEMBERS_MANAGE`) | Clean declarative authorization, but two endpoints and two templates for one action; frontend must choose between them. Rejected. |
-| B | Keep the two operations; the application service allows `owner OR MEMBERS_MANAGE` via `AuthorizationEvaluator.has(MEMBERS_MANAGE)`; the postprocessor offers the affordances under the same rule. No `x-klabis-authority`. | **Chosen** - smallest change, one endpoint/template, consistent with ADR-010 rule "application code asks the evaluator". |
-| C | Model group ownership as a relationship grant (new target type GROUP, a SPECIFIC authority from `FreeGroupRelationshipSource`) and declare `x-klabis-authority: [MEMBERS_MANAGE, <owner authority>]` + `x-klabis-target-id: GROUP` | The ADR-010-pure answer, makes affordances declarative, but needs a new target type, authority, source and migrating the aggregate's owner checks. Out of proportion for two operations; noted as the follow-up if more admin overrides appear. |
+| A | Separate admin-only operations (new endpoints with `x-klabis-authority: MEMBERS_MANAGE`) | Two endpoints and two templates for one action; frontend must choose between them. Rejected. |
+| B | Keep the owner check in the aggregate; the service additionally allows `has(MEMBERS_MANAGE)`; the postprocessor gates affordances with the same predicate | Rule duplicated in service and postprocessor, actor-free aggregate variants just to bypass `requireOwner`, `@ActingUser` switch for callers without a profile. Rejected (user decision 17. 11. 2026). |
+| C | Group ownership is a relationship grant: SPECIFIC-only authority `GROUPS:OWNER` over target type GROUP, derived by `FreeGroupRelationshipSource`; owner-only operations declare `x-klabis-authority`, the admin override adds `MEMBERS_MANAGE` to the list | **Chosen** (user decision 17. 11. 2026) - declarative, affordances filtered by `klabisAfford`, authorization leaves the aggregate. All owner-only operations migrate at once so `FreeGroup` does not mix two mechanisms. |
 
-Consequences of B:
-- Affordances are not filtered by `klabisAfford` (no guard on the operation), so the postprocessor must gate them itself with `owner OR has(MEMBERS_MANAGE)` - same helper as the service (one private predicate each side, covered by a test that both agree).
-- The acting caller may have no member profile (e.g. the bootstrapped `admin` account). `@ActingMember` fails without a profile, so the three operations switch to `@ActingUser CurrentUserData` (`memberId` nullable). Owner semantics: owner iff `memberId != null && group.isOwner(memberId)`.
-- Domain: `FreeGroup` gets actor-free variants used after the service decided (`addOwner(memberId)` keeps the "must be a current member" rule; deletion needs no actor). The owner-check overloads stay for the owner path. Alternative of passing a `isManager` flag into the aggregate was rejected - the aggregate knows nothing about authorities.
-- `getGroup` also admits `MEMBERS_MANAGE` holders (read of name, owners, members; no pending invitations, no invitation management) - needed so the dialog can discover templates and the member picker. MEMBERS:MANAGE already reads every member's data, so no new data class is exposed. A manager gets exactly the `addGroupOwner` and `deleteGroup` templates on the self link (not rename/invite).
+Consequences of C:
+- `Authority.GROUPS_OWNER("GROUPS:OWNER", TargetType.GROUP, GrantForm.SPECIFIC)`, new `TargetType.GROUP` and `TargetRef.group(uuid)`. It is never granted by hand (not in `grantableOverAll`, so the permissions UI does not offer it) and never delegated (`delegatedAuthorities` unchanged).
+- `FreeGroupRelationshipSource` adds `GROUPS_OWNER` over every group the user owns, beside the existing delegated grants. The snapshot is per request, so promotion or removal of an owner takes effect on the next request.
+- Operations (all on the `id` path parameter, `x-klabis-target-id: GROUP`):
+
+  | Operation | Authorization |
+  |---|---|
+  | `updateGroup`, `removeGroupOwner`, `inviteMember`, `cancelInvitation` | `x-klabis-authority: GROUPS_OWNER` |
+  | `addGroupOwner`, `deleteGroup` | `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]` |
+  | `removeGroupMember` | Imperative in the service: allowed when the member removes themselves or the caller `has(GROUPS_OWNER, group)`. Not declarative: owner-visible needs a MEMBER target and an operation has a single target parameter. |
+  | `getGroup` | Imperative: owner (`has(GROUPS_OWNER, group)`), member, or `has(MEMBERS_MANAGE)`. Switches to `@ActingUser CurrentUserData` (`memberId` nullable) so the dialog can load it for an admin without a member profile. |
+  | `acceptInvitation`, `rejectInvitation` | Unchanged - the invitee check is an identity rule, stays in the aggregate. |
+
+- Domain: authorization leaves `FreeGroup`. `requireOwner` and the actor parameters of `rename`, `addOwner`, `removeOwner`, `removeMember` and `cancelInvitation` go away. `FreeGroup` overrides `addOwner(memberId)` with the "must be a current member" rule. `invite(invitedBy, target)` keeps `invitedBy` as recorded data. `cancelInvitation(invitationId, reason)` loses the optional actor; the system cancellation in `MemberSuspendedListener` calls the same method. `GroupOwnershipRequiredException` is removed if unused; a 403 then comes from the method guard.
+- Controller: `@ActingMember` is dropped where it only fed the owner check (`updateGroup`, `deleteGroup`, `addGroupOwner`, `removeGroupOwner`, `cancelInvitation`); it stays for `inviteMember` (`invitedBy`), `removeGroupMember` (self rule) and accept/reject.
+- Affordances: owner templates are filtered by `klabisAfford` with the group target; the manual `isOwner` branch in `FreeGroupDetailsPostprocessor` and the cancel-invitation gating in `FreeGroupItemPostprocessors` go away. The "leave group" affordance for plain members stays imperative. A manager automatically gets exactly `addGroupOwner` and `deleteGroup`.
+- `getGroup` for a manager: name, owners, members; no pending invitations, no invitation management - needed so the dialog can discover templates and the member picker. MEMBERS:MANAGE already reads every member's data, so no new data class is exposed.
 - Side effect, accepted by the user decision: a MEMBERS:MANAGE holder may add an owner to / dissolve any free group at any time, not only inside a suspension flow. It is the same trust level as managing all members.
+- The `invite` gap (Context) is closed by the guard.
 
 ### D2: What happens on dissolution
 
@@ -130,9 +144,15 @@ sequenceDiagram
 ```mermaid
 classDiagram
     class FreeGroup {
+        +rename(name)
         +addOwner(memberId)
-        +addOwner(memberId, actingMember)
-        +requireOwner(actingMember)
+        +removeOwner(memberId)
+        +removeMember(memberId)
+        +invite(invitedBy, target)
+        +cancelInvitation(invitationId, reason)
+    }
+    class FreeGroupRelationshipSource {
+        +grantsOf(userId)
     }
     class OwnedGroup {
         +groupId
@@ -140,14 +160,17 @@ classDiagram
         +groupType
         +groupLink
     }
+    FreeGroupRelationshipSource ..> Authority : GROUPS_OWNER over GROUP
     FreeGroupManagementService ..> FreeGroup
-    FreeGroupManagementService ..> AuthorizationEvaluator
+    FreeGroupManagementService ..> AuthorizationEvaluator : removeMember only
 ```
 
 | Element | Change |
 |---|---|
-| `FreeGroup.addOwner(memberId)` | Public actor-free variant already inherited from the shared group base; the "must be a current member" check moves into it so both paths share it. The actor overload delegates after `requireOwner`. |
-| `FreeGroupManagementService.addOwner` / `deleteGroup` | Take the caller (`userId`, nullable `memberId`); allowed iff owner or `has(MEMBERS_MANAGE)`, else `GroupOwnershipRequiredException` (existing 403). |
+| `TargetType`, `TargetRef`, `Authority` | New `TargetType.GROUP`, `TargetRef.group(uuid)`, `Authority.GROUPS_OWNER` (SPECIFIC only). |
+| `FreeGroupRelationshipSource` | Also returns `GROUPS_OWNER` over each owned group. |
+| `FreeGroup` | No authorization: `requireOwner` and actor parameters removed; `addOwner(memberId)` override rejects a non-member (`CannotPromoteNonMemberToOwnerException`). |
+| `FreeGroupManagementService` / `FreeGroupManagementPort` | Actor parameters removed except `inviteMember` (`invitedBy`) and `removeMember` (self-or-owner check via `AuthorizationEvaluator`). |
 | `OwnedGroup` (members root, public) | Add `groupLink` (URI of the group resource). |
 | `ManagementService.suspendMember` | Accepts the requested legal guardian group ids; builds the member set; checks every member; suspends all in one transaction. |
 | `SuspensionBlockedException` | Carries blockers per member (the requested member plus dependents). |
@@ -166,18 +189,21 @@ classDiagram
 
 | Operation | Change |
 |---|---|
-| `GET /api/groups/{id}` (`getGroup`) | Also allowed for callers with MEMBERS:MANAGE (documented in description; no `x-klabis-authority`, imperative like today). Self-link templates for a manager: `addGroupOwner`, `deleteGroup` only. |
-| `POST /api/groups/{id}/owners` (`addGroupOwner`) | Owner or MEMBERS:MANAGE; `x-spring-provide-args` `@ActingUser CurrentUserData` replaces `@ActingMember`. Request `{memberId}` unchanged; 400 when not a current member. |
-| `DELETE /api/groups/{id}` (`deleteGroup`) | Same access and argument change. |
+| `GET /api/groups/{id}` (`getGroup`) | Also allowed for callers with MEMBERS:MANAGE (documented in description; no `x-klabis-authority`, imperative). `x-spring-provide-args` `@ActingUser CurrentUserData` replaces `@ActingMember`. Self-link templates for a manager: `addGroupOwner`, `deleteGroup` only. |
+| `PATCH /api/groups/{id}` (`updateGroup`), `DELETE /api/groups/{id}/owners/{memberId}` (`removeGroupOwner`), `DELETE /api/groups/{id}/invitations/{invitationId}` (`cancelInvitation`) | `x-klabis-authority: GROUPS_OWNER`; `x-spring-provide-args` acting member removed. |
+| `POST /api/groups/{id}/invitations` (`inviteMember`) | `x-klabis-authority: GROUPS_OWNER`; acting member kept (`invitedBy`). |
+| `POST /api/groups/{id}/owners` (`addGroupOwner`), `DELETE /api/groups/{id}` (`deleteGroup`) | `x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]`; acting member removed. Request `{memberId}` unchanged; 400 when not a current member. |
+| `DELETE /api/groups/{id}/members/{memberId}` (`removeGroupMember`), accept/reject invitation | Unchanged contract (imperative check, acting member kept). |
 | Training group operations | Unchanged (`addTrainer`, `getTrainingGroup`). |
 | `setLegalGuardianGroupGuardians` | Unchanged. |
 
-Update the module header comment of `groups.yaml` (authorization pattern b now has two documented exceptions).
+The `id` path parameter of the owner-only operations gets `x-klabis-target-id: GROUP` (a shared parameter component). Rewrite the module header comment of `groups.yaml`: pattern b (authorization inside the aggregate) is replaced by the GROUPS:OWNER relationship authority; `removeGroupMember` and `getGroup` stay imperative and say why.
 
 ## Risks / Trade-offs
 
-- [Owner/manager rule duplicated in service and postprocessor] -> a test asserts the offered affordance and the actual call agree for owner, manager, plain member.
-- [MEMBERS:MANAGE gains standing power over free groups] -> explicit user decision; documented in ADR; option C is the path to a declarative model.
+- [Authorization of the existing free-group operations moves out of the aggregate] -> controller regression tests per operation (owner, member, outsider, manager) are written before the change and must stay green.
+- [GROUPS:OWNER must never be grantable by hand] -> SPECIFIC-only; a test asserts it is not in the grantable set.
+- [MEMBERS:MANAGE gains standing power over free groups] -> explicit user decision; documented in ADR.
 - [Group changed by someone else between GET and submit] -> the action's normal error is shown in the row (toast); final resubmission is authoritative.
 - [The dialog needs one extra request per row] -> at most a handful of groups; no batching (design principles).
 - [Suspension rows for legal guardian groups send the user away from the dialog when choosing a successor] -> the dialog stays reachable by repeating the suspension; acceptable for a rare case.
@@ -187,7 +213,7 @@ Update the module header comment of `groups.yaml` (authorization pattern b now h
 
 ## Migration Plan
 
-No data migration. API change is additive (`groupLink`, wider access). Deploy backend and frontend together; the old frontend ignores the new field. Rollback = redeploy previous version.
+No data migration (GROUPS:OWNER is derived, never stored). API change is additive (`groupLink`, wider access) except that a non-owner can no longer invite (closes the gap, matches the spec). Deploy backend and frontend together; the old frontend ignores the new field. Rollback = redeploy previous version.
 
 ## Open Questions
 

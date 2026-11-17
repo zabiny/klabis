@@ -9,7 +9,7 @@ When suspending a member who is the last owner of a group, the "Varování: Spr�
 - The suspension-warning dialog becomes actionable: for each blocking group the admin can designate a successor or (free groups only) dissolve the group, directly from the dialog.
 - Which actions a row offers is driven by what the caller may actually do with that group (HAL-FORMS affordances of the group resource); a row with no available action tells the admin whom to contact.
 - Training groups: successor = new trainer; offered only to a caller who also holds GROUPS:TRAINING. Dissolving is never offered.
-- Free groups: a user with MEMBERS:MANAGE may, besides the group owners, add an owner to / dissolve any free group (needed for this flow, and to view the group in order to do so).
+- Free groups: a user with MEMBERS:MANAGE may, besides the group owners, add an owner to / dissolve any free group (needed for this flow, and to view the group in order to do so). Free-group ownership becomes a relationship authority `GROUPS:OWNER` (held only over groups the user owns, never granted by hand) that guards all owner-only operations declaratively instead of checks inside the group aggregate; this also closes a gap where a non-owner member could invite through the API.
 - Legal guardian groups: the dialog offers "Pozastavit celou skupinu" - the member and all minors of the group are suspended together in one atomic operation (all or nobody), with the same reason and note; "Určit nástupce" stays as a link to the existing "Zákonní zástupci" group page. Dissolving is never offered (these groups cannot be deleted by hand). **BREAKING (UI only)**: the current dialog shows "Rozpustit skupinu" for legal guardian groups - it is removed.
 - Suspension request gains an optional list of legal guardian groups to suspend with the member; blockers of the dependent minors (negative balance, last owner of another group) block the whole operation and are reported per member.
 - A suspended member no longer stays a legal guardian of groups that have other guardians (removed on suspension), so a suspended person never keeps acting as a guardian.
@@ -32,10 +32,10 @@ None.
 
 ## Impact
 
-- Backend: `members.application.ManagementService` (atomic cascade), a members-side listener removing suspended guardians, `groups.freegroup` (service, aggregate, controller, postprocessor), suspension adapters of the three group modules and `OwnedGroup` (link), `MembersExceptionHandler`.
-- API spec: `docs/openapi/spec/members.yaml` (`AffectedGroup.groupLink`, `SuspendMembershipRequest.cascadeGroupIds`, per-member blockers in `SuspensionBlockedWarning`), `docs/openapi/spec/groups.yaml` (`getGroup`, `addGroupOwner`, `deleteGroup` access and acting-user argument); regenerate bundle and frontend types.
+- Backend: `members.application.ManagementService` (atomic cascade), a members-side listener removing suspended guardians, `common.authorization` and `common.users.Authority` (`TargetType.GROUP`, `GROUPS_OWNER`), `groups.freegroup` (relationship source, service, aggregate, controller, postprocessors), suspension adapters of the three group modules and `OwnedGroup` (link), `MembersExceptionHandler`.
+- API spec: `docs/openapi/spec/members.yaml` (`AffectedGroup.groupLink`, `SuspendMembershipRequest.cascadeGroupIds`, per-member blockers in `SuspensionBlockedWarning`), `docs/openapi/spec/groups.yaml` (`x-klabis-authority` on all owner-only operations, `MEMBERS_MANAGE` added for `addGroupOwner`/`deleteGroup`, `getGroup` access, acting-member arguments); regenerate bundle and frontend types.
 - Frontend: `SuspensionWarningDialog` (absorbs `NegativeBalanceSuspensionDialog`), `useSuspendMemberAction`, `MemberDetailPage`, `MembersPage`, labels.
-- Docs: one new ADR (free-group management by MEMBERS:MANAGE).
+- Docs: one new ADR (free-group authorization via the GROUPS:OWNER relationship authority, MEMBERS:MANAGE override).
 - Not touched: `non-functional-requirements` still mentions `MEMBERS:UPDATE` in two unrelated scenarios (follow-up cleanup).
 
 ```mermaid
@@ -44,7 +44,7 @@ flowchart LR
     D -->|GET group link| G{Affordances}
     G -->|addTrainer / addGroupOwner| A[Designate successor]
     G -->|deleteGroup free group only| X[Dissolve group]
-    G -->|legal guardian group| L[Suspend whole group - deferred]
+    G -->|legal guardian group| L[Suspend whole group]
     G -->|none| C[Contact info]
     A --> R[Row resolved]
     X --> R
