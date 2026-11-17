@@ -12,6 +12,7 @@ import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
 import * as Yup from 'yup';
 import {SyncStatusIndicator} from '../sync/SyncStatusIndicator.tsx';
+import {useHalFormOptions} from '../../hooks/useHalFormOptions';
 import {createRegistrationFieldsFactory, type SiRequirement} from './registrationFieldsFactory.tsx';
 
 export interface EventRegistrationDialogProps {
@@ -45,6 +46,8 @@ export const EventRegistrationDialog = ({
     const hasInternalNote = template?.properties.some(prop => prop.name === 'internalNote');
     const hasOrisNote = template?.properties.some(prop => prop.name === 'orisNote');
     const categoryProp = template?.properties.find(prop => prop.name === 'categoryId');
+    const {options: categoryOptions, isLoading: categoryOptionsLoading} = useHalFormOptions(categoryProp?.options);
+    const showCategoryField = categoryProp !== undefined && (categoryOptionsLoading || categoryOptions.length > 0);
     const showTransportCheckbox = transportProp !== undefined && eventContext?.sharedTransportEnabled === true;
     const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
 
@@ -84,6 +87,7 @@ export const EventRegistrationDialog = ({
             ...template,
             properties: template.properties
                 .filter(prop => !(prop.name === 'siCardNumber' && !showSiField)
+                    && !(prop.name === 'categoryId' && !showCategoryField)
                     && !(prop.name === 'wantsToRentSi' && !showRentCheckbox))
                 .map(prop => prop.name === 'siCardNumber'
                     ? {...prop, required: siRequirement === 'required'}
@@ -121,6 +125,7 @@ export const EventRegistrationDialog = ({
         if (!showAccommodationCheckbox) delete next.wantsSharedAccommodation;
         if (!showSiField) delete next.siCardNumber;
         if (!showRentCheckbox) delete next.wantsToRentSi;
+        if (!showCategoryField) delete next.categoryId;
         return next;
     };
 
@@ -144,7 +149,7 @@ export const EventRegistrationDialog = ({
             {mode === 'edit' && <SyncStatusIndicator syncLink={prefillData?._links?.sync} mode="icon+date"/>}
             {showSiField && helpers.renderField('siCardNumber')}
             {showRentCheckbox && helpers.renderField('wantsToRentSi')}
-            {categoryProp && helpers.renderField('categoryId')}
+            {showCategoryField && helpers.renderField('categoryId')}
             {(showTransportCheckbox || showAccommodationCheckbox) && (
                 <div className="flex flex-col gap-3">
                     {showTransportCheckbox && helpers.renderField('wantsSharedTransport')}

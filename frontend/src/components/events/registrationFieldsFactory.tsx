@@ -101,7 +101,7 @@ const CategoryField = ({prop, serverError}: {
                 className="flex items-center gap-1 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
                 {labels.events.registrationModal.category}
-                <span className="text-sm font-bold text-red-600">*</span>
+                {prop.required && <span className="text-sm font-bold text-red-600">*</span>}
             </label>
             <div className="relative">
                 <select

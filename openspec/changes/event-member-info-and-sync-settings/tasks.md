@@ -11,9 +11,9 @@
 
 ## 2. Registration without categories (#365)
 
-- [ ] 2.1 Add failing tests for `EventRegistrationDialog` / `registrationFieldsFactory`: no category field when the `categoryId` options are empty; `categoryId` is not in the submitted payload then; the `*` marker follows `prop.required`. Verify they fail first.
-- [ ] 2.2 Implement design D4 (hide the field when options are empty, strip `categoryId` alongside the other hidden fields, conditional marker). Verify with the 2.1 tests and the existing dialog tests (test-runner).
-- [ ] 2.3 Manually verify on http://localhost:3000 that a member can register for an event without categories and that an event with categories still requires one.
+- [x] 2.1 Add failing tests for `EventRegistrationDialog` / `registrationFieldsFactory`: no category field when the `categoryId` options are empty; `categoryId` is not in the submitted payload then; the `*` marker follows `prop.required`. Verify they fail first.
+- [x] 2.2 Implement design D4 (hide the field when options are empty, strip `categoryId` alongside the other hidden fields, conditional marker). Verify with the 2.1 tests and the existing dialog tests (test-runner).
+- [x] 2.3 Manually verify on http://localhost:3000 that a member can register for an event without categories and that an event with categories still requires one.
 
 ## 3. Informace pro členy on an event (#75)
 
