@@ -1,5 +1,5 @@
 import {type ReactElement, useState} from "react";
-import type {Link, ListEventsItemResource} from "../../api";
+import type {HalResponse, Link, ListEventsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -32,6 +32,7 @@ import {useAuth} from "../../contexts/authContext";
 import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
 import {useEventsFilterState} from "./useEventsFilterState.ts";
+import {HalPageGate} from "../HalPageGate.tsx";
 
 type EventListData = ListEventsItemResource;
 
@@ -91,8 +92,8 @@ const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
 const CREATE_FORM_SI_POLICY_FIELDS = ['siUsage', 'siRentalAllowed'];
 const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
-export const EventsPage = (): ReactElement => {
-    const {navigateToResource, refetch, resourceData} = useHalPageData();
+const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
+    const {navigateToResource, refetch} = useHalPageData();
     const {getUser} = useAuth();
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -100,18 +101,18 @@ export const EventsPage = (): ReactElement => {
     const actionDialog = useTemplateDialog({size: '2xl'});
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
-    const coordinatorOptionsLink = resourceData?._links?.coordinatorOptions;
+    const coordinatorOptionsLink = resourceData._links?.coordinatorOptions;
     const {data: coordinatorOptions} = useAuthorizedQuery<CoordinatorOption[]>(
         coordinatorOptionsLink ? toHref(coordinatorOptionsLink) : undefined,
         {staleTime: 5 * 60 * 1000},
     );
 
-    const importBatchTemplate = resourceData?._templates?.importEventsBatch;
-    const importTemplate = resourceData?._templates?.importEvent;
+    const importBatchTemplate = resourceData._templates?.importEventsBatch;
+    const importTemplate = resourceData._templates?.importEvent;
     const activeImportTemplate = importBatchTemplate ?? importTemplate;
-    const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
+    const bulkSyncTemplate = resourceData._templates?.syncAllUpcomingFromOris;
     // `status` is returned to everyone; `_templates.createEvent` is present exactly for EVENTS:MANAGE.
-    const canManageEvents = Boolean(resourceData?._templates?.createEvent);
+    const canManageEvents = Boolean(resourceData._templates?.createEvent);
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
@@ -379,3 +380,9 @@ export const EventsPage = (): ReactElement => {
         />
     </div>;
 }
+
+export const EventsPage = (): ReactElement => (
+    <HalPageGate>
+        {(resourceData) => <EventsPageContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

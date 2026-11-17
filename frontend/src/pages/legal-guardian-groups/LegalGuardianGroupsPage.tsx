@@ -2,9 +2,9 @@ import {type ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {Alert, Skeleton} from '../../components/UI';
 import type {components} from '../../api/klabisApi';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type LegalGuardianGroupSummaryItem = components['schemas']['EntityModelLegalGuardianGroupSummaryResponse'];
 
@@ -14,16 +14,8 @@ const formatGuardianNames = ({value}: {value: unknown}): string =>
         .filter(Boolean)
         .join(', ');
 
-export const LegalGuardianGroupsPage = (): ReactElement => {
-    const {isLoading, error, navigateToResource} = useHalPageData();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
+const LegalGuardianGroupsPageContent = (): ReactElement => {
+    const {navigateToResource} = useHalPageData();
 
     return (
         <div className="flex flex-col gap-8">
@@ -42,3 +34,9 @@ export const LegalGuardianGroupsPage = (): ReactElement => {
         </div>
     );
 };
+
+export const LegalGuardianGroupsPage = (): ReactElement => (
+    <HalPageGate>
+        {() => <LegalGuardianGroupsPageContent/>}
+    </HalPageGate>
+);

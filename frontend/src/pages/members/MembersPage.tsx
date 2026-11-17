@@ -1,5 +1,5 @@
 import {type ReactElement, useMemo, useState} from "react";
-import type {Link, ListMembersItemResource} from "../../api";
+import type {HalResponse, Link, ListMembersItemResource} from "../../api";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -28,6 +28,7 @@ import {toQuery} from "./membersQuery.ts";
 import {useTakeOverRegistration} from "./useTakeOverRegistration.ts";
 import {renderRegistrationForm} from "./RegistrationForm.tsx";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
+import {HalPageGate} from "../HalPageGate.tsx";
 
 type MemberSummaryData = ListMembersItemResource;
 
@@ -36,13 +37,13 @@ interface MemberPermissionsDialogState {
     permissionsUrl: string;
 }
 
-export const MembersPage = (): ReactElement => {
-    const {navigateToResource, refetch, resourceData} = useHalPageData();
+const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
+    const {navigateToResource, refetch} = useHalPageData();
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
-    const importFromOrisTemplate = resourceData?._templates?.importFromOris;
+    const importFromOrisTemplate = resourceData._templates?.importFromOris;
     const importFromOrisTarget = importFromOrisTemplate?.target;
     const hasImportFromOris = !!importFromOrisTemplate;
 
@@ -60,7 +61,7 @@ export const MembersPage = (): ReactElement => {
         onSubmitError: onSuspendSubmitError,
     });
 
-    const hasManageAuthority = resourceData?._templates?.registerMember !== undefined;
+    const hasManageAuthority = resourceData._templates?.registerMember !== undefined;
 
     const {values, setValues} = useUrlFilters({
         status: {type: 'string', default: DEFAULT_MEMBER_STATUS},
@@ -268,3 +269,9 @@ export const MembersPage = (): ReactElement => {
         </div>
     );
 };
+
+export const MembersPage = (): ReactElement => (
+    <HalPageGate>
+        {(resourceData) => <MembersPageContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

@@ -26,6 +26,9 @@ vi.mock('../../components/UI', () => ({
             {children}
         </div>
     ),
+    Card: ({children, className}: {children: React.ReactNode; className?: string}) => (
+        <div className={className}>{children}</div>
+    ),
     Button: ({children, onClick, disabled, ...props}: {children: React.ReactNode; onClick?: () => void; disabled?: boolean; [key: string]: unknown}) => (
         <button onClick={onClick} disabled={disabled} {...props}>
             {children}
@@ -302,19 +305,19 @@ describe('CalendarPage Component', () => {
             expect(screen.getByText('Načítání...')).toBeInTheDocument();
         });
 
-        it('should display Czech text of the error in the alert', () => {
+        it('should display the page-level error for a 404', () => {
             const error = new ApiError(404, {type: '/errors/calendar-item-not-found', detail: 'Calendar item 42 not found'});
 
             mockUseHalPageData.mockReturnValue({
                 ...createMockContext(null),
                 error,
+                queryState: 'error',
                 resourceData: null,
             });
 
             renderWithRouter(<CalendarPage/>);
 
-            expect(screen.getByTestId('alert-error')).toBeInTheDocument();
-            expect(screen.getByText('Položka kalendáře nebyla nalezena.')).toBeInTheDocument();
+            expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
             expect(screen.queryByText(/Calendar item/)).not.toBeInTheDocument();
         });
     });

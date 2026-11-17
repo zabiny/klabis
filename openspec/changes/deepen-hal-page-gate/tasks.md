@@ -14,11 +14,11 @@
 
 ## 3. List, admin, calendar and newly gated pages
 
-- [ ] 3.1 `GroupsPage`, `TrainingGroupsPage`, `LegalGuardianGroupsPage`, `MembershipFeesAdminPage`: replace the inline `<Alert severity="error">` branch with the gate (error policy now `ErrorPage`)
-- [ ] 3.2 `CalendarPage`, `GenericHalPage`: adopt the gate with `loading={<Spinner/>}`
-- [ ] 3.3 `MembersPage`, `EventsPage`: adopt the gate, introducing the page-level error state they lack today
-- [ ] 3.4 `NotificationSettingsPage`, `MemberAccountManagePage`: adopt the gate; keep their existing loading visuals via the `loading` prop
-- [ ] 3.5 Trim the migrated page tests to happy path plus page-specific behaviour; verify the slice green
+- [x] 3.1 `GroupsPage`, `TrainingGroupsPage`, `LegalGuardianGroupsPage`, `MembershipFeesAdminPage`: replace the inline `<Alert severity="error">` branch with the gate (error policy now `ErrorPage`)
+- [x] 3.2 `CalendarPage`, `GenericHalPage`: adopt the gate with `loading={<Spinner/>}`
+- [x] 3.3 `MembersPage`, `EventsPage`: adopt the gate, introducing the page-level error state they lack today
+- [x] 3.4 `NotificationSettingsPage`, `MemberAccountManagePage`: adopt the gate; keep their existing loading visuals via the `loading` prop
+- [x] 3.5 Trim the migrated page tests to happy path plus page-specific behaviour; verify the slice green
 
 ## 4. Dissolve `FinancesPage.tsx`
 

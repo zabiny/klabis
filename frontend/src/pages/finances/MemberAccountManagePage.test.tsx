@@ -175,6 +175,16 @@ describe('MemberAccountManagePage', () => {
         );
     };
 
+    describe('Load error', () => {
+        it('should show the page-level error when the account cannot be loaded', async () => {
+            fetchSpy.mockImplementation(() => Promise.resolve(createMockResponse({detail: 'Access denied'}, 403)));
+
+            renderPage(<MemberAccountManagePage/>);
+
+            expect(await screen.findByText('Přístup odepřen')).toBeInTheDocument();
+        });
+    });
+
     describe('With FINANCE:MANAGE affordances', () => {
         beforeEach(() => {
             fetchSpy.mockImplementation((url: string) => {

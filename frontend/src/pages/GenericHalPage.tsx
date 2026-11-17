@@ -7,7 +7,7 @@ import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection.tsx';
 import {useHalPageData} from '../hooks/useHalPageData';
 import {useIsAdmin} from '../hooks/useIsAdmin';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
-import {ErrorPage} from './ErrorPage.tsx';
+import {HalPageGate} from './HalPageGate.tsx';
 
 /**
  * Generic page for displaying HAL resources
@@ -18,32 +18,9 @@ import {ErrorPage} from './ErrorPage.tsx';
  * Inline form display is automatically handled by HalFormsPageLayout wrapper
  * Used as a fallback for routes that don't have specialized pages
  */
-export const GenericHalPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData();
-    const isCollection = resourceData !== null && (
-        resourceData.page !== undefined ||
-        (resourceData._embedded !== undefined && Object.keys(resourceData._embedded).length > 0)
-    );
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <Spinner/>
-            </div>
-        );
-    }
-
-    if (error) {
-        return <ErrorPage error={error}/>;
-    }
-
-    if (!resourceData) {
-        return (
-            <Alert severity="warning">
-                <p>Žádná data dostupná</p>
-            </Alert>
-        );
-    }
+const GenericHalPageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
+    const isCollection = resourceData.page !== undefined ||
+        (resourceData._embedded !== undefined && Object.keys(resourceData._embedded).length > 0);
 
     return (
         <div className="p-4">
@@ -55,6 +32,18 @@ export const GenericHalPage = (): ReactElement => {
         </div>
     );
 };
+
+export const GenericHalPage = (): ReactElement => (
+    <HalPageGate
+        loading={
+            <div className="flex items-center justify-center py-12">
+                <Spinner/>
+            </div>
+        }
+    >
+        {(resourceData) => <GenericHalPageContent resourceData={resourceData}/>}
+    </HalPageGate>
+);
 
 /**
  * Strip HAL/HAL+JSON meta attributes from an object

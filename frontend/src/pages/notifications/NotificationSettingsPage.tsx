@@ -2,9 +2,8 @@ import {type ReactElement, useState} from 'react';
 import type {HalEnvelope} from '../../api';
 import {halResource} from '../../api/halResource';
 import type {components} from '../../api/klabisApi';
-import {Alert, Badge, Button, Card, Skeleton} from '../../components/UI';
+import {Alert, Badge, Button, Card} from '../../components/UI';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import {useHalPageData} from '../../hooks/useHalPageData';
 import {labels} from '../../localization';
 import {
     base64UrlToBytes,
@@ -15,6 +14,7 @@ import {setRegisteredEndpoint} from '../../pwa/pushSubscriptionStore';
 import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
 import {formatDateTime} from '../../utils/dateUtils';
 import {type BrowserNotificationState, useDeviceNotificationState} from './useDeviceNotificationState';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type NotificationSettings = components['schemas']['EntityModelNotificationSettings'];
 type Device = NonNullable<NotificationSettings['devices']>[number];
@@ -27,9 +27,8 @@ const BROWSER_STATE_MESSAGES: Record<Exclude<BrowserNotificationState, 'loading'
     denied: {text: labels.notifications.stateDenied, severity: 'warning'},
 };
 
-export const NotificationSettingsPage = (): ReactElement => {
-    const {resourceData, isLoading} = useHalPageData<NotificationSettings & HalEnvelope>();
-    const devices = resourceData?.devices ?? [];
+const NotificationSettingsContent = ({resourceData}: {resourceData: NotificationSettings & HalEnvelope}): ReactElement => {
+    const devices = resourceData.devices ?? [];
     const {state, browserEndpoint, refresh} = useDeviceNotificationState();
     const [feedback, setFeedback] = useState<Feedback>(null);
     const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
@@ -83,7 +82,7 @@ export const NotificationSettingsPage = (): ReactElement => {
                 return;
             }
             const registration = await getServiceWorkerRegistration();
-            if (!registration || !resourceData?.vapidPublicKey) {
+            if (!registration || !resourceData.vapidPublicKey) {
                 throw new Error('Push subscription is not available');
             }
             const subscription = await registration.pushManager.subscribe({
@@ -104,10 +103,6 @@ export const NotificationSettingsPage = (): ReactElement => {
             enableFailed();
         }
     };
-
-    if (isLoading || !resourceData) {
-        return <Skeleton/>;
-    }
 
     const stateMessage = state === 'loading' ? null
         : state === 'ready' ? (currentDevice
@@ -184,3 +179,9 @@ export const NotificationSettingsPage = (): ReactElement => {
         </div>
     );
 };
+
+export const NotificationSettingsPage = (): ReactElement => (
+    <HalPageGate<NotificationSettings & HalEnvelope>>
+        {(resourceData) => <NotificationSettingsContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

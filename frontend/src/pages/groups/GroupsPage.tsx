@@ -3,7 +3,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {Alert, Button, Card, Skeleton} from '../../components/UI';
+import {Button, Card} from '../../components/UI';
 import type {GetPendingInvitationsItemResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {describeError, labels} from '../../localization';
@@ -14,6 +14,7 @@ import {useToast} from '../../contexts/toastContext';
 import {Check, X} from 'lucide-react';
 import {DelegatedAuthoritiesNotice} from '../../components/groups/DelegatedAuthorities.tsx';
 import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type GroupSummary = components['schemas']['EntityModelGroupSummaryResponse'];
 
@@ -88,16 +89,8 @@ const PendingInvitationsSection = (): ReactElement | null => {
     );
 };
 
-export const GroupsPage = (): ReactElement => {
-    const {isLoading, error, navigateToResource} = useHalPageData();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
+const GroupsPageContent = (): ReactElement => {
+    const {navigateToResource} = useHalPageData();
 
     return (
         <div className="flex flex-col gap-8">
@@ -122,3 +115,9 @@ export const GroupsPage = (): ReactElement => {
         </div>
     );
 };
+
+export const GroupsPage = (): ReactElement => (
+    <HalPageGate>
+        {() => <GroupsPageContent/>}
+    </HalPageGate>
+);

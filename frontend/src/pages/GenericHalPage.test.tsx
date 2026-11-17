@@ -171,43 +171,6 @@ describe('GenericHalPage Component', () => {
             renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
         });
-
-        it('should display ErrorPage for non-404 errors', () => {
-            const error = new Error('Failed to fetch data');
-            useHalRoute.mockReturnValue({
-                resourceData: null,
-                isLoading: false,
-                error,
-                pathname: '/api/items',
-                refetch: vi.fn(),
-                queryState: 'error',
-                navigateToResource: vi.fn(),
-                getResourceLink: vi.fn(),
-            });
-
-            renderWithRouter(<GenericHalPage/>);
-            expect(screen.getByTestId('error-page')).toBeInTheDocument();
-            expect(screen.getByText(error.message)).toBeInTheDocument();
-        });
-    });
-
-    describe('No Data State', () => {
-        it('should display warning when no data is available', () => {
-            useHalRoute.mockReturnValue({
-                resourceData: null,
-                isLoading: false,
-                error: null,
-                pathname: '/api/items',
-                refetch: vi.fn(),
-                queryState: 'success',
-                navigateToResource: vi.fn(),
-                getResourceLink: vi.fn(),
-            });
-
-            renderWithRouter(<GenericHalPage/>);
-            expect(screen.getByTestId('alert-warning')).toBeInTheDocument();
-            expect(screen.getByText('Žádná data dostupná')).toBeInTheDocument();
-        });
     });
 
     describe('Single Item Display', () => {

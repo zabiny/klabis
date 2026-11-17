@@ -90,6 +90,8 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     ...overrides,
 });
 
+const membersListResource: HalResponse = {_links: {self: {href: 'http://localhost/api/members'}}};
+
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
@@ -131,7 +133,7 @@ describe('MembersPage', () => {
     });
 
     it('renders page title "Členové"', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(membersListResource));
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
@@ -230,9 +232,12 @@ describe('MembersPage', () => {
         expect(screen.getByText('Akce')).toBeInTheDocument();
     });
 
-    it('shows loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(screen.getByText(/načítání/i)).toBeInTheDocument();
+    it('shows the page-level error when the member list cannot be loaded', () => {
+        renderPage(createMockPageData(null, {
+            error: new ApiError(403, {type: '/errors/forbidden', detail: 'Access denied'}),
+        }));
+        expect(screen.getByText('Přístup odepřen')).toBeInTheDocument();
+        expect(screen.queryByText('Členové')).not.toBeInTheDocument();
     });
 });
 
@@ -454,14 +459,14 @@ describe('MembersPage — filter bar integration', () => {
     });
 
     it('leaves a bare URL bare while requesting the active-only default', () => {
-        renderPageWithSearchReader('/members', createMockPageData(null));
+        renderPageWithSearchReader('/members', createMockPageData(membersListResource));
 
         expect(screen.getByTestId('search-string')).toHaveTextContent('(none)');
         expect(vi.mocked(useAuthorizedQuery).mock.calls.every(([url]) => String(url).includes('status=ACTIVE'))).toBe(true);
     });
 
     it('does NOT overwrite an existing status param on mount', () => {
-        const pageData = createMockPageData(null);
+        const pageData = createMockPageData(membersListResource);
         renderPageWithSearchReader('/members?status=INACTIVE', pageData);
         expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
     });

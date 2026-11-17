@@ -63,6 +63,8 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     );
 };
 
+const groupsListResource: HalResponse = {_links: {self: {href: 'http://localhost/api/groups'}}};
+
 const buildGroupRow = (overrides?: Record<string, unknown>) => ({
     id: 'group-1',
     name: 'Testovací skupina',
@@ -108,7 +110,7 @@ const renderPageWithInvitations = (invitations: unknown[]) => {
         }
         return {data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
     });
-    const pageData = createMockPageData(null);
+    const pageData = createMockPageData(groupsListResource);
     return renderPage(pageData);
 };
 
@@ -118,29 +120,24 @@ describe('GroupsPage', () => {
     });
 
     it('renders page title "Skupiny"', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(groupsListResource));
         expect(screen.getByText('Skupiny')).toBeInTheDocument();
     });
 
     it('renders section heading "Moje skupiny"', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(groupsListResource));
         expect(screen.getByText('Moje skupiny')).toBeInTheDocument();
     });
 
     it('renders "Název" column header', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(groupsListResource));
         expect(screen.getByText('Název')).toBeInTheDocument();
     });
 
-    it('shows skeleton loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-
-    it('shows error message when fetch fails', () => {
+    it('shows the page-level error when fetch fails with a 404', () => {
         renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})}));
-        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
-        expect(screen.queryByText(/Group not found/)).not.toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
+        expect(screen.queryByText('Skupiny')).not.toBeInTheDocument();
     });
 
     it('renders "Vytvořit skupinu" button when createGroup template exists', () => {

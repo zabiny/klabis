@@ -1,8 +1,10 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {ApiError} from '../../api/apiError';
+import type {HalResponse} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {LegalGuardianGroupsPage} from './LegalGuardianGroupsPage';
 
@@ -22,9 +24,12 @@ vi.mock('../../components/HalNavigator2/HalEmbeddedTable.tsx', () => ({
     ),
 }));
 
+const resource: HalResponse = {_links: {self: {href: 'http://localhost/api/legal-guardian-groups'}}};
+
 describe('LegalGuardianGroupsPage', () => {
     it('renders heading and the group table without a create button', () => {
         vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: resource,
             isLoading: false,
             error: null,
             navigateToResource: vi.fn(),
@@ -37,6 +42,7 @@ describe('LegalGuardianGroupsPage', () => {
 
     it('shows guardian names column between name and minor count', () => {
         vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: resource,
             isLoading: false,
             error: null,
             navigateToResource: vi.fn(),
@@ -46,15 +52,21 @@ describe('LegalGuardianGroupsPage', () => {
         expect(screen.getByTestId('guardians-cell')).toHaveTextContent('Ondřej Kratochvíl, Lenka Kratochvílová');
     });
 
-    it('shows the Czech text of a load error instead of the HTTP status', () => {
+    it('shows the page-level error for a 404', () => {
         vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: null,
             isLoading: false,
             error: new ApiError(404, {type: '/errors/not-found', detail: 'Missing'}),
-            route: {navigateToResource: vi.fn()},
+            queryState: 'error',
+            navigateToResource: vi.fn(),
         } as unknown as ReturnType<typeof useHalPageData>);
-        render(<LegalGuardianGroupsPage/>);
+        render(
+            <MemoryRouter>
+                <LegalGuardianGroupsPage/>
+            </MemoryRouter>
+        );
 
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.getByText('Stránka nenalezena')).toBeInTheDocument();
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
@@ -88,6 +89,18 @@ describe('NotificationSettingsPage', () => {
         if (original.userAgent) Object.defineProperty(window.navigator, 'userAgent', original.userAgent);
         window.matchMedia = original.matchMedia;
         vi.clearAllMocks();
+    });
+
+    it('shows the page-level error when the settings cannot be loaded', () => {
+        vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: null,
+            isLoading: false,
+            error: new ApiError(500, {type: '/errors/internal', detail: 'Boom'}),
+        } as unknown as UseHalPageDataReturn);
+        render(<NotificationSettingsPage/>);
+
+        expect(screen.getByText('Něco se pokazilo')).toBeInTheDocument();
+        expect(screen.queryByText(labels.notifications.pageTitle)).not.toBeInTheDocument();
     });
 
     it('shows unsupported message when browser lacks push support', async () => {

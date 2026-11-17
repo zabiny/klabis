@@ -1,14 +1,15 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert, Button, Spinner} from '../../components/UI';
+import {Button, Spinner} from '../../components/UI';
 import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import type {HalResponse} from '../../api';
 import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
 import {Filter} from 'lucide-react';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 interface CalendarItem {
     id: string;
@@ -27,8 +28,7 @@ interface CalendarItem {
  * CalendarPage - Display calendar with month view and calendar items
  * Shows all calendar items on their respective dates
  */
-const CalendarPage = () => {
-    const {resourceData, isLoading, error} = useHalPageData();
+const CalendarPageContent = ({resourceData}: {resourceData: HalResponse}) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -38,7 +38,7 @@ const CalendarPage = () => {
 
     const currentDate = useMemo(() => {
         // Primary: use startDate from self link (reflects actual fetched month)
-        if (resourceData?._links?.self) {
+        if (resourceData._links?.self) {
             const selfHref = toHref(resourceData._links.self);
             const url = new URL(selfHref, 'https://placeholder');
             const startDate = url.searchParams.get('startDate');
@@ -73,7 +73,7 @@ const CalendarPage = () => {
         return new Date();
     }, [resourceData, searchParams]);
 
-    const calendarItems = embeddedItems<CalendarItem>(resourceData ?? undefined);
+    const calendarItems = embeddedItems<CalendarItem>(resourceData);
 
     // Calculate month properties
     const year = currentDate.getFullYear();
@@ -102,12 +102,12 @@ const CalendarPage = () => {
     }
 
     const handlePrevMonth = () => {
-        const prevLink = resourceData?._links?.prev;
+        const prevLink = resourceData._links?.prev;
         if (prevLink) navigate(toRoutePath(toHref(prevLink)));
     };
 
     const handleNextMonth = () => {
-        const nextLink = resourceData?._links?.next;
+        const nextLink = resourceData._links?.next;
         if (nextLink) navigate(toRoutePath(toHref(nextLink)));
     };
 
@@ -136,19 +136,6 @@ const CalendarPage = () => {
         new Date(year, month)
     );
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center items-center gap-2 h-96 text-text-secondary">
-                <Spinner/>
-                {labels.ui.loading}
-            </div>
-        );
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
     return (
         <div className="flex flex-col gap-8">
             {/* Header */}
@@ -158,7 +145,7 @@ const CalendarPage = () => {
                         variant="secondary"
                         size="sm"
                         onClick={handlePrevMonth}
-                        disabled={!resourceData?._links?.prev}
+                        disabled={!resourceData._links?.prev}
                         aria-label={labels.ui.prevMonth}
                     >
                         ←
@@ -175,7 +162,7 @@ const CalendarPage = () => {
                         variant="secondary"
                         size="sm"
                         onClick={handleNextMonth}
-                        disabled={!resourceData?._links?.next}
+                        disabled={!resourceData._links?.next}
                         aria-label={labels.ui.nextMonth}
                     >
                         →
@@ -260,5 +247,18 @@ const CalendarPage = () => {
         </div>
     );
 };
+
+const CalendarPage = () => (
+    <HalPageGate
+        loading={
+            <div className="flex justify-center items-center gap-2 h-96 text-text-secondary">
+                <Spinner/>
+                {labels.ui.loading}
+            </div>
+        }
+    >
+        {(resourceData) => <CalendarPageContent resourceData={resourceData}/>}
+    </HalPageGate>
+);
 
 export default CalendarPage;
