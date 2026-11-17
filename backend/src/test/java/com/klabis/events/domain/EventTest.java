@@ -2978,12 +2978,12 @@ class EventTest {
         @DisplayName("update() should reject two categories with the same name")
         void updateShouldRejectDuplicateCategoryName() {
             Event event = Event.create(defaultCreateEvent());
-            EventCategory first = EventCategory.create("M21");
-            EventCategory duplicate = new EventCategory(EventCategoryId.generate(), null, "M21", null);
+            EventCategoryUpdate first = new EventCategoryUpdate(null, "M21", null);
+            EventCategoryUpdate duplicate = new EventCategoryUpdate(null, "M21", null);
 
             assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of(first, duplicate))
+                    .categoryChanges(List.of(first, duplicate))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("name");
@@ -2993,12 +2993,12 @@ class EventTest {
         @DisplayName("update() should allow categories with no orisId set (multiple nulls)")
         void updateShouldAllowMultipleNullOrisIds() {
             Event event = Event.create(defaultCreateEvent());
-            EventCategory first = EventCategory.create("M21");
-            EventCategory second = EventCategory.create("W21");
+            EventCategoryUpdate first = new EventCategoryUpdate(null, "M21", null);
+            EventCategoryUpdate second = new EventCategoryUpdate(null, "W21", null);
 
             event.update(EventUpdateEventBuilder.builder()
                     .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
-                    .categories(List.of(first, second))
+                    .categoryChanges(List.of(first, second))
                     .build());
 
             assertThat(event.getCategories()).extracting(EventCategory::name).containsExactly("M21", "W21");
@@ -3262,6 +3262,116 @@ class EventTest {
 
             assertThatThrownBy(() -> event.syncRegistrationFromOris(memberId, orisEntry("101")))
                     .isInstanceOf(OrisCategoryNotYetSynchronisedException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("update() category change resolution")
+    class UpdateCategoryResolution {
+
+        private Event eventWith(EventCategory... categories) {
+            return EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCategories(List.of(categories))
+                    .build();
+        }
+
+        private Event.UpdateEvent updateWith(Event event, EventCategoryUpdate... changes) {
+            return EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .categoryChanges(List.of(changes))
+                    .build();
+        }
+
+        @Test
+        @DisplayName("a change naming an existing category keeps its id and orisId and adopts the new name and fee")
+        void keepsIdAndOrisIdOfExistingCategory() {
+            EventCategory m21 = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            Event event = eventWith(m21);
+            Money fee = Money.ofCzk(BigDecimal.valueOf(200));
+
+            event.update(updateWith(event, new EventCategoryUpdate(m21.id(), "M21 Elite", fee)));
+
+            assertThat(event.getCategories()).hasSize(1);
+            EventCategory updated = event.getCategories().get(0);
+            assertThat(updated.id()).isEqualTo(m21.id());
+            assertThat(updated.orisId()).isEqualTo("42");
+            assertThat(updated.name()).isEqualTo("M21 Elite");
+            assertThat(updated.fee()).contains(fee);
+        }
+
+        @Test
+        @DisplayName("a change naming a category that does not belong to the event is rejected")
+        void rejectsUnknownCategoryId() {
+            Event event = eventWith(EventCategory.create("M21"));
+            EventCategoryId foreignId = EventCategoryId.generate();
+
+            assertThatThrownBy(() -> event.update(updateWith(event,
+                    new EventCategoryUpdate(foreignId, "M21", null))))
+                    .isInstanceOf(UnknownEventCategoryException.class)
+                    .hasMessageContaining(foreignId.toString());
+        }
+
+        @Test
+        @DisplayName("a change without an id becomes a new category with a generated id")
+        void generatesIdForChangeWithoutId() {
+            Event event = eventWith();
+
+            event.update(updateWith(event, new EventCategoryUpdate(null, "W21", null)));
+
+            assertThat(event.getCategories()).hasSize(1);
+            EventCategory created = event.getCategories().get(0);
+            assertThat(created.id()).isNotNull();
+            assertThat(created.orisId()).isNull();
+            assertThat(created.name()).isEqualTo("W21");
+        }
+
+        @Test
+        @DisplayName("a current category no change names is dropped")
+        void dropsCurrentCategoryAbsentFromChanges() {
+            EventCategory m21 = EventCategory.create("M21");
+            EventCategory w35 = EventCategory.create("W35");
+            Event event = eventWith(m21, w35);
+
+            event.update(updateWith(event, new EventCategoryUpdate(m21.id(), "M21", null)));
+
+            assertThat(event.getCategories()).extracting(EventCategory::id).containsExactly(m21.id());
+        }
+
+        @Test
+        @DisplayName("duplicate names are still rejected after resolution")
+        void rejectsDuplicateNamesAfterResolution() {
+            EventCategory m21 = EventCategory.create("M21");
+            Event event = eventWith(m21);
+
+            assertThatThrownBy(() -> event.update(updateWith(event,
+                    new EventCategoryUpdate(m21.id(), "W21", null),
+                    new EventCategoryUpdate(null, "W21", null))))
+                    .isInstanceOf(DuplicateCategoryNameException.class);
+        }
+
+        @Test
+        @DisplayName("empty changes clear all categories")
+        void emptyChangesClearCategories() {
+            Event event = eventWith(EventCategory.create("M21"));
+
+            event.update(updateWith(event));
+
+            assertThat(event.getCategories()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("an unknown category id is reported ahead of the not-updatable status error")
+        void reportsUnknownCategoryBeforeStatusError() {
+            EventCategory m21 = EventCategory.create("M21");
+            Event event = eventWith(m21);
+            event.publish();
+            event.finish();
+            EventCategoryId foreignId = EventCategoryId.generate();
+
+            assertThatThrownBy(() -> event.update(updateWith(event,
+                    new EventCategoryUpdate(foreignId, "M21", null))))
+                    .isInstanceOf(UnknownEventCategoryException.class)
+                    .hasMessageContaining(foreignId.toString());
         }
     }
 }

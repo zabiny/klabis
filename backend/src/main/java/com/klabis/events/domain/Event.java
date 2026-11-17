@@ -144,7 +144,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventTypeId eventTypeId,
 
             RegistrationDeadlines registrationDeadlines,
-            List<EventCategory> categories,
+            List<EventCategoryUpdate> categoryChanges,
             EventRanking ranking,
             Money baseEntryFee,
             Boolean sharedTransportEnabled,
@@ -161,7 +161,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     new LinkedHashSet<>(event.coordinators),
                     event.eventTypeId,
                     event.registrationDeadlines,
-                    event.categories,
+                    event.categories.stream()
+                            .map(c -> new EventCategoryUpdate(c.id(), c.name(), c.feeOverride()))
+                            .toList(),
                     event.ranking,
                     event.baseEntryFee,
                     event.sharedTransportEnabled,
@@ -647,6 +649,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalArgumentException if validation fails
      */
     public void update(UpdateEvent command) {
+        // Resolved before the status check so an unknown category id is reported ahead of
+        // "not updatable" — the REST adapter resolved it before the service was called.
+        List<EventCategory> resolvedCategories = resolveCategories(command.categoryChanges());
+
         if (status == EventStatus.FINISHED) {
             throw EventNotUpdatableException.finished();
         }
@@ -660,7 +666,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         RegistrationDeadlines deadlines = command.registrationDeadlines() != null
                 ? command.registrationDeadlines() : RegistrationDeadlines.none();
         validateDeadlinesAgainstEventDate(deadlines, command.eventDate());
-        validateCategories(command.categories());
+        validateCategories(resolvedCategories);
 
         this.name = command.name();
         this.eventDate = command.eventDate();
@@ -670,7 +676,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.coordinators = command.coordinators() != null ? new LinkedHashSet<>(command.coordinators()) : new LinkedHashSet<>();
         this.eventTypeId = command.eventTypeId();
         this.registrationDeadlines = deadlines;
-        this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
+        this.categories = new ArrayList<>(resolvedCategories);
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
         this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
@@ -715,6 +721,31 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.baseEntryFee = command.baseEntryFee();
 
         registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.SYNCHRONISATION));
+    }
+
+    /**
+     * A change naming an id updates that category and keeps its {@code orisId}; a change without an
+     * id adds a category; a current category no change names is dropped. An id that names no current
+     * category is rejected.
+     */
+    private List<EventCategory> resolveCategories(List<EventCategoryUpdate> categoryChanges) {
+        List<EventCategoryUpdate> changes = categoryChanges != null ? categoryChanges : List.of();
+        Map<EventCategoryId, EventCategory> currentById = this.categories.stream()
+                .collect(Collectors.toMap(EventCategory::id, c -> c));
+
+        List<EventCategory> resolved = new ArrayList<>();
+        for (EventCategoryUpdate change : changes) {
+            if (change.id() == null) {
+                resolved.add(new EventCategory(EventCategoryId.generate(), null, change.name(), change.fee()));
+                continue;
+            }
+            EventCategory existing = currentById.get(change.id());
+            if (existing == null) {
+                throw new UnknownEventCategoryException(change.id());
+            }
+            resolved.add(new EventCategory(existing.id(), existing.orisId(), change.name(), change.fee()));
+        }
+        return resolved;
     }
 
     /**
