@@ -1,38 +1,21 @@
 import {type ReactElement, useCallback, useMemo} from "react";
 import type {ListTransactionsItemResource} from "../../api";
-import {KlabisTable, TableCell} from "../../components/KlabisTable";
-import {Card, Spinner} from "../../components/UI";
+import {KlabisTable, TableCell} from "../KlabisTable";
+import {Spinner} from "../UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useHalTableQuery} from "../../hooks/useHalTableQuery.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
-import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
-import {Button} from "../../components/UI";
+import type {TableCellRenderProps} from "../KlabisTable/types.ts";
+import {Button} from "../UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {parseHalHref, serializeHalHref, toHref} from "../../api/hateoas.ts";
 import {halResource} from "../../api/halResource.ts";
-import {MemberName} from "../../components/members/MemberName.tsx";
+import {MemberName} from "../members/MemberName.tsx";
 
 type TransactionItem = ListTransactionsItemResource;
-
-export const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
-    const isNegative = typeof balance === 'number' && balance < 0;
-
-    return (
-        <Card className="p-6">
-            <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase font-semibold text-text-secondary tracking-wide">
-                    {labels.finance.balance}
-                </p>
-                <p className={`text-4xl font-bold ${isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
-                    {formatCurrency(balance, currency)}
-                </p>
-            </div>
-        </Card>
-    );
-};
 
 const TypeCell = ({type}: {type: string}): ReactElement => {
     if (type === 'DEPOSIT') {

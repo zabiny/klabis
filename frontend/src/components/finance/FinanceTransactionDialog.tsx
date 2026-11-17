@@ -8,7 +8,7 @@ import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import type {HalFormsTemplate, Link} from '../../api/types';
 import type {GetAccountResource} from '../../api';
 import type {components} from '../../api/klabisApi';
-import {formatCurrency} from '../../pages/finances/financeFormatters';
+import {formatCurrency} from './financeFormatters';
 
 export interface FinanceTransactionDialogProps {
     accountLink: Link;

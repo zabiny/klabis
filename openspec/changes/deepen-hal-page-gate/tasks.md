@@ -22,9 +22,9 @@
 
 ## 4. Dissolve `FinancesPage.tsx`
 
-- [ ] 4.1 Move `BalanceCard`, `TransactionsTable` and `TransactionReverseRequest` to `components/finance/`; move `FinancesPage.test.tsx` with them
-- [ ] 4.2 Update imports in `pages/finances/MemberAccountManagePage.tsx` and `pages/finances/ReverseConfirmModal.tsx`; delete `pages/finances/FinancesPage.tsx` and confirm no references remain
-- [ ] 4.3 Verify: finance slice tests green
+- [x] 4.1 Move `BalanceCard`, `TransactionsTable` and `TransactionReverseRequest` to `components/finance/`; move `FinancesPage.test.tsx` with them
+- [x] 4.2 Update imports in `pages/finances/MemberAccountManagePage.tsx` and `pages/finances/ReverseConfirmModal.tsx`; delete `pages/finances/FinancesPage.tsx` and confirm no references remain
+- [x] 4.3 Verify: finance slice tests green
 
 ## 5. Verification
 
