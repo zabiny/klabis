@@ -18,10 +18,10 @@
 
 ## 3. Page migration
 
-- [ ] 3.1 `EventsPage` renders `ImportOrisEventsButton` once and drops `isImportModalOpen`, the three template variables and the trigger button
-- [ ] 3.2 `EventsPage.test.tsx` drops the `useOrisEventImport` and `ImportOrisEventModal` mocks; the real module is rendered and the page test asserts clicking the button opens the dialog
-- [ ] 3.3 Delete `hooks/useOrisEventImport.ts`, `hooks/useOrisEventImport.test.ts`, `components/events/ImportOrisEventModal.tsx`, `components/events/ImportOrisEventModal.test.tsx`
-- [ ] 3.4 Verify: page and component slice tests green
+- [x] 3.1 `EventsPage` renders `ImportOrisEventsButton` once and drops `isImportModalOpen`, the three template variables and the trigger button
+- [x] 3.2 `EventsPage.test.tsx` drops the `useOrisEventImport` and `ImportOrisEventModal` mocks; the real module is rendered and the page test asserts clicking the button opens the dialog
+- [x] 3.3 Delete `hooks/useOrisEventImport.ts`, `hooks/useOrisEventImport.test.ts`, `components/events/ImportOrisEventModal.tsx`, `components/events/ImportOrisEventModal.test.tsx`
+- [x] 3.4 Verify: page and component slice tests green
 
 ## 4. Verification
 

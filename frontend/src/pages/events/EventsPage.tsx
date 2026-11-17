@@ -14,9 +14,8 @@ import {getActionVariant} from "../../utils/actionVariants.ts";
 import {EventRegistrationDialog} from "../../components/events/EventRegistrationDialog.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {getEnumLabel, labels} from "../../localization";
-import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
+import {ImportOrisEventsButton} from "../../components/events/ImportOrisEventsButton.tsx";
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
-import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
 import {Button, DetailRow, Tooltip} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
@@ -96,7 +95,6 @@ const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactEl
     const {navigateToResource, refetch} = useHalPageData();
     const {getUser} = useAuth();
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const actionDialog = useTemplateDialog({size: '2xl'});
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
@@ -107,19 +105,10 @@ const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactEl
         {staleTime: 5 * 60 * 1000},
     );
 
-    const importBatchTemplate = resourceData._templates?.importEventsBatch;
-    const importTemplate = resourceData._templates?.importEvent;
-    const activeImportTemplate = importBatchTemplate ?? importTemplate;
     const bulkSyncTemplate = resourceData._templates?.syncAllUpcomingFromOris;
     // `status` is returned to everyone; `_templates.createEvent` is present exactly for EVENTS:MANAGE.
     const canManageEvents = Boolean(resourceData._templates?.createEvent);
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
-
-    const orisImport = useOrisEventImport(
-        activeImportTemplate,
-        isImportModalOpen,
-        {onImported: () => refetch()},
-    );
 
     const renderActionsCell = ({item: event}: TableCellRenderProps<EventListData>) => {
         const actions = halResource(event);
@@ -177,11 +166,7 @@ const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactEl
                             {labels.templates.syncAllUpcomingFromOris}
                         </Button>
                     )}
-                    {activeImportTemplate && (
-                        <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
-                            {labels.templates.importEvent}
-                        </Button>
-                    )}
+                    <ImportOrisEventsButton resource={resourceData}/>
                     <HalFormButton name="createEvent" modal={false} fieldsFactory={eventFormFieldsFactory}>
                         {({renderInput, renderField, hasField}: HalFormPanelRenderHelpers) => {
                             const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
@@ -353,14 +338,6 @@ const EventsPageContent = ({resourceData}: {resourceData: HalResponse}): ReactEl
                 <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>
-
-        {activeImportTemplate && (
-            <ImportOrisEventModal
-                isOpen={isImportModalOpen}
-                onClose={() => setIsImportModalOpen(false)}
-                {...orisImport}
-            />
-        )}
 
         {bulkSyncTemplate && (
             <BulkSyncOrisModal
