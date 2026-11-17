@@ -11,6 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX, Wallet} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
@@ -85,12 +86,12 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetailContentProps) => {
     const {navigateToResource, getResourceLink} = useHalPageData();
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
-    const accountActivationDialog = useTemplateDialog('sendMemberAccountActivation', {
-        resource: resourceData,
-        title: labels.dialogTitles.sendMemberAccountActivation,
+    const memberActions = halResource(resourceData);
+    const accountActivationAction = memberActions.template('sendMemberAccountActivation');
+    const suspendAction = memberActions.template('suspendMember');
+    const accountActivationDialog = useTemplateDialog({
         size: '2xl',
         note: <p className="text-text-secondary">{labels.accountActivation.confirm}</p>,
-        successMessage: labels.accountActivation.sent,
         submitLabel: labels.templates.sendMemberAccountActivation,
     });
 
@@ -101,9 +102,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
         clearNegativeBalanceWarning,
         onSubmitError: onSuspendSubmitError,
     } = useSuspendMemberAction();
-    const suspendDialog = useTemplateDialog('suspendMember', {
-        resource: resourceData,
-        title: labels.dialogTitles.suspendMember,
+    const suspendDialog = useTemplateDialog({
         size: '2xl',
         onSubmitError: onSuspendSubmitError,
     });
@@ -360,20 +359,22 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            {hasEditTemplate && suspendDialog.available && (
+                            {hasEditTemplate && suspendAction && (
                                 <Button
                                     variant="danger"
-                                    onClick={() => suspendDialog.open()}
+                                    onClick={() => suspendDialog.open(suspendAction)}
                                     startIcon={<UserX className="w-4 h-4"/>}
                                 >
                                     {labels.templates.suspendMember}
                                 </Button>
                             )}
                             {hasEditTemplate && <HalFormButton name="resumeMember" modal={true}/>}
-                            {accountActivationDialog.available && (
+                            {accountActivationAction && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => accountActivationDialog.open()}
+                                    onClick={() => accountActivationDialog.open(accountActivationAction, {
+                                        successMessage: labels.accountActivation.sent,
+                                    })}
                                     startIcon={<UserPlus className="w-4 h-4"/>}
                                 >
                                     {labels.templates.sendMemberAccountActivation}

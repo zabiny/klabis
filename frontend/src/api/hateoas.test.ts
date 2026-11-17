@@ -1,4 +1,4 @@
-import {parseHalHref, selfHref, serializeHalHref} from './hateoas';
+import {asLinkArray, parseHalHref, selfHref, serializeHalHref, toHref} from './hateoas';
 
 describe('hateoas', () => {
     describe('parseHalHref', () => {
@@ -58,5 +58,58 @@ describe('selfHref', () => {
         expect(selfHref({_links: {}})).toBeUndefined();
         expect(selfHref(null)).toBeUndefined();
         expect(selfHref(undefined)).toBeUndefined();
+    });
+});
+
+describe('toHref', () => {
+    it('returns the href of a single link', () => {
+        expect(toHref({href: '/api/things/1'})).toBe('/api/things/1');
+    });
+
+    it('passes a string through unchanged', () => {
+        expect(toHref('/api/things/1' as never)).toBe('/api/things/1');
+    });
+
+    it('takes the first element of an array relation', () => {
+        expect(toHref([{href: '/api/things/1'}, {href: '/api/things/2'}])).toBe('/api/things/1');
+    });
+
+    it('recurses into a nested array', () => {
+        expect(toHref([[{href: '/api/things/1'}]] as never)).toBe('/api/things/1');
+    });
+
+    it('throws for an empty array', () => {
+        expect(() => toHref([])).toThrow(/Unknown NavigationTarget/);
+    });
+
+    it('throws for an unknown shape', () => {
+        expect(() => toHref({} as never)).toThrow(/Unknown NavigationTarget/);
+        expect(() => toHref(null as never)).toThrow(/Unknown NavigationTarget/);
+        expect(() => toHref(42 as never)).toThrow(/Unknown NavigationTarget/);
+    });
+
+    it('throws for a link without an href', () => {
+        expect(() => toHref({href: ''})).toThrow(/Chybi hodnota href/);
+    });
+});
+
+describe('asLinkArray', () => {
+    it('returns an empty array for missing links', () => {
+        expect(asLinkArray(undefined)).toEqual([]);
+        expect(asLinkArray(null)).toEqual([]);
+    });
+
+    it('wraps a single link', () => {
+        const link = {href: '/api/things/1'};
+        expect(asLinkArray(link)).toEqual([link]);
+    });
+
+    it('returns an array relation as is', () => {
+        const links = [{href: '/api/things/1'}, {href: '/api/things/2'}];
+        expect(asLinkArray(links)).toEqual(links);
+    });
+
+    it('returns an empty array unchanged', () => {
+        expect(asLinkArray([])).toEqual([]);
     });
 });

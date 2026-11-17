@@ -6,6 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource, type HalLinkAction} from "../../api/halResource";
 import {Badge, Button} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
@@ -53,7 +54,7 @@ export const MembersPage = (): ReactElement => {
         onSubmitError: onSuspendSubmitError,
     } = useSuspendMemberAction();
 
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: '2xl',
         title: (template, name) => template.title ?? name,
         onSubmitError: onSuspendSubmitError,
@@ -69,26 +70,23 @@ export const MembersPage = (): ReactElement => {
     const filterValue = values as MembersFilterValue;
     const extraParams = useMemo(() => toQuery(filterValue), [filterValue]);
 
-    const openPermissionsDialog = (member: MemberSummaryData) => {
-        const permissionsLink = member._links?.permissions;
-        if (!permissionsLink) return;
-        const link = Array.isArray(permissionsLink) ? permissionsLink[0] : permissionsLink;
-        if (!link?.href) return;
-        setPermissionsDialog({member, permissionsUrl: link.href});
+    const openPermissionsDialog = (member: MemberSummaryData, permissionsAction: HalLinkAction) => {
+        setPermissionsDialog({member, permissionsUrl: permissionsAction.href});
     };
 
-    useTakeOverRegistration(resourceData?._templates?.registerMember);
+    useTakeOverRegistration(resourceData);
 
     const renderActionsCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
-        const hasEditTemplate = !!member._templates?.updateMember;
-        const hasPermissionsLink = !!member._links?.permissions;
-        const hasAccountLink = !!member._links?.account;
-        const hasSuspendTemplate = !!member._templates?.suspendMember;
-        const hasResumeTemplate = !!member._templates?.resumeMember;
+        const actions = halResource(member);
+        const accountAction = actions.link('account');
+        const editAction = actions.template('updateMember');
+        const permissionsAction = actions.link('permissions');
+        const suspendAction = actions.template('suspendMember');
+        const resumeAction = actions.template('resumeMember');
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {hasAccountLink && (
+                {accountAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -96,15 +94,13 @@ export const MembersPage = (): ReactElement => {
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            const accountLink = member._links?.account;
-                            const link = Array.isArray(accountLink) ? accountLink[0] : accountLink;
-                            if (link) setTransactionDialogAccount(link as Link);
+                            setTransactionDialogAccount(accountAction.link);
                         }}
                     >
                         <Banknote className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasEditTemplate && (
+                {editAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -118,7 +114,7 @@ export const MembersPage = (): ReactElement => {
                         <Pencil className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasPermissionsLink && (
+                {permissionsAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -126,13 +122,13 @@ export const MembersPage = (): ReactElement => {
                         className="text-gray-500"
                         onClick={(e) => {
                             e.stopPropagation();
-                            openPermissionsDialog(member);
+                            openPermissionsDialog(member, permissionsAction);
                         }}
                     >
                         <Shield className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasSuspendTemplate && (
+                {suspendAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -140,13 +136,13 @@ export const MembersPage = (): ReactElement => {
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member, 'suspendMember');
+                            actionDialog.open(suspendAction);
                         }}
                     >
                         <UserX className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasResumeTemplate && (
+                {resumeAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -154,7 +150,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member, 'resumeMember');
+                            actionDialog.open(resumeAction);
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>

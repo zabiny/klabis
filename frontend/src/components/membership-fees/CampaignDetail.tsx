@@ -3,6 +3,7 @@ import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useHalCollection} from '../../hooks/useHalCollection.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import {halResource} from '../../api/halResource';
 import type {GetPublicationResource} from '../../api';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -14,16 +15,13 @@ export type FeeSelectionCampaignDetail = GetPublicationResource;
 
 export const CampaignDetail = (): ReactElement | null => {
     const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
-    const changeDeadlineDialog = useTemplateDialog('changeDeadline', {
-        resource: resourceData,
-        title: labels.templates.changeDeadline,
+    const campaignActions = halResource(resourceData);
+    const changeDeadlineAction = campaignActions.template('changeDeadline');
+    const closeCampaignAction = campaignActions.template('closeCampaign');
+    const changeDeadlineDialog = useTemplateDialog({
         navigateOnSuccess: false,
     });
-    const closeCampaignDialog = useTemplateDialog('closeCampaign', {
-        resource: resourceData,
-        title: labels.templates.closeCampaign,
-        navigateOnSuccess: false,
-    });
+    const closeCampaignDialog = useTemplateDialog({navigateOnSuccess: false});
 
     const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : undefined;
     const {items: groups} = useHalCollection<FeeGroupSummary>(levelsHref);
@@ -48,12 +46,12 @@ export const CampaignDetail = (): ReactElement | null => {
                     </div>
                 </div>
 
-                {(changeDeadlineDialog.available || closeCampaignDialog.available) && (
+                {(changeDeadlineAction || closeCampaignAction) && (
                     <div className="mt-5 pt-5 border-t border-border-subtle flex flex-wrap gap-2">
-                        {changeDeadlineDialog.available && (
+                        {changeDeadlineAction && (
                             <button
                                 type="button"
-                                onClick={() => changeDeadlineDialog.open()}
+                                onClick={() => changeDeadlineDialog.open(changeDeadlineAction)}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-text-secondary bg-surface border border-border-subtle hover:bg-bg-subtle transition-colors"
                                 aria-label={labels.templates.changeDeadline}
                             >
@@ -61,10 +59,10 @@ export const CampaignDetail = (): ReactElement | null => {
                                 {labels.templates.changeDeadline}
                             </button>
                         )}
-                        {closeCampaignDialog.available && (
+                        {closeCampaignAction && (
                             <button
                                 type="button"
-                                onClick={() => closeCampaignDialog.open()}
+                                onClick={() => closeCampaignDialog.open(closeCampaignAction)}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-error hover:brightness-110 transition-colors"
                                 aria-label={labels.templates.closeCampaign}
                             >

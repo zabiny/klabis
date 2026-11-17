@@ -12,11 +12,11 @@
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/halFormContext.ts';
-import {defaultDialogTitle, useTemplateDialog} from './useTemplateDialog.tsx';
+import {useTemplateDialog} from './useTemplateDialog.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {HalFormFieldFactory} from './halforms';
 import type {HalFormPanelChildren} from './HalFormPanel';
-import type {HalFormsTemplate} from '../../api';
+import {halResource} from '../../api/halResource';
 
 /**
  * Props for HalFormButton component
@@ -95,30 +95,28 @@ export interface HalFormButtonProps {
 export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess, hideLabel}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
-    const templateDialog = useTemplateDialog(name, {
-        resource: resourceData,
+    const templateDialog = useTemplateDialog({
         title: dialogTitle,
         size: '2xl',
         navigateOnSuccess,
         fieldsFactory,
     });
+    const action = halResource(resourceData).template(name);
 
-    if (!resourceData?._templates?.[name]) {
+    if (!action) {
         return null;
     }
 
-    const template: HalFormsTemplate = resourceData._templates[name];
-
     const handleButtonClick = () => {
         if (modal) {
-            templateDialog.open();
+            templateDialog.open(action);
             return;
         }
         displayHalForm({
             templateName: name,
             children,
             fieldsFactory,
-            dialogTitle: dialogTitle ?? defaultDialogTitle(name, template),
+            dialogTitle: dialogTitle ?? action.dialogTitle,
             navigateOnSuccess,
         });
     };
@@ -126,7 +124,7 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
     return (
         <>
             <HalFormTemplateButton
-                template={template}
+                template={action.template}
                 templateName={name}
                 label={label}
                 onClick={handleButtonClick}

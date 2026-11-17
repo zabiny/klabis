@@ -1,0 +1,59 @@
+## 1. Core module
+
+- [x] 1.1 Red: test `halResource(undefined).template('x')` and `.link('y')` return `undefined`; a resource without `_templates`/`_links` returns `undefined` for any name
+- [x] 1.2 Red: test `template(name).href` — `template.target` wins, absent `target` falls back to the resource self link; `link(rel).href` is the link's `href`
+- [x] 1.3 Red: test the text conventions of `template(name)` — `label` from `labels.templates`, else `template.title`, else the name; `dialogTitle` from `labels.dialogTitles`, else `label`; `successMessage` is `<title> — úspěšně uloženo` when the template has a title and `labels.ui.savedSuccessfully` otherwise
+- [x] 1.4 Red: test `link(rel)` on a single link and on an array — the first non-`templated` link is returned; `label` from `labels.links`, else `link.title`, else the rel
+- [x] 1.5 Green: implement `src/api/halResource.ts` (`halResource`, `HalTemplateAction`, `HalLinkAction`, `getLinkLabel`)
+- [x] 1.6 Red/Green: add the missing tests for `toHref` and `asLinkArray`, including the empty-array and unknown-shape throws
+- [x] 1.7 Green: delete `templateTarget` from `src/api/hateoas.ts` and move its four callers to the module (`NotificationSettingsPage`, `usePushReregistration`, `FinancesPage`, `EventDetailPage`)
+- [x] 1.8 Verify: module, `hateoas` and migrated-caller tests green
+
+## 2. Dialog, button and form pipeline
+
+- [x] 2.1 Red: test `useTemplateDialog.open(action, overrides)` — submits to `action.href`; per-open overrides win over the action's texts; a `undefined` action does not open; success, toast, `navigateOnSuccess` and `onSubmitError` behaviour is unchanged
+- [x] 2.2 Green: refactor `useTemplateDialog` to take a `HalTemplateAction`; remove `TemplateDialogOptions.resource`, `templateOf`, `available` and `availableOn`
+- [x] 2.3 Green: `HalFormDisplay` takes an optional resolved `href` that wins over `template.target ?? resourceUrl ?? selfHref ?? route`; the dialog and button pass it, and the legacy chain remains only for direct (non-action) callers such as the inline panels
+- [x] 2.4 Green: `HalFormButton` resolves the template through `halResource` while keeping every existing prop (`modal`, `label`, `icon`, `variant`, `dialogTitle`, `navigateOnSuccess`, `hideLabel`, `fieldsFactory`)
+- [x] 2.5 Green: `HalRouteContext.getResourceLink` delegates to `halResource().link()` with identical `templated` behaviour
+- [x] 2.6 Verify: `useTemplateDialog`, `HalFormButton`, `HalFormDisplay`, `HalRouteContext` and `HalFormsSection` tests green
+
+## 3. Dialog call sites (phase 1)
+
+- [x] 3.1 Migrate `GroupDetailPage` (7 dialogs) and `TrainingGroupDetailPage` (5 dialogs); preserve each label, dialog title and success message exactly
+- [x] 3.2 Migrate `RulesTable` (3), `CampaignDetail` (2) and `LegalGuardiansSection` (1), keeping per-row availability and `fieldsFactory`/`initialData` overrides at the call site
+- [x] 3.3 Migrate `MemberDetailPage` (2), `MembersPage` (1), `MembershipFeeGroupDetailPage` (1) and `MembershipFeeTierDetailPage` (1), including the `status === 'EDITABLE'` conjunction in `MembershipFeeGroupDetailPage`
+- [x] 3.4 Migrate the late-bound dialogs: `EventsPage`, `EventTypesPage`, `CategoryPresetsPage` (`size` stays at the call site)
+- [x] 3.5 Verify: affected page and component tests green
+
+## 4. Phase 1 verification
+
+- [x] 4.1 Full frontend unit suite green
+- [x] 4.2 `npm run build` (type check) and `npm run lint` green
+- [x] 4.3 E2E smoke of the affected journeys — groups, training groups, member detail (activation, suspension), events, event types, category presets, fee campaign detail, fee tiers
+- [x] 4.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+
+## 5. Row actions (phase 2)
+
+- [x] 5.1 Migrate `MembersPage` and `EventsPage` `_actions` columns to `halResource(row)` for both template and link actions
+- [x] 5.2 Migrate `EventTypesPage` and `CategoryPresetsPage` `_actions` columns; keep the submit target fallback to the row self link (both were already on the module after phase 1)
+- [x] 5.3 Migrate `FinancesPage` and `EventDetailPage` `_actions` columns, including the `template.target` presence checks (`FinancesPage` was already migrated in 1.7)
+- [x] 5.4 Add the `labels.links` entries the migrated columns need so every rendered label stays identical
+- [x] 5.5 Verify: affected page tests green
+
+## 6. Phase 2 verification
+
+- [x] 6.1 Full frontend unit suite green
+- [x] 6.2 `npm run build` (type check) and `npm run lint` green
+- [x] 6.3 E2E smoke of the affected journeys — member list, event list and detail, event types, category presets, finances
+- [x] 6.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+
+## 7. Review fixes
+
+- [x] 7.1 Carry the source resource on `HalTemplateAction` and prefill the dialog from it; delete the `initialData` casts; keep `initialData?: object` for genuine prefill
+- [x] 7.2 Restore the target-data prefill by feeding `useHalFormData` the source URL, not the resolved `href`; regression test proves the OPTIONS/GET prefill runs
+- [x] 7.3 One rule per text (`templateLabel`, `templateDialogTitle`, `savedMessage`, `getLinkLabel` in `labels.ts`); delete `defaultDialogTitle`
+- [x] 7.4 Delete the call-site title/success-message overrides that only restate the action's defaults; keep the genuinely different ones
+- [x] 7.5 `link(rel)` reuses `asLinkArray`; one `halResource(...)` per row and per gate+handler pair
+- [x] 7.6 Replace the fabricated envelope in `openCancelInvitation` with a per-open `template` override
+- [x] 7.7 Verify: full unit suite, build, lint and E2E smoke green after the fixes

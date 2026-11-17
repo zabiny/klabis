@@ -1,7 +1,7 @@
 import {useQueryClient} from '@tanstack/react-query';
 import {useEffect} from 'react';
 import {authorizedFetch} from '../api/authorizedFetch';
-import {templateTarget} from '../api/hateoas';
+import {halResource} from '../api/halResource';
 import type {components} from '../api/klabisApi';
 import {invalidateAuthorizedQueries} from '../hooks/useAuthorizedFetch';
 import {PUSH_SUBSCRIPTION_CHANGED} from './pushHandlers';
@@ -23,7 +23,7 @@ async function reregisterIfEndpointChanged(settingsHref: string): Promise<boolea
     const settings: NotificationSettings = await (await authorizedFetch(settingsHref)).json();
     const known = settings.devices?.some(device => device.endpoint === subscription.endpoint);
     if (!known) {
-        const target = templateTarget(settings._templates?.registerNotificationDevice, settings);
+        const target = halResource(settings).template('registerNotificationDevice')?.href;
         if (!target) {
             return false;
         }

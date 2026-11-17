@@ -3,15 +3,20 @@ import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {type QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
-import {type ReactElement, useRef} from 'react';
+import {type ReactElement} from 'react';
 import {vi} from 'vitest';
-import {useTemplateDialog, type TemplateDialogOptions} from './useTemplateDialog.tsx';
+import {
+    type TemplateDialogOptions,
+    type TemplateDialogOverrides,
+    useTemplateDialog,
+} from './useTemplateDialog.tsx';
 import {HalRouteContext} from '../../contexts/halRouteContext.ts';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {createTestQueryClient, halRouteValue, LocationProbe, stubFetch, ToastProbe} from '../../__mocks__/halDialogTest.tsx';
 import {createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalFormsTemplate, HalResponse} from '../../api';
+import {type HalTemplateAction, halResource} from '../../api/halResource';
 import type {HalFormFieldFactory} from './halforms';
 
 vi.mock('../../api/klabisUserManager', () => ({
@@ -37,27 +42,27 @@ const resourceWith = (templates: Record<string, HalFormsTemplate>, self?: string
     _templates: templates,
 } as HalResponse);
 
+const actionFor = (
+    templates: Record<string, HalFormsTemplate>,
+    name: string,
+    self?: string,
+): HalTemplateAction => {
+    const action = halResource(resourceWith(templates, self)).template(name);
+    if (!action) throw new Error(`template ${name} is missing from the fixture`);
+    return action;
+};
+
 interface HarnessProps {
-    name?: string;
+    action?: HalTemplateAction;
+    overrides?: TemplateDialogOverrides;
     options?: TemplateDialogOptions;
-    row?: HalResponse;
-    rowTemplateName?: string;
-    onApi?: (api: ReturnType<typeof useTemplateDialog>) => void;
 }
 
-const Harness = ({name, options, row, rowTemplateName, onApi}: HarnessProps): ReactElement => {
-    const d = useTemplateDialog(name, options);
-    onApi?.(d);
-    const lastApi = useRef(d);
-    lastApi.current = d;
+const Harness = ({action, overrides, options}: HarnessProps): ReactElement => {
+    const d = useTemplateDialog(options);
     return (
         <div>
-            <span data-testid="available">{String(d.available)}</span>
-            {row && rowTemplateName && (
-                <span data-testid="available-on-row">{String(d.availableOn(row, rowTemplateName))}</span>
-            )}
-            <button onClick={() => d.open()}>open</button>
-            {row && <button onClick={() => d.open(row, rowTemplateName)}>open-row</button>}
+            <button onClick={() => d.open(action, overrides)}>open</button>
             {d.dialog}
         </div>
     );
@@ -92,68 +97,102 @@ describe('useTemplateDialog', () => {
             </QueryClientProvider>
         );
 
-    describe('availability', () => {
-        it('is available when the resource has the named template', () => {
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
-            expect(screen.getByTestId('available')).toHaveTextContent('true');
+    describe('opening', () => {
+        it('is not rendered before open()', () => {
+            renderHarness({action: actionFor({publishEvent: template()}, 'publishEvent')});
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
-        it('is unavailable when the resource lacks the template', () => {
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({})}});
-            expect(screen.getByTestId('available')).toHaveTextContent('false');
+        it('does not open when the action is undefined', async () => {
+            const user = userEvent.setup();
+            renderHarness({action: undefined});
+            await user.click(screen.getByText('open'));
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('submit URL', () => {
+        const submit = async (user: ReturnType<typeof userEvent.setup>) => {
+            await screen.findByRole('button', {name: /odeslat/i});
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+        };
+
+        it('submits to the template target carried by the action', async () => {
+            const user = userEvent.setup();
+            const res = {publishEvent: template({target: '/api/target-url'})};
+            renderHarness({action: actionFor(res, 'publishEvent', '/api/self-url')});
+            await user.click(screen.getByText('open'));
+            await submit(user);
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/target-url');
         });
 
-        it('is unavailable without a resource', () => {
-            renderHarness({name: 'publishEvent'});
-            expect(screen.getByTestId('available')).toHaveTextContent('false');
+        it('submits to the resource self link when the template has no target', async () => {
+            const user = userEvent.setup();
+            const res = {publishEvent: template({target: undefined})};
+            renderHarness({action: actionFor(res, 'publishEvent', 'https://localhost:8443/api/rows/7')});
+            await user.click(screen.getByText('open'));
+            await submit(user);
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/rows/7');
         });
 
-        it('is unavailable without a name', () => {
-            renderHarness({options: {resource: resourceWith({publishEvent: template()})}});
-            expect(screen.getByTestId('available')).toHaveTextContent('false');
+        it('falls back to the route pathname when the action has no href', async () => {
+            const user = userEvent.setup();
+            const res = {publishEvent: template({target: undefined})};
+            renderHarness({action: actionFor(res, 'publishEvent')}, '/members/42');
+            await user.click(screen.getByText('open'));
+            await submit(user);
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/members/42');
         });
+    });
 
-        it('availableOn checks a given resource and template name', () => {
-            const row = resourceWith({editRow: template()});
-            renderHarness({row, rowTemplateName: 'editRow'});
-            expect(screen.getByTestId('available-on-row')).toHaveTextContent('true');
-        });
+    describe('target data prefill', () => {
+        it('prefills from the template target when the dialog supplies a resolved href', async () => {
+            const user = userEvent.setup();
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createMockResponse(null, 200, {Allow: 'GET, POST'});
+                return createMockResponse({reason: 'Předvyplněno'}, 200);
+            });
+            const res = {publishEvent: template({target: '/api/members/1/prefill'})};
+            renderHarness({action: actionFor(res, 'publishEvent', '/api/members/1')});
 
-        it('availableOn is false when the row lacks the template', () => {
-            const row = resourceWith({});
-            renderHarness({row, rowTemplateName: 'editRow'});
-            expect(screen.getByTestId('available-on-row')).toHaveTextContent('false');
+            await user.click(screen.getByText('open'));
+
+            expect(await screen.findByDisplayValue('Předvyplněno')).toBeInTheDocument();
+            expect(fetchSpy.mock.calls.some(([url, init]) =>
+                (init as RequestInit | undefined)?.method !== 'OPTIONS' && String(url).includes('/prefill')))
+                .toBe(true);
         });
     });
 
     describe('dialog title', () => {
-        it('is not rendered before open()', () => {
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
-
-        it('defaults to the localized dialog title', async () => {
+        it('defaults to the action dialog title', async () => {
             const user = userEvent.setup();
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
+            renderHarness({action: actionFor({publishEvent: template()}, 'publishEvent')});
             await user.click(screen.getByText('open'));
             expect(await screen.findByRole('dialog')).toHaveTextContent('Publikování akce');
         });
 
-        it('falls back to the localized template label, then template title', async () => {
+        it('falls back to the action label, then the template title', async () => {
             const user = userEvent.setup();
-            const {unmount} = renderHarness({name: 'updateEvent', options: {resource: resourceWith({updateEvent: template()})}});
+            const {unmount} = renderHarness({action: actionFor({updateEvent: template()}, 'updateEvent')});
             await user.click(screen.getByText('open'));
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Upravit');
             unmount();
 
-            renderHarness({name: 'customThing', options: {resource: resourceWith({customThing: template({title: 'Custom title'})})}});
+            renderHarness({action: actionFor({customThing: template({title: 'Custom title'})}, 'customThing')});
             await user.click(screen.getByText('open'));
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Custom title');
         });
 
-        it('explicit string title wins', async () => {
+        it('explicit string title wins over the action dialog title', async () => {
             const user = userEvent.setup();
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()}), title: 'Moje'}});
+            renderHarness({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {title: 'Moje'},
+            });
             await user.click(screen.getByText('open'));
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Moje');
         });
@@ -161,32 +200,46 @@ describe('useTemplateDialog', () => {
         it('title callback receives the template and its name', async () => {
             const user = userEvent.setup();
             renderHarness({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template({title: 'T1'})}), title: (t, n) => `Vlastní: ${t.title} ${n}`},
+                action: actionFor({publishEvent: template({title: 'T1'})}, 'publishEvent'),
+                options: {title: (t, n) => `Vlastní: ${t.title} ${n}`},
             });
             await user.click(screen.getByText('open'));
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Vlastní: T1 publishEvent');
         });
 
-        it('renders the note under the title', async () => {
+        it('per-open title override wins over the option and the action', async () => {
             const user = userEvent.setup();
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()}), note: 'Opravdu?'}});
+            renderHarness({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {title: 'Základ'},
+                overrides: {title: 'Varianta'},
+            });
+            await user.click(screen.getByText('open'));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Varianta');
+        });
+
+        it('renders the option note under the title', async () => {
+            const user = userEvent.setup();
+            renderHarness({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {note: 'Opravdu?'},
+            });
             await user.click(screen.getByText('open'));
             expect(await screen.findByText('Opravdu?')).toBeInTheDocument();
         });
     });
 
     describe('overrides and initialData', () => {
-        it('overrides apply to one opening only', async () => {
+        it('per-open overrides apply to one opening only', async () => {
             const user = userEvent.setup();
             const onSubmitSuccess = vi.fn();
-            const row = resourceWith({deleteRow: template({title: 'Delete row'})});
+            const action = actionFor({deleteRow: template({title: 'Delete row'})}, 'deleteRow');
             const Probe = () => {
-                const d = useTemplateDialog('deleteRow', {title: 'Základ'});
+                const d = useTemplateDialog({title: 'Základ'});
                 return (
                     <div>
-                        <button onClick={() => d.open(row, undefined, {title: 'Varianta', note: 'Pozn', onSubmitSuccess})}>variant</button>
-                        <button onClick={() => d.open(row)}>plain</button>
+                        <button onClick={() => d.open(action, {title: 'Varianta', note: 'Pozn', onSubmitSuccess})}>variant</button>
+                        <button onClick={() => d.open(action)}>plain</button>
                         {d.dialog}
                     </div>
                 );
@@ -213,18 +266,18 @@ describe('useTemplateDialog', () => {
             expect(screen.queryByText('Pozn')).not.toBeInTheDocument();
         });
 
-        it('initialData replaces the prefill while the URL still comes from the resource', async () => {
+        it('initialData replaces the prefill while the URL still comes from the action', async () => {
             const user = userEvent.setup();
-            const res = resourceWith({
+            const res = {
                 setGuardians: template({
                     method: 'PUT',
                     target: undefined,
                     properties: [{name: 'legalGuardians', prompt: 'Zástupci', type: 'text'}],
                 }),
-            }, '/api/members/5');
+            };
             renderHarness({
-                name: 'setGuardians',
-                options: {resource: res, initialData: {legalGuardians: 'u-1'}},
+                action: actionFor(res, 'setGuardians', '/api/members/5'),
+                options: {initialData: {legalGuardians: 'u-1'}},
             });
             await user.click(screen.getByText('open'));
             await user.click(await screen.findByRole('button', {name: /odeslat/i}));
@@ -232,59 +285,60 @@ describe('useTemplateDialog', () => {
             expect(writeCalls()[0][0]).toBe('/api/members/5');
             expect(JSON.parse((writeCalls()[0][1] as RequestInit).body as string)).toMatchObject({legalGuardians: 'u-1'});
         });
-    });
 
-    describe('submit URL', () => {
-        const submit = async (user: ReturnType<typeof userEvent.setup>) => {
-            await screen.findByRole('button', {name: /odeslat/i});
-            await user.click(screen.getByRole('button', {name: /odeslat/i}));
-        };
-
-        it('uses template.target first', async () => {
+        it('per-open initialData wins over the option', async () => {
             const user = userEvent.setup();
-            const res = resourceWith({publishEvent: template({target: '/api/target-url'})}, '/api/self-url');
-            renderHarness({name: 'publishEvent', options: {resource: res}});
+            const res = {
+                editRow: template({
+                    method: 'PATCH',
+                    target: undefined,
+                    properties: [{name: 'reason', prompt: 'Důvod', type: 'text'}],
+                }),
+            };
+            renderHarness({
+                action: actionFor(res, 'editRow', '/api/rows/3'),
+                options: {initialData: {reason: 'z-option'}},
+                overrides: {initialData: {reason: 'z-row'}},
+            });
             await user.click(screen.getByText('open'));
-            await submit(user);
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(writeCalls()).toHaveLength(1));
-            expect(writeCalls()[0][0]).toBe('/api/target-url');
-        });
-
-        it('uses the self link path when the template has no target', async () => {
-            const user = userEvent.setup();
-            const res = resourceWith({publishEvent: template({target: undefined})}, 'https://localhost:8443/api/rows/7');
-            renderHarness({name: 'publishEvent', options: {resource: res}});
-            await user.click(screen.getByText('open'));
-            await submit(user);
-            await waitFor(() => expect(writeCalls()).toHaveLength(1));
-            expect(writeCalls()[0][0]).toBe('/api/rows/7');
-        });
-
-        it('falls back to the route pathname without target and self link', async () => {
-            const user = userEvent.setup();
-            const res = resourceWith({publishEvent: template({target: undefined})});
-            renderHarness({name: 'publishEvent', options: {resource: res}}, '/members/42');
-            await user.click(screen.getByText('open'));
-            await submit(user);
-            await waitFor(() => expect(writeCalls()).toHaveLength(1));
-            expect(writeCalls()[0][0]).toBe('/api/members/42');
+            expect(JSON.parse((writeCalls()[0][1] as RequestInit).body as string)).toMatchObject({reason: 'z-row'});
         });
     });
 
-    describe('late-bound name', () => {
-        it('open(row, name) opens the row template', async () => {
+    describe('late-bound action', () => {
+        it('opens whichever action is passed to open()', async () => {
             const user = userEvent.setup();
-            const row = resourceWith({deleteRow: template({title: 'Delete row', target: '/api/rows/3'})}, '/api/rows/3');
-            renderHarness({row, rowTemplateName: 'deleteRow'});
-            await user.click(screen.getByText('open-row'));
+            const first = actionFor({deleteRow: template({title: 'Delete row', target: '/api/rows/3'})}, 'deleteRow');
+            const second = actionFor({renameRow: template({title: 'Rename row', target: '/api/rows/4'})}, 'renameRow');
+            const Probe = () => {
+                const d = useTemplateDialog();
+                return (
+                    <div>
+                        <button onClick={() => d.open(first)}>first</button>
+                        <button onClick={() => d.open(second)}>second</button>
+                        {d.dialog}
+                    </div>
+                );
+            };
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter>
+                        <HalRouteContext.Provider value={halRouteValue(null, '/members/1')}>
+                            <ToastProvider><Probe/></ToastProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            await user.click(screen.getByText('first'));
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Delete row');
-        });
+            await user.click(screen.getByRole('button', {name: /zrušit/i}));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-        it('open() does nothing when the template is missing', async () => {
-            const user = userEvent.setup();
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({})}});
-            await user.click(screen.getByText('open'));
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            await user.click(screen.getByText('second'));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Rename row');
         });
     });
 
@@ -298,17 +352,17 @@ describe('useTemplateDialog', () => {
         };
 
         it('cancel closes the dialog without a request', async () => {
-            const user = await open({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
+            const user = await open({action: actionFor({publishEvent: template()}, 'publishEvent')});
             await user.click(screen.getByRole('button', {name: /zrušit/i}));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
             expect(writeCalls()).toHaveLength(0);
         });
 
-        it('successful submit shows the default toast, closes and calls onSubmitSuccess', async () => {
+        it('successful submit shows the action success message, closes and calls onSubmitSuccess', async () => {
             const onSubmitSuccess = vi.fn();
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template({title: 'Publikovat'})}), onSubmitSuccess},
+                action: actionFor({publishEvent: template({title: 'Publikovat'})}, 'publishEvent'),
+                options: {onSubmitSuccess},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -316,26 +370,39 @@ describe('useTemplateDialog', () => {
             expect(onSubmitSuccess).toHaveBeenCalledTimes(1);
         });
 
-        it('uses a custom successMessage', async () => {
+        it('uses a custom successMessage option', async () => {
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), successMessage: 'Hotovo'},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {successMessage: 'Hotovo'},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(screen.getByTestId('toast')).toHaveTextContent('Hotovo'));
         });
 
+        it('per-open successMessage override wins over the option and the action', async () => {
+            const user = await open({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {successMessage: 'Hotovo'},
+                overrides: {successMessage: 'Ještě lépe'},
+            });
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(screen.getByTestId('toast')).toHaveTextContent('Ještě lépe'));
+        });
+
         it('uses a custom submitLabel', async () => {
             const user = userEvent.setup();
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()}), submitLabel: 'Potvrdit'}});
+            renderHarness({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {submitLabel: 'Potvrdit'},
+            });
             await user.click(screen.getByText('open'));
             expect(await screen.findByRole('button', {name: 'Potvrdit'})).toBeInTheDocument();
         });
 
         it('applies postprocessPayload', async () => {
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), postprocessPayload: p => ({...p, extra: 1})},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {postprocessPayload: p => ({...p, extra: 1})},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(writeCalls()).toHaveLength(1));
@@ -347,7 +414,7 @@ describe('useTemplateDialog', () => {
                 if (init?.method === 'OPTIONS') return createMockResponse(null, 200);
                 return createMockResponse(null, 201, {Location: '/api/members/99'});
             });
-            const user = await open({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
+            const user = await open({action: actionFor({publishEvent: template()}, 'publishEvent')});
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/members/99'));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -359,8 +426,23 @@ describe('useTemplateDialog', () => {
                 return createMockResponse(null, 201, {Location: '/api/members/99'});
             });
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), navigateOnSuccess: false},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {navigateOnSuccess: false},
+            });
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+            expect(screen.getByTestId('location')).toHaveTextContent('/members/1');
+        });
+
+        it('per-open navigateOnSuccess override wins over the option', async () => {
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createMockResponse(null, 200);
+                return createMockResponse(null, 201, {Location: '/api/members/99'});
+            });
+            const user = await open({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {navigateOnSuccess: true},
+                overrides: {navigateOnSuccess: false},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -374,8 +456,8 @@ describe('useTemplateDialog', () => {
             });
             const onSubmitError = vi.fn(() => true);
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), onSubmitError},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {onSubmitError},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -389,8 +471,8 @@ describe('useTemplateDialog', () => {
             });
             const onSubmitError = vi.fn();
             const user = await open({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), onSubmitError},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {onSubmitError},
             });
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(onSubmitError).toHaveBeenCalled());
@@ -403,8 +485,8 @@ describe('useTemplateDialog', () => {
             const user = userEvent.setup();
             const fieldsFactory: HalFormFieldFactory = vi.fn(() => <span data-testid="custom-field">custom</span>);
             renderHarness({
-                name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template()}), fieldsFactory},
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {fieldsFactory},
             });
             await user.click(screen.getByText('open'));
             expect(await screen.findByTestId('custom-field')).toBeInTheDocument();
@@ -414,7 +496,7 @@ describe('useTemplateDialog', () => {
     describe('portal', () => {
         it('renders the dialog into document.body, outside the caller tree', async () => {
             const user = userEvent.setup();
-            const {container} = renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
+            const {container} = renderHarness({action: actionFor({publishEvent: template()}, 'publishEvent')});
             await user.click(screen.getByText('open'));
             const dialog = await screen.findByRole('dialog');
             expect(container.contains(dialog)).toBe(false);

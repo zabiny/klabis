@@ -12,7 +12,7 @@ import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {toRoutePath} from '../../api/apiPath';
-import {withTemplateFieldPrompts} from '../../localization';
+import {savedMessage, withTemplateFieldPrompts} from '../../localization';
 import {HalRouteContext} from '../../contexts/halRouteContext';
 
 /**
@@ -43,6 +43,11 @@ export interface HalFormDisplayProps {
     submitButtonLabel?: string;
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
+    /**
+     * Resolved submission URL of the action (see `halResource(...).template(...)`). When supplied it is
+     * authoritative — the template target / resource self link / route chain is not rebuilt.
+     */
+    href?: string;
     /**
      * URL of the resource being acted on; wins over the self link of resourceData and the current route.
      * Used as submission URL fallback when template.target is absent (e.g. embedded item affordances).
@@ -77,6 +82,7 @@ export const HalFormDisplay = ({
                                    fieldsFactory,
                                    submitButtonLabel,
                                    submitIcon,
+                                   href,
                                    resourceUrl,
                                    navigateOnSuccess = true,
                                    refineValidationSchema,
@@ -97,20 +103,22 @@ export const HalFormDisplay = ({
     );
 
     const routePathname = useContext(HalRouteContext)?.pathname;
-    const currentResourceUrl = resourceUrl || selfHref(resourceData) || routePathname || '';
+    // The source is where the form's data lives; it is never the submit target. Keeping them apart
+    // lets the OPTIONS/GET prefill probe detect a template target that differs from the resource.
+    const sourceUrl = resourceUrl || selfHref(resourceData) || routePathname || '';
+    const submitUrl = href ?? template.target ?? sourceUrl;
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
         resourceData,
-        currentResourceUrl
+        sourceUrl
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const url = template.target || currentResourceUrl;
-        submitForm({url, data: processed}, {
+        submitForm({url: submitUrl, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
-                const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
+                const toastMessage = successMessage ?? savedMessage(template);
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
                 const willNavigate = navigateOnSuccess && template.method?.toUpperCase() === 'POST' && location != null;

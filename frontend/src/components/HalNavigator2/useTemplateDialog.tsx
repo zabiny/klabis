@@ -1,22 +1,14 @@
 import {type ReactElement, type ReactNode, useCallback, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {HalFormsTemplate} from '../../api';
-import {selfHref} from '../../api/hateoas.ts';
-import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
+import {type HalTemplateAction} from '../../api/halResource';
+import {savedMessage} from '../../localization';
+import {selfHref} from '../../api/hateoas';
 import {Modal} from '../UI';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import type {HalFormFieldFactory} from './halforms';
 
-export interface TemplateResource {
-    _templates?: unknown;
-    _links?: unknown;
-}
-
-export const defaultDialogTitle = (name: string, template: HalFormsTemplate): string | undefined =>
-    getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title;
-
 export interface TemplateDialogOptions {
-    resource?: TemplateResource | null;
     title?: string | ((template: HalFormsTemplate, name: string) => string);
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
     note?: ReactNode;
@@ -26,75 +18,68 @@ export interface TemplateDialogOptions {
     onSubmitError?: (error: unknown) => boolean | void;
     navigateOnSuccess?: boolean;
     fieldsFactory?: HalFormFieldFactory;
-    initialData?: Record<string, unknown>;
+    initialData?: object;
     postprocessPayload?: (payload: Record<string, unknown>, template: HalFormsTemplate) => Record<string, unknown>;
 }
 
 export type TemplateDialogOverrides = Pick<
     TemplateDialogOptions,
-    'title' | 'note' | 'onSubmitSuccess' | 'successMessage' | 'navigateOnSuccess'
->;
+    'title' | 'note' | 'onSubmitSuccess' | 'successMessage' | 'navigateOnSuccess' | 'initialData'
+> & {
+    /** Renders a variant of the action's template (e.g. a client-injected property) without touching the resource. */
+    template?: HalFormsTemplate;
+};
 
 export interface TemplateDialog {
-    available: boolean;
-    availableOn: (resource: TemplateResource | null | undefined, name?: string) => boolean;
-    open: (resource?: TemplateResource | null, name?: string, overrides?: TemplateDialogOverrides) => void;
+    open: (action: HalTemplateAction | null | undefined, overrides?: TemplateDialogOverrides) => void;
     dialog: ReactElement | null;
 }
 
 interface OpenDialog {
-    resource: TemplateResource;
-    name: string;
+    action: HalTemplateAction;
     overrides?: TemplateDialogOverrides;
 }
 
-const templateOf = (resource: TemplateResource | null | undefined, name: string | undefined): HalFormsTemplate | undefined =>
-    name ? (resource?._templates as Record<string, HalFormsTemplate> | undefined)?.[name] : undefined;
-
-export function useTemplateDialog(name?: string, options: TemplateDialogOptions = {}): TemplateDialog {
+/**
+ * Modal engine for HAL-FORMS actions. The caller resolves the action through `halResource(...)`,
+ * so the hook needs no resource and no template-name lookup of its own: an `undefined` action
+ * simply does not open, which is how the server expresses that the action is unavailable.
+ */
+export function useTemplateDialog(options: TemplateDialogOptions = {}): TemplateDialog {
     const [opened, setOpened] = useState<OpenDialog | null>(null);
-    const {resource: defaultResource} = options;
 
-    const availableOn = useCallback(
-        (resource: TemplateResource | null | undefined, templateName?: string) =>
-            templateOf(resource, templateName ?? name) !== undefined,
-        [name],
-    );
-
-    const open = useCallback((resource?: TemplateResource | null, templateName?: string, overrides?: TemplateDialogOverrides) => {
-        const target = resource ?? defaultResource;
-        const targetName = templateName ?? name;
-        if (target && targetName && templateOf(target, targetName)) {
-            setOpened({resource: target, name: targetName, overrides});
+    const open = useCallback((action: HalTemplateAction | null | undefined, overrides?: TemplateDialogOverrides) => {
+        if (action) {
+            setOpened({action, overrides});
         }
-    }, [defaultResource, name]);
+    }, []);
 
     const close = useCallback(() => setOpened(null), []);
 
-    const defaultTemplate = templateOf(defaultResource, name);
-
-    const openedTemplate = opened ? templateOf(opened.resource, opened.name) : undefined;
     let dialog: ReactElement | null = null;
-    if (opened && openedTemplate) {
+    if (opened) {
+        const {action} = opened;
         const effective = {...options, ...opened.overrides};
+        const template = effective.template ?? action.template;
         const title = typeof effective.title === 'function'
-            ? effective.title(openedTemplate, opened.name)
-            : effective.title ?? defaultDialogTitle(opened.name, openedTemplate);
+            ? effective.title(template, action.name)
+            : effective.title ?? action.dialogTitle;
 
         dialog = createPortal(
             <Modal isOpen onClose={close} title={title} size={effective.size ?? 'md'} context={effective.note}>
                 <HalFormDisplay
-                    template={openedTemplate}
-                    templateName={opened.name}
-                    resourceData={(effective.initialData ?? opened.resource) as Record<string, unknown>}
-                    resourceUrl={selfHref(opened.resource as Parameters<typeof selfHref>[0])}
+                    template={template}
+                    templateName={action.name}
+                    href={action.href}
+                    resourceData={(effective.initialData ?? action.resource) as Record<string, unknown>}
+                    resourceUrl={selfHref(action.resource)}
                     onClose={close}
                     onSubmitSuccess={(data) => {
                         effective.onSubmitSuccess?.(data);
                         close();
                     }}
                     onSubmitError={effective.onSubmitError}
-                    successMessage={effective.successMessage}
+                    successMessage={effective.successMessage ?? savedMessage(template)}
                     submitButtonLabel={effective.submitLabel}
                     navigateOnSuccess={effective.navigateOnSuccess}
                     fieldsFactory={effective.fieldsFactory}
@@ -105,5 +90,5 @@ export function useTemplateDialog(name?: string, options: TemplateDialogOptions 
         );
     }
 
-    return {available: defaultTemplate !== undefined, availableOn, open, dialog};
+    return {open, dialog};
 }

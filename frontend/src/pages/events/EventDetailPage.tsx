@@ -16,6 +16,7 @@ import type {GetEventItemResource, GetEventResource, Link as HalLink} from '../.
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {halResource} from '../../api/halResource.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
@@ -88,25 +89,22 @@ interface RegistrationsTableProps {
 
 const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
     const renderActionsCell = ({item: registration}: TableCellRenderProps<RegistrationData>) => {
-        const editTemplate = registration._templates?.editRegistration;
-        const recordTransactionLink = registration._links?.recordTransaction;
-        const accountLink = recordTransactionLink && !Array.isArray(recordTransactionLink)
-            ? recordTransactionLink as HalLink
-            : Array.isArray(recordTransactionLink) ? recordTransactionLink[0] as HalLink : null;
+        const actions = halResource(registration);
+        const editAction = actions.template('editRegistration');
+        const accountAction = actions.link('recordTransaction');
+        const registrationAction = actions.link('self');
+        const syncAction = actions.link('sync');
 
-        const registrationLink = asLinkArray(registration._links?.self)[0] ?? null;
-        const rowAction = editTemplate
+        const rowAction = editAction
             ? {label: labels.templates.editRegistration, Icon: Pencil}
             : {label: labels.templates.showRegistrationDetail, Icon: Eye};
 
-        const syncLink = registration._links?.sync;
-
-        const hasAnyAction = registrationLink || accountLink || syncLink;
+        const hasAnyAction = registrationAction || accountAction || syncAction;
         if (!hasAnyAction) return null;
 
         return (
             <div className="flex items-center gap-1">
-                {accountLink && (
+                {accountAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -114,13 +112,13 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            onOpenTransactionDialog(accountLink);
+                            onOpenTransactionDialog(accountAction.link);
                         }}
                     >
                         <Banknote className="w-4 h-4"/>
                     </Button>
                 )}
-                {registrationLink && (
+                {registrationAction && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -128,13 +126,13 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
                         title={rowAction.label}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onOpenRegistrationDialog(registrationLink);
+                            onOpenRegistrationDialog(registrationAction.link);
                         }}
                     >
                         <rowAction.Icon className="w-4 h-4"/>
                     </Button>
                 )}
-                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
+                {syncAction && <SyncStatusIndicator syncLink={syncAction.link} mode="icon"/>}
             </div>
         );
     };
@@ -201,7 +199,8 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const accommodationListLink = resourceData._links?.['accommodation-list'];
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
-    const editRegistrationLink = resourceData._templates?.editRegistration?.target ? {href: resourceData._templates.editRegistration.target} : undefined;
+    const editRegistrationTarget = halResource(resourceData).template('editRegistration')?.template.target;
+    const editRegistrationLink = editRegistrationTarget ? {href: editRegistrationTarget} : undefined;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;

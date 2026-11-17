@@ -7,10 +7,10 @@ import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialo
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
 import type {
     GetGroupOwnersItemResource,
-    GetGroupPendingInvitationsItemResource,
     GetGroupResource,
     HalFormsTemplate,
 } from '../../api';
+import {halResource, type HalTemplateAction} from '../../api/halResource';
 import {describeError, labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
@@ -51,47 +51,24 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
     const addOwnerFactory = useMemo(() => createMemberFilteredFactory(undefined, currentMemberIds), [currentMemberIds]);
 
     const group = resourceData;
+    const groupActions = halResource(group);
+    const addMemberAction = groupActions.template('addGroupMember');
+    const inviteMemberAction = groupActions.template('inviteMember');
+    const addOwnerAction = groupActions.template('addGroupOwner');
+    const deleteGroupAction = groupActions.template('deleteGroup');
+    const leaveGroupAction = groupActions.template('removeGroupMember');
 
-    const addMemberDialog = useTemplateDialog('addGroupMember', {
-        resource: group,
-        title: labels.templates.addGroupMember,
-        successMessage: labels.ui.savedSuccessfully,
-        fieldsFactory: addMemberFactory,
-    });
-    const inviteMemberDialog = useTemplateDialog('inviteMember', {
-        resource: group,
-        title: labels.templates.inviteMember,
-        successMessage: labels.ui.savedSuccessfully,
-        fieldsFactory: addMemberFactory,
-    });
-    const addOwnerDialog = useTemplateDialog('addGroupOwner', {
-        resource: group,
-        title: labels.templates.addGroupOwner,
-        successMessage: labels.ui.savedSuccessfully,
-        fieldsFactory: addOwnerFactory,
-    });
-    const removeMemberDialog = useTemplateDialog('removeGroupMember', {
-        title: (template) => template.title ?? labels.templates.removeGroupMember,
-        successMessage: labels.ui.savedSuccessfully,
-    });
-    const removeOwnerDialog = useTemplateDialog('removeGroupOwner', {
-        title: labels.templates.removeGroupOwner,
-        successMessage: labels.ui.savedSuccessfully,
-    });
-    const deleteDialog = useTemplateDialog('deleteGroup', {
-        resource: group,
-        title: (template) => template.title ?? labels.templates.deleteGroup,
-        onSubmitSuccess: () => navigate('/groups'),
-    });
-    const cancelInvitationDialog = useTemplateDialog('cancelInvitation', {
-        title: (template) => template.title ?? labels.templates.cancelInvitation,
-        successMessage: labels.ui.savedSuccessfully,
-        navigateOnSuccess: false,
-    });
+    const addMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory});
+    const inviteMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory});
+    const addOwnerDialog = useTemplateDialog({fieldsFactory: addOwnerFactory});
+    const removeMemberDialog = useTemplateDialog();
+    const removeOwnerDialog = useTemplateDialog();
+    const deleteDialog = useTemplateDialog({onSubmitSuccess: () => navigate('/groups')});
+    const cancelInvitationDialog = useTemplateDialog({navigateOnSuccess: false});
 
-    const openRemoveOwner = (owner: GetGroupOwnersItemResource) => {
+    const openRemoveOwner = (action: HalTemplateAction, owner: GetGroupOwnersItemResource) => {
         const isSelf = owner.memberId === currentMemberId;
-        removeOwnerDialog.open(owner, undefined, {
+        removeOwnerDialog.open(action, {
             note: <span className="text-sm text-text-secondary">
                 {isSelf ? labels.templates.removeSelfAsOwnerLeavesGroup : labels.templates.removeGroupOwnerLeavesGroup}
             </span>,
@@ -99,22 +76,29 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
         });
     };
 
+    const openRemoveMember = (action: HalTemplateAction) => {
+        removeMemberDialog.open(action, {
+            title: (template) => template.title ?? labels.templates.removeGroupMember,
+        });
+    };
+
     // The backend sends the caller's own removeGroupMember on the group when the caller is a member but not
     // an owner. It means "leave this group", so it is rendered under its own label.
-    const openLeaveGroup = () => removeMemberDialog.open(group, undefined, {
-        title: labels.templates.leaveGroup,
-        note: <span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>,
-        successMessage: undefined,
-        navigateOnSuccess: false,
-        onSubmitSuccess: () => navigate('/groups'),
-    });
+    const openLeaveGroup = () => {
+        if (!leaveGroupAction) return;
+        removeMemberDialog.open(leaveGroupAction, {
+            title: labels.templates.leaveGroup,
+            note: <span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>,
+            navigateOnSuccess: false,
+            onSubmitSuccess: () => navigate('/groups'),
+        });
+    };
 
-    const openCancelInvitation = (invitation: GetGroupPendingInvitationsItemResource) => {
-        const template = invitation._templates?.cancelInvitation;
-        if (!template) return;
-        cancelInvitationDialog.open({
-            ...invitation,
-            _templates: {...invitation._templates, cancelInvitation: withReasonProperty(template)},
+    const openCancelInvitation = (action: HalTemplateAction) => {
+        cancelInvitationDialog.open(action, {
+            title: (current) => current.title ?? labels.templates.cancelInvitation,
+            successMessage: labels.ui.savedSuccessfully,
+            template: withReasonProperty(action.template),
         });
     };
 
@@ -142,16 +126,18 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
                             {labels.templates.updateGroup}
                         </Button>
                     )}
-                    {deleteDialog.available && (
+                    {deleteGroupAction && (
                         <Button
                             variant="danger"
-                            onClick={() => deleteDialog.open()}
+                            onClick={() => deleteDialog.open(deleteGroupAction, {
+                                title: (template) => template.title ?? labels.templates.deleteGroup,
+                            })}
                             startIcon={<Trash2 className="w-4 h-4"/>}
                         >
                             {labels.templates.deleteGroup}
                         </Button>
                     )}
-                    {removeMemberDialog.availableOn(group) && (
+                    {leaveGroupAction && (
                         <Button
                             variant="secondary"
                             onClick={openLeaveGroup}
@@ -179,17 +165,17 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
 
             <hr className="border-border"/>
 
-            {(resourceData.owners && resourceData.owners.length > 0 || addOwnerDialog.available) && (
+            {(resourceData.owners && resourceData.owners.length > 0 || addOwnerAction) && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary">
                             {labels.sections.groupOwners}
                         </h3>
-                        {addOwnerDialog.available && (
+                        {addOwnerAction && (
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => addOwnerDialog.open()}
+                                onClick={() => addOwnerDialog.open(addOwnerAction)}
                                 startIcon={<Crown className="w-4 h-4"/>}
                             >
                                 {labels.templates.addOwner}
@@ -197,15 +183,18 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
                         )}
                     </div>
                     <dl>
-                        {(resourceData.owners ?? []).map((owner) => (
-                            <MemberRowWithRemove
-                                key={owner.memberId}
-                                memberId={owner.memberId ?? ''}
-                                memberLink={owner._links?.member}
-                                removeAriaLabel={labels.templates.removeOwner}
-                                onRemove={removeOwnerDialog.availableOn(owner) ? () => openRemoveOwner(owner) : undefined}
-                            />
-                        ))}
+                        {(resourceData.owners ?? []).map((owner) => {
+                            const removeOwnerAction = halResource(owner).template('removeGroupOwner');
+                            return (
+                                <MemberRowWithRemove
+                                    key={owner.memberId}
+                                    memberId={owner.memberId ?? ''}
+                                    memberLink={owner._links?.member}
+                                    removeAriaLabel={labels.templates.removeOwner}
+                                    onRemove={removeOwnerAction ? () => openRemoveOwner(removeOwnerAction, owner) : undefined}
+                                />
+                            );
+                        })}
                     </dl>
                 </Card>
             )}
@@ -217,6 +206,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
                     </h3>
                     <ul className="flex flex-col gap-2">
                         {pendingInvitations.map((invitation) => {
+                            const cancelInvitationAction = halResource(invitation).template('cancelInvitation');
                             return (
                                 <li key={invitation.invitationId} className="flex items-center justify-between text-sm text-text-primary">
                                     <span>
@@ -226,13 +216,13 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
                                             </HalRouteProvider>
                                         ) : invitation.invitationId}
                                     </span>
-                                    {cancelInvitationDialog.availableOn(invitation) && (
+                                    {cancelInvitationAction && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             className="text-red-600"
                                             aria-label={labels.templates.cancelInvitation}
-                                            onClick={() => openCancelInvitation(invitation)}
+                                            onClick={() => openCancelInvitation(cancelInvitationAction)}
                                         >
                                             <Ban className="w-4 h-4"/>
                                             <span className="ml-1">{labels.templates.cancelInvitation}</span>
@@ -249,19 +239,21 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.groupMembers}</h2>
                     <div className="flex gap-2">
-                        {inviteMemberDialog.available && (
+                        {inviteMemberAction && (
                             <Button
                                 variant="secondary"
-                                onClick={() => inviteMemberDialog.open()}
+                                onClick={() => inviteMemberDialog.open(inviteMemberAction)}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
                             >
                                 {labels.templates.inviteMember}
                             </Button>
                         )}
-                        {addMemberDialog.available && (
+                        {addMemberAction && (
                             <Button
                                 variant="primary"
-                                onClick={() => addMemberDialog.open()}
+                                onClick={() => addMemberDialog.open(addMemberAction, {
+                                    successMessage: labels.ui.savedSuccessfully,
+                                })}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
                             >
                                 {labels.templates.addGroupMember}
@@ -272,13 +264,16 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
 
                 <GroupMembersTable
                     emptyMessage="Skupina nemá žádné členy."
-                    members={(resourceData.members ?? []).map((member) => ({
-                        memberId: member.memberId ?? '',
-                        joinedAt: member.joinedAt ?? '',
-                        memberLink: member._links?.member,
-                        removeAriaLabel: labels.templates.removeGroupMember,
-                        onRemove: removeMemberDialog.availableOn(member) ? () => removeMemberDialog.open(member) : undefined,
-                    }))}
+                    members={(resourceData.members ?? []).map((member) => {
+                        const removeMemberAction = halResource(member).template('removeGroupMember');
+                        return {
+                            memberId: member.memberId ?? '',
+                            joinedAt: member.joinedAt ?? '',
+                            memberLink: member._links?.member,
+                            removeAriaLabel: labels.templates.removeGroupMember,
+                            onRemove: removeMemberAction ? () => openRemoveMember(removeMemberAction) : undefined,
+                        };
+                    })}
                 />
             </div>
 

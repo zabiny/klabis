@@ -4,6 +4,7 @@ import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {useRootNavigation} from "../../hooks/useRootNavigation.ts";
 import ForbiddenPage from "../ForbiddenPage.tsx";
 import {labels} from "../../localization";
@@ -28,42 +29,39 @@ export const CategoryPresetsPage = (): ReactElement | null => {
 };
 
 const CategoryPresetsContent = (): ReactElement => {
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: 'md',
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
     });
 
-    const openActionModal = (item: CategoryPresetListItem, templateName: string) => {
-        actionDialog.open(item, templateName);
-    };
-
     const renderActionsCell = ({item: preset}: TableCellRenderProps<CategoryPresetListItem>) => {
-        const hasEditTemplate = !!preset._templates?.updateCategoryPreset;
-        const hasDeleteTemplate = !!preset._templates?.deleteCategoryPreset;
+        const actions = halResource(preset);
+        const editAction = actions.template('updateCategoryPreset');
+        const deleteAction = actions.template('deleteCategoryPreset');
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {hasEditTemplate && (
+                {editAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.buttons.edit}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(preset, 'updateCategoryPreset');
+                            actionDialog.open(editAction);
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasDeleteTemplate && (
+                {deleteAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.templates.deleteCategoryPreset}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(preset, 'deleteCategoryPreset');
+                            actionDialog.open(deleteAction);
                         }}
                     >
                         <Trash2 className="w-4 h-4"/>

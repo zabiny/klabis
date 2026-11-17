@@ -4,6 +4,7 @@ import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {halResource} from "../../api/halResource";
 import {labels} from "../../localization";
 import {Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
@@ -12,14 +13,10 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 type EventTypeListItem = ListEventTypesItemResource;
 
 export const EventTypesPage = (): ReactElement => {
-    const actionDialog = useTemplateDialog(undefined, {
+    const actionDialog = useTemplateDialog({
         size: 'md',
         title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
     });
-
-    const openActionModal = (item: EventTypeListItem, templateName: string) => {
-        actionDialog.open(item, templateName);
-    };
 
     const renderColorSwatch = ({value}: TableCellRenderProps) => {
         const color = value as string | undefined;
@@ -34,32 +31,33 @@ export const EventTypesPage = (): ReactElement => {
     };
 
     const renderActionsCell = ({item: eventType}: TableCellRenderProps<EventTypeListItem>) => {
-        const hasEditTemplate = !!eventType._templates?.updateEventType;
-        const hasDeleteTemplate = !!eventType._templates?.deleteEventType;
+        const actions = halResource(eventType);
+        const editAction = actions.template('updateEventType');
+        const deleteAction = actions.template('deleteEventType');
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {hasEditTemplate && (
+                {editAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.buttons.edit}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(eventType, 'updateEventType');
+                            actionDialog.open(editAction);
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
                     </Button>
                 )}
-                {hasDeleteTemplate && (
+                {deleteAction && (
                     <Button
                         variant="ghost"
                         size="sm"
                         aria-label={labels.templates.deleteEventType}
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(eventType, 'deleteEventType');
+                            actionDialog.open(deleteAction);
                         }}
                     >
                         <Trash2 className="w-4 h-4"/>
