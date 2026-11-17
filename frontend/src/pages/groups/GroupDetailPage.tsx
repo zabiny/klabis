@@ -1,7 +1,6 @@
 import {type ReactElement, useMemo, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Card, Skeleton} from '../../components/UI';
+import {Button, Card} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
@@ -11,7 +10,7 @@ import type {
     HalFormsTemplate,
 } from '../../api';
 import {halResource, type HalTemplateAction} from '../../api/halResource';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {useAuth} from '../../contexts/authContext.ts';
@@ -19,6 +18,7 @@ import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRe
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {DelegatedAuthoritiesNotice, DelegatedAuthoritiesReadOnly} from '../../components/groups/DelegatedAuthorities.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 // Spring HATEOAS does not emit properties for DELETE affordances. The backend does
 // accept a reason body — inject the property client-side so the form renders the field.
@@ -288,20 +288,8 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
     );
 };
 
-export const GroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GetGroupResource>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <GroupDetailContent resourceData={resourceData}/>;
-};
+export const GroupDetailPage = (): ReactElement => (
+    <HalPageGate<GetGroupResource>>
+        {(resourceData) => <GroupDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

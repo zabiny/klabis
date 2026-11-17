@@ -1,7 +1,6 @@
 import '@testing-library/jest-dom';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupDetailPage} from './GroupDetailPage';
 import {vi} from 'vitest';
@@ -95,16 +94,6 @@ describe('GroupDetailPage', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-    });
-
-    it('shows skeleton loading state when data is loading', () => {
-        renderPage(null, {isLoading: true});
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-
-    it('shows error message when fetch fails', () => {
-        renderPage(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Skupina nenalezena'})});
-        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
     });
 
     it('renders group name as page heading', () => {
@@ -344,14 +333,5 @@ describe('GroupDetailPage', () => {
             expect(await screen.findByRole('option', {name: 'Jana Nováková'})).toBeInTheDocument();
             expect(screen.queryByRole('option', {name: 'Petr Svoboda'})).not.toBeInTheDocument();
         });
-    });
-});
-
-describe('GroupDetailPage load error', () => {
-    it('shows the Czech text of the error instead of the HTTP status', () => {
-        renderPage(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})});
-
-        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

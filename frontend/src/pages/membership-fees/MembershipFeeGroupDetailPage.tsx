@@ -1,18 +1,17 @@
 import {type ReactElement, useState} from 'react';
 import {Link} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {embeddedItems} from '../../hooks/useHalCollection.ts';
-import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {halResource} from '../../api/halResource';
 import type {GetFeeGroupResource} from '../../api';
 import type {components} from '../../api/klabisApi';
-import {getEnumLabel, labels, describeError} from '../../localization';
+import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type MembershipFeeGroupDetail = GetFeeGroupResource;
 type MembershipFeeGroupMember = components['schemas']['MemberInGroupResponse'];
@@ -216,20 +215,8 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     );
 };
 
-export const MembershipFeeGroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<MembershipFeeGroupDetail>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <MembershipFeeGroupDetailContent resourceData={resourceData}/>;
-};
+export const MembershipFeeGroupDetailPage = (): ReactElement => (
+    <HalPageGate<MembershipFeeGroupDetail>>
+        {(resourceData) => <MembershipFeeGroupDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

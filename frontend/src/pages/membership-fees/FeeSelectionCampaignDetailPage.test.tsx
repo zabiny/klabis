@@ -6,9 +6,9 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {FeeSelectionCampaignDetailPage} from './FeeSelectionCampaignDetailPage';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -65,18 +65,15 @@ const buildCampaignDetail = (overrides?: Partial<HalResponse>): HalResponse => (
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
+        ...overrides,
+    });
 
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
+    vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
@@ -90,17 +87,6 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
 describe('FeeSelectionCampaignDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-    });
-
-    it('shows skeleton loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-
-    it('shows Czech text when the resource is not found', () => {
-        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 
     it('renders year as heading', () => {

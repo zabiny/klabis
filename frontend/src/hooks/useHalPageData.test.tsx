@@ -65,8 +65,19 @@ describe('useHalPageData', () => {
             const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
 
             expect(Object.keys(result.current).sort()).toEqual([
-                'error', 'getResourceLink', 'isLoading', 'navigateToResource', 'refetch', 'resourceData',
+                'error', 'getResourceLink', 'isLoading', 'navigateToResource', 'queryState', 'refetch', 'resourceData',
             ]);
+        });
+    });
+
+    describe('Query State', () => {
+        it('should expose queryState next to resourceData, isLoading and error', async () => {
+            const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
+
+            await waitFor(() => {
+                expect(result.current).toHaveProperty('queryState');
+                expect(['idle', 'pending', 'success', 'error']).toContain(result.current.queryState);
+            });
         });
     });
 

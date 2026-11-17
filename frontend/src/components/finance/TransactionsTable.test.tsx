@@ -7,7 +7,7 @@ import {createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {type Mock, vi} from 'vitest';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
-import {TransactionsTable} from './FinancesPage.tsx';
+import {TransactionsTable} from './TransactionsTable.tsx';
 import {labels} from '../../localization';
 
 

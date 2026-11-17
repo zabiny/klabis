@@ -2,8 +2,9 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
+import type {HalResponse} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {makePageData} from '../../__mocks__/pageData';
 import {LegalGuardianGroupsPage} from './LegalGuardianGroupsPage';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
@@ -22,13 +23,11 @@ vi.mock('../../components/HalNavigator2/HalEmbeddedTable.tsx', () => ({
     ),
 }));
 
+const resource: HalResponse = {_links: {self: {href: 'http://localhost/api/legal-guardian-groups'}}};
+
 describe('LegalGuardianGroupsPage', () => {
     it('renders heading and the group table without a create button', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            isLoading: false,
-            error: null,
-            navigateToResource: vi.fn(),
-        } as unknown as ReturnType<typeof useHalPageData>);
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({resourceData: resource}));
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByRole('heading', {name: 'Zákonní zástupci'})).toBeInTheDocument();
         expect(screen.getByTestId('groups-table')).toBeInTheDocument();
@@ -36,25 +35,9 @@ describe('LegalGuardianGroupsPage', () => {
     });
 
     it('shows guardian names column between name and minor count', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            isLoading: false,
-            error: null,
-            navigateToResource: vi.fn(),
-        } as unknown as ReturnType<typeof useHalPageData>);
+        vi.mocked(useHalPageData).mockReturnValue(makePageData({resourceData: resource}));
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByText('Zástupci')).toBeInTheDocument();
         expect(screen.getByTestId('guardians-cell')).toHaveTextContent('Ondřej Kratochvíl, Lenka Kratochvílová');
-    });
-
-    it('shows the Czech text of a load error instead of the HTTP status', () => {
-        vi.mocked(useHalPageData).mockReturnValue({
-            isLoading: false,
-            error: new ApiError(404, {type: '/errors/not-found', detail: 'Missing'}),
-            route: {navigateToResource: vi.fn()},
-        } as unknown as ReturnType<typeof useHalPageData>);
-        render(<LegalGuardianGroupsPage/>);
-
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

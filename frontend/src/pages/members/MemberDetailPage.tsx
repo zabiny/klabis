@@ -3,8 +3,8 @@ import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Alert, Badge, Button, DetailRow, Skeleton} from "../../components/UI";
-import {ErrorPage} from "../ErrorPage.tsx";
+import {Alert, Badge, Button, DetailRow} from "../../components/UI";
+import {HalPageGate} from "../HalPageGate.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
@@ -59,23 +59,14 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
 };
 
 export const MemberDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<MemberDetail>();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
 
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <ErrorPage error={error}/>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <MemberDetailContent resourceData={resourceData} initialEditing={initialEditing}/>;
+    return (
+        <HalPageGate<MemberDetail>>
+            {(resourceData) => <MemberDetailContent resourceData={resourceData} initialEditing={initialEditing}/>}
+        </HalPageGate>
+    );
 };
 
 interface MemberDetailContentProps {

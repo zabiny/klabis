@@ -7,6 +7,7 @@ import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {EventsPage} from './EventsPage';
@@ -119,15 +120,14 @@ vi.mock('../../hooks/useHalFormData', () => ({
     }),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<UseHalPageDataReturn> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
+        ...overrides,
+    });
+
+const eventsListResource: HalResponse = {_links: {self: {href: '/api/events'}}};
 
 const mockListQuery = (data: unknown) =>
     vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => ({
@@ -167,7 +167,7 @@ describe('EventsPage', () => {
     });
 
     it('renders page title "Akce"', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(eventsListResource));
         expect(screen.getByRole('heading', {name: 'Akce'})).toBeInTheDocument();
     });
 
@@ -701,7 +701,7 @@ describe('EventsPage', () => {
 
     describe('filter bar', () => {
         it('renders filter bar above the events table', () => {
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
             expect(screen.getByPlaceholderText(labels.eventsFilter.searchPlaceholder)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: labels.eventsFilter.budouci})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: labels.eventsFilter.probehle})).toBeInTheDocument();
@@ -709,7 +709,7 @@ describe('EventsPage', () => {
         });
 
         it('shows "Moje přihlášky" checkbox for user with member profile', () => {
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
             expect(screen.getByRole('checkbox', {name: labels.eventsFilter.mojePřihlaskyLabel})).toBeInTheDocument();
         });
 
@@ -721,31 +721,31 @@ describe('EventsPage', () => {
                 logout: vi.fn(),
                 isLoading: false,
             });
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
             expect(screen.queryByRole('checkbox', {name: labels.eventsFilter.mojePřihlaskyLabel})).not.toBeInTheDocument();
         });
 
         it('shows Budoucí as active time window by default', () => {
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
             const budouciBtn = screen.getByRole('button', {name: labels.eventsFilter.budouci});
             expect(budouciBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
         it('shows Proběhlé as active when ?when=probehle is in URL', () => {
-            renderPage(createMockPageData(null), '/events?when=probehle');
+            renderPage(createMockPageData(eventsListResource), '/events?when=probehle');
             const probehleBtn = screen.getByRole('button', {name: labels.eventsFilter.probehle});
             expect(probehleBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
         it('shows Vše as active when ?when=vse is in URL', () => {
-            renderPage(createMockPageData(null), '/events?year=2024&when=vse');
+            renderPage(createMockPageData(eventsListResource), '/events?year=2024&when=vse');
             const vseBtn = screen.getByRole('button', {name: labels.eventsFilter.vse});
             expect(vseBtn).toHaveAttribute('aria-pressed', 'true');
         });
 
         it('switches time window to Vše when Vše button is clicked', async () => {
             const user = userEvent.setup();
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
 
             await user.click(screen.getByRole('button', {name: labels.eventsFilter.vse}));
 
@@ -756,12 +756,12 @@ describe('EventsPage', () => {
         });
 
         it('reflects search query from URL', () => {
-            renderPage(createMockPageData(null), '/events?q=jihlava');
+            renderPage(createMockPageData(eventsListResource), '/events?q=jihlava');
             expect(screen.getByDisplayValue('jihlava')).toBeInTheDocument();
         });
 
         it('reflects registeredBy=me from URL as checked checkbox', () => {
-            renderPage(createMockPageData(null), '/events?registeredBy=me');
+            renderPage(createMockPageData(eventsListResource), '/events?registeredBy=me');
             const checkbox = screen.getByRole('checkbox', {name: labels.eventsFilter.mojePřihlaskyLabel});
             expect(checkbox).toBeChecked();
         });
@@ -781,7 +781,7 @@ describe('EventsPage', () => {
                 }
                 return {data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
             });
-            renderPage(createMockPageData(null), '/events?eventTypeId=et-A');
+            renderPage(createMockPageData(eventsListResource), '/events?eventTypeId=et-A');
             const group = screen.getByRole('group', {name: labels.eventsFilter.eventTypeFilter});
             const klubBtn = within(group).getByRole('button', {name: 'Klub'});
             expect(klubBtn).toHaveAttribute('aria-pressed', 'true');
@@ -824,7 +824,7 @@ describe('EventsPage', () => {
         it('applies the default sort of the new time window while a year is selected', async () => {
             const user = userEvent.setup();
             mockPagedEvents();
-            renderPage(createMockPageData(null), `/events?year=${new Date().getFullYear()}&when=budouci`);
+            renderPage(createMockPageData(eventsListResource), `/events?year=${new Date().getFullYear()}&when=budouci`);
 
             expect(requestedUrls().at(-1)).toContain('sort=eventDate%2Casc');
 
@@ -838,7 +838,7 @@ describe('EventsPage', () => {
         it('requests the first page when the search changes on a later page', async () => {
             const user = userEvent.setup();
             mockPagedEvents();
-            renderPage(createMockPageData(null));
+            renderPage(createMockPageData(eventsListResource));
 
             await user.click(screen.getByRole('button', {name: /Další/}));
             await waitFor(() => {

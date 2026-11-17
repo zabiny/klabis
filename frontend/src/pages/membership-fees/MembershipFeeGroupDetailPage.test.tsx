@@ -7,7 +7,6 @@ import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRout
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeGroupDetailPage} from './MembershipFeeGroupDetailPage';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {
@@ -107,17 +106,6 @@ describe('MembershipFeeGroupDetailPage', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-    });
-
-    it('shows skeleton loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-
-    it('shows Czech text when the resource is not found', () => {
-        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
-        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 
     it('back link leads to the membership fees page', () => {

@@ -2,7 +2,7 @@ import {type ReactElement} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Button, Modal} from '../../components/UI';
 import {labels} from '../../localization';
-import {formatCurrency} from '../finances/financeFormatters';
+import {formatCurrency} from '../../components/finance/financeFormatters';
 import {toRoutePath} from '../../api/apiPath';
 import {type NegativeBalanceWarning} from './suspensionUtils';
 

@@ -3,22 +3,14 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {Alert, Skeleton} from '../../components/UI';
 import type {components} from '../../api/klabisApi';
-import {describeError, labels} from '../../localization';
+import {labels} from '../../localization';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type TrainingGroupSummaryItem = components['schemas']['EntityModelTrainingGroupSummaryResponse'];
 
-export const TrainingGroupsPage = (): ReactElement => {
-    const {isLoading, error, navigateToResource} = useHalPageData();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
+const TrainingGroupsPageContent = (): ReactElement => {
+    const {navigateToResource} = useHalPageData();
 
     return (
         <div className="flex flex-col gap-8">
@@ -44,3 +36,9 @@ export const TrainingGroupsPage = (): ReactElement => {
         </div>
     );
 };
+
+export const TrainingGroupsPage = (): ReactElement => (
+    <HalPageGate>
+        {() => <TrainingGroupsPageContent/>}
+    </HalPageGate>
+);

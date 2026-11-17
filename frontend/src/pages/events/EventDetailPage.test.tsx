@@ -9,6 +9,7 @@ import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {EventDetailPage} from './EventDetailPage';
 import {labels} from '../../localization';
 import {vi} from 'vitest';
@@ -252,15 +253,12 @@ const mockEventDetailData = (overrides?: Partial<HalResponse>): HalResponse => (
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<UseHalPageDataReturn> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
+        ...overrides,
+    });
 
 const renderPage = (pageData: UseHalPageDataReturn) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
@@ -355,20 +353,10 @@ describe('EventDetailPage', () => {
         expect(screen.queryByTestId('subresource-coordinator')).not.toBeInTheDocument();
     });
 
-    it('shows loading placeholder while loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
-    });
-
     it('shows Czech text of the error when fetch fails', () => {
         renderPage(createMockPageData(null, {error: new ApiError(500, {detail: 'Internal failure'})}));
         expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
         expect(screen.queryByText(/Internal failure/)).not.toBeInTheDocument();
-    });
-
-    it('shows loading placeholder when resourceData is null and not loading', () => {
-        renderPage(createMockPageData(null));
-        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
     });
 
     describe('action buttons via HAL affordances', () => {

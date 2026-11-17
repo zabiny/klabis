@@ -3,9 +3,9 @@ import {fireEvent, render, screen, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
-import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {makePageData} from '../../__mocks__/pageData';
 import type {HalResponse} from '../../api';
 import {SyncOverviewPage} from './SyncOverviewPage';
 
@@ -35,14 +35,11 @@ const attempt = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const pageData = (resourceData: HalResponse | null) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/sync/attempts'}),
-});
+const pageData = (resourceData: HalResponse | null) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/sync/attempts'}),
+    });
 
 const renderPage = (items: unknown[], page = {size: 10, totalElements: items.length, totalPages: 1, number: 0}, initialEntry = '/sync/attempts') => {
     const resourceData: HalResponse = {
@@ -54,7 +51,7 @@ const renderPage = (items: unknown[], page = {size: 10, totalElements: items.len
         data: resourceData,
         error: null,
     } as unknown as ReturnType<typeof useAuthorizedQuery>);
-    vi.mocked(useHalPageData).mockReturnValue(pageData(resourceData) as unknown as ReturnType<typeof useHalPageData>);
+    vi.mocked(useHalPageData).mockReturnValue(pageData(resourceData));
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
@@ -248,7 +245,7 @@ describe('SyncOverviewPage attention tab', () => {
                 error: null,
             };
         }) as unknown as typeof useAuthorizedQuery);
-        vi.mocked(useHalPageData).mockReturnValue(pageData(attempts) as unknown as ReturnType<typeof useHalPageData>);
+        vi.mocked(useHalPageData).mockReturnValue(pageData(attempts));
         const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
         return render(
             <QueryClientProvider client={queryClient}>
@@ -333,26 +330,5 @@ describe('SyncOverviewPage attention tab', () => {
         expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
         fireEvent.click(screen.getByRole('tab', {name: 'Všechny pokusy'}));
         expect(screen.getByLabelText('Výsledek')).toHaveValue('FAILED');
-    });
-});
-
-describe('SyncOverviewPage load error', () => {
-    it('shows the Czech text of the error instead of the HTTP status', () => {
-        const data = pageData(null);
-        vi.mocked(useHalPageData).mockReturnValue({
-            ...data,
-            error: new ApiError(403, {type: '/errors/forbidden', detail: 'Access denied'}),
-        } as unknown as ReturnType<typeof useHalPageData>);
-        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-        render(
-            <QueryClientProvider client={queryClient}>
-                <MemoryRouter initialEntries={['/sync/attempts']}>
-                    <SyncOverviewPage/>
-                </MemoryRouter>
-            </QueryClientProvider>
-        );
-
-        expect(screen.getByText('K této akci nemáte oprávnění.')).toBeInTheDocument();
-        expect(screen.queryByText(/HTTP 403/)).not.toBeInTheDocument();
     });
 });

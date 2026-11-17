@@ -1,16 +1,18 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
-import {Button, Skeleton} from "../../components/UI";
+import {Button} from "../../components/UI";
 import {labels} from "../../localization";
 import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
-import {TransactionsTable, type TransactionReverseRequest, BalanceCard} from "./FinancesPage.tsx";
+import {TransactionsTable, type TransactionReverseRequest} from "../../components/finance/TransactionsTable.tsx";
+import {BalanceCard} from "../../components/finance/BalanceCard.tsx";
 import {TransactionFilterBar} from "./TransactionFilterBar.tsx";
 import {ReverseConfirmModal} from "./ReverseConfirmModal.tsx";
 import {Banknote} from "lucide-react";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import type {Link} from "../../api/types.ts";
+import type {GetAccountResource} from "../../api";
 import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
+import {HalPageGate} from "../HalPageGate.tsx";
 
 /**
  * Account page for finance managers viewing any member's account.
@@ -27,8 +29,7 @@ const TRANSACTION_FILTERS = {
     occurredAtTo: {type: 'string'},
 } as const;
 
-export const MemberAccountManagePage = (): ReactElement => {
-    const {isLoading, resourceData} = useHalPageData();
+const MemberAccountManageContent = ({resourceData}: {resourceData: GetAccountResource}): ReactElement => {
     const {values, setValues} = useUrlFilters(TRANSACTION_FILTERS);
     const extraParams = useMemo(
         () => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== '')),
@@ -41,18 +42,14 @@ export const MemberAccountManagePage = (): ReactElement => {
         setReverseTarget(tx);
     }, []);
 
-    if (isLoading) {
-        return <Skeleton />;
-    }
+    const balance = resourceData.balance;
+    const currency = resourceData.currency;
 
-    const balance = resourceData?.balance as number | undefined;
-    const currency = resourceData?.currency as string | undefined;
-
-    const hasDepositTemplate = !!resourceData?._templates?.deposit;
-    const hasChargeTemplate = !!resourceData?._templates?.charge;
+    const hasDepositTemplate = !!resourceData._templates?.deposit;
+    const hasChargeTemplate = !!resourceData._templates?.charge;
     const hasAnyManagerAffordance = hasDepositTemplate || hasChargeTemplate;
 
-    const selfLink = resourceData?._links?.self;
+    const selfLink = resourceData._links?.self;
     const accountLink = selfLink && !Array.isArray(selfLink) ? (selfLink as Link) : undefined;
 
     return (
@@ -119,3 +116,9 @@ export const MemberAccountManagePage = (): ReactElement => {
         </>
     );
 };
+
+export const MemberAccountManagePage = (): ReactElement => (
+    <HalPageGate<GetAccountResource>>
+        {(resourceData) => <MemberAccountManageContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

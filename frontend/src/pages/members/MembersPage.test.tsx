@@ -7,6 +7,7 @@ import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthoriz
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {makePageData} from '../../__mocks__/pageData';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
 import {act} from '@testing-library/react';
@@ -79,15 +80,14 @@ vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
         ) : null,
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<ReturnType<typeof useHalPageData>>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    navigateToResource: vi.fn(),
-    refetch: async () => {},
-    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-    ...overrides,
-});
+const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
+    makePageData({
+        resourceData,
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
+        ...overrides,
+    });
+
+const membersListResource: HalResponse = {_links: {self: {href: 'http://localhost/api/members'}}};
 
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
@@ -113,7 +113,7 @@ const buildMemberRow = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof useHalPageData>>) => {
+const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof makePageData>>) => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/members'}},
         _embedded: {memberSummaryResponseList: members},
@@ -130,7 +130,7 @@ describe('MembersPage', () => {
     });
 
     it('renders page title "Členové"', () => {
-        renderPage(createMockPageData(null));
+        renderPage(createMockPageData(membersListResource));
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
@@ -227,11 +227,6 @@ describe('MembersPage', () => {
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('Akce')).toBeInTheDocument();
-    });
-
-    it('shows loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
-        expect(screen.getByText(/načítání/i)).toBeInTheDocument();
     });
 });
 
@@ -453,14 +448,14 @@ describe('MembersPage — filter bar integration', () => {
     });
 
     it('leaves a bare URL bare while requesting the active-only default', () => {
-        renderPageWithSearchReader('/members', createMockPageData(null));
+        renderPageWithSearchReader('/members', createMockPageData(membersListResource));
 
         expect(screen.getByTestId('search-string')).toHaveTextContent('(none)');
         expect(vi.mocked(useAuthorizedQuery).mock.calls.every(([url]) => String(url).includes('status=ACTIVE'))).toBe(true);
     });
 
     it('does NOT overwrite an existing status param on mount', () => {
-        const pageData = createMockPageData(null);
+        const pageData = createMockPageData(membersListResource);
         renderPageWithSearchReader('/members?status=INACTIVE', pageData);
         expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
     });

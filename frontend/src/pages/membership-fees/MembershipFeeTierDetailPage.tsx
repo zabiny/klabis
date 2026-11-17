@@ -1,15 +1,14 @@
 import {type ReactElement, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {halResource} from '../../api/halResource';
 import type {GetTierResource} from '../../api';
-import {labels, describeError} from '../../localization';
+import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
+import {HalPageGate} from '../HalPageGate.tsx';
 
 type FeeTierDetail = GetTierResource;
 
@@ -106,20 +105,8 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     );
 };
 
-export const MembershipFeeTierDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<FeeTierDetail>();
-
-    if (isLoading) {
-        return <Skeleton/>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{describeError(error)}</Alert>;
-    }
-
-    if (!resourceData) {
-        return <Skeleton/>;
-    }
-
-    return <FeeTierDetailContent resourceData={resourceData}/>;
-};
+export const MembershipFeeTierDetailPage = (): ReactElement => (
+    <HalPageGate<FeeTierDetail>>
+        {(resourceData) => <FeeTierDetailContent resourceData={resourceData}/>}
+    </HalPageGate>
+);

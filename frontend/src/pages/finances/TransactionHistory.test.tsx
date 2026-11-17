@@ -8,7 +8,7 @@ import {type Mock, vi} from 'vitest';
 import {createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
-import {TransactionsTable} from './FinancesPage.tsx';
+import {TransactionsTable} from '../../components/finance/TransactionsTable.tsx';
 import {TransactionFilterBar} from './TransactionFilterBar.tsx';
 import {MemberAccountManagePage} from './MemberAccountManagePage.tsx';
 import {labels} from '../../localization';

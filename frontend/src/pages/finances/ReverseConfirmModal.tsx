@@ -3,8 +3,8 @@ import {Button, Modal} from '../../components/UI';
 import {describeError, labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useToast} from '../../contexts/toastContext';
-import type {TransactionReverseRequest} from './FinancesPage.tsx';
-import {formatCurrency, formatDate} from './financeFormatters.ts';
+import type {TransactionReverseRequest} from '../../components/finance/TransactionsTable.tsx';
+import {formatCurrency, formatDate} from '../../components/finance/financeFormatters.ts';
 
 interface ReverseConfirmModalProps {
     isOpen: boolean;
