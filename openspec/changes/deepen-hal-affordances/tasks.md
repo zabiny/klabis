@@ -28,10 +28,10 @@
 
 ## 4. Phase 1 verification
 
-- [ ] 4.1 Full frontend unit suite green
-- [ ] 4.2 `npm run build` (type check) and `npm run lint` green
-- [ ] 4.3 E2E smoke of the affected journeys — groups, training groups, member detail (activation, suspension), events, event types, category presets, fee campaign detail, fee tiers
-- [ ] 4.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
+- [x] 4.1 Full frontend unit suite green
+- [x] 4.2 `npm run build` (type check) and `npm run lint` green
+- [x] 4.3 E2E smoke of the affected journeys — groups, training groups, member detail (activation, suspension), events, event types, category presets, fee campaign detail, fee tiers
+- [x] 4.4 `npm run refresh-backend-server-resources` so the backend serves the rebuilt SPA
 
 ## 5. Row actions (phase 2)
 
