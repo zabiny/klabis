@@ -13,6 +13,7 @@ When suspending a member who is the last owner of a group, the "Varování: Spr�
 - Legal guardian groups: the dialog offers "Pozastavit celou skupinu" - the member and all minors of the group are suspended together in one atomic operation (all or nobody), with the same reason and note; "Určit nástupce" stays as a link to the existing "Zákonní zástupci" group page. Dissolving is never offered (these groups cannot be deleted by hand). **BREAKING (UI only)**: the current dialog shows "Rozpustit skupinu" for legal guardian groups - it is removed.
 - Suspension request gains an optional list of legal guardian groups to suspend with the member; blockers of the dependent minors (negative balance, last owner of another group) block the whole operation and are reported per member.
 - A suspended member no longer stays a legal guardian of groups that have other guardians (removed on suspension), so a suspended person never keeps acting as a guardian.
+- All blocking reasons are shown in one dialog (#418): a member who is the last owner of a group and has a negative balance no longer gets the "Záporný zůstatek" dialog over the group warning; the balance and the groups are listed together, and "Ukončit členství" is offered only once no negative balance is reported.
 - After all listed groups are resolved the admin finishes suspension with an explicit confirmation button in the dialog (no automatic resubmission).
 - The suspension-blocked response links each affected group to its resource so the dialog can discover available actions.
 - The Membership Suspension requirement named a non-existent permission `MEMBERS:UPDATE`; it is corrected to `MEMBERS:MANAGE` (what the operation actually requires).
@@ -33,7 +34,7 @@ None.
 
 - Backend: `members.application.ManagementService` (atomic cascade), a members-side listener removing suspended guardians, `groups.freegroup` (service, aggregate, controller, postprocessor), suspension adapters of the three group modules and `OwnedGroup` (link), `MembersExceptionHandler`.
 - API spec: `docs/openapi/spec/members.yaml` (`AffectedGroup.groupLink`, `SuspendMembershipRequest.cascadeGroupIds`, per-member blockers in `SuspensionBlockedWarning`), `docs/openapi/spec/groups.yaml` (`getGroup`, `addGroupOwner`, `deleteGroup` access and acting-user argument); regenerate bundle and frontend types.
-- Frontend: `SuspensionWarningDialog`, `useSuspendMemberAction`, `MemberDetailPage`, `MembersPage`, labels.
+- Frontend: `SuspensionWarningDialog` (absorbs `NegativeBalanceSuspensionDialog`), `useSuspendMemberAction`, `MemberDetailPage`, `MembersPage`, labels.
 - Docs: one new ADR (free-group management by MEMBERS:MANAGE).
 - Not touched: `non-functional-requirements` still mentions `MEMBERS:UPDATE` in two unrelated scenarios (follow-up cleanup).
 

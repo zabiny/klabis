@@ -127,7 +127,7 @@ The system SHALL allow users with MEMBERS:MANAGE permission to suspend a member'
 #### Scenario: Suspension blocked when member has a negative financial account balance
 
 - **WHEN** user attempts to suspend a member whose financial account balance is negative
-- **THEN** the system displays a warning showing the current balance
+- **THEN** the system displays the suspension warning dialog showing the current balance
 - **AND** offers a link to open the member's financial account
 - **AND** requires that the balance be brought to zero or positive before suspension can proceed
 
@@ -136,6 +136,20 @@ The system SHALL allow users with MEMBERS:MANAGE permission to suspend a member'
 - **WHEN** an admin is shown the negative-balance warning in the suspension dialog
 - **THEN** no checkbox or override action is offered in the dialog to suspend regardless
 - **AND** the admin must resolve the balance through a financial-account operation first
+
+#### Scenario: All blocking reasons are shown in one dialog
+
+- **GIVEN** the member is the last owner of a group and the member's financial account balance is negative
+- **WHEN** user attempts to suspend the member
+- **THEN** a single warning dialog lists both the negative balance, with a link to open the member's financial account, and the affected group
+- **AND** no second dialog opens over it
+
+#### Scenario: Suspension cannot be finished while the balance is negative
+
+- **GIVEN** the warning dialog reports a negative financial account balance
+- **WHEN** the user resolves every group listed in the dialog
+- **THEN** "Ukončit členství" is not available in the dialog
+- **AND** the dialog tells the user that the balance has to be brought to zero or positive first
 
 #### Scenario: Several groups are resolved one by one
 
@@ -146,6 +160,7 @@ The system SHALL allow users with MEMBERS:MANAGE permission to suspend a member'
 #### Scenario: Suspension is finished from the dialog once all groups are resolved
 
 - **GIVEN** the user has resolved every group listed in the warning dialog
+- **AND** the dialog reports no negative financial account balance
 - **WHEN** the user clicks "Ukončit členství" in the dialog
 - **THEN** the suspension is submitted with the reason and note entered earlier
 - **AND** the membership is suspended
