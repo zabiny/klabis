@@ -12,6 +12,7 @@ import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {parseHalHref, serializeHalHref, toHref} from "../../api/hateoas.ts";
+import {halResource} from "../../api/halResource.ts";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
 type TransactionItem = ListTransactionsItemResource;
@@ -157,7 +158,7 @@ const TransactionsTableContent = ({
 
     const renderActionsCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement | null => {
         if (!onReverseRequest) return null;
-        const reverseTarget = tx._templates?.reverse?.target;
+        const reverseTarget = halResource(tx).template('reverse')?.template.target;
         if (!reverseTarget) return null;
 
         return (

@@ -51,12 +51,3 @@ export function selfHref(
     const self = resource?._links?.self;
     return self ? toHref(self) : undefined;
 }
-
-// Spring HATEOAS omits a HAL-FORMS template's target when it equals the resource's self href
-export function templateTarget(
-    template: {target?: string} | undefined,
-    resource: {_links?: {self?: HalResourceLinks}} | null | undefined
-): string | undefined {
-    if (!template) return undefined;
-    return template.target || selfHref(resource);
-}

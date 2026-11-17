@@ -16,6 +16,7 @@ import type {GetEventItemResource, GetEventResource, Link as HalLink} from '../.
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {halResource} from '../../api/halResource.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
@@ -201,7 +202,8 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const accommodationListLink = resourceData._links?.['accommodation-list'];
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
-    const editRegistrationLink = resourceData._templates?.editRegistration?.target ? {href: resourceData._templates.editRegistration.target} : undefined;
+    const editRegistrationTarget = halResource(resourceData).template('editRegistration')?.template.target;
+    const editRegistrationLink = editRegistrationTarget ? {href: editRegistrationTarget} : undefined;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;

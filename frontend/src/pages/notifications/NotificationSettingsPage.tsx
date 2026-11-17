@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from 'react';
 import type {HalEnvelope} from '../../api';
-import {templateTarget} from '../../api/hateoas';
+import {halResource} from '../../api/halResource';
 import type {components} from '../../api/klabisApi';
 import {Alert, Badge, Button, Card, Skeleton} from '../../components/UI';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
@@ -36,9 +36,10 @@ export const NotificationSettingsPage = (): ReactElement => {
     const {mutate: mutateRemove, isPending: isRemoving} = useAuthorizedMutation({method: 'DELETE'});
 
     const currentDevice = browserEndpoint ? devices.find(device => device.endpoint === browserEndpoint) : undefined;
-    const registerTarget = templateTarget(resourceData?._templates?.registerNotificationDevice, resourceData);
-    const sendTestTarget = templateTarget(resourceData?._templates?.sendTestNotification, resourceData);
-    const removeTarget = (device: Device) => templateTarget(device._templates?.removeNotificationDevice, device);
+    const pageResource = halResource(resourceData);
+    const registerTarget = pageResource.template('registerNotificationDevice')?.href;
+    const sendTestTarget = pageResource.template('sendTestNotification')?.href;
+    const removeTarget = (device: Device) => halResource(device).template('removeNotificationDevice')?.href;
 
     const handleSendTest = () => {
         if (!sendTestTarget) {

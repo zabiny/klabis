@@ -1,13 +1,13 @@
 ## 1. Core module
 
-- [ ] 1.1 Red: test `halResource(undefined).template('x')` and `.link('y')` return `undefined`; a resource without `_templates`/`_links` returns `undefined` for any name
-- [ ] 1.2 Red: test `template(name).href` — `template.target` wins, absent `target` falls back to the resource self link; `link(rel).href` is the link's `href`
-- [ ] 1.3 Red: test the text conventions of `template(name)` — `label` from `labels.templates`, else `template.title`, else the name; `dialogTitle` from `labels.dialogTitles`, else `label`; `successMessage` is `<title> — úspěšně uloženo` when the template has a title and `labels.ui.savedSuccessfully` otherwise
-- [ ] 1.4 Red: test `link(rel)` on a single link and on an array — the first non-`templated` link is returned; `label` from `labels.links`, else `link.title`, else the rel
-- [ ] 1.5 Green: implement `src/api/halResource.ts` (`halResource`, `HalTemplateAction`, `HalLinkAction`, `getLinkLabel`)
-- [ ] 1.6 Red/Green: add the missing tests for `toHref` and `asLinkArray`, including the empty-array and unknown-shape throws
-- [ ] 1.7 Green: delete `templateTarget` from `src/api/hateoas.ts` and move its four callers to the module (`NotificationSettingsPage`, `usePushReregistration`, `FinancesPage`, `EventDetailPage`)
-- [ ] 1.8 Verify: module, `hateoas` and migrated-caller tests green
+- [x] 1.1 Red: test `halResource(undefined).template('x')` and `.link('y')` return `undefined`; a resource without `_templates`/`_links` returns `undefined` for any name
+- [x] 1.2 Red: test `template(name).href` — `template.target` wins, absent `target` falls back to the resource self link; `link(rel).href` is the link's `href`
+- [x] 1.3 Red: test the text conventions of `template(name)` — `label` from `labels.templates`, else `template.title`, else the name; `dialogTitle` from `labels.dialogTitles`, else `label`; `successMessage` is `<title> — úspěšně uloženo` when the template has a title and `labels.ui.savedSuccessfully` otherwise
+- [x] 1.4 Red: test `link(rel)` on a single link and on an array — the first non-`templated` link is returned; `label` from `labels.links`, else `link.title`, else the rel
+- [x] 1.5 Green: implement `src/api/halResource.ts` (`halResource`, `HalTemplateAction`, `HalLinkAction`, `getLinkLabel`)
+- [x] 1.6 Red/Green: add the missing tests for `toHref` and `asLinkArray`, including the empty-array and unknown-shape throws
+- [x] 1.7 Green: delete `templateTarget` from `src/api/hateoas.ts` and move its four callers to the module (`NotificationSettingsPage`, `usePushReregistration`, `FinancesPage`, `EventDetailPage`)
+- [x] 1.8 Verify: module, `hateoas` and migrated-caller tests green
 
 ## 2. Dialog, button and form pipeline
 
