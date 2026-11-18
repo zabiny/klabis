@@ -136,8 +136,8 @@ class MembershipFeeGroupDetailsPostprocessor
                 .ifPresent(dtoModel::add);
         klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).listGroupRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(group.getSourceLevelId().value()))
-                .ifPresent(link -> dtoModel.add(link.withRel("sourceLevel")));
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).getFeeType(group.getSourceTypeId().value()))
+                .ifPresent(link -> dtoModel.add(link.withRel("sourceType")));
     }
 
 }

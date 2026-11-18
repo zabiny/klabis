@@ -7,17 +7,17 @@ import {TableCell} from '../KlabisTable';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 
-type FeeTierSummary = components['schemas']['EntityModelMembershipFeeTierSummaryResponse'];
+type FeeTypeSummary = components['schemas']['EntityModelMembershipFeeTypeSummaryResponse'];
 
-export const TierCatalogSection = (): ReactElement => {
+export const TypeCatalogSection = (): ReactElement => {
     const {navigateToResource} = useHalPageData();
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-text-primary">{labels.sections.membershipFeeTiersList}</h2>
+                <h2 className="text-xl font-bold text-text-primary">{labels.sections.membershipFeeTypesList}</h2>
                 <HalFormButton
-                    name="createTier"
+                    name="createFeeType"
                     modal={true}
                     icon={<Plus size={16} className="text-white"/>}
                     className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
@@ -25,18 +25,18 @@ export const TierCatalogSection = (): ReactElement => {
             </div>
 
             <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
-                <HalEmbeddedTable<FeeTierSummary>
-                    tableId="membership-fee-tiers"
+                <HalEmbeddedTable<FeeTypeSummary>
+                    tableId="membership-fee-types"
                     defaultOrderBy="name"
                     onRowClick={navigateToResource}
                     emptyMessage="Žádné tiery členských příspěvků."
                 >
-                    <TableCell<FeeTierSummary>
+                    <TableCell<FeeTypeSummary>
                         sortable
                         column="name"
-                        dataRender={({item: tier}) => {
+                        dataRender={({item: feeType}) => {
                             return (
-                                <span className="text-sm font-bold text-text-primary">{tier.name}</span>
+                                <span className="text-sm font-bold text-text-primary">{feeType.name}</span>
                             );
                         }}
                     >

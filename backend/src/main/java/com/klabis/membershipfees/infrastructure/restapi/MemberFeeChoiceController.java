@@ -5,7 +5,7 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -42,7 +42,7 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
 
         MemberId memberIdObj = new MemberId(memberId);
         Optional<MembershipFeeGroupId> currentChoice = memberFeeHistoryPort.getCurrentChoice(memberIdObj, year);
-        Optional<MembershipFeeTierId> recommended = memberFeeHistoryPort.getRecommendedLevelForYear(memberIdObj, year);
+        Optional<MembershipFeeTypeId> recommended = memberFeeHistoryPort.getRecommendedTypeForYear(memberIdObj, year);
 
         MemberFeeChoiceResponse response = MembershipFeesResponseMapper.toResponse(memberId, year, currentChoice, recommended);
         HalResponseContext.setDomain(new FeeChoiceView(memberId, year, currentChoice, recommended));
@@ -52,11 +52,11 @@ class MemberFeeChoiceController implements MemberFeeChoiceApi {
     // No real aggregate backs this projection — mirrors MemberAccountController's use of MemberId
     // as its postprocessor's "domain" type for the same reason (a purely computed response).
     record FeeChoiceView(UUID memberId, int year, Optional<MembershipFeeGroupId> currentChoice,
-                         Optional<MembershipFeeTierId> recommended) {
+                         Optional<MembershipFeeTypeId> recommended) {
     }
 
     @Override
-    public ResponseEntity<Void> chooseTier(
+    public ResponseEntity<Void> chooseFeeType(
             UUID memberId,
             Integer year,
             ChooseFeeChoiceRequest request) {
@@ -89,7 +89,7 @@ class MemberFeeChoiceDetailsPostprocessor
         klabisLinkTo(methodOn(MemberFeeChoiceApi.class).getChoice(view.memberId(), view.year()))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
-                                .chooseTier(view.memberId(), view.year(), null)))
+                                .chooseFeeType(view.memberId(), view.year(), null)))
                         .andAffordances(klabisAfford(methodOn(MemberFeeChoiceApi.class)
                                 .removeChoice(view.memberId(), view.year())))));
 
@@ -98,7 +98,7 @@ class MemberFeeChoiceDetailsPostprocessor
                         .ifPresent(link -> dtoModel.add(link.withRel("currentGroup"))));
 
         view.recommended().ifPresent(levelId ->
-                klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(levelId.value()))
-                        .ifPresent(link -> dtoModel.add(link.withRel("recommendedLevel"))));
+                klabisLinkTo(methodOn(MembershipFeeTypesApi.class).getFeeType(levelId.value()))
+                        .ifPresent(link -> dtoModel.add(link.withRel("recommendedType"))));
     }
 }

@@ -16,16 +16,16 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
 
     private final FeeSelectionCampaignRepository publicationRepository;
     private final MembershipFeeGroupRepository groupRepository;
-    private final MembershipFeeTierRepository tierRepository;
+    private final MembershipFeeTypeRepository typeRepository;
     private final Clock clock;
 
     FeeSelectionCampaignManagementService(FeeSelectionCampaignRepository publicationRepository,
                                           MembershipFeeGroupRepository groupRepository,
-                                          MembershipFeeTierRepository tierRepository,
+                                          MembershipFeeTypeRepository typeRepository,
                                           Clock clock) {
         this.publicationRepository = publicationRepository;
         this.groupRepository = groupRepository;
-        this.tierRepository = tierRepository;
+        this.typeRepository = typeRepository;
         this.clock = clock;
     }
 
@@ -40,9 +40,9 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
             throw new ActiveCampaignExistsException();
         });
 
-        List<MembershipFeeTier> levels = command.levelIds().stream()
-                .map(id -> tierRepository.findById(id)
-                        .orElseThrow(() -> new MembershipFeeTierNotFoundException(id)))
+        List<MembershipFeeType> levels = command.typeIds().stream()
+                .map(id -> typeRepository.findById(id)
+                        .orElseThrow(() -> new MembershipFeeTypeNotFoundException(id)))
                 .toList();
 
         FeeSelectionCampaign.FeeSelectionCampaignWithGroups result = FeeSelectionCampaign.publish(

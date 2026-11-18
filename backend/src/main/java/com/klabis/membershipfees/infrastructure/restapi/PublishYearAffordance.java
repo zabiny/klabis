@@ -6,7 +6,7 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import org.springframework.hateoas.Affordance;
 
 import java.util.List;
@@ -17,19 +17,19 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Single source of the publishYear template, shared by every resource that offers it, so that the
- * "only one active campaign" rule and the tier options are not duplicated.
+ * "only one active campaign" rule and the type options are not duplicated.
  */
 @MvcComponent
 class PublishYearAffordance {
 
-    private final MembershipFeeTierManagementPort tierManagementPort;
+    private final MembershipFeeTypeManagementPort typeManagementPort;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
     private final AuthorizationEvaluator authorizationEvaluator;
 
-    PublishYearAffordance(MembershipFeeTierManagementPort tierManagementPort,
+    PublishYearAffordance(MembershipFeeTypeManagementPort typeManagementPort,
                           FeeSelectionCampaignManagementPort campaignManagementPort,
                           AuthorizationEvaluator authorizationEvaluator) {
-        this.tierManagementPort = tierManagementPort;
+        this.typeManagementPort = typeManagementPort;
         this.campaignManagementPort = campaignManagementPort;
         this.authorizationEvaluator = authorizationEvaluator;
     }
@@ -46,11 +46,11 @@ class PublishYearAffordance {
         if (campaignActive) {
             return List.of();
         }
-        List<HalFormsInlineOption> tierOptions = tierManagementPort.listTiers().stream()
-                .map(tier -> new HalFormsInlineOption(tier.getId().value().toString(), tier.getName()))
+        List<HalFormsInlineOption> typeOptions = typeManagementPort.listFeeTypes().stream()
+                .map(type -> new HalFormsInlineOption(type.getId().value().toString(), type.getName()))
                 .toList();
         return klabisAffordWithOptions(
                 methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
-                Map.of("levelIds", new HalFormsOptionsDef.Inline(tierOptions)));
+                Map.of("typeIds", new HalFormsOptionsDef.Inline(typeOptions)));
     }
 }

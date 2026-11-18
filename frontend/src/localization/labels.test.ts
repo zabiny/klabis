@@ -256,7 +256,7 @@ describe('labels.errorTypes membership fees', () => {
         ['/errors/campaign-already-processed', 'Kampaň již byla zpracována, akci nelze zopakovat.'],
         ['/errors/snapshot-frozen', 'Úroveň je součástí vyhlášené kampaně a již ji nelze měnit.'],
         ['/errors/voting-closed', 'Hlasování v této kampani již skončilo.'],
-        ['/errors/membership-fee-tier-not-found', 'Úroveň členského příspěvku nebyla nalezena.'],
+        ['/errors/membership-fee-type-not-found', 'Úroveň členského příspěvku nebyla nalezena.'],
         ['/errors/membership-fee-group-not-found', 'Skupina členských příspěvků nebyla nalezena.'],
     ] as const)('has Czech text for %s', (type, expected) => {
         expect(text(type)).toBe(expected);

@@ -8,7 +8,7 @@ import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
@@ -45,7 +45,7 @@ class MembershipFeeGroupDetailHalParityTest {
     private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static final UUID MEMBER_UUID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
-    private static final UUID TIER_UUID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static final UUID TYPE_UUID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static final String GROUP = "/api/membership-fee-groups/" + GROUP_UUID;
 
     @Autowired
@@ -61,7 +61,7 @@ class MembershipFeeGroupDetailHalParityTest {
         FeeGroupMembership membership = new FeeGroupMembership(new MemberId(MEMBER_UUID), LocalDate.of(2026, 1, 15),
                 AssignmentSource.MEMBER_CHOICE, null);
         MembershipFeeGroup group = MembershipFeeGroup.reconstruct(new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeTierId(TIER_UUID), "Dospělý", 2026, LocalDate.of(2026, 3, 31),
+                new MembershipFeeTypeId(TYPE_UUID), "Dospělý", 2026, LocalDate.of(2026, 3, 31),
                 Money.ofCzk(new BigDecimal("1200.00")), PublishedLevelStatus.FROZEN, List.of(), Set.of(membership), null);
         when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
         when(members.findByIds(any())).thenReturn(Map.of(new MemberId(MEMBER_UUID),
@@ -78,7 +78,7 @@ class MembershipFeeGroupDetailHalParityTest {
         FeeGroupMembership membership = new FeeGroupMembership(new MemberId(MEMBER_UUID), LocalDate.of(2026, 1, 15),
                 AssignmentSource.MEMBER_CHOICE, null);
         MembershipFeeGroup group = MembershipFeeGroup.reconstruct(new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeTierId(TIER_UUID), "Dospělý", 2026, LocalDate.of(2026, 3, 31),
+                new MembershipFeeTypeId(TYPE_UUID), "Dospělý", 2026, LocalDate.of(2026, 3, 31),
                 Money.ofCzk(new BigDecimal("1200.00")), PublishedLevelStatus.FROZEN, List.of(), Set.of(membership), null);
         when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
 
@@ -103,7 +103,7 @@ class MembershipFeeGroupDetailHalParityTest {
     void adminView() throws Exception {
         String body = getGroupBody();
 
-        assertThat(HalShape.of(body, "$")).isEqualTo(List.of("link rules -> " + GROUP + "/rules", "link self -> " + GROUP, "link sourceLevel -> /api/membership-fee-tiers/" + TIER_UUID, "template assignMember POST " + GROUP + "/members [memberId, year]"));
+        assertThat(HalShape.of(body, "$")).isEqualTo(List.of("link rules -> " + GROUP + "/rules", "link self -> " + GROUP, "link sourceType -> /api/membership-fee-types/" + TYPE_UUID, "template assignMember POST " + GROUP + "/members [memberId, year]"));
         assertThat(HalShape.of(body, "$._embedded.members[0]")).isEqualTo(List.of());
     }
 
@@ -113,7 +113,7 @@ class MembershipFeeGroupDetailHalParityTest {
     void plainUserView() throws Exception {
         String body = getGroupBody();
 
-        assertThat(HalShape.of(body, "$")).isEqualTo(List.of("link rules -> " + GROUP + "/rules", "link self -> " + GROUP, "link sourceLevel -> /api/membership-fee-tiers/" + TIER_UUID));
+        assertThat(HalShape.of(body, "$")).isEqualTo(List.of("link rules -> " + GROUP + "/rules", "link self -> " + GROUP, "link sourceType -> /api/membership-fee-types/" + TYPE_UUID));
         assertThat(HalShape.of(body, "$._embedded.members[0]")).isEqualTo(List.of());
     }
 }

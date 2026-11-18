@@ -12,7 +12,7 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberViewAccess;
 import com.klabis.common.users.UserId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
@@ -108,7 +108,7 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should include chooseTier affordance when voting is open")
+        @DisplayName("should include chooseFeeType affordance when voting is open")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeChooseLevelAffordanceWhenVotingOpen() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -119,11 +119,11 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseTier").exists());
+                    .andExpect(jsonPath("$._templates.chooseFeeType").exists());
         }
 
         @Test
-        @DisplayName("should include inline group options on chooseTier affordance membershipFeeGroupId property")
+        @DisplayName("should include inline group options on chooseFeeType affordance membershipFeeGroupId property")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeInlineGroupOptionsOnChooseLevelAffordance() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -131,7 +131,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    new MembershipFeeTierId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
+                    new MembershipFeeTypeId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
                     LocalDate.of(YEAR, 3, 31));
             when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
 
@@ -139,7 +139,7 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseTier.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
                             .value("Základní"));
         }
 
@@ -176,7 +176,7 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should not include chooseTier affordance when voting is closed")
+        @DisplayName("should not include chooseFeeType affordance when voting is closed")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldNotIncludeChooseLevelAffordanceWhenVotingClosed() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
@@ -187,7 +187,7 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseTier").doesNotExist());
+                    .andExpect(jsonPath("$._templates.chooseFeeType").doesNotExist());
         }
 
         @Test

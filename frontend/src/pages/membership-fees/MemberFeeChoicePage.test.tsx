@@ -155,15 +155,15 @@ describe('MemberFeeChoicePage', () => {
         });
     });
 
-    describe('voting open with chooseTier template', () => {
-        it('shows choose tier form when chooseTier template exists', () => {
+    describe('voting open with chooseFeeType template', () => {
+        it('shows choose tier form when chooseFeeType template exists', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
-                    chooseTier: {
+                    chooseFeeType: {
                         method: 'POST',
                         target: '/api/members/member-1/fee-choice/2026',
                         properties: [
@@ -195,7 +195,7 @@ describe('MemberFeeChoicePage', () => {
                 recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
-                    chooseTier: {
+                    chooseFeeType: {
                         method: 'POST',
                         target: '/api/members/member-1/fee-choice/2026',
                         properties: [
@@ -217,7 +217,7 @@ describe('MemberFeeChoicePage', () => {
             expect(screen.getByText('Základ')).toBeInTheDocument();
         });
     });
-    describe('voting open without chooseTier template', () => {
+    describe('voting open without chooseFeeType template', () => {
         it('offers no choose, change or withdraw controls', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
@@ -245,7 +245,7 @@ describe('MemberFeeChoicePage', () => {
     });
 
     describe('submitting', () => {
-        const chooseTier = {
+        const chooseFeeType = {
             method: 'POST',
             target: '/api/members/member-1/fee-choice/2026',
             properties: [
@@ -271,7 +271,7 @@ describe('MemberFeeChoicePage', () => {
                 votingOpen: true,
                 recommendedGroupId: 'group-2',
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
-                _templates: {chooseTier},
+                _templates: {chooseFeeType},
             });
 
             renderPage();
@@ -292,7 +292,7 @@ describe('MemberFeeChoicePage', () => {
                 recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
-                    chooseTier,
+                    chooseFeeType,
                     removeChoice: {method: 'DELETE', target: '/api/members/member-1/fee-choice/2026'},
                 },
             });

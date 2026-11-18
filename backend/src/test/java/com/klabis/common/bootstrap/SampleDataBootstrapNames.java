@@ -6,7 +6,7 @@ final class SampleDataBootstrapNames {
             "MembersDataBootstrap",
             "TrainingGroupDataBootstrap",
             "EventsDataBootstrap",
-            "MembershipFeeTiersDataBootstrap"
+            "MembershipFeeTypesDataBootstrap"
     };
 
     private SampleDataBootstrapNames() {

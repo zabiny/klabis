@@ -3,8 +3,8 @@ package com.klabis.membershipfees;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeOptionsPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.Documented;
@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mocks the ports required by the web beans of the membershipfees module (tier, campaign, fee group,
+ * Mocks the ports required by the web beans of the membershipfees module (type, campaign, fee group,
  * fee choice and fee summary controllers, link processors) so that other modules' {@code @WebMvcTest}
  * slices can load them without the membershipfees application layer.
  */
@@ -22,8 +22,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Documented
 @MockitoBean(types = {
-        MembershipFeeTierManagementPort.class,
-        MembershipFeeTierOptionsPort.class,
+        MembershipFeeTypeManagementPort.class,
+        MembershipFeeTypeOptionsPort.class,
         FeeSelectionCampaignManagementPort.class,
         FeeYearLifecyclePort.class,
         MemberFeeHistoryPort.class

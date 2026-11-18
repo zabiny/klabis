@@ -4,7 +4,7 @@ import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MemberFeeHistoryServiceTest {
 
     private static final MemberId MEMBER_ID = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static final MembershipFeeTierId LEVEL_ID = new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MembershipFeeTypeId LEVEL_ID = new MembershipFeeTypeId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     private static final MembershipFeeGroupId GROUP_ID = new MembershipFeeGroupId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final int YEAR = 2026;
 
@@ -82,10 +82,10 @@ class MemberFeeHistoryServiceTest {
                 List.of(GROUP_ID));
     }
 
-    private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId sourceLevelId) {
+    private MembershipFeeGroup buildEditableGroup(MembershipFeeTypeId sourceTypeId) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
-                sourceLevelId,
+                sourceTypeId,
                 "Test Group", YEAR, GROUP_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
@@ -118,7 +118,7 @@ class MemberFeeHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("should return null groupId with votingOpen=true and recommendedGroupId (published group of last year's tier) when no choice and voting is open")
+        @DisplayName("should return null groupId with votingOpen=true and recommendedGroupId (published group of last year's type) when no choice and voting is open")
         void shouldReturnVotingOpenWithRecommendedWhenNoChoice() {
             FeeSelectionCampaign publication = buildOpenPublication(YEAR);
 
@@ -130,7 +130,7 @@ class MemberFeeHistoryServiceTest {
                     .thenReturn(Optional.of(buildGroupWithMember(
                             new MembershipFeeGroupId(UUID.randomUUID()), YEAR - 1, MEMBER_ID,
                             LocalDate.of(YEAR - 1, 1, 15), AssignmentSource.MEMBER_CHOICE)));
-            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID)).thenReturn(true);
+            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceTypeId(YEAR, LEVEL_ID)).thenReturn(true);
             org.mockito.Mockito.when(groupRepository.findByYear(YEAR))
                     .thenReturn(List.of(buildGroupWithMember(
                             GROUP_ID, YEAR, new MemberId(UUID.randomUUID()), TODAY, AssignmentSource.MEMBER_CHOICE)));
@@ -143,8 +143,8 @@ class MemberFeeHistoryServiceTest {
         }
 
         @Test
-        @DisplayName("should not recommend a group when last year's tier is not published for the year")
-        void shouldNotRecommendWhenTierNotPublished() {
+        @DisplayName("should not recommend a group when last year's type is not published for the year")
+        void shouldNotRecommendWhenTypeNotPublished() {
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.empty());
             org.mockito.Mockito.when(publicationRepository.findByYear(YEAR))
@@ -153,7 +153,7 @@ class MemberFeeHistoryServiceTest {
                     .thenReturn(Optional.of(buildGroupWithMember(
                             new MembershipFeeGroupId(UUID.randomUUID()), YEAR - 1, MEMBER_ID,
                             LocalDate.of(YEAR - 1, 1, 15), AssignmentSource.MEMBER_CHOICE)));
-            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID)).thenReturn(false);
+            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceTypeId(YEAR, LEVEL_ID)).thenReturn(false);
 
             assertThat(service.getCurrentLevelInfo(MEMBER_ID, YEAR).recommendedGroupId()).isEmpty();
         }
@@ -232,20 +232,20 @@ class MemberFeeHistoryServiceTest {
     }
 
     @Nested
-    @DisplayName("getRecommendedLevelForYear() — previous year default (D8)")
-    class GetRecommendedLevelForYear {
+    @DisplayName("getRecommendedTypeForYear() — previous year default (D8)")
+    class GetRecommendedTypeForYear {
 
         @Test
-        @DisplayName("should return previous year's sourceLevelId when it is published in the requested year")
+        @DisplayName("should return previous year's sourceTypeId when it is published in the requested year")
         void shouldReturnPreviousYearLevelId() {
             MembershipFeeGroup previousYearGroup = buildEditableGroup(LEVEL_ID);
             previousYearGroup.addMember(MEMBER_ID, LocalDate.of(YEAR - 1, 2, 1), AssignmentSource.MEMBER_CHOICE);
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.of(previousYearGroup));
-            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID)).thenReturn(true);
+            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceTypeId(YEAR, LEVEL_ID)).thenReturn(true);
 
-            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTypeId> result = service.getRecommendedTypeForYear(MEMBER_ID, YEAR);
 
             assertThat(result).contains(LEVEL_ID);
         }
@@ -256,7 +256,7 @@ class MemberFeeHistoryServiceTest {
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.empty());
 
-            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTypeId> result = service.getRecommendedTypeForYear(MEMBER_ID, YEAR);
 
             assertThat(result).isEmpty();
         }
@@ -269,9 +269,9 @@ class MemberFeeHistoryServiceTest {
 
             org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR - 1))
                     .thenReturn(Optional.of(previousYearGroup));
-            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceLevelId(YEAR, LEVEL_ID)).thenReturn(false);
+            org.mockito.Mockito.when(groupRepository.existsByYearAndSourceTypeId(YEAR, LEVEL_ID)).thenReturn(false);
 
-            Optional<MembershipFeeTierId> result = service.getRecommendedLevelForYear(MEMBER_ID, YEAR);
+            Optional<MembershipFeeTypeId> result = service.getRecommendedTypeForYear(MEMBER_ID, YEAR);
 
             assertThat(result).isEmpty();
         }

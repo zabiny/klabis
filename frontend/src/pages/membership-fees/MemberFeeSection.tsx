@@ -30,7 +30,7 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
 function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactElement {
     const campaignYear = (summary._links?.self ? toHref(summary._links.self) : '').split('/').pop();
     const feeChoicePath = `/members/${memberId}/fee-choice/${campaignYear}`;
-    const canChoose = Boolean(summary._templates?.chooseTier);
+    const canChoose = Boolean(summary._templates?.chooseFeeType);
 
     return (
         <div className="flex flex-col gap-3">

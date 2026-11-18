@@ -41,7 +41,7 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
     }
 
     public static FeeSelectionCampaignWithGroups publish(int year, LocalDate votingDeadline,
-                                                         List<MembershipFeeTier> levels) {
+                                                         List<MembershipFeeType> levels) {
         Assert.notNull(votingDeadline, "VotingDeadline is required");
         Assert.notEmpty(levels, "At least one level is required for publishing");
 

@@ -4,7 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.VotingClosedException;
@@ -55,7 +55,7 @@ class MemberFeeChoiceControllerTest {
         void shouldReturnCurrentChoice() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.of(new MembershipFeeGroupId(GROUP_UUID)));
-            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR)))
+            when(memberFeeHistoryPort.getRecommendedTypeForYear(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
 
             mockMvc.perform(
@@ -73,15 +73,15 @@ class MemberFeeChoiceControllerTest {
         void shouldReturnRecommendedDefault() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
-            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR)))
-                    .thenReturn(Optional.of(new MembershipFeeTierId(LEVEL_UUID)));
+            when(memberFeeHistoryPort.getRecommendedTypeForYear(any(), eq(YEAR)))
+                    .thenReturn(Optional.of(new MembershipFeeTypeId(LEVEL_UUID)));
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.currentGroupId").doesNotExist())
-                    .andExpect(jsonPath("$.recommendedLevelId").value(LEVEL_UUID.toString()));
+                    .andExpect(jsonPath("$.recommendedTypeId").value(LEVEL_UUID.toString()));
         }
 
         @Test
@@ -109,13 +109,13 @@ class MemberFeeChoiceControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldIncludeAffordances() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR))).thenReturn(Optional.empty());
-            when(memberFeeHistoryPort.getRecommendedLevelForYear(any(), eq(YEAR))).thenReturn(Optional.empty());
+            when(memberFeeHistoryPort.getRecommendedTypeForYear(any(), eq(YEAR))).thenReturn(Optional.empty());
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseTier").exists())
+                    .andExpect(jsonPath("$._templates.chooseFeeType").exists())
                     .andExpect(jsonPath("$._templates.removeChoice").exists());
         }
     }

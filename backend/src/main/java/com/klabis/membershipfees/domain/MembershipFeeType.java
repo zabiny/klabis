@@ -3,7 +3,7 @@ package com.klabis.membershipfees.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -14,17 +14,17 @@ import java.util.List;
 import java.util.UUID;
 
 @AggregateRoot
-public class MembershipFeeTier extends KlabisAggregateRoot<MembershipFeeTier, MembershipFeeTierId> {
+public class MembershipFeeType extends KlabisAggregateRoot<MembershipFeeType, MembershipFeeTypeId> {
 
     @Identity
-    private final MembershipFeeTierId id;
+    private final MembershipFeeTypeId id;
     private String name;
     private Money yearlyFee;
     private final List<MembershipPaymentRule> rules;
 
-    private MembershipFeeTier(MembershipFeeTierId id, String name, Money yearlyFee,
+    private MembershipFeeType(MembershipFeeTypeId id, String name, Money yearlyFee,
                               List<MembershipPaymentRule> rules) {
-        Assert.notNull(id, "MembershipFeeTierId is required");
+        Assert.notNull(id, "MembershipFeeTypeId is required");
         Assert.hasText(name, "Name is required");
         Assert.notNull(yearlyFee, "YearlyFee is required");
         this.id = id;
@@ -33,21 +33,21 @@ public class MembershipFeeTier extends KlabisAggregateRoot<MembershipFeeTier, Me
         this.rules = new ArrayList<>(rules);
     }
 
-    public static MembershipFeeTier create(String name, Money yearlyFee) {
-        MembershipFeeTierId id = new MembershipFeeTierId(UUID.randomUUID());
-        return new MembershipFeeTier(id, name, yearlyFee, List.of());
+    public static MembershipFeeType create(String name, Money yearlyFee) {
+        MembershipFeeTypeId id = new MembershipFeeTypeId(UUID.randomUUID());
+        return new MembershipFeeType(id, name, yearlyFee, List.of());
     }
 
-    public static MembershipFeeTier reconstruct(MembershipFeeTierId id, String name, Money yearlyFee,
+    public static MembershipFeeType reconstruct(MembershipFeeTypeId id, String name, Money yearlyFee,
                                                 List<MembershipPaymentRule> rules,
                                                 AuditMetadata auditMetadata) {
-        MembershipFeeTier level = new MembershipFeeTier(id, name, yearlyFee, rules);
+        MembershipFeeType level = new MembershipFeeType(id, name, yearlyFee, rules);
         level.updateAuditMetadata(auditMetadata);
         return level;
     }
 
     @Override
-    public MembershipFeeTierId getId() {
+    public MembershipFeeTypeId getId() {
         return id;
     }
 

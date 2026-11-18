@@ -101,7 +101,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
         return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
-    const chooseLevelTemplate = summary?._templates?.chooseTier;
+    const chooseLevelTemplate = summary?._templates?.chooseFeeType;
     const removeChoiceTemplate = summary?._templates?.removeChoice;
 
     const groupOptions: ChooseLevelOption[] =

@@ -2,7 +2,7 @@ package com.klabis.membershipfees.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
@@ -46,16 +46,16 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
         }
 
         Optional<MembershipFeeGroupId> recommended = votingOpen
-                ? getRecommendedLevelForYear(memberId, year)
-                        .flatMap(tierId -> findPublishedGroup(year, tierId))
+                ? getRecommendedTypeForYear(memberId, year)
+                        .flatMap(typeId -> findPublishedGroup(year, typeId))
                 : Optional.empty();
 
         return new CurrentLevelInfo(null, null, null, votingOpen, recommended);
     }
 
-    private Optional<MembershipFeeGroupId> findPublishedGroup(int year, MembershipFeeTierId tierId) {
+    private Optional<MembershipFeeGroupId> findPublishedGroup(int year, MembershipFeeTypeId typeId) {
         return groupRepository.findByYear(year).stream()
-                .filter(group -> group.getSourceLevelId().equals(tierId))
+                .filter(group -> group.getSourceTypeId().equals(typeId))
                 .map(MembershipFeeGroup::getId)
                 .findFirst();
     }
@@ -69,10 +69,10 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
 
     @Transactional(readOnly = true)
     @Override
-    public Optional<MembershipFeeTierId> getRecommendedLevelForYear(MemberId memberId, int year) {
+    public Optional<MembershipFeeTypeId> getRecommendedTypeForYear(MemberId memberId, int year) {
         return groupRepository.findByMemberAndYear(memberId, year - 1)
-                .map(MembershipFeeGroup::getSourceLevelId)
-                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceLevelId(year, lastYearLevelId));
+                .map(MembershipFeeGroup::getSourceTypeId)
+                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceTypeId(year, lastYearLevelId));
     }
 
     @Transactional(readOnly = true)

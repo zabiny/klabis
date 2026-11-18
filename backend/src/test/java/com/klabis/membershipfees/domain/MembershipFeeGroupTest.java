@@ -2,7 +2,7 @@ package com.klabis.membershipfees.domain;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.*;
 @DisplayName("MembershipFeeGroup domain tests")
 class MembershipFeeGroupTest {
 
-    private static final MembershipFeeTierId SOURCE_LEVEL_ID =
-            new MembershipFeeTierId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final MembershipFeeTypeId SOURCE_TYPE_ID =
+            new MembershipFeeTypeId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final int YEAR = 2026;
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
     private static final EventTypeReference EVENT_TYPE = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
@@ -26,7 +26,7 @@ class MembershipFeeGroupTest {
 
     private MembershipFeeGroup buildGroup() {
         return MembershipFeeGroup.createSnapshot(
-                SOURCE_LEVEL_ID, "Dospělý", YEAR, YEARLY_FEE, List.of(), VOTING_DEADLINE);
+                SOURCE_TYPE_ID, "Dospělý", YEAR, YEARLY_FEE, List.of(), VOTING_DEADLINE);
     }
 
     @Nested
@@ -39,7 +39,7 @@ class MembershipFeeGroupTest {
             MembershipFeeGroup group = buildGroup();
 
             assertThat(group.getId()).isNotNull();
-            assertThat(group.getSourceLevelId()).isEqualTo(SOURCE_LEVEL_ID);
+            assertThat(group.getSourceTypeId()).isEqualTo(SOURCE_TYPE_ID);
             assertThat(group.getName()).isEqualTo("Dospělý");
             assertThat(group.getYear()).isEqualTo(YEAR);
             assertThat(group.getYearlyFeeSnapshot()).isEqualTo(YEARLY_FEE);
@@ -60,7 +60,7 @@ class MembershipFeeGroupTest {
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(50));
 
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    SOURCE_LEVEL_ID, "Závodník", YEAR, YEARLY_FEE, List.of(rule), VOTING_DEADLINE);
+                    SOURCE_TYPE_ID, "Závodník", YEAR, YEARLY_FEE, List.of(rule), VOTING_DEADLINE);
 
             assertThat(group.getRulesSnapshot()).hasSize(1);
             MembershipPaymentRule retrieved = group.getRulesSnapshot().get(0);

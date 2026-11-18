@@ -3,34 +3,34 @@ import {Link, useNavigate} from 'react-router-dom';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {halResource} from '../../api/halResource';
-import type {GetTierResource} from '../../api';
+import type {GetFeeTypeResource} from '../../api';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 import {HalPageGate} from '../HalPageGate.tsx';
 
-type FeeTierDetail = GetTierResource;
+type FeeTypeDetail = GetFeeTypeResource;
 
-const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
+const FeeTypeDetailContent = ({resourceData}: {resourceData: FeeTypeDetail}): ReactElement => {
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const deleteTierAction = halResource(resourceData).template('deleteTier');
+    const deleteFeeTypeAction = halResource(resourceData).template('deleteFeeType');
     const deleteDialog = useTemplateDialog({
-        onSubmitSuccess: () => navigate('/membership-fee-tiers'),
+        onSubmitSuccess: () => navigate('/membership-fee-types'),
     });
 
-    const editTemplate = resourceData._templates?.editTier ?? null;
+    const editTemplate = resourceData._templates?.editFeeType ?? null;
 
     return (
         <div className="flex flex-col gap-6">
             <nav className="flex items-center gap-1 text-sm text-text-secondary">
-                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
+                <Link to="/membership-fee-types" className="hover:text-text-primary transition-colors">
                     {labels.nav['membership-fees']}
                 </Link>
                 <ChevronRight className="w-4 h-4 text-text-tertiary"/>
-                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
-                    {labels.nav['membership-fee-tiers']}
+                <Link to="/membership-fee-types" className="hover:text-text-primary transition-colors">
+                    {labels.nav['membership-fee-types']}
                 </Link>
                 <ChevronRight className="w-4 h-4 text-text-tertiary"/>
                 <span className="text-text-primary font-medium">{resourceData.name}</span>
@@ -67,15 +67,15 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                     {labels.buttons.edit}
                                 </button>
                             )}
-                            {deleteTierAction && (
+                            {deleteFeeTypeAction && (
                                 <button
                                     type="button"
-                                    onClick={() => deleteDialog.open(deleteTierAction, {
-                                        title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
+                                    onClick={() => deleteDialog.open(deleteFeeTypeAction, {
+                                        title: (template) => template.title ?? labels.templates.deleteMembershipFeeType,
                                     })}                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>
-                                    {labels.templates.deleteMembershipFeeTier}
+                                    {labels.templates.deleteMembershipFeeType}
                                 </button>
                             )}
                         </div>
@@ -84,7 +84,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                     editTemplate && (
                         <HalFormDisplay
                             template={editTemplate}
-                            templateName="editTier"
+                            templateName="editFeeType"
                             resourceData={resourceData as unknown as Record<string, unknown>}
                             onClose={() => setIsEditing(false)}
                             successMessage={labels.ui.savedSuccessfully}
@@ -105,8 +105,8 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     );
 };
 
-export const MembershipFeeTierDetailPage = (): ReactElement => (
-    <HalPageGate<FeeTierDetail>>
-        {(resourceData) => <FeeTierDetailContent resourceData={resourceData}/>}
+export const MembershipFeeTypeDetailPage = (): ReactElement => (
+    <HalPageGate<FeeTypeDetail>>
+        {(resourceData) => <FeeTypeDetailContent resourceData={resourceData}/>}
     </HalPageGate>
 );

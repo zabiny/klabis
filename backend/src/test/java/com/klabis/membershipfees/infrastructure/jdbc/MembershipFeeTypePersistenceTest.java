@@ -2,10 +2,10 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.EventTypeReference;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
-import com.klabis.membershipfees.domain.MembershipFeeTierRepository;
+import com.klabis.membershipfees.domain.MembershipFeeType;
+import com.klabis.membershipfees.domain.MembershipFeeTypeRepository;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
@@ -25,21 +25,21 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("MembershipFeeTier JDBC Persistence Tests")
+@DisplayName("MembershipFeeType JDBC Persistence Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @CleanupTestData
-class MembershipFeeTierPersistenceTest {
+class MembershipFeeTypePersistenceTest {
 
     private static final EventTypeReference EVENT_TYPE_A = EventTypeReference.of(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final EventTypeReference EVENT_TYPE_B = EventTypeReference.of(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
 
     @Autowired
-    private MembershipFeeTierRepository repository;
+    private MembershipFeeTypeRepository repository;
 
     @Nested
     @DisplayName("save() and findById() — round-trip")
@@ -48,13 +48,13 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should save and retrieve level with name and yearly fee")
         void shouldSaveAndRetrieveLevelWithBasicFields() {
-            MembershipFeeTier level = MembershipFeeTier.create("Dospělý", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Dospělý", YEARLY_FEE);
 
-            MembershipFeeTier saved = repository.save(level);
-            Optional<MembershipFeeTier> found = repository.findById(saved.getId());
+            MembershipFeeType saved = repository.save(level);
+            Optional<MembershipFeeType> found = repository.findById(saved.getId());
 
             assertThat(found).isPresent();
-            MembershipFeeTier retrieved = found.get();
+            MembershipFeeType retrieved = found.get();
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
             assertThat(retrieved.getName()).isEqualTo("Dospělý");
             assertThat(retrieved.getYearlyFee()).isEqualTo(YEARLY_FEE);
@@ -64,9 +64,9 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should persist audit metadata after save")
         void shouldPersistAuditMetadata() {
-            MembershipFeeTier level = MembershipFeeTier.create("Audit Level", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Audit Level", YEARLY_FEE);
 
-            MembershipFeeTier saved = repository.save(level);
+            MembershipFeeType saved = repository.save(level);
 
             assertThat(saved.getAuditMetadata()).isNotNull();
             assertThat(saved.getCreatedAt()).isNotNull();
@@ -76,11 +76,11 @@ class MembershipFeeTierPersistenceTest {
         @DisplayName("should save and retrieve level with percentage payment rule")
         void shouldSaveAndRetrieveLevelWithPercentageRule() {
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", 50);
-            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Závodník", YEARLY_FEE);
             level.addRule(rule);
 
-            MembershipFeeTier saved = repository.save(level);
-            Optional<MembershipFeeTier> found = repository.findById(saved.getId());
+            MembershipFeeType saved = repository.save(level);
+            Optional<MembershipFeeType> found = repository.findById(saved.getId());
 
             assertThat(found).isPresent();
             List<MembershipPaymentRule> rules = found.get().getRules();
@@ -97,11 +97,11 @@ class MembershipFeeTierPersistenceTest {
         void shouldSaveAndRetrieveLevelWithFixedAmountRule() {
             Money surchargeAmount = Money.ofCzk(new BigDecimal("200.00"));
             MembershipPaymentRule rule = MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB", surchargeAmount);
-            MembershipFeeTier level = MembershipFeeTier.create("Mládež", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Mládež", YEARLY_FEE);
             level.addRule(rule);
 
-            MembershipFeeTier saved = repository.save(level);
-            Optional<MembershipFeeTier> found = repository.findById(saved.getId());
+            MembershipFeeType saved = repository.save(level);
+            Optional<MembershipFeeType> found = repository.findById(saved.getId());
 
             assertThat(found).isPresent();
             List<MembershipPaymentRule> rules = found.get().getRules();
@@ -119,13 +119,13 @@ class MembershipFeeTierPersistenceTest {
             MembershipPaymentRule rule2 = MembershipPaymentRule.percentage(EVENT_TYPE_A, "B", 30);
             MembershipPaymentRule rule3 = MembershipPaymentRule.fixedAmount(EVENT_TYPE_B, "LOB",
                     Money.ofCzk(new BigDecimal("100")));
-            MembershipFeeTier level = MembershipFeeTier.create("Závodník", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Závodník", YEARLY_FEE);
             level.addRule(rule1);
             level.addRule(rule2);
             level.addRule(rule3);
 
-            MembershipFeeTier saved = repository.save(level);
-            Optional<MembershipFeeTier> found = repository.findById(saved.getId());
+            MembershipFeeType saved = repository.save(level);
+            Optional<MembershipFeeType> found = repository.findById(saved.getId());
 
             assertThat(found).isPresent();
             assertThat(found.get().getRules()).hasSize(3);
@@ -134,7 +134,7 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should return empty when level not found")
         void shouldReturnEmptyWhenNotFound() {
-            Optional<MembershipFeeTier> found = repository.findById(new MembershipFeeTierId(UUID.randomUUID()));
+            Optional<MembershipFeeType> found = repository.findById(new MembershipFeeTypeId(UUID.randomUUID()));
 
             assertThat(found).isEmpty();
         }
@@ -142,12 +142,12 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should persist updated name after second save")
         void shouldPersistUpdatedName() {
-            MembershipFeeTier level = repository.save(
-                    MembershipFeeTier.create("Original Name", YEARLY_FEE));
+            MembershipFeeType level = repository.save(
+                    MembershipFeeType.create("Original Name", YEARLY_FEE));
             level.editName("Updated Name");
 
             repository.save(level);
-            MembershipFeeTier retrieved = repository.findById(level.getId()).orElseThrow();
+            MembershipFeeType retrieved = repository.findById(level.getId()).orElseThrow();
 
             assertThat(retrieved.getName()).isEqualTo("Updated Name");
         }
@@ -161,13 +161,13 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should return all saved levels")
         void shouldReturnAllLevels() {
-            repository.save(MembershipFeeTier.create("Level A", YEARLY_FEE));
-            repository.save(MembershipFeeTier.create("Level B", Money.ofCzk(new BigDecimal("800"))));
+            repository.save(MembershipFeeType.create("Level A", YEARLY_FEE));
+            repository.save(MembershipFeeType.create("Level B", Money.ofCzk(new BigDecimal("800"))));
 
-            List<MembershipFeeTier> all = repository.findAll();
+            List<MembershipFeeType> all = repository.findAll();
 
             assertThat(all).hasSize(2);
-            assertThat(all).extracting(MembershipFeeTier::getName)
+            assertThat(all).extracting(MembershipFeeType::getName)
                     .containsExactlyInAnyOrder("Level A", "Level B");
         }
 
@@ -185,8 +185,8 @@ class MembershipFeeTierPersistenceTest {
         @Test
         @DisplayName("should delete level so it can no longer be found")
         void shouldDeleteLevel() {
-            MembershipFeeTier level = repository.save(
-                    MembershipFeeTier.create("To Delete", YEARLY_FEE));
+            MembershipFeeType level = repository.save(
+                    MembershipFeeType.create("To Delete", YEARLY_FEE));
 
             repository.delete(level.getId());
 

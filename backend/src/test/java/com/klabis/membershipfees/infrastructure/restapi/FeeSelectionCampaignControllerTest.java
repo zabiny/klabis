@@ -7,13 +7,13 @@ import com.klabis.finance.domain.Money;
 import com.klabis.members.Members;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import com.klabis.membershipfees.domain.CampaignClosedException;
 import com.klabis.membershipfees.domain.DeadlineNotInFutureException;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
@@ -57,7 +57,7 @@ class FeeSelectionCampaignControllerTest {
     private FeeSelectionCampaignManagementPort managementPort;
 
     @Autowired
-    private MembershipFeeTierManagementPort levelManagementPort;
+    private MembershipFeeTypeManagementPort levelManagementPort;
 
     @Autowired
     private FeeYearLifecyclePort feeYearLifecyclePort;
@@ -95,7 +95,7 @@ class FeeSelectionCampaignControllerTest {
     private MembershipFeeGroup buildGroup(UUID id, int year) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
-                new MembershipFeeTierId(UUID.randomUUID()),
+                new MembershipFeeTypeId(UUID.randomUUID()),
                 "Dospělý", year, LocalDate.of(year, 3, 31),
                 Money.ofCzk(new BigDecimal("1200.00")),
                 com.klabis.membershipfees.domain.PublishedLevelStatus.EDITABLE,
@@ -117,7 +117,7 @@ class FeeSelectionCampaignControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"year": 2026, "votingDeadline": "2026-03-31", "levelIds": ["%s"]}
+                                            {"year": 2026, "votingDeadline": "2026-03-31", "typeIds": ["%s"]}
                                             """.formatted(UUID.randomUUID())))
                     .andExpect(status().isForbidden());
         }
@@ -133,7 +133,7 @@ class FeeSelectionCampaignControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"year": 2026, "votingDeadline": "2026-03-31", "levelIds": ["%s"]}
+                                            {"year": 2026, "votingDeadline": "2026-03-31", "typeIds": ["%s"]}
                                             """.formatted(UUID.randomUUID())))
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
@@ -152,7 +152,7 @@ class FeeSelectionCampaignControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"year": 2026, "votingDeadline": "2026-10-18", "levelIds": ["%s"]}
+                                            {"year": 2026, "votingDeadline": "2026-10-18", "typeIds": ["%s"]}
                                             """.formatted(UUID.randomUUID())))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("/errors/voting-deadline-not-in-future"))
@@ -162,15 +162,15 @@ class FeeSelectionCampaignControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when levelIds is empty")
+        @DisplayName("should return 400 when typeIds is empty")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenLevelIdsIsEmpty() throws Exception {
+        void shouldReturn400WhenTypeIdsIsEmpty() throws Exception {
             mockMvc.perform(
                             post("/api/fee-selection-campaigns")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"year": 2026, "votingDeadline": "2026-03-31", "levelIds": []}
+                                            {"year": 2026, "votingDeadline": "2026-03-31", "typeIds": []}
                                             """))
                     .andExpect(status().isBadRequest());
         }

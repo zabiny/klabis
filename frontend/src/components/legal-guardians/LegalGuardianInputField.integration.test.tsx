@@ -20,7 +20,7 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 }));
 
 vi.mock('../../hooks/useEventTypes', () => ({useEventTypes: () => ({eventTypes: [], isLoading: false})}));
-vi.mock('../../hooks/useMembershipFeeTierOptions', () => ({useMembershipFeeTierOptions: () => []}));
+vi.mock('../../hooks/useMembershipFeeTypeOptions', () => ({useMembershipFeeTypeOptions: () => []}));
 
 // Mirrors what the backend sends for setMemberLegalGuardians: array of objects, options bound to the array property.
 const template: HalFormsTemplate = {

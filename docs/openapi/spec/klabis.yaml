@@ -112,14 +112,14 @@ paths:
     $ref: './notifications.yaml#/paths/~1api~1notifications~1devices~1{deviceId}'
   /api/notifications/test:
     $ref: './notifications.yaml#/paths/~1api~1notifications~1test'
-  /api/membership-fee-tiers:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
-  /api/membership-fee-tiers/{id}:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}'
-  /api/membership-fee-tiers/{id}/rules:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules'
-  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules~1{eventTypeId}~1{ranking}'
+  /api/membership-fee-types:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types'
+  /api/membership-fee-types/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}'
+  /api/membership-fee-types/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}~1rules'
+  /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}~1rules~1{eventTypeId}~1{ranking}'
   /api/fee-selection-campaigns:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns'
   /api/fee-selection-campaigns/{id}:

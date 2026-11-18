@@ -6,7 +6,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import java.util.List;
 
 @PrimaryPort
-public interface MembershipFeeTierOptionsPort {
+public interface MembershipFeeTypeOptionsPort {
 
     /**
      * Returns ORIS ranking options available for assignment to payment rules.

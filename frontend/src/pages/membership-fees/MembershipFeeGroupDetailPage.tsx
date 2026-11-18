@@ -72,7 +72,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     return (
         <div className="flex flex-col gap-6">
             <nav className="flex items-center gap-1 text-sm" style={{color: 'var(--color-text-secondary)'}}>
-                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
+                <Link to="/membership-fee-types" className="hover:text-text-primary transition-colors">
                     {labels.ui.backToList}
                 </Link>
                 <ChevronRight className="w-4 h-4" style={{color: 'var(--color-text-tertiary)'}}/>

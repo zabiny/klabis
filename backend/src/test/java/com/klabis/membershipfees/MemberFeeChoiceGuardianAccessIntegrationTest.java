@@ -24,7 +24,7 @@ import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @Autowired
     private RegistrationPort registrationPort;
     @Autowired
-    private MembershipFeeTierManagementPort tierManagementPort;
+    private MembershipFeeTypeManagementPort typeManagementPort;
     @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
     @Autowired
@@ -89,10 +89,10 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @BeforeEach
     void publishedCampaignAndMinors() {
         if (campaignManagementPort.findActiveCampaign().isEmpty()) {
-            var tierId = tierManagementPort.createTier(
-                    new MembershipFeeTierManagementPort.CreateTierCommand("Závodní", YEARLY_FEE));
+            var typeId = typeManagementPort.createFeeType(
+                    new MembershipFeeTypeManagementPort.CreateTypeCommand("Závodní", YEARLY_FEE));
             campaignManagementPort.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
-                    YEAR, LocalDate.now().plusDays(30), List.of(tierId)));
+                    YEAR, LocalDate.now().plusDays(30), List.of(typeId)));
         }
         groupId = campaignManagementPort.listGroupsForYear(YEAR).getFirst().getId().value().toString();
 
@@ -149,7 +149,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
     }
 
-    private void chooseTier(Member target, RequestPostProcessor user, int expectedStatus) throws Exception {
+    private void chooseFeeType(Member target, RequestPostProcessor user, int expectedStatus) throws Exception {
         mockMvc.perform(post("/api/members/{id}/fee-choice/{year}", target.getId().uuid(), YEAR).with(user)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"membershipFeeGroupId\":\"" + groupId + "\"}"))
@@ -164,11 +164,11 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @Test
     @DisplayName("member guardian chooses and withdraws the level of their minor")
     void memberGuardianChoosesAndWithdraws() throws Exception {
-        chooseTier(minor, memberGuardian(), 204);
+        chooseFeeType(minor, memberGuardian(), 204);
         getSummary(minor, memberGuardian())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentGroup.id").value(groupId))
-                .andExpect(jsonPath("$._templates.chooseTier").exists())
+                .andExpect(jsonPath("$._templates.chooseFeeType").exists())
                 .andExpect(jsonPath("$._templates.removeChoice").exists());
 
         removeChoice(minor, memberGuardian(), 204);
@@ -179,10 +179,10 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @Test
     @DisplayName("non-member guardian chooses and withdraws the level of their minor")
     void nonMemberGuardianChoosesAndWithdraws() throws Exception {
-        chooseTier(minorOfNonMemberGuardian, nonMemberGuardian(), 204);
+        chooseFeeType(minorOfNonMemberGuardian, nonMemberGuardian(), 204);
         getSummary(minorOfNonMemberGuardian, nonMemberGuardian())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.chooseTier").exists())
+                .andExpect(jsonPath("$._templates.chooseFeeType").exists())
                 .andExpect(jsonPath("$._templates.removeChoice").exists());
 
         removeChoice(minorOfNonMemberGuardian, nonMemberGuardian(), 204);
@@ -191,15 +191,15 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @Test
     @DisplayName("member chooses their own level")
     void memberChoosesOwnLevel() throws Exception {
-        chooseTier(otherMember, loggedInAs(otherMember.getId().toUserId(), otherMember.getId()), 204);
+        chooseFeeType(otherMember, loggedInAs(otherMember.getId().toUserId(), otherMember.getId()), 204);
     }
 
     @Test
     @DisplayName("guardian cannot choose or withdraw for a member who is not their minor")
     void guardianCannotChooseForUnrelatedMember() throws Exception {
-        chooseTier(otherMember, memberGuardian(), 403);
+        chooseFeeType(otherMember, memberGuardian(), 403);
         removeChoice(otherMember, memberGuardian(), 403);
-        chooseTier(minor, nonMemberGuardian(), 403);
+        chooseFeeType(minor, nonMemberGuardian(), 403);
         removeChoice(minor, nonMemberGuardian(), 403);
     }
 
@@ -207,7 +207,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     @DisplayName("unrelated member cannot choose or withdraw for another member")
     @WithKlabisMockUser(memberId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", authorities = {Authority.MEMBERS_READ})
     void unrelatedMemberCannotChoose() throws Exception {
-        chooseTier(otherMember, CURRENT_USER, 403);
+        chooseFeeType(otherMember, CURRENT_USER, 403);
         removeChoice(otherMember, CURRENT_USER, 403);
     }
 
@@ -218,17 +218,17 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
         feeYearLifecyclePort.chooseFeeLevel(new FeeYearLifecyclePort.ChooseFeeLevel(
                 minor.getId(), new MembershipFeeGroupId(UUID.fromString(groupId)), YEAR));
 
-        chooseTier(minor, CURRENT_USER, 403);
+        chooseFeeType(minor, CURRENT_USER, 403);
         removeChoice(minor, CURRENT_USER, 403);
 
         getSummary(minor, CURRENT_USER)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentGroup.id").value(groupId))
-                .andExpect(jsonPath("$._templates.chooseTier").doesNotExist())
+                .andExpect(jsonPath("$._templates.chooseFeeType").doesNotExist())
                 .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
         getChoice(minor, CURRENT_USER)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.chooseTier").doesNotExist())
+                .andExpect(jsonPath("$._templates.chooseFeeType").doesNotExist())
                 .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
     }
 }

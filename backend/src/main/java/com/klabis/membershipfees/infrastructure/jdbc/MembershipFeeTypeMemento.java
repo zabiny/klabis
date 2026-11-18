@@ -1,8 +1,8 @@
 package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
+import com.klabis.membershipfees.MembershipFeeTypeId;
+import com.klabis.membershipfees.domain.MembershipFeeType;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Table(schema = "membershipfees", value = "membership_fee_tier")
-class MembershipFeeTierMemento extends AbstractMembershipFeeMemento {
+@Table(schema = "membershipfees", value = "membership_fee_type")
+class MembershipFeeTypeMemento extends AbstractMembershipFeeMemento {
 
     @Column("name")
     private String name;
@@ -27,14 +27,14 @@ class MembershipFeeTierMemento extends AbstractMembershipFeeMemento {
     @Column("yearly_fee_currency")
     private String yearlyFeeCurrency;
 
-    @MappedCollection(idColumn = "membership_fee_tier_id")
+    @MappedCollection(idColumn = "membership_fee_type_id")
     private Set<MembershipPaymentRuleMemento> rules = new HashSet<>();
 
-    protected MembershipFeeTierMemento() {
+    protected MembershipFeeTypeMemento() {
     }
 
-    static MembershipFeeTierMemento from(MembershipFeeTier level) {
-        MembershipFeeTierMemento memento = new MembershipFeeTierMemento();
+    static MembershipFeeTypeMemento from(MembershipFeeType level) {
+        MembershipFeeTypeMemento memento = new MembershipFeeTypeMemento();
         memento.id = level.getId().value();
         memento.name = level.getName();
         memento.yearlyFeeAmount = level.getYearlyFee().amount();
@@ -47,14 +47,14 @@ class MembershipFeeTierMemento extends AbstractMembershipFeeMemento {
         return memento;
     }
 
-    MembershipFeeTier toTier() {
+    MembershipFeeType toType() {
         List<MembershipPaymentRule> domainRules = rules.stream()
                 .map(MembershipPaymentRuleMemento::toRule)
                 .toList();
 
         Money yearlyFee = Money.of(yearlyFeeAmount, Currency.getInstance(yearlyFeeCurrency));
 
-        return MembershipFeeTier.reconstruct(new MembershipFeeTierId(id), name, yearlyFee,
+        return MembershipFeeType.reconstruct(new MembershipFeeTypeId(id), name, yearlyFee,
                 domainRules, toAuditMetadata());
     }
 }

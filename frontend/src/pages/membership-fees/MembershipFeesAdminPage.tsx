@@ -1,15 +1,15 @@
 import {type ReactElement} from 'react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
-import {TierCatalogSection} from '../../components/membership-fees/TierCatalogSection.tsx';
+import {TypeCatalogSection} from '../../components/membership-fees/TypeCatalogSection.tsx';
 import {PastCampaignsSection} from '../../components/membership-fees/PastCampaignsSection.tsx';
-import type {ListTiersResource} from '../../api';
+import type {ListFeeTypesResource} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {labels} from '../../localization';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalPageGate} from '../HalPageGate.tsx';
 
-const MembershipFeesAdminContent = ({resourceData}: {resourceData: ListTiersResource}): ReactElement => {
+const MembershipFeesAdminContent = ({resourceData}: {resourceData: ListFeeTypesResource}): ReactElement => {
     const activeCampaignHref = resourceData._links?.activeCampaign
         ? toHref(resourceData._links.activeCampaign) : null;
     const pastCampaignsHref = resourceData._links?.pastCampaigns
@@ -32,7 +32,7 @@ const MembershipFeesAdminContent = ({resourceData}: {resourceData: ListTiersReso
                 </div>
             )}
 
-            <TierCatalogSection/>
+            <TypeCatalogSection/>
 
             <PastCampaignsSection pastCampaignsHref={pastCampaignsHref}/>
         </div>
@@ -40,7 +40,7 @@ const MembershipFeesAdminContent = ({resourceData}: {resourceData: ListTiersReso
 };
 
 export const MembershipFeesAdminPage = (): ReactElement => (
-    <HalPageGate<ListTiersResource>>
+    <HalPageGate<ListFeeTypesResource>>
         {(resourceData) => <MembershipFeesAdminContent resourceData={resourceData}/>}
     </HalPageGate>
 );
