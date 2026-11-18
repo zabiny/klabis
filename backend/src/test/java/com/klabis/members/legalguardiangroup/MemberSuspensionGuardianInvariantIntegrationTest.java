@@ -86,7 +86,7 @@ class MemberSuspensionGuardianInvariantIntegrationTest {
         assertThat(legalGuardianGroupPort.guardiansOf(child.getId()))
                 .containsExactlyInAnyOrder(suspended.getId().toUserId(), staying.getId().toUserId());
 
-        scenario.stimulate(() -> managementPort.suspendMember(suspended.getId(), suspension()))
+        scenario.stimulate(() -> managementPort.suspendMember(suspended.getId(), suspension(), Set.of()))
                 .andWaitForStateChange(() -> legalGuardianGroupPort.guardiansOf(child.getId()),
                         guardians -> guardians.size() == 1)
                 .andVerify(guardians -> assertThat(guardians).containsExactly(staying.getId().toUserId()));

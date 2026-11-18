@@ -62,7 +62,7 @@ class MembersErrorTypesTest {
     @Test
     @DisplayName("suspension blocked")
     void suspensionBlocked() {
-        SuspensionBlockedException ex = new SuspensionBlockedException(List.of(), null);
+        SuspensionBlockedException ex = new SuspensionBlockedException(List.of(), null, List.of());
 
         assertThat(ex.errorType()).isEqualTo("suspension-blocked");
     }

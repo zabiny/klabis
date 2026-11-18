@@ -15,7 +15,8 @@ import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-reac
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
-import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {SuspendFormNote, SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {formatPersonName} from "../../components/members/formatPersonName.ts";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {
     DEFAULT_MEMBER_STATUS,
@@ -47,7 +48,6 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
     const hasImportFromOris = !!importFromOrisTemplate;
 
     const suspension = useSuspendMemberAction();
-    const [suspendedMemberName, setSuspendedMemberName] = useState('');
 
     const actionDialog = useTemplateDialog({
         size: '2xl',
@@ -131,10 +131,8 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            setSuspendedMemberName(`${member.firstName ?? ''} ${member.lastName ?? ''}`.trim());
-                            actionDialog.open(suspendAction, {
-                                note: <p className="text-text-secondary">{labels.suspensionWarning.suspendFormGuardianNote}</p>,
-                            });
+                            suspension.startSuspension(formatPersonName(member));
+                            actionDialog.open(suspendAction, {note: <SuspendFormNote/>});
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -176,7 +174,7 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
     };
 
     const memberName = permissionsDialog
-        ? `${permissionsDialog.member.firstName ?? ''} ${permissionsDialog.member.lastName ?? ''}`.trim()
+        ? formatPersonName(permissionsDialog.member)
         : '';
 
     const memberRegistrationNumber = permissionsDialog
@@ -246,7 +244,7 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
                 warning={suspension.warning}
                 resolvedGroupIds={suspension.resolvedGroupIds}
                 cascadeGroupIds={suspension.cascadeGroupIds}
-                suspendedMemberName={suspendedMemberName}
+                suspendedMemberName={suspension.suspendedMemberName}
                 isFinishing={suspension.isFinishing}
                 onClose={suspension.clearWarning}
                 onGroupResolved={suspension.markGroupResolved}

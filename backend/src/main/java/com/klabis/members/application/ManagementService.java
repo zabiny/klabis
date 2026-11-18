@@ -153,7 +153,7 @@ public class ManagementService implements ManagementPort {
     private SuspensionBlockedException.DependentBlockers dependentBlockersOf(Member minor) {
         Blockers blockers = blockersOf(minor.getId(), Set.of());
         return new SuspensionBlockedException.DependentBlockers(minor.getId(),
-                minor.getFirstName() + " " + minor.getLastName(), blockers.groups(), blockers.debt());
+                minor.getPersonalInformation().getFullName(), blockers.groups(), blockers.debt());
     }
 
     /**

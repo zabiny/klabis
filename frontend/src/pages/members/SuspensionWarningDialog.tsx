@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router-dom';
 import {Button, Modal} from '../../components/UI';
 import {labels} from '../../localization';
+import {formatPersonName} from '../../components/members/formatPersonName';
 import {formatCurrency} from '../../components/finance/financeFormatters';
 import {toRoutePath} from '../../api/apiPath';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -50,9 +51,24 @@ const GroupRowFrame = ({group, children}: {group: AffectedGroup; children: React
     </li>
 );
 
-const ResolvedMarker = () => (
-    <span className="text-sm font-medium text-green-700">✓ {labels.suspensionWarning.resolved}</span>
+const ResolvedMarker = ({text = labels.suspensionWarning.resolved}: {text?: string}) => (
+    <span className="text-sm font-medium text-green-700">✓ {text}</span>
 );
+
+export const SuspendFormNote = () => (
+    <p className="text-text-secondary">{labels.suspensionWarning.suspendFormGuardianNote}</p>
+);
+
+const useGroupResource = (group: AffectedGroup) => {
+    const {data, error, isLoading} = useAuthorizedQuery<HalResponse>(group.groupLink, {retry: false});
+    return {data, error, isLoading};
+};
+
+const GroupLoadStatus = ({isLoading, error}: {isLoading: boolean; error: unknown}) => {
+    if (isLoading) return <span className="text-sm text-text-secondary">{labels.suspensionWarning.loadingGroup}</span>;
+    if (error) return <span className="text-sm text-red-600">{labels.suspensionWarning.groupLoadFailed}</span>;
+    return null;
+};
 
 interface ResolvableGroupConfig {
     successorTemplate: string;
@@ -77,7 +93,7 @@ const RESOLVABLE_GROUPS: Record<'TRAINING' | 'FREE', ResolvableGroupConfig> = {
 };
 
 const ResolvableGroupRow = ({group, resolved, onResolved, config}: RowProps & {config: ResolvableGroupConfig}): ReactElement => {
-    const {data, error, isLoading} = useAuthorizedQuery<HalResponse>(group.groupLink, {retry: false});
+    const {data, error, isLoading} = useGroupResource(group);
     const groupActions = halResource(data);
     const successor = config.canDesignateSuccessor(data) ? groupActions.template(config.successorTemplate) : undefined;
     const dissolve = config.dissolveTemplate ? groupActions.template(config.dissolveTemplate) : undefined;
@@ -92,7 +108,7 @@ const ResolvableGroupRow = ({group, resolved, onResolved, config}: RowProps & {c
     if (resolved) {
         content = <ResolvedMarker/>;
     } else if (isLoading) {
-        content = <span className="text-sm text-text-secondary">{labels.suspensionWarning.loadingGroup}</span>;
+        content = <GroupLoadStatus isLoading error={null}/>;
     } else if (successor || dissolve) {
         content = (
             <div className="flex gap-2 flex-wrap">
@@ -109,7 +125,7 @@ const ResolvableGroupRow = ({group, resolved, onResolved, config}: RowProps & {c
             </div>
         );
     } else if (error && (error as ApiError).status !== 403) {
-        content = <span className="text-sm text-red-600">{labels.suspensionWarning.groupLoadFailed}</span>;
+        content = <GroupLoadStatus isLoading={false} error={error}/>;
     } else {
         content = <span className="text-sm text-text-secondary">{config.contactText}</span>;
     }
@@ -137,7 +153,7 @@ interface LegalGuardianRowProps {
 }
 
 const LegalGuardianGroupRow = ({group, cascaded, guardianName, onChosen, onCancelled, onSuccessorRequested}: LegalGuardianRowProps): ReactElement => {
-    const {data, error, isLoading} = useAuthorizedQuery<HalResponse>(group.groupLink, {retry: false});
+    const {data, error, isLoading} = useGroupResource(group);
     const [confirming, setConfirming] = useState(false);
     const groupData = data as LegalGuardianGroupData | undefined;
 
@@ -147,7 +163,7 @@ const LegalGuardianGroupRow = ({group, cascaded, guardianName, onChosen, onCance
     if (cascaded) {
         content = (
             <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm font-medium text-green-700">✓ {labels.suspensionWarning.suspendWholeGroupMarked}</span>
+                <ResolvedMarker text={labels.suspensionWarning.suspendWholeGroupMarked}/>
                 <Button variant="secondary" size="sm" onClick={onCancelled}>
                     {labels.suspensionWarning.suspendWholeGroupCancel}
                 </Button>
@@ -164,8 +180,7 @@ const LegalGuardianGroupRow = ({group, cascaded, guardianName, onChosen, onCance
                         {labels.suspensionWarning.suspendWholeGroup}
                     </Button>
                 </div>
-                {isLoading && <span className="text-sm text-text-secondary">{labels.suspensionWarning.loadingGroup}</span>}
-                {!isLoading && error && <span className="text-sm text-red-600">{labels.suspensionWarning.groupLoadFailed}</span>}
+                <GroupLoadStatus isLoading={isLoading} error={error}/>
             </div>
         );
     }
@@ -185,7 +200,7 @@ const LegalGuardianGroupRow = ({group, cascaded, guardianName, onChosen, onCance
                             <span className="text-xs text-text-tertiary uppercase">{labels.suspensionWarning.suspendWholeGroupMinors}</span>
                             <ul className="list-disc pl-5 text-text-primary">
                                 {(groupData?.minors ?? []).map((minor, index) => (
-                                    <li key={index}>{[minor.firstName, minor.lastName].filter(Boolean).join(' ')}</li>
+                                    <li key={index}>{formatPersonName(minor)}</li>
                                 ))}
                             </ul>
                         </div>

@@ -33,10 +33,6 @@ public interface ManagementPort {
      */
     Member syncMemberFromOris(MemberId memberId, Member.SyncFromOris command);
 
-    default Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
-        return suspendMember(memberId, command, Set.of());
-    }
-
     /**
      * Suspends the member and, atomically, the minors of the given legal guardian groups with the same reason
      * and note. Every member is checked before anything changes; minors that are already suspended are skipped.

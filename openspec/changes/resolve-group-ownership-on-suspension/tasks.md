@@ -42,5 +42,5 @@ Slices are vertical. Run tests per module through the test-runner skill, sequent
 ## 6. Wrap-up
 
 - [x] 6.1 Docs: add an `ADR-011` to `docs/design-decisions.md` (free group authorization via the relationship authority GROUPS:OWNER with the MEMBERS:MANAGE override: option C, why not A and B; `removeGroupMember`/`getGroup` stay imperative). Verify: the ADR is linked to this change.
-- [ ] 6.2 Run the full backend and frontend suites (final verification rules for Modulith test skipping apply) and `npm run build`; run code review before any commit.
-- [ ] 6.3 Run `openspec validate resolve-group-ownership-on-suspension --strict`.
+- [x] 6.2 Run the full backend and frontend suites (final verification rules for Modulith test skipping apply) and `npm run build`; run code review before any commit.
+- [x] 6.3 Run `openspec validate resolve-group-ownership-on-suspension --strict`.

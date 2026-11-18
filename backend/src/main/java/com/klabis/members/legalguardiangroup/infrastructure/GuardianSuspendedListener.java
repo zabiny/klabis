@@ -28,6 +28,6 @@ class GuardianSuspendedListener {
     @ApplicationModuleListener
     void on(MemberSuspendedEvent event) {
         legalGuardianGroupPort.removeGuardianFromGroupsWithOtherGuardians(event.memberId().toUserId());
-        log.info("Suspended member {} removed from guardians of groups with other guardians", event.memberId());
+        log.debug("Suspended member {} removed from guardians of groups with other guardians", event.memberId());
     }
 }

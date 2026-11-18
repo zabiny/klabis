@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -93,7 +94,7 @@ class MemberAccountCreationIntegrationTest {
         MemberId memberId = memberRef.get().getId();
         UserId manager = new UserId(UUID.randomUUID());
         managementPort.suspendMember(memberId,
-                new Member.SuspendMembership(manager, DeactivationReason.ODHLASKA, null));
+                new Member.SuspendMembership(manager, DeactivationReason.ODHLASKA, null), Set.of());
 
         depositPort.deposit(new DepositPort.DepositCommand(
                 memberId, new BigDecimal("100"), LocalDate.now(), "after suspension", manager));

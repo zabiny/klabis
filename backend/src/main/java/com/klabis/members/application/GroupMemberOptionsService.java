@@ -61,7 +61,7 @@ class GroupMemberOptionsService implements GroupMemberOptionsPort {
 
         Stream<GroupParticipantOption> memberOptions = knownMembers.values().stream()
                 .map(member -> new GroupParticipantOption(member.memberId(),
-                        "%s %s (%s)".formatted(member.firstName(), member.lastName(), member.registrationNumber())));
+                        MemberOptionPrompt.of(member.firstName(), member.lastName(), member.registrationNumber())));
         Stream<GroupParticipantOption> guardianOptions = nonMembers.isEmpty() ? Stream.empty()
                 : legalGuardians.findAllByIds(nonMembers).stream()
                 .map(guardian -> new GroupParticipantOption(guardian.getId().uuid(),

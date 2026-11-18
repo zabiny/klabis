@@ -18,7 +18,8 @@ import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
 import {countryLabel} from "../../utils/countryName.ts";
 import {isCzNationality} from "./isCzNationality";
 import {labels, getEnumLabel} from "../../localization";
-import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {SuspendFormNote, SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {formatPersonName} from "../../components/members/formatPersonName.ts";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
@@ -88,7 +89,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
     const suspension = useSuspendMemberAction();
     const suspendDialog = useTemplateDialog({
         size: '2xl',
-        note: <p className="text-text-secondary">{labels.suspensionWarning.suspendFormGuardianNote}</p>,
+        note: <SuspendFormNote/>,
         onSubmitError: suspension.onSubmitError,
     });
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -347,7 +348,10 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                             {hasEditTemplate && suspendAction && (
                                 <Button
                                     variant="danger"
-                                    onClick={() => suspendDialog.open(suspendAction)}
+                                    onClick={() => {
+                                        suspension.startSuspension(formatPersonName(member));
+                                        suspendDialog.open(suspendAction);
+                                    }}
                                     startIcon={<UserX className="w-4 h-4"/>}
                                 >
                                     {labels.templates.suspendMember}
@@ -450,7 +454,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                 warning={suspension.warning}
                 resolvedGroupIds={suspension.resolvedGroupIds}
                 cascadeGroupIds={suspension.cascadeGroupIds}
-                suspendedMemberName={`${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()}
+                suspendedMemberName={suspension.suspendedMemberName}
                 isFinishing={suspension.isFinishing}
                 onClose={suspension.clearWarning}
                 onGroupResolved={suspension.markGroupResolved}

@@ -5,6 +5,7 @@ import com.klabis.common.authorization.RelationshipSource;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
+import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
@@ -29,8 +30,7 @@ class TrainingGroupRelationshipSource implements RelationshipSource {
     @Override
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
         return DelegatedGrants.ownershipOf(
-                groups.findAll(TrainingGroupFilter.all().withTrainerIs(MemberId.fromUserId(userId))).stream()
-                        .map(group -> group.getId().uuid())
-                        .toList());
+                groups.findAll(TrainingGroupFilter.all().withTrainerIs(MemberId.fromUserId(userId))),
+                TrainingGroupId::uuid);
     }
 }

@@ -20,11 +20,6 @@ public class SuspensionBlockedException extends ConflictException implements Use
     private final List<DependentBlockers> dependents;
 
     public SuspensionBlockedException(List<OwnedGroup> blockingGroups,
-                                       MemberFinancialStatePort.MemberFinancialSnapshot debtSnapshot) {
-        this(blockingGroups, debtSnapshot, List.of());
-    }
-
-    public SuspensionBlockedException(List<OwnedGroup> blockingGroups,
                                        MemberFinancialStatePort.MemberFinancialSnapshot debtSnapshot,
                                        List<DependentBlockers> dependents) {
         super("Suspension blocked: %d blocking group(s), outstandingDebt=%s, %d blocked dependent member(s)"

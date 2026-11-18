@@ -2515,7 +2515,7 @@ class MemberControllerApiTest {
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new SuspensionBlockedException(groups, null));
+                    .thenThrow(new SuspensionBlockedException(groups, null, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2545,7 +2545,7 @@ class MemberControllerApiTest {
                     new OwnedGroup("dddddddd-dddd-dddd-dddd-dddddddddddd", "Žáci", groupType, java.net.URI.create(link)));
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new SuspensionBlockedException(groups, null));
+                    .thenThrow(new SuspensionBlockedException(groups, null, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2568,7 +2568,7 @@ class MemberControllerApiTest {
                     true);
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot));
+                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2599,7 +2599,7 @@ class MemberControllerApiTest {
                     true);
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new SuspensionBlockedException(groups, snapshot));
+                    .thenThrow(new SuspensionBlockedException(groups, snapshot, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {

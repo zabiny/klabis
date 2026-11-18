@@ -192,7 +192,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.ODHLASKA)
                         .note("Member requested resignation")
                         .build();
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -221,7 +221,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.ODHLASKA)
                         .note("Member requested resignation")
                         .build();
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.isActive()).isFalse();
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
@@ -238,7 +238,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.PRESTUP)
                         .note(null)
                         .build();
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -261,7 +261,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.OTHER)
                         .note("Administrative decision")
                         .build();
-                testedSubject.suspendMember(new MemberId(testMemberId), command);
+                testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
                 verify(memberRepository).save(captor.capture());
@@ -295,7 +295,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
                         .isInstanceOf(SuspensionBlockedException.class)
                         .satisfies(ex -> {
                             var e = (SuspensionBlockedException) ex;
@@ -321,7 +321,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.isActive()).isFalse();
                 verify(memberRepository).save(any(Member.class));
@@ -349,7 +349,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
                         .isInstanceOf(SuspensionBlockedException.class)
                         .satisfies(ex -> {
                             var e = (SuspensionBlockedException) ex;
@@ -379,7 +379,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.isActive()).isFalse();
                 verify(memberRepository).save(any(Member.class));
@@ -402,7 +402,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
 
                 assertThat(result.isActive()).isFalse();
                 verify(memberRepository).save(any(Member.class));
@@ -426,7 +426,7 @@ class ManagementServiceTest {
                         .note(null)
                         .build();
 
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
                         .isInstanceOf(SuspensionBlockedException.class)
                         .satisfies(ex -> {
                             var e = (SuspensionBlockedException) ex;
@@ -669,7 +669,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.OTHER)
                         .note("Second termination attempt")
                         .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
                         .isInstanceOf(MemberAlreadySuspendedException.class)
                         .hasMessageContaining("Member is already suspended");
 
@@ -693,7 +693,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.PRESTUP)
                         .note(null)
                         .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
@@ -716,7 +716,7 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.ODHLASKA)
                         .note(null)
                         .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command, Set.of()))
                         .isInstanceOf(MemberNotFoundException.class)
                         .hasMessageContaining("Member not found");
 

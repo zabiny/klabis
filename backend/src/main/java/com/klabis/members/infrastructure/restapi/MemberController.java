@@ -15,6 +15,7 @@ import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.MemberContactPort;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberOptionPrompt;
 import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.MemberViewAccess;
 import com.klabis.members.domain.Member;
@@ -166,7 +167,7 @@ public class MemberController implements MembersApi {
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
         List<MemberOptionResponse> options = managementService.listActiveMembers().stream()
                 .map(member -> MemberOptionResponseBuilder.builder()
-                        .prompt("%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue()))
+                        .prompt(MemberOptionPrompt.of(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue()))
                         .value(member.getId().uuid().toString())
                         .build())
                 .toList();

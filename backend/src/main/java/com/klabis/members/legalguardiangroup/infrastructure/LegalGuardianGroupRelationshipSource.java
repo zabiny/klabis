@@ -5,12 +5,12 @@ import com.klabis.common.authorization.RelationshipSource;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,9 +32,6 @@ class LegalGuardianGroupRelationshipSource implements RelationshipSource {
     @Override
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
         List<LegalGuardianGroup> guarded = groups.findAll(LegalGuardianGroupFilter.all().withGuardianIs(userId));
-        Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
-        grants.putAll(DelegatedGrants.overMembersOf(guarded, UserId::uuid));
-        grants.putAll(DelegatedGrants.ownershipOf(guarded.stream().map(group -> group.getId().uuid()).toList()));
-        return grants;
+        return DelegatedGrants.of(guarded, LegalGuardianGroupId::uuid, UserId::uuid);
     }
 }

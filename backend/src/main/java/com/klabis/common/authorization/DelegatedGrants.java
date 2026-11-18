@@ -26,12 +26,40 @@ public final class DelegatedGrants {
      * Ownership of the groups themselves, for the owners of those groups. Held by every kind of group owner
      * (free group owner, trainer, guardian), never granted by hand or delegated.
      */
-    public static Map<Authority, Set<TargetRef>> ownershipOf(Collection<UUID> ownedGroupIds) {
+    private static Map<Authority, Set<TargetRef>> ownershipOfIds(Collection<UUID> ownedGroupIds) {
         if (ownedGroupIds.isEmpty()) {
             return Map.of();
         }
         return Map.of(Authority.GROUPS_OWNER,
                 ownedGroupIds.stream().map(TargetRef::group).collect(Collectors.toUnmodifiableSet()));
+    }
+
+    /**
+     * What the owner of {@code ownedGroups} holds: what each delegates over its members, plus ownership of the
+     * groups themselves.
+     */
+    public static <ID, M> Map<Authority, Set<TargetRef>> of(Collection<? extends MemberGroup<?, ID, M>> ownedGroups,
+                                                           Function<ID, UUID> groupIdToUuid,
+                                                           Function<M, UUID> memberIdToUuid) {
+        Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
+        grants.putAll(overMembersOf(ownedGroups, memberIdToUuid));
+        grants.putAll(ownershipOf(ownedGroups, groupIdToUuid));
+        return grants;
+    }
+
+    /**
+     * Ownership of the groups themselves, for the owners of those groups. Held by every kind of group owner
+     * (free group owner, trainer, guardian), never granted by hand or delegated.
+     */
+    public static <ID> Map<Authority, Set<TargetRef>> ownershipOf(Collection<? extends MemberGroup<?, ID, ?>> ownedGroups,
+                                                                 Function<ID, UUID> groupIdToUuid) {
+        if (ownedGroups.isEmpty()) {
+            return Map.of();
+        }
+        return Map.of(Authority.GROUPS_OWNER,
+                ownedGroups.stream()
+                        .map(group -> TargetRef.group(groupIdToUuid.apply(group.getId())))
+                        .collect(Collectors.toUnmodifiableSet()));
     }
 
     /**
