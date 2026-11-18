@@ -12,8 +12,6 @@ import {fieldLabel} from './fieldLabel.ts'
 interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** Member IDs to exclude from the picker options */
     excludeIds?: string[];
-    /** When provided, only these member IDs will be shown (whitelist — used for "promote to owner" where only current members are valid) */
-    includeIds?: string[];
 }
 
 const normalize = (text: string): string =>
@@ -33,14 +31,13 @@ const matchesSearch = (label: string, query: string): boolean => {
  * options list (loaded via useHalFormOptions) and shows plain text instead of a
  * disabled dropdown.
  */
-export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', excludeIds, includeIds}: HalFormsMemberIdProps): ReactElement => {
+export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', excludeIds}: HalFormsMemberIdProps): ReactElement => {
     const {options: rawOptions, isLoading} = useHalFormOptions(prop.options)
     const [field] = useField<unknown>(prop.name)
     const [search, setSearch] = useState('')
 
     const options = rawOptions.filter(opt => {
         const id = String(opt.value);
-        if (includeIds !== undefined) return includeIds.includes(id);
         if (excludeIds !== undefined) return !excludeIds.includes(id);
         return true;
     });

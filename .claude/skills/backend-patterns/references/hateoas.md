@@ -148,7 +148,12 @@ klabisAffordWithOptions(
 Rules:
 - Explicit options override the auto-registered ones for that property; an **empty** `values`/`Inline`
   list falls back to them (it does not mean "no options").
-- Options are bound to the one affordance built in that call — they never leak into other templates.
+- Options are bound to the one affordance built in that call — they never leak into other templates. Two
+  templates on one resource may therefore share a property name (e.g. `memberId` of `addGroupOwner` and
+  `inviteMember`) with different options. Mechanism (`HalFormsSupport`, `HalFormsMultiPropertyModule`): each
+  property with explicit options gets a token appended to its HAL-FORMS `type` while the model is built; the
+  options writer resolves the options by that token from a request-scoped map and a `type` writer strips the
+  token again, so the wire format is unchanged. Do not key options by property name.
 - Data needed for the options (ports, repositories) may be injected straight into the postprocessor —
   register the dependency in the owning module's `*WebMvcMockitoBeans` (see `testing-guide.md`). Real examples: `PermissionController` (assignable
   authorities), `SyncStatePostprocessor` (`SynchronizationPort.supportedResolutions`),

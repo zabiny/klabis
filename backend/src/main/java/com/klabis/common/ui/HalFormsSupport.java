@@ -110,16 +110,44 @@ public class HalFormsSupport {
     private static final String OPTIONS_DEF_REQUEST_ATTR = HalFormsSupport.class.getName() + ".optionsDef";
 
     /**
-     * Returns the options definition (value list, inline value+prompt pairs, or remote link) for the
-     * named property from the current request context, or null if none are set.
+     * Options are tied to one property of one template, not to a property name: two templates on the same
+     * resource may both have a {@code memberId} with different options. Spring HATEOAS gives the options
+     * writer nothing but the serialized property, so the property's {@code type} carries a token that
+     * addresses its options in the request context; {@link #stripOptionsToken} removes it again on the way out.
      */
-    static HalFormsOptionsDef getOptionsDefForProperty(String propertyName) {
+    static final char OPTIONS_TOKEN_SEPARATOR = '\u001F';
+
+    /**
+     * Returns the options definition (value list, inline value+prompt pairs, or remote link) addressed by
+     * the token in the given serialized property type, or null if the property has none.
+     */
+    static HalFormsOptionsDef getOptionsDefForType(String type) {
         HttpServletRequest request = currentRequest();
-        if (request == null) {
+        if (request == null || type == null) {
             return null;
         }
+        int separator = type.indexOf(OPTIONS_TOKEN_SEPARATOR);
         Map<String, HalFormsOptionsDef> ctx = getOptionsDefContext(request);
-        return ctx != null ? ctx.get(propertyName) : null;
+        return separator < 0 || ctx == null ? null : ctx.get(type.substring(separator + 1));
+    }
+
+    static String stripOptionsToken(String type) {
+        if (type == null) {
+            return null;
+        }
+        int separator = type.indexOf(OPTIONS_TOKEN_SEPARATOR);
+        return separator < 0 ? type : type.substring(0, separator);
+    }
+
+    private static String registerOptionsDef(HttpServletRequest request, HalFormsOptionsDef optionsDef) {
+        Map<String, HalFormsOptionsDef> ctx = getOptionsDefContext(request);
+        if (ctx == null) {
+            ctx = new HashMap<>();
+            request.setAttribute(OPTIONS_DEF_REQUEST_ATTR, ctx);
+        }
+        String token = Integer.toString(ctx.size());
+        ctx.put(token, optionsDef);
+        return token;
     }
 
     @SuppressWarnings("unchecked")
@@ -334,18 +362,16 @@ public class HalFormsSupport {
         @Override
         public Stream<AffordanceModel.PropertyMetadata> stream() {
             HttpServletRequest request = currentRequest();
-            if (request != null && !optionsDef.isEmpty()) {
-                // Jackson materializes every affordance's property list before it writes any of them to JSON,
-                // so multiple klabisAffordWithOptions calls on the same response all run their stream()
-                // before the first property's "options" is actually serialized. Overwriting the attribute here
-                // would make only the last-processed affordance's options visible; merging keeps all of them.
-                request.setAttribute(OPTIONS_DEF_REQUEST_ATTR, mergeOptions(
-                        getOptionsDefContext(request), optionsDef));
-            }
-            // Modify property metadata stream based on @HalForms annotations
-            return inputPayloadMetadata.stream()
+            Stream<AffordanceModel.PropertyMetadata> properties = inputPayloadMetadata.stream()
                     .map(this::wrapPropertyMetadata)
                     .filter(this::isPropertyDisplayed);
+            if (request == null || optionsDef.isEmpty()) {
+                return properties;
+            }
+            return properties.map(property -> optionsDef.containsKey(property.getName())
+                    ? new OptionsTokenPropertyMetadata(property,
+                    registerOptionsDef(request, optionsDef.get(property.getName())))
+                    : property);
         }
 
         private AffordanceModel.PropertyMetadata wrapPropertyMetadata(AffordanceModel.PropertyMetadata metadata) {
@@ -365,15 +391,6 @@ public class HalFormsSupport {
             }
 
             return wrapped;
-        }
-
-        private static <V> Map<String, V> mergeOptions(Map<String, V> existing, Map<String, V> additional) {
-            if (existing == null || existing.isEmpty()) {
-                return additional;
-            }
-            Map<String, V> merged = new HashMap<>(existing);
-            merged.putAll(additional);
-            return merged;
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
@@ -435,6 +452,68 @@ public class HalFormsSupport {
     /**
      * PropertyMetadata wrapper that overrides isReadOnly() and provides correct type for DTO properties
      */
+    private static class OptionsTokenPropertyMetadata implements AffordanceModel.PropertyMetadata {
+
+        private final AffordanceModel.PropertyMetadata delegate;
+        private final String token;
+
+        OptionsTokenPropertyMetadata(AffordanceModel.PropertyMetadata delegate, String token) {
+            this.delegate = delegate;
+            this.token = token;
+        }
+
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public boolean isRequired() {
+            return delegate.isRequired();
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return delegate.isReadOnly();
+        }
+
+        @Override
+        public Optional<String> getPattern() {
+            return delegate.getPattern();
+        }
+
+        @Override
+        public org.springframework.core.ResolvableType getType() {
+            return delegate.getType();
+        }
+
+        @Override
+        public Number getMin() {
+            return delegate.getMin();
+        }
+
+        @Override
+        public Number getMax() {
+            return delegate.getMax();
+        }
+
+        @Override
+        public Long getMinLength() {
+            return delegate.getMinLength();
+        }
+
+        @Override
+        public Long getMaxLength() {
+            return delegate.getMaxLength();
+        }
+
+        @Override
+        public String getInputType() {
+            String type = delegate.getInputType();
+            return (type == null ? "" : type) + OPTIONS_TOKEN_SEPARATOR + token;
+        }
+    }
+
     private static class KlabisHalFormsPropertyMetadataWrapper implements AffordanceModel.PropertyMetadata {
 
         private final AffordanceModel.PropertyMetadata delegate;

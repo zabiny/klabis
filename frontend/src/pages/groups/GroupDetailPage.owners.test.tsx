@@ -59,16 +59,6 @@ const buildOwner = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
-const buildMember = (overrides?: Record<string, unknown>) => ({
-    memberId: 'member-1',
-    joinedAt: '2025-01-15T00:00:00Z',
-    _links: {
-        self: {href: '/api/groups/group-1/members/member-1'},
-        member: {href: '/api/members/member-1'},
-    },
-    ...overrides,
-});
-
 describe('GroupDetailPage — owner management (task 6.3)', () => {
     let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
 
@@ -95,26 +85,36 @@ describe('GroupDetailPage — owner management (task 6.3)', () => {
         expect(screen.queryByRole('button', {name: /přidat správce/i})).not.toBeInTheDocument();
     });
 
-    it('"Přidat správce" dialog offers only current members as candidates', async () => {
+    it('"Přidat správce" dialog lists exactly the options returned for the template link, without client-side filtering', async () => {
         const user = userEvent.setup();
+        const {fetchSpy, writeCalls: ownerWriteCalls} = stubFetch((url) => url.includes('/api/groups/group-1/member-options')
+            ? [{value: 'member-1', prompt: 'Petr Svoboda'}, {value: 'guardian-1', prompt: 'Alena Rodičová'}]
+            : memberOptionsResponse(url));
+        const memberOptionsHref = '/api/groups/group-1/member-options?role=MEMBER';
+        const addOwnerTemplate = memberPickerTemplate({title: 'Přidat správce', target: '/api/groups/group-1/owners'});
+        addOwnerTemplate.properties = [{
+            ...addOwnerTemplate.properties[0],
+            options: {link: {href: memberOptionsHref}},
+        }];
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
-            members: [buildMember()],
-            _templates: {addGroupOwner: memberPickerTemplate({title: 'Přidat správce', target: '/api/groups/group-1/owners'})},
+            members: [],
+            _templates: {addGroupOwner: addOwnerTemplate},
         });
         renderPage(resourceData);
         await user.click(screen.getByRole('button', {name: /přidat správce/i}));
 
         expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat správce');
         expect(await screen.findByRole('option', {name: 'Petr Svoboda'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Alena Rodičová'})).toBeInTheDocument();
         expect(screen.queryByRole('option', {name: 'Jana Nováková'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('option', {name: 'Karel Dvořák'})).not.toBeInTheDocument();
+        expect(fetchSpy.mock.calls.some(([url]) => String(url).includes(memberOptionsHref))).toBe(true);
 
-        await user.selectOptions(screen.getByRole('combobox', {name: /člen/i}), 'member-1');
+        await user.selectOptions(screen.getByRole('combobox', {name: /člen/i}), 'guardian-1');
         await user.click(screen.getByRole('button', {name: /odeslat/i}));
 
-        await waitFor(() => expect(writeCalls()).toHaveLength(1));
-        expect(writeCalls()[0][0]).toBe('/api/groups/group-1/owners');
+        await waitFor(() => expect(ownerWriteCalls()).toHaveLength(1));
+        expect(ownerWriteCalls()[0][0]).toBe('/api/groups/group-1/owners');
     });
 
     it('shows "Odebrat správce" button per owner when removeOwner template exists on owner', () => {

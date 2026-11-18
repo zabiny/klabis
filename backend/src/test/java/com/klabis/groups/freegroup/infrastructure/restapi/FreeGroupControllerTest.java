@@ -471,7 +471,7 @@ class FreeGroupControllerTest {
         }
 
         @Test
-        @DisplayName("addGroupOwner and inviteMember templates should expose memberId property with an options.link pointing at the member options endpoint")
+        @DisplayName("addGroupOwner options list the current members of the group, inviteMember options list all members")
         @WithGroupOwner
         void shouldExposeMemberIdOptionsLinkOnOwnerAndInviteTemplates() throws Exception {
             FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
@@ -483,7 +483,7 @@ class FreeGroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addGroupOwner.properties[?(@.name=='memberId')].options.link.href")
-                            .value("http://localhost/api/members/options"))
+                            .value("http://localhost/api/groups/" + GROUP_UUID + "/member-options?role=MEMBER"))
                     .andExpect(jsonPath("$._templates.addGroupOwner.properties[?(@.name=='memberId')].type")
                             .value("MemberId"))
                     .andExpect(jsonPath("$._templates.inviteMember.properties[?(@.name=='memberId')].options.link.href")

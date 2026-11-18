@@ -191,7 +191,7 @@ const isMemberPickerFieldType = (fieldType: string): boolean => MEMBER_PICKER_FI
  * instead), since that assumption is exactly what caused multi UUID fields with link options
  * (coordinators, disciplineIds) to silently render as a single select.
  */
-const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
+const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]}): ReactElement => {
     // If backend already provides inline options, respect them instead of the member picker
     if (conf.prop.options?.inline) {
         return <HalFormsSelect {...conf} />;
@@ -257,18 +257,15 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory(klabisCustomFieldF
  * share one UUID, so the same already-in-group list covers both.
  *
  * @param excludeIds - IDs to hide from the picker (already-in-group members)
- * @param includeIds - When set, only these IDs are shown (whitelist for promote-to-owner)
  */
 export const createMemberFilteredFactory = (
-    excludeIds?: string[],
-    includeIds?: string[]
+    excludeIds?: string[]
 ): HalFormFieldFactory => {
-    const hasFilter = (excludeIds && excludeIds.length > 0) || includeIds !== undefined;
-    if (!hasFilter) return klabisFieldsFactory;
+    if (!excludeIds || excludeIds.length === 0) return klabisFieldsFactory;
 
     return expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
         if (isMemberPickerFieldType(fieldType)) {
-            return memberIdFieldRenderer(conf, {excludeIds, includeIds});
+            return memberIdFieldRenderer(conf, {excludeIds});
         }
         return null;
     });

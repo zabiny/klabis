@@ -77,6 +77,21 @@ class HalFormsSupportOptionsDefTest {
                 .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.link.href").value("/api/testOptionsDef/categories"))
                 .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.inline").doesNotExist());
     }
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("two templates sharing a property name keep their own options")
+    void templatesSharingPropertyNameKeepOwnOptions() throws Exception {
+        mockMvc.perform(get("/api/testOptionsDef/twoTemplates")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.inline[0]").value("Elite"))
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.link").doesNotExist())
+                .andExpect(jsonPath("$._templates.rename.properties[?(@.name == 'category')].options.link.href").value("/api/testOptionsDef/categories"))
+                .andExpect(jsonPath("$._templates.rename.properties[?(@.name == 'category')].options.inline").doesNotExist())
+                .andExpect(jsonPath("$._templates.rename.properties[?(@.name == 'category')].type").value("text"));
+    }
 }
 
 record OptionsDefEditRequest(String category) {
@@ -124,9 +139,29 @@ class OptionsDefExampleController {
         return ResponseEntity.ok(model);
     }
 
+    @GetMapping(value = "/twoTemplates", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+    public ResponseEntity<EntityModel<OptionsDefDummy>> getWithTwoTemplates() {
+        EntityModel<OptionsDefDummy> model = EntityModel.of(new OptionsDefDummy("dummy"));
+        klabisLinkTo(methodOn(OptionsDefExampleController.class).getWithTwoTemplates()).ifPresent(link ->
+                model.add(link.withSelfRel()
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(OptionsDefExampleController.class).edit(null),
+                                Map.of("category", HalFormsOptionsDef.values(List.of("Elite")))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(OptionsDefExampleController.class).rename(null),
+                                Map.of("category", new HalFormsOptionsDef.Remote(
+                                        org.springframework.hateoas.Link.of("/api/testOptionsDef/categories")))))));
+        return ResponseEntity.ok(model);
+    }
+
     @GetMapping(value = "/categories", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<List<String>> listCategories() {
         return ResponseEntity.ok(List.of("Elite"));
+    }
+
+    @PostMapping(value = "/rename", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<Void> rename(@RequestBody OptionsDefEditRequest request) {
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping(value = "/edit", produces = MediaTypes.HAL_JSON_VALUE)

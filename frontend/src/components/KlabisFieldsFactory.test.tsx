@@ -33,7 +33,7 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
         HalFormsInput: ({prop}: HalFormsInputProps) => (
             <div data-testid={`hal-input-${prop.name}`}>{prop.prompt}</div>
         ),
-        HalFormsMemberId: ({prop, errorText, excludeIds, includeIds}: HalFormsInputProps & {excludeIds?: string[]; includeIds?: string[]}) => (
+        HalFormsMemberId: ({prop, errorText, excludeIds}: HalFormsInputProps & {excludeIds?: string[]}) => (
             <div data-testid="hal-forms-memberid-mock">
                 <span data-testid="select-name">{prop.name}</span>
                 <span data-testid="select-prompt">{prop.prompt}</span>
@@ -41,7 +41,6 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
                     <span data-testid="select-href">{prop.options.link.href}</span>
                 )}
                 {excludeIds && <span data-testid="select-excluded">{excludeIds.join(',')}</span>}
-                {includeIds && <span data-testid="select-included">{includeIds.join(',')}</span>}
                 {errorText && <span data-testid="select-error">{errorText}</span>}
             </div>
         ),

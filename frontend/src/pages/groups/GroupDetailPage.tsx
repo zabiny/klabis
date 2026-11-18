@@ -48,7 +48,6 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
         [resourceData.members]
     );
     const addMemberFactory = useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]);
-    const addOwnerFactory = useMemo(() => createMemberFilteredFactory(undefined, currentMemberIds), [currentMemberIds]);
 
     const group = resourceData;
     const groupActions = halResource(group);
@@ -60,7 +59,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): R
 
     const addMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory});
     const inviteMemberDialog = useTemplateDialog({fieldsFactory: addMemberFactory});
-    const addOwnerDialog = useTemplateDialog({fieldsFactory: addOwnerFactory});
+    const addOwnerDialog = useTemplateDialog();
     const removeMemberDialog = useTemplateDialog();
     const removeOwnerDialog = useTemplateDialog();
     const deleteDialog = useTemplateDialog({onSubmitSuccess: () => navigate('/groups')});

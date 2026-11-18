@@ -20,6 +20,8 @@ import com.klabis.groups.infrastructure.restapi.*;
 import com.klabis.members.ActingMember;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.GroupMemberOptionsApi;
+import com.klabis.members.infrastructure.restapi.GroupRole;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.Affordance;
@@ -236,12 +238,14 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
         UUID id = group.getId().uuid();
         Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
                 HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
+        Map<String, HalFormsOptionsDef> currentMemberOptions = Map.of("memberId",
+                HalFormsOptionsDef.remote(methodOn(GroupMemberOptionsApi.class).listGroupMemberOptions(id, GroupRole.MEMBER)));
         // Owner templates are filtered by the authorization of each operation: owners get all of them, a
         // MEMBERS:MANAGE holder only addGroupOwner and deleteGroup.
         List<Affordance> ownerAffordances = Stream.<List<Affordance>>of(
                         klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null)),
                         klabisAfford(methodOn(GroupsApi.class).deleteGroup(id)),
-                        klabisAffordWithOptions(methodOn(GroupsApi.class).addGroupOwner(id, null), memberIdOptions),
+                        klabisAffordWithOptions(methodOn(GroupsApi.class).addGroupOwner(id, null), currentMemberOptions),
                         klabisAffordWithOptions(methodOn(GroupsApi.class).inviteMember(id, null, null), memberIdOptions))
                 .flatMap(List::stream)
                 .toList();

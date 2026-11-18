@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.members.application.GroupMemberOptionsPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
@@ -37,6 +38,7 @@ import java.lang.annotation.Target;
         MemberAccountActivationPort.class,
         LegalGuardianPort.class,
         GuardianCandidatesPort.class,
+        GroupMemberOptionsPort.class,
         LegalGuardianGroupPort.class,
         LegalGuardians.class,
         Members.class
