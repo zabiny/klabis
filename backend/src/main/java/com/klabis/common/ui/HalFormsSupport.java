@@ -127,8 +127,8 @@ public class HalFormsSupport {
             return null;
         }
         int separator = type.indexOf(OPTIONS_TOKEN_SEPARATOR);
-        Map<String, HalFormsOptionsDef> ctx = getOptionsDefContext(request);
-        return separator < 0 || ctx == null ? null : ctx.get(type.substring(separator + 1));
+        List<HalFormsOptionsDef> ctx = getOptionsDefContext(request);
+        return separator < 0 || ctx == null ? null : ctx.get(Integer.parseInt(type.substring(separator + 1)));
     }
 
     static String stripOptionsToken(String type) {
@@ -140,19 +140,18 @@ public class HalFormsSupport {
     }
 
     private static String registerOptionsDef(HttpServletRequest request, HalFormsOptionsDef optionsDef) {
-        Map<String, HalFormsOptionsDef> ctx = getOptionsDefContext(request);
+        List<HalFormsOptionsDef> ctx = getOptionsDefContext(request);
         if (ctx == null) {
-            ctx = new HashMap<>();
+            ctx = new ArrayList<>();
             request.setAttribute(OPTIONS_DEF_REQUEST_ATTR, ctx);
         }
-        String token = Integer.toString(ctx.size());
-        ctx.put(token, optionsDef);
-        return token;
+        ctx.add(optionsDef);
+        return Integer.toString(ctx.size() - 1);
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, HalFormsOptionsDef> getOptionsDefContext(HttpServletRequest request) {
-        return (Map<String, HalFormsOptionsDef>) request.getAttribute(OPTIONS_DEF_REQUEST_ATTR);
+    private static List<HalFormsOptionsDef> getOptionsDefContext(HttpServletRequest request) {
+        return (List<HalFormsOptionsDef>) request.getAttribute(OPTIONS_DEF_REQUEST_ATTR);
     }
 
     private static HttpServletRequest currentRequest() {
@@ -450,7 +449,7 @@ public class HalFormsSupport {
     }
 
     /**
-     * PropertyMetadata wrapper that overrides isReadOnly() and provides correct type for DTO properties
+     * Carries the token of the property's options in its input type; see {@link #OPTIONS_TOKEN_SEPARATOR}.
      */
     private static class OptionsTokenPropertyMetadata implements AffordanceModel.PropertyMetadata {
 
@@ -514,6 +513,9 @@ public class HalFormsSupport {
         }
     }
 
+    /**
+     * PropertyMetadata wrapper that overrides isReadOnly() and provides correct type for DTO properties
+     */
     private static class KlabisHalFormsPropertyMetadataWrapper implements AffordanceModel.PropertyMetadata {
 
         private final AffordanceModel.PropertyMetadata delegate;

@@ -19,8 +19,11 @@ import java.util.Map;
 import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,6 +95,25 @@ class HalFormsSupportOptionsDefTest {
                 .andExpect(jsonPath("$._templates.rename.properties[?(@.name == 'category')].options.inline").doesNotExist())
                 .andExpect(jsonPath("$._templates.rename.properties[?(@.name == 'category')].type").value("text"));
     }
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("collection property keeps its own options per template and exposes no token in type")
+    void collectionPropertyKeepsOwnOptions() throws Exception {
+        mockMvc.perform(get("/api/testOptionsDef/collections")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.editTags.properties[?(@.name == 'tags')].options.inline[0]").value("A"))
+                .andExpect(jsonPath("$._templates.editTags.properties[?(@.name == 'tags')].multi").value(true))
+                .andExpect(jsonPath("$._templates.renameTags.properties[?(@.name == 'tags')].options.link.href").value("/api/testOptionsDef/categories"))
+                .andExpect(jsonPath("$._templates.editTags.properties[?(@.name == 'tags')].type").value("text"))
+                .andExpect(jsonPath("$._templates.renameTags.properties[?(@.name == 'tags')].type").value("text"))
+                .andExpect(content().string(not(containsStringIgnoringCase("\\u001f"))));
+    }
+}
+
+record OptionsDefTagsRequest(List<String> tags) {
 }
 
 record OptionsDefEditRequest(String category) {
@@ -154,9 +176,34 @@ class OptionsDefExampleController {
         return ResponseEntity.ok(model);
     }
 
+    @GetMapping(value = "/collections", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+    public ResponseEntity<EntityModel<OptionsDefDummy>> getWithCollectionProperty() {
+        EntityModel<OptionsDefDummy> model = EntityModel.of(new OptionsDefDummy("dummy"));
+        klabisLinkTo(methodOn(OptionsDefExampleController.class).getWithCollectionProperty()).ifPresent(link ->
+                model.add(link.withSelfRel()
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(OptionsDefExampleController.class).editTags(null),
+                                Map.of("tags", HalFormsOptionsDef.values(List.of("A")))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(OptionsDefExampleController.class).renameTags(null),
+                                Map.of("tags", new HalFormsOptionsDef.Remote(
+                                        org.springframework.hateoas.Link.of("/api/testOptionsDef/categories")))))));
+        return ResponseEntity.ok(model);
+    }
+
     @GetMapping(value = "/categories", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<List<String>> listCategories() {
         return ResponseEntity.ok(List.of("Elite"));
+    }
+
+    @PutMapping(value = "/editTags", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<Void> editTags(@RequestBody OptionsDefTagsRequest request) {
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/renameTags", produces = MediaTypes.HAL_JSON_VALUE)
+    public ResponseEntity<Void> renameTags(@RequestBody OptionsDefTagsRequest request) {
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping(value = "/rename", produces = MediaTypes.HAL_JSON_VALUE)
