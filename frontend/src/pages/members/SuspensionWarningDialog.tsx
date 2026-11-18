@@ -49,12 +49,38 @@ const ResolvedMarker = () => (
     <span className="text-sm font-medium text-green-700">✓ {labels.suspensionWarning.resolved}</span>
 );
 
-const TrainingGroupRow = ({group, resolved, onResolved}: RowProps): ReactElement => {
+interface ResolvableGroupConfig {
+    successorTemplate: string;
+    dissolveTemplate?: string;
+    contactText: string;
+    // A free group without other members cannot get a successor; its owner can only dissolve it.
+    canDesignateSuccessor: (group: HalResponse | undefined) => boolean;
+}
+
+const RESOLVABLE_GROUPS: Record<'TRAINING' | 'FREE', ResolvableGroupConfig> = {
+    TRAINING: {
+        successorTemplate: 'addTrainer',
+        contactText: labels.suspensionWarning.contactTrainingGroupAdmin,
+        canDesignateSuccessor: () => true,
+    },
+    FREE: {
+        successorTemplate: 'addGroupOwner',
+        dissolveTemplate: 'deleteGroup',
+        contactText: labels.suspensionWarning.contactFreeGroupAdmin,
+        canDesignateSuccessor: (group) => ((group as {members?: unknown[]} | undefined)?.members?.length ?? 0) > 0,
+    },
+};
+
+const ResolvableGroupRow = ({group, resolved, onResolved, config}: RowProps & {config: ResolvableGroupConfig}): ReactElement => {
     const {data, error, isLoading} = useAuthorizedQuery<HalResponse>(group.groupLink, {retry: false});
-    const addTrainer = halResource(data).template('addTrainer');
-    const addTrainerDialog = useTemplateDialog({
+    const groupActions = halResource(data);
+    const successor = config.canDesignateSuccessor(data) ? groupActions.template(config.successorTemplate) : undefined;
+    const dissolve = config.dissolveTemplate ? groupActions.template(config.dissolveTemplate) : undefined;
+    const successorDialog = useTemplateDialog({onSubmitSuccess: onResolved, navigateOnSuccess: false});
+    const dissolveDialog = useTemplateDialog({
         onSubmitSuccess: onResolved,
         navigateOnSuccess: false,
+        note: labels.suspensionWarning.dissolveConfirmation(group.groupName),
     });
 
     let content: ReactElement;
@@ -62,24 +88,32 @@ const TrainingGroupRow = ({group, resolved, onResolved}: RowProps): ReactElement
         content = <ResolvedMarker/>;
     } else if (isLoading) {
         content = <span className="text-sm text-text-secondary">{labels.suspensionWarning.loadingGroup}</span>;
-    } else if (addTrainer) {
+    } else if (successor || dissolve) {
         content = (
             <div className="flex gap-2 flex-wrap">
-                <Button variant="primary" size="sm" onClick={() => addTrainerDialog.open(addTrainer)}>
-                    {labels.suspensionWarning.designateSuccessor}
-                </Button>
+                {successor && (
+                    <Button variant="primary" size="sm" onClick={() => successorDialog.open(successor)}>
+                        {labels.suspensionWarning.designateSuccessor}
+                    </Button>
+                )}
+                {dissolve && (
+                    <Button variant="danger" size="sm" onClick={() => dissolveDialog.open(dissolve)}>
+                        {labels.suspensionWarning.dissolveGroup}
+                    </Button>
+                )}
             </div>
         );
     } else if (error && (error as ApiError).status !== 403) {
         content = <span className="text-sm text-red-600">{labels.suspensionWarning.groupLoadFailed}</span>;
     } else {
-        content = <span className="text-sm text-text-secondary">{labels.suspensionWarning.contactTrainingGroupAdmin}</span>;
+        content = <span className="text-sm text-text-secondary">{config.contactText}</span>;
     }
 
     return (
         <GroupRowFrame group={group}>
             {content}
-            {addTrainerDialog.dialog}
+            {successorDialog.dialog}
+            {dissolveDialog.dialog}
         </GroupRowFrame>
     );
 };
@@ -145,15 +179,15 @@ export const SuspensionWarningDialog = ({
                         <p className="text-sm text-text-secondary">{labels.suspensionWarning.description}</p>
                         <ul className="flex flex-col gap-3">
                             {groups.map((group) => {
-                                const Row = group.groupType === 'TRAINING' ? TrainingGroupRow : StaticGroupRow;
-                                return (
-                                    <Row
-                                        key={group.groupId}
-                                        group={group}
-                                        resolved={resolvedGroupIds.has(group.groupId)}
-                                        onResolved={() => onGroupResolved(group.groupId)}
-                                    />
-                                );
+                                const rowProps = {
+                                    group,
+                                    resolved: resolvedGroupIds.has(group.groupId),
+                                    onResolved: () => onGroupResolved(group.groupId),
+                                };
+                                if (group.groupType === 'TRAINING' || group.groupType === 'FREE') {
+                                    return <ResolvableGroupRow key={group.groupId} config={RESOLVABLE_GROUPS[group.groupType]} {...rowProps}/>;
+                                }
+                                return <StaticGroupRow key={group.groupId} group={group}/>;
                             })}
                         </ul>
                     </>

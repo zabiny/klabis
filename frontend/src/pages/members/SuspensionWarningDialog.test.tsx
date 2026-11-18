@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SuspensionWarningDialog} from './SuspensionWarningDialog';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {labels} from '../../localization';
@@ -32,8 +32,8 @@ vi.mock('../../hooks/useHalFormData', () => ({
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title?: string}) =>
-        isOpen ? <div role="dialog" aria-label={title}>{children}</div> : null,
+    Modal: ({isOpen, children, title, context}: {isOpen: boolean; children: React.ReactNode; title?: string; context?: React.ReactNode}) =>
+        isOpen ? <div role="dialog" aria-label={title}>{context}{children}</div> : null,
 }));
 
 const trainingGroup: AffectedGroup = {groupId: 'g-3', groupName: 'U10 Závoďáci', groupType: 'TRAINING', groupLink: 'http://localhost/api/training-groups/g-3'};
@@ -48,6 +48,14 @@ const groupResource = (templates: Record<string, unknown>) => ({
 });
 const addTrainer = mockHalFormsTemplate({method: 'POST', target: '/api/training-groups/g-3/trainers', title: 'Přidat trenéra', properties: []});
 const deleteTrainingGroup = mockHalFormsTemplate({method: 'DELETE', target: '/api/training-groups/g-3', properties: []});
+
+const addGroupOwner = mockHalFormsTemplate({method: 'POST', target: '/api/groups/g-1/owners', title: 'Přidat vlastníka', properties: []});
+const deleteGroup = mockHalFormsTemplate({method: 'DELETE', target: '/api/groups/g-1', title: 'Smazat skupinu', properties: []});
+const freeGroupResource = (templates: Record<string, unknown>, members: unknown[] = [{memberId: 'm-2'}]) => ({
+    _links: {self: {href: 'http://localhost/api/groups/g-1'}},
+    members,
+    _templates: templates,
+});
 
 const mockGroupQueries = (byUrl: Record<string, {data?: unknown; error?: unknown; isLoading?: boolean}>) => {
     vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) =>
@@ -150,14 +158,109 @@ describe('SuspensionWarningDialog', () => {
         });
     });
 
-    describe('other group types keep their current actions', () => {
-        it('shows both actions for a free group', () => {
-            renderDialog({warning: {groups: [freeGroup], debt: null}});
+    describe('free group row', () => {
+        const renderFree = (resource: unknown, overrides: Partial<ReturnType<typeof defaultProps>> = {}) => {
+            mockGroupQueries({[freeGroup.groupLink]: {data: resource}});
+            return renderDialog({warning: {groups: [freeGroup], debt: null}, ...overrides});
+        };
+
+        it('offers both actions when addGroupOwner and deleteGroup are offered and the group has other members', () => {
+            renderFree(freeGroupResource({addGroupOwner, deleteGroup}));
             expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
         });
 
-        it('shows both actions for a legal guardian group', () => {
+        it('offers only "Rozpustit skupinu" when the group has no other members', () => {
+            renderFree(freeGroupResource({addGroupOwner, deleteGroup}, []));
+            expect(screen.queryByRole('button', {name: /určit nástupce/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
+        });
+
+        it('offers only "Určit nástupce" without deleteGroup', () => {
+            renderFree(freeGroupResource({addGroupOwner}));
+            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /rozpustit skupinu/i})).not.toBeInTheDocument();
+        });
+
+        it('shows the contact text when no action is available', () => {
+            renderFree(freeGroupResource({}));
+            expect(screen.getByText(labels.suspensionWarning.contactFreeGroupAdmin)).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /určit nástupce|rozpustit skupinu/i})).not.toBeInTheDocument();
+        });
+
+        it('shows the contact text on 403', () => {
+            mockGroupQueries({[freeGroup.groupLink]: {error: new ApiError(403)}});
+            renderDialog({warning: {groups: [freeGroup], debt: null}});
+            expect(screen.getByText(labels.suspensionWarning.contactFreeGroupAdmin)).toBeInTheDocument();
+        });
+
+        it('opens the addGroupOwner form from "Určit nástupce"', () => {
+            renderFree(freeGroupResource({addGroupOwner, deleteGroup}));
+            fireEvent.click(screen.getByRole('button', {name: /určit nástupce/i}));
+            expect(screen.getByRole('dialog', {name: labels.templates.addGroupOwner})).toBeInTheDocument();
+        });
+
+        it('lists exactly the options returned by the template options link, without client-side filtering', () => {
+            const optionsHref = '/api/groups/g-1/member-options?role=MEMBER';
+            const pickerTemplate = mockHalFormsTemplate({
+                method: 'POST',
+                target: '/api/groups/g-1/owners',
+                properties: [{name: 'memberId', prompt: 'Člen', type: 'MemberId', required: true, options: {link: {href: optionsHref}}}],
+            });
+            const groupData = freeGroupResource({addGroupOwner: pickerTemplate, deleteGroup});
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined, opts?: {select?: (d: unknown) => unknown}) => {
+                if (url === freeGroup.groupLink) return {data: groupData, error: null, isLoading: false};
+                if (url === optionsHref) {
+                    const raw = [{value: 'm-2', prompt: 'Petr Svoboda'}, {value: 'm-3', prompt: 'Alena Rodičová'}];
+                    return {data: opts?.select ? opts.select(raw) : raw, error: null, isLoading: false};
+                }
+                return {data: undefined, error: null, isLoading: false};
+            }) as unknown as typeof useAuthorizedQuery);
+            renderDialog({warning: {groups: [freeGroup], debt: null}});
+            fireEvent.click(screen.getByRole('button', {name: /určit nástupce/i}));
+            expect(screen.getAllByRole('option').map(o => o.textContent).filter(t => t === 'Petr Svoboda' || t === 'Alena Rodičová'))
+                .toEqual(['Petr Svoboda', 'Alena Rodičová']);
+            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(optionsHref, expect.anything());
+        });
+
+        it('asks for confirmation before dissolving', () => {
+            renderFree(freeGroupResource({addGroupOwner, deleteGroup}));
+            fireEvent.click(screen.getByRole('button', {name: /rozpustit skupinu/i}));
+            const confirmation = screen.getByRole('dialog', {name: 'Smazat skupinu'});
+            expect(within(confirmation).getByText(labels.suspensionWarning.dissolveConfirmation(freeGroup.groupName))).toBeInTheDocument();
+        });
+
+        it('keeps the group and the row unresolved when the confirmation is cancelled', () => {
+            const props = renderFree(freeGroupResource({addGroupOwner, deleteGroup}));
+            fireEvent.click(screen.getByRole('button', {name: /rozpustit skupinu/i}));
+            const confirmation = screen.getByRole('dialog', {name: 'Smazat skupinu'});
+            fireEvent.click(within(confirmation).getByRole('button', {name: /zrušit|zavřít/i}));
+            expect(screen.queryByRole('dialog', {name: 'Smazat skupinu'})).not.toBeInTheDocument();
+            expect(props.onGroupResolved).not.toHaveBeenCalled();
+        });
+
+        it('marks the row resolved after the group is dissolved', async () => {
+            vi.mocked(useAuthorizedMutation).mockReturnValueOnce({
+                mutate: (_vars: unknown, options: {onSuccess: (r: unknown) => void}) => options.onSuccess({data: undefined, location: null}),
+                isPending: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
+            const props = renderFree(freeGroupResource({addGroupOwner, deleteGroup}));
+            fireEvent.click(screen.getByRole('button', {name: /rozpustit skupinu/i}));
+            const confirmation = screen.getByRole('dialog', {name: 'Smazat skupinu'});
+            fireEvent.click(within(confirmation).getByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(props.onGroupResolved).toHaveBeenCalledWith(freeGroup.groupId));
+        });
+
+        it('shows the resolved marker and hides the actions for a resolved row', () => {
+            renderFree(freeGroupResource({addGroupOwner, deleteGroup}), {resolvedGroupIds: new Set([freeGroup.groupId])});
+            expect(screen.getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /určit nástupce|rozpustit skupinu/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('legal guardian row keeps its static actions', () => {
+        it('shows both actions', () => {
             renderDialog({warning: {groups: [legalGroup], debt: null}});
             expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();

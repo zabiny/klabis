@@ -26,9 +26,9 @@ Slices are vertical. Run tests per module through the test-runner skill, sequent
 
 ## 4. Free groups in the dialog
 
-- [ ] 4.1 Frontend (test first): row for FREE shows "Určit nástupce" iff `addGroupOwner` is offered and the group has other members, "Rozpustit skupinu" iff `deleteGroup` is offered; picker options come from the template (only current members, no client-side filter); dissolve asks for confirmation (cancel keeps group and row unresolved); success marks the row resolved. Add labels (confirmation text, resolved marker, contact text) to `labels.ts`.
-- [ ] 4.2 Integration test: suspension 409 for a sole free-group owner, manager adds a member as owner, suspension succeeds; second case: manager dissolves the group, suspension succeeds; a promoted owner can rename the group in the next request (grant is per request).
-- [ ] 4.3 E2E (members.feature): scenarios "Admin designates a successor owner of a free group from the warning dialog" and "Admin dissolves a free group from the warning dialog", finishing the suspension in both; a group without other members offers only dissolve.
+- [x] 4.1 Frontend (test first): row for FREE shows "Určit nástupce" iff `addGroupOwner` is offered and the group has other members, "Rozpustit skupinu" iff `deleteGroup` is offered; picker options come from the template (only current members, no client-side filter); dissolve asks for confirmation (cancel keeps group and row unresolved); success marks the row resolved. Add labels (confirmation text, resolved marker, contact text) to `labels.ts`.
+- [x] 4.2 Integration test: suspension 409 for a sole free-group owner, manager adds a member as owner, suspension succeeds; second case: manager dissolves the group, suspension succeeds; a promoted owner can rename the group in the next request (grant is per request).
+- [x] 4.3 E2E (members.feature): scenarios "Admin designates a successor owner of a free group from the warning dialog" and "Admin dissolves a free group from the warning dialog", finishing the suspension in both; a group without other members offers only dissolve.
 
 ## 5. Legal guardian groups: suspend the whole group
 

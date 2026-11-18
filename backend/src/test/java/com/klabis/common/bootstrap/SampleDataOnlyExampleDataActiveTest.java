@@ -1,6 +1,8 @@
 package com.klabis.common.bootstrap;
 
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.domain.RegistrationNumber;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ class SampleDataOnlyExampleDataActiveTest {
     @Autowired
     ApplicationContext context;
 
+    @Autowired
+    MemberRepository memberRepository;
+
     @Test
     void sampleDataInitializersArePresent() {
         Set<String> foundSimpleNames = new HashSet<>();
@@ -37,5 +42,11 @@ class SampleDataOnlyExampleDataActiveTest {
         }
 
         assertThat(foundSimpleNames).containsExactlyInAnyOrder(SampleDataBootstrapNames.ALL);
+    }
+
+    @Test
+    void e2eSuspendableMemberIsSeeded() {
+        assertThat(memberRepository.findByRegistrationNumber(new RegistrationNumber("ZBM9501")))
+                .hasValueSatisfying(m -> assertThat(m.getLastName()).isEqualTo("Testovací"));
     }
 }

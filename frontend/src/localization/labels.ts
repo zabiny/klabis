@@ -1161,6 +1161,8 @@ export const labels = {
         loadingGroup: 'Načítám skupinu…',
         groupLoadFailed: 'Skupinu se nepodařilo načíst.',
         contactTrainingGroupAdmin: 'Nástupce může určit pouze správce tréninkových skupin. Obraťte se na něj.',
+        contactFreeGroupAdmin: 'Tuto skupinu nelze z tohoto místa spravovat. Obraťte se na vlastníka skupiny nebo správce klubu.',
+        dissolveConfirmation: (groupName: string) => `Opravdu chcete rozpustit skupinu „${groupName}“? Skupina i její členství budou odstraněny.`,
     },
 
     negativeBalanceWarning: {

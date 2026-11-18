@@ -5,7 +5,7 @@
 @spec:members
 Feature: Members
   Club members are registered and maintained by member administrators, every member keeps their own profile up to date.
-  Jan is a member administrator, Eva is a club member.
+  Jan is a member administrator, Eva and Tomáš are club members.
 
   Rule: The system processes member registration by creating a user account and a member profile in a single flow
 
@@ -108,3 +108,21 @@ Feature: Members
       When Jan suspends member "Dluznik"
       Then the suspension is blocked because the balance is -150 CZK
       And member "Dluznik" is still active
+
+  Rule: Suspending the last owner of a free group requires resolving the group first
+
+    Scenario: Admin designates a successor owner of a free group from the warning dialog
+      Given Tomáš is the only owner of the free group "Pratele"
+      And Eva is a member of the free group "Pratele" owned by Tomáš
+      When Jan suspends Tomáš designating Eva as successor owner of the free group "Pratele"
+      Then Tomáš is suspended
+
+    Scenario: Admin dissolves a free group from the warning dialog
+      Given Tomáš is the only owner of the free group "Zanikajici"
+      When Jan suspends Tomáš dissolving the free group "Zanikajici"
+      Then Tomáš is suspended
+
+    Scenario: A free group without other members can only be dissolved
+      Given Tomáš is the only owner of the free group "Samotari"
+      When Jan suspends Tomáš
+      Then the warning offers to dissolve the free group "Samotari" but not to designate a successor
