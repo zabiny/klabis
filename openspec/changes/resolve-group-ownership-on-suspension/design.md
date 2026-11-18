@@ -30,6 +30,8 @@ See proposal.md, section Why, for the motivation. Current state (verified in cod
 
 ### D1: Free group authorization - relationship authority GROUPS:OWNER
 
+Recorded as ADR-011 in `docs/design-decisions.md`.
+
 Today the owner check lives inside `FreeGroup` (`requireOwner(actingMember)`), invisible to the method guard. `x-klabis-authority: MEMBERS_MANAGE` alone on `addGroupOwner`/`deleteGroup` would lock out ordinary owners, and `x-klabis-owner-visible` compares a path *member* id with the caller, not a group-owner set.
 
 Options:
