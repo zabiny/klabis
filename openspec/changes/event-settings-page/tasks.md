@@ -7,9 +7,9 @@
 
 ## 2. Stránka se záložkami
 
-- [ ] 2.1 Test layoutu `EventSettingsPage`: záložky podle dostupných linků, aktivní záložka z URL, přesměrování z nedostupné záložky, `ForbiddenPage` bez záložek
-- [ ] 2.2 Implementovat layout se záložkami (`TabButton` + `NavLink`, `<Outlet/>`) a lokalizační texty v `labels.ts`; ověřit testem z 2.1
-- [ ] 2.3 Dedikovaná stránka disciplín přes `HalPageGate` zachovávající dnešní vzhled; ověřit testem a ručně na `http://localhost:3000`
+- [x] 2.1 Test layoutu `EventSettingsPage`: záložky podle dostupných linků, aktivní záložka z URL, přesměrování z nedostupné záložky, `ForbiddenPage` bez záložek
+- [x] 2.2 Implementovat layout se záložkami (`TabButton` + `NavLink`, `<Outlet/>`) a lokalizační texty v `labels.ts`; ověřit testem z 2.1
+- [x] 2.3 Dedikovaná stránka disciplín přes `HalPageGate` zachovávající dnešní vzhled; ověřit testem a ručně na `http://localhost:3000`
 
 ## 3. Úklid a ověření
 

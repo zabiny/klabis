@@ -18,7 +18,7 @@ import {HalPageGate} from './HalPageGate.tsx';
  * Inline form display is automatically handled by HalFormsPageLayout wrapper
  * Used as a fallback for routes that don't have specialized pages
  */
-const GenericHalPageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
+export const GenericHalPageContent = ({resourceData}: {resourceData: HalResponse}): ReactElement => {
     const isCollection = resourceData.page !== undefined ||
         (resourceData._embedded !== undefined && Object.keys(resourceData._embedded).length > 0);
 
