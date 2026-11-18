@@ -1175,42 +1175,27 @@ describe('MemberDetailPage', () => {
         });
     });
 
-    describe('calendar feed section', () => {
-        it('shows CalendarFeedSection when ical-token link is present on member detail resource', () => {
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123'},
-                    'ical-token': {href: '/api/me/ical-token'},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('heading', {name: /Kalendářový feed/i})).toBeInTheDocument();
-        });
-
-        it('does NOT show CalendarFeedSection when ical-token link is absent on member detail resource', () => {
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123'},
-                },
-            });
-            renderPage(createMockPageData(data));
+    describe('calendar feed', () => {
+        it('does not show a calendar feed section on the profile', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
             expect(screen.queryByRole('heading', {name: /Kalendářový feed/i})).not.toBeInTheDocument();
         });
+    });
 
-        it('does NOT show CalendarFeedSection in edit mode even when ical-token link is present', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
+    describe('own profile', () => {
+        it('shows "Změnit heslo" when the resource has the changePassword link', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
                 _links: {
-                    self: {href: '/api/members/123'},
-                    'ical-token': {href: '/api/me/ical-token'},
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    changePassword: {href: '/api/me/password-change'},
                 },
-                _templates: {updateMember: selfEditTemplate},
-            });
-            renderPage(createMockPageData(data));
+            })));
+            expect(screen.getByRole('button', {name: /změnit heslo/i})).toBeInTheDocument();
+        });
 
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            expect(screen.queryByRole('heading', {name: /Kalendářový feed/i})).not.toBeInTheDocument();
+        it('hides "Změnit heslo" when the resource has no changePassword link', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
+            expect(screen.queryByRole('button', {name: /změnit heslo/i})).not.toBeInTheDocument();
         });
     });
 

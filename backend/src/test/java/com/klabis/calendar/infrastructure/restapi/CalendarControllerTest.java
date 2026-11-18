@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -124,6 +125,40 @@ class CalendarControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should include ical-token link for any authenticated user")
+        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        void shouldIncludeIcalTokenLink() throws Exception {
+            when(calendarManagementService.listCalendarItems(any(), any(), any(), anyBoolean(), any()))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['ical-token'].href").value(org.hamcrest.Matchers.endsWith("/api/me/ical-token")));
+        }
+
+        @Test
+        @DisplayName("should include ical-token link for plain member without special authorities")
+        @WithKlabisMockUser(username = "member", memberId = "11111111-1111-1111-1111-111111111111", authorities = {})
+        void shouldIncludeIcalTokenLinkForPlainMember() throws Exception {
+            when(calendarManagementService.listCalendarItems(any(), any(), any(), anyBoolean(), any()))
+                    .thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['ical-token'].href").value(org.hamcrest.Matchers.endsWith("/api/me/ical-token")));
         }
 
         @Test

@@ -1,6 +1,6 @@
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Button, Spinner} from '../../components/UI';
+import {Button, Modal, Spinner} from '../../components/UI';
 import {embeddedItems} from '../../hooks/useHalCollection.ts';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
@@ -10,6 +10,7 @@ import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
 import {labels} from '../../localization';
 import {Filter} from 'lucide-react';
 import {HalPageGate} from '../HalPageGate.tsx';
+import {CalendarFeedSection} from './CalendarFeedSection.tsx';
 
 interface CalendarItem {
     id: string;
@@ -33,6 +34,9 @@ const CalendarPageContent = ({resourceData}: {resourceData: HalResponse}) => {
     const [searchParams] = useSearchParams();
 
     const {values: {mySchedule: myScheduleActive}, setValues} = useUrlFilters({mySchedule: {type: 'boolean'}});
+
+    const [feedOpen, setFeedOpen] = useState(false);
+    const icalTokenHref = resourceData._links?.['ical-token'] ? toHref(resourceData._links['ical-token']) : null;
 
     const handleMyScheduleToggle = () => setValues({mySchedule: !myScheduleActive});
 
@@ -184,9 +188,29 @@ const CalendarPageContent = ({resourceData}: {resourceData: HalResponse}) => {
                         <Filter size={14}/>
                         {labels.ui.mySchedule}
                     </button>
+                    {icalTokenHref && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setFeedOpen(true)}
+                        >
+                            {labels.calendarFeed.button}
+                        </Button>
+                    )}
                     <HalFormButton name="createCalendarItem" modal={true} label={labels.templates.createCalendarItem}/>
                 </div>
             </div>
+
+            {icalTokenHref && (
+                <Modal
+                    isOpen={feedOpen}
+                    onClose={() => setFeedOpen(false)}
+                    title={labels.calendarFeed.dialogTitle}
+                    size="lg"
+                >
+                    <CalendarFeedSection icalTokenHref={icalTokenHref}/>
+                </Modal>
+            )}
 
             {/* Calendar */}
             <div className="bg-surface-raised rounded-md border border-border shadow-sm p-6">

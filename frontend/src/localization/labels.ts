@@ -1239,7 +1239,8 @@ export const labels = {
     },
 
     calendarFeed: {
-        sectionTitle: 'KALENDÁŘOVÝ FEED',
+        button: 'Kalendářový feed',
+        dialogTitle: 'Kalendářový feed',
         intro: 'Přihlaste se k odběru svých akcí v externím kalendáři.',
         createButton: 'Vytvořit kalendářový feed',
         regenerateButton: 'Vygenerovat nový token',
