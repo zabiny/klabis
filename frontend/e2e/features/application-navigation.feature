@@ -16,6 +16,7 @@ Feature: Application navigation
       And the main menu does not offer:
         | Přehled administrace |
         | Synchronizace        |
+        | Nastavení akcí       |
 
     Scenario: Administrator also sees the administration destinations
       When Jan opens the application
@@ -27,3 +28,18 @@ Feature: Application navigation
         | Členové              |
         | Přehled administrace |
         | Synchronizace        |
+
+  Rule: Event settings are offered as one menu entry for event managers
+
+    Scenario: Event manager sees one event settings entry
+      When Jan opens the application
+      Then the main menu offers:
+        | Nastavení akcí |
+      And the main menu does not offer:
+        | Disciplíny        |
+        | Typy akcí         |
+        | Šablony kategorií |
+
+    Scenario: Entry opens the event settings page
+      When Jan opens "Nastavení akcí" from the main menu
+      Then the event settings page is shown

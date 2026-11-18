@@ -48,7 +48,7 @@ The system SHALL include a "Finance" entry in the main menu for every authentica
 
 ### Requirement: Desktop Sidebar Splits Menu Into Main and Administrative Sections
 
-On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as training groups, category presets, legal guardians ("Zákonní zástupci"), and membership fees.
+On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as event settings ("Nastavení akcí"), training groups, legal guardians ("Zákonní zástupci"), and membership fees.
 
 #### Scenario: Manager sees the Administrace section with all authorized admin items
 
@@ -239,3 +239,18 @@ After a successful form submission the system SHALL always complete its success 
 - **THEN** the system shows a success message
 - **AND** the dialog closes
 - **AND** the event detail page no longer lists the member among the registered
+
+### Requirement: Main Menu Offers a "Nastavení akcí" Entry for Event Managers
+
+The system SHALL include a single "Nastavení akcí" entry in the Administrace section for users authorized to manage events. Following the entry SHALL open the event settings page. The system SHALL NOT present disciplines, event types and category presets as separate menu entries.
+
+#### Scenario: Event manager sees one event settings entry
+
+- **WHEN** a user with EVENTS:MANAGE authority views the desktop sidebar
+- **THEN** the Administrace section contains one entry "Nastavení akcí"
+- **AND** there are no separate entries "Disciplíny", "Typy akcí" or "Šablony kategorií"
+
+#### Scenario: Entry opens the event settings page
+
+- **WHEN** a manager selects the entry "Nastavení akcí"
+- **THEN** the event settings page opens

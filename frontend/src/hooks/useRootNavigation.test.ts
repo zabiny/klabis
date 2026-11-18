@@ -2,7 +2,7 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import React from 'react';
-import {useRootNavigation} from './useRootNavigation';
+import {useEventSettingsTabs, useRootNavigation} from './useRootNavigation';
 import {vi} from 'vitest';
 
 vi.mock('../api/klabisUserManager', () => ({
@@ -76,7 +76,7 @@ describe('useRootNavigation — section assignment', () => {
         expect(result.current.data!.find(i => i.rel === 'notifications')?.section).toBe('personal');
     });
 
-    it('assigns main section to events and admin section to training-groups, category-presets, legalGuardianGroups', async () => {
+    it('assigns main section to events and admin section to training-groups, legalGuardianGroups, event-settings', async () => {
         mockFetchWithResponse(buildHalResponse(['events', 'training-groups', 'category-presets', 'legalGuardianGroups']));
 
         const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
@@ -88,7 +88,7 @@ describe('useRootNavigation — section assignment', () => {
 
         expect(findItem('events')?.section).toBe('main');
         expect(findItem('training-groups')?.section).toBe('admin');
-        expect(findItem('category-presets')?.section).toBe('admin');
+        expect(findItem('event-settings')?.section).toBe('admin');
         expect(findItem('legalGuardianGroups')?.section).toBe('admin');
     });
 
@@ -206,5 +206,74 @@ describe('useRootNavigation — section assignment', () => {
 
         const items = result.current.data!;
         expect(items.find(i => i.rel === 'fee-selection-campaigns')).toBeUndefined();
+    });
+});
+
+describe('useRootNavigation — event settings entry', () => {
+    const load = async (rels: string[]) => {
+        mockFetchWithResponse(buildHalResponse(rels));
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+        return result.current.data!;
+    };
+
+    it('merges disciplines, event-types and category-presets into one admin item "Nastavení akcí"', async () => {
+        const items = await load(['events', 'disciplines', 'event-types', 'category-presets']);
+
+        const adminItems = items.filter(i => i.section === 'admin');
+        expect(adminItems).toHaveLength(1);
+        expect(adminItems[0]).toMatchObject({
+            rel: 'event-settings',
+            label: 'Nastavení akcí',
+            href: '/event-settings/disciplines',
+        });
+    });
+
+    it('targets the first available tab when the discipline link is missing', async () => {
+        const items = await load(['event-types', 'category-presets']);
+
+        expect(items.find(i => i.rel === 'event-settings')?.href).toBe('/event-settings/event-types');
+    });
+
+    it('creates no event settings item when none of the three links exist', async () => {
+        const items = await load(['events', 'training-groups']);
+
+        expect(items.find(i => i.rel === 'event-settings')).toBeUndefined();
+    });
+
+    it('keeps the three links out of the menu items', async () => {
+        const items = await load(['disciplines', 'event-types', 'category-presets']);
+
+        expect(items.map(i => i.rel)).toEqual(['event-settings']);
+    });
+
+    it('places the merged item at the position of the first of the three links', async () => {
+        const items = await load(['training-groups', 'event-types', 'legalGuardianGroups']);
+
+        const adminRels = items.filter(i => i.section === 'admin').map(i => i.rel);
+        expect(adminRels).toEqual(['training-groups', 'event-settings', 'legalGuardianGroups']);
+    });
+});
+
+describe('useEventSettingsTabs', () => {
+    it('returns the available tab links in tab order with route paths', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'category-presets', 'disciplines']));
+
+        const {result} = renderHook(() => useEventSettingsTabs(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.map(i => [i.rel, i.href])).toEqual([
+            ['disciplines', '/disciplines'],
+            ['category-presets', '/category-presets'],
+        ]);
+    });
+
+    it('returns an empty list when no tab link exists', async () => {
+        mockFetchWithResponse(buildHalResponse(['events']));
+
+        const {result} = renderHook(() => useEventSettingsTabs(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data).toEqual([]);
     });
 });
