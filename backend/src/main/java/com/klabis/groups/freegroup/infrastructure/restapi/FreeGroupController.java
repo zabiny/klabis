@@ -1,8 +1,11 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.users.ActingUser;
 import com.klabis.common.users.Authority;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -15,7 +18,10 @@ import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.groups.infrastructure.restapi.*;
 import com.klabis.members.ActingMember;
+import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.GroupMemberOptionsApi;
+import com.klabis.members.infrastructure.restapi.GroupRole;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.Affordance;
@@ -47,9 +53,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class FreeGroupController implements GroupsApi {
 
     private final FreeGroupManagementPort membersGroupManagementService;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    FreeGroupController(FreeGroupManagementPort membersGroupManagementService) {
+    FreeGroupController(FreeGroupManagementPort membersGroupManagementService,
+                        AuthorizationEvaluator authorizationEvaluator) {
         this.membersGroupManagementService = membersGroupManagementService;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
@@ -77,15 +86,16 @@ class FreeGroupController implements GroupsApi {
     // List<EntityModel<X>> — each item carries its own _links/_templates, which the generator cannot
     // express. Everything else, the payload type included, comes from the spec.
     @Override
-    public ResponseEntity<GroupResponse> getGroup(UUID id, @ActingMember MemberId actingMember) {
+    public ResponseEntity<GroupResponse> getGroup(UUID id, @ActingUser CurrentUserData currentUser) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         FreeGroup group = membersGroupManagementService.getGroup(groupId);
 
-        boolean isOwner = group.isOwner(actingMember);
-        boolean isMember = group.hasMember(actingMember);
-        if (!isOwner && !isMember) {
-            throw new InsufficientAuthorityException("Free group membership or ownership required");
+        boolean isOwner = authorizationEvaluator.has(Authority.GROUPS_OWNER, TargetRef.group(id));
+        boolean isMember = currentUser.isMemberOf(group::hasMember);
+        if (!isOwner && !isMember && !authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
+            throw new InsufficientAuthorityException(
+                    "Free group ownership or membership, or MEMBERS:MANAGE permission required");
         }
 
         HalResponseContext.setDomain(group);
@@ -95,18 +105,18 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> updateGroup(UUID id, RenameGroupRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> updateGroup(UUID id, RenameGroupRequest request) {
 
         FreeGroupId groupId = new FreeGroupId(id);
-        membersGroupManagementService.renameGroup(groupId, request.name(), actingMember);
+        membersGroupManagementService.renameGroup(groupId, request.name());
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<Void> deleteGroup(UUID id, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> deleteGroup(UUID id) {
 
         FreeGroupId groupId = new FreeGroupId(id);
-        membersGroupManagementService.deleteGroup(groupId, actingMember);
+        membersGroupManagementService.deleteGroup(groupId);
         return ResponseEntity.noContent().build();
     }
 
@@ -119,18 +129,18 @@ class FreeGroupController implements GroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addGroupOwner(UUID id, AddOwnerRequest request, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> addGroupOwner(UUID id, AddOwnerRequest request) {
 
         FreeGroupId groupId = new FreeGroupId(id);
-        membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()), actingMember);
+        membersGroupManagementService.addOwner(groupId, new MemberId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<Void> removeGroupOwner(UUID id, UUID memberId, @ActingMember MemberId actingMember) {
+    public ResponseEntity<Void> removeGroupOwner(UUID id, UUID memberId) {
 
         FreeGroupId groupId = new FreeGroupId(id);
-        membersGroupManagementService.removeOwner(groupId, new MemberId(memberId), actingMember);
+        membersGroupManagementService.removeOwner(groupId, new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 
@@ -226,27 +236,29 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
 
     private List<Affordance> selfLinkAffordances(FreeGroup group) {
         UUID id = group.getId().uuid();
-        Optional<MemberId> actingMember = actingMember();
-        if (actingMember.map(group::isOwner).orElse(false)) {
-            Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
-                    HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
-            return Stream.<List<Affordance>>of(
-                    klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null, null)),
-                    klabisAfford(methodOn(GroupsApi.class).deleteGroup(id, null)),
-                    klabisAffordWithOptions(methodOn(GroupsApi.class).addGroupOwner(id, null, null), memberIdOptions),
-                    klabisAffordWithOptions(methodOn(GroupsApi.class).inviteMember(id, null, null), memberIdOptions))
-                    .flatMap(List::stream)
-                    .toList();
-        }
+        Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
+                HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
+        Map<String, HalFormsOptionsDef> currentMemberOptions = Map.of("memberId",
+                HalFormsOptionsDef.remote(methodOn(GroupMemberOptionsApi.class).listGroupMemberOptions(id, GroupRole.MEMBER)));
+        // Owner templates are filtered by the authorization of each operation: owners get all of them, a
+        // MEMBERS:MANAGE holder only addGroupOwner and deleteGroup.
+        List<Affordance> ownerAffordances = Stream.<List<Affordance>>of(
+                        klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null)),
+                        klabisAfford(methodOn(GroupsApi.class).deleteGroup(id)),
+                        klabisAffordWithOptions(methodOn(GroupsApi.class).addGroupOwner(id, null), currentMemberOptions),
+                        klabisAffordWithOptions(methodOn(GroupsApi.class).inviteMember(id, null, null), memberIdOptions))
+                .flatMap(List::stream)
+                .toList();
         // Owners give up ownership through removeGroupOwner, so the self link only offers "leave the group"
         // to plain members. It reuses removeGroupMember with the caller's own id; the client renders it as
         // "Opustit skupinu" and reads it off the self link, where it cannot collide with the per-row
         // removeGroupMember affordance an owner sees on the member list.
-        return actingMember
+        List<Affordance> leaveAffordance = actingMember()
                 .filter(group::hasMember)
                 .map(member -> klabisAfford(
                         methodOn(GroupsApi.class).removeGroupMember(id, member.uuid(), null)))
                 .orElseGet(List::of);
+        return Stream.concat(ownerAffordances.stream(), leaveAffordance.stream()).toList();
     }
 
     private Optional<MemberId> actingMember() {

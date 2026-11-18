@@ -157,7 +157,13 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.MALE,
                 BirthNumber.of("870621/1515"), null);
 
-        LOG.info("Created 15 bootstrap members");
+        createMember("Tomáš", "Testovací", LocalDate.of(1995, 11, 8),
+                "tomas.testovaci@example.com", "+420 603 016 016",
+                "Testovací 1", "Brno", "60200",
+                passwordHash, Authority.getStandardUserAuthorities(), Gender.MALE,
+                BirthNumber.of("951108/1616"), null);
+
+        LOG.info("Created 16 bootstrap members");
 
         createLegalGuardianScenarios(jan.getId().toUserId(), eva.getId().toUserId(), ondrej.getId().toUserId());
     }

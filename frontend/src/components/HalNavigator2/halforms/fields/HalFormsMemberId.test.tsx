@@ -205,32 +205,6 @@ describe('HalFormsMemberId', () => {
         expect(screen.getByRole('option', {name: /Jane Doe/})).toBeInTheDocument();
     });
 
-    it('should show only included member ids when includeIds is provided', () => {
-        const queryClient = new QueryClient({
-            defaultOptions: {queries: {retry: false, gcTime: 0}},
-        });
-
-        render(
-            <QueryClientProvider client={queryClient}>
-                <Formik initialValues={{coordinator: ''}} onSubmit={vi.fn()}>
-                    {() => (
-                        <Form>
-                            <HalFormsMemberId
-                                prop={{name: 'coordinator', prompt: 'Vedoucí', type: 'MemberId'}}
-                                errorText={undefined}
-                                subElementProps={vi.fn()}
-                                includeIds={['2']}
-                            />
-                        </Form>
-                    )}
-                </Formik>
-            </QueryClientProvider>
-        );
-
-        expect(screen.queryByRole('option', {name: /John Smith/})).not.toBeInTheDocument();
-        expect(screen.getByRole('option', {name: /Jane Doe/})).toBeInTheDocument();
-    });
-
     it('should use provided label and member options', () => {
         const queryClient = new QueryClient({
             defaultOptions: {

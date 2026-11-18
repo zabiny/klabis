@@ -359,6 +359,38 @@ flowchart LR
 
 **References:** OpenSpec change `rebac-2-target-authorization` (`design.md` D1, D2, D4, D5), ADR-001, ADR-008.
 
+## ADR-011: Group ownership is the relationship authority `GROUPS:OWNER`; free group operations are guarded declaratively
+
+**Status:** Accepted
+
+**Context:**
+
+Free group operations were owner-only through a check inside the `FreeGroup` aggregate (`requireOwner(actingMember)`), invisible to the method guard and the affordances. Resolving a suspension blocker needs a user with `MEMBERS:MANAGE` who is not an owner to add an owner to, or dissolve, any free group. The aggregate check also left a gap: `invite` had no owner check, so any member could invite through the API.
+
+**Decision:**
+
+1. **Ownership is a relationship grant.** `Authority.GROUPS_OWNER` (`GROUPS:OWNER`, target type `GROUP`, `SPECIFIC` only) is derived per request (ADR-010) for the owners of every group type: free group owners (`FreeGroupRelationshipSource`), trainers (`TrainingGroupRelationshipSource`) and legal guardians (`LegalGuardianGroupRelationshipSource`). All group types share one table, so a group id is unique and one `TargetType.GROUP` serves all. It is never assignable (not `ALL`) and never delegatable (free groups delegate only MEMBER-typed authorities).
+2. **Powers only on free groups.** Free group operations declare it in the spec: `updateGroup`, `removeGroupOwner`, `inviteMember`, `cancelInvitation` require `GROUPS_OWNER`; `addGroupOwner` and `deleteGroup` accept `[MEMBERS_MANAGE, GROUPS_OWNER]`; all on the group id with `x-klabis-target-id: GROUP`. Training and legal guardian group operations keep their guards; for them the grant only replaces imperative "is trainer/guardian" checks.
+3. **Two operations stay imperative.** `removeGroupMember` (the member themselves or `has(GROUPS_OWNER, group)`: owner-visibility needs a MEMBER target and an operation has a single target parameter) and `getGroup` (owner, member, or `MEMBERS_MANAGE`, also without a member profile).
+4. **Authorization leaves the aggregate.** `FreeGroup` loses `requireOwner` and its actor parameters and keeps only domain rules (a promoted owner must be a current member; the invitee accepts or rejects their own invitation). Owner templates are offered by `klabisAfford`, so a `MEMBERS:MANAGE` holder automatically gets exactly `addGroupOwner` and `deleteGroup`.
+
+**Rationale:**
+
+One declarative mechanism means the guard, the affordances and the spec cannot disagree, and the admin override is one more entry in the authority list instead of a parallel code path.
+
+**Alternatives considered:**
+
+- *Separate admin-only endpoints with `MEMBERS_MANAGE`*: two endpoints and two templates for one action; the frontend would have to choose between them.
+- *Keep the aggregate check and let the service also allow `MEMBERS_MANAGE`*: the rule would be duplicated in the service and the postprocessor, and the aggregate would need actor-free variants just to bypass its own check.
+
+**Consequences:**
+
+- A `MEMBERS:MANAGE` holder may add an owner to, read, or dissolve any free group at any time, not only while suspending a member (same trust level as managing all members).
+- A non-owner gets the generic method-security 403 instead of a group-specific problem type; `GroupOwnershipRequiredException` is gone.
+- A promoted or removed owner gains or loses the powers on the next request.
+
+**References:** OpenSpec change `resolve-group-ownership-on-suspension` (`design.md` D1), ADR-010.
+
 ## ADR-012: Errors are identified by `/errors/{name}` types with named parameters; the frontend words them in Czech
 
 **Status:** Accepted

@@ -100,6 +100,7 @@ components:
         - /errors/guardian-not-found                    # 400, no parameters (the chosen user cannot be a legal guardian)
         - /errors/legal-guardian-group-without-guardian # 400, no parameters
         - /errors/only-minors-allowed                   # 400, no parameters
+        - /errors/not-sole-guardian-group               # 400, no parameters (cascadeGroupIds of suspendMember)
         # events
         - /errors/event-not-found                       # 404, no parameters
         - /errors/oris-event-not-found                  # 404, parameter orisId (integer)
@@ -151,7 +152,6 @@ components:
         - /errors/owner-cannot-be-member                # 422, parameters groupName (string), memberName (string, left out when unknown)
         - /errors/member-already-in-group               # 400, parameters groupName (string), memberName (string, left out when unknown)
         - /errors/member-not-in-group                   # 400, parameters groupName (string), memberName (string, left out when unknown)
-        - /errors/group-ownership-required              # 403, parameter groupName (string)
         - /errors/not-invited-member                    # 400, parameter groupName (string)
         - /errors/cannot-invite-existing-member         # 400, field memberId, parameters groupName (string), memberName (string, left out when unknown)
         - /errors/duplicate-pending-invitation          # 400, field memberId, parameters groupName (string), memberName (string, left out when unknown)

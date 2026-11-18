@@ -15,6 +15,11 @@ import {toRoutePath} from '../../api/apiPath';
 import {savedMessage, withTemplateFieldPrompts} from '../../localization';
 import {HalRouteContext} from '../../contexts/halRouteContext';
 
+export interface SubmittedRequest {
+    url: string;
+    data: Record<string, unknown>;
+}
+
 /**
  * Props for HalFormDisplay component
  */
@@ -29,8 +34,8 @@ export interface HalFormDisplayProps {
     onClose: () => void;
     /** Optional callback when submission succeeds — receives response data */
     onSubmitSuccess?: (responseData?: unknown) => void;
-    /** Optional callback when submission fails — receives the error, return true to suppress default error display */
-    onSubmitError?: (error: unknown) => boolean | void;
+    /** Optional callback when submission fails — receives the error and the submitted request, return true to suppress default error display */
+    onSubmitError?: (error: unknown, request: SubmittedRequest) => boolean | void;
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
     /** Optional transform applied to payload before API submission */
@@ -129,7 +134,7 @@ export const HalFormDisplay = ({
                 }
             },
             onError: (error: unknown) => {
-                const suppressed = onSubmitError?.(error);
+                const suppressed = onSubmitError?.(error, {url: submitUrl, data: processed});
                 if (suppressed) onClose();
             },
         });

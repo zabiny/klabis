@@ -1,6 +1,8 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
@@ -261,6 +263,41 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 200 with the reduced response when user is a trainer of the group (holds GROUPS:OWNER over it)")
+        @WithKlabisMockUser(memberId = TRAINER_ID, authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP,
+                        ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
+        void shouldReturnReducedDetailsForTrainer() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Juniors"))
+                    .andExpect(jsonPath("$.trainers").isArray())
+                    .andExpect(jsonPath("$.members").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should return 403 when the GROUPS:OWNER grant of the user is over another group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP,
+                        ids = "dddddddd-dddd-dddd-dddd-dddddddddddd"))
+        void shouldReturn403WhenOwnershipIsOverAnotherGroup() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
         @DisplayName("should return 403 when user is not a member of the training group and lacks GROUPS:TRAINING")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenNonMemberLacksTrainingAuthority() throws Exception {
@@ -272,6 +309,35 @@ class TrainingGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 for an administrator with only MEMBERS:MANAGE who is not in the group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn403ForMembersManageOnly() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should offer addTrainer template to an administrator with MEMBERS:MANAGE and GROUPS:TRAINING")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE, Authority.GROUPS_TRAINING})
+        void shouldOfferAddTrainerToMembersManageWithTrainingAuthority() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addTrainer").exists());
         }
 
         @Test

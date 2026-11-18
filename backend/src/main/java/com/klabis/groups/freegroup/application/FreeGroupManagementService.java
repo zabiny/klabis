@@ -1,5 +1,8 @@
 package com.klabis.groups.freegroup.application;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
@@ -12,16 +15,18 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
 class FreeGroupManagementService implements FreeGroupManagementPort {
 
     private final FreeGroupRepository freeGroupRepository;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    FreeGroupManagementService(FreeGroupRepository freeGroupRepository) {
+    FreeGroupManagementService(FreeGroupRepository freeGroupRepository,
+                               AuthorizationEvaluator authorizationEvaluator) {
         this.freeGroupRepository = freeGroupRepository;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Transactional
@@ -45,33 +50,32 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
 
     @Transactional
     @Override
-    public FreeGroup renameGroup(FreeGroupId id, String newName, MemberId actingMember) {
+    public FreeGroup renameGroup(FreeGroupId id, String newName) {
         FreeGroup group = loadGroup(id);
-        group.rename(newName, actingMember);
+        group.rename(newName);
         return freeGroupRepository.save(group);
     }
 
     @Transactional
     @Override
-    public void deleteGroup(FreeGroupId id, MemberId actingMember) {
-        FreeGroup group = loadGroup(id);
-        group.requireOwner(actingMember);
+    public void deleteGroup(FreeGroupId id) {
+        loadGroup(id);
         freeGroupRepository.delete(id);
     }
 
     @Transactional
     @Override
-    public void addOwner(FreeGroupId id, MemberId memberId, MemberId actingMember) {
+    public void addOwner(FreeGroupId id, MemberId memberId) {
         FreeGroup group = loadGroup(id);
-        group.addOwner(memberId, actingMember);
+        group.addOwner(memberId);
         freeGroupRepository.save(group);
     }
 
     @Transactional
     @Override
-    public void removeOwner(FreeGroupId id, MemberId memberId, MemberId actingMember) {
+    public void removeOwner(FreeGroupId id, MemberId memberId) {
         FreeGroup group = loadGroup(id);
-        group.removeOwner(memberId, actingMember);
+        group.removeOwner(memberId);
         freeGroupRepository.save(group);
     }
 
@@ -79,7 +83,12 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void removeMember(FreeGroupId id, MemberId memberId, MemberId actingMember) {
         FreeGroup group = loadGroup(id);
-        group.removeMember(memberId, actingMember);
+        // Not declarative: the self rule needs a MEMBER target, and an operation has a single target parameter.
+        if (!memberId.equals(actingMember)
+                && !authorizationEvaluator.has(Authority.GROUPS_OWNER, TargetRef.group(id.uuid()))) {
+            throw new InsufficientAuthorityException("Group ownership required to remove another member");
+        }
+        group.removeMember(memberId);
         freeGroupRepository.save(group);
     }
 
@@ -111,7 +120,7 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
     @Override
     public void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, MemberId actor, String reason) {
         FreeGroup group = loadGroup(groupId);
-        group.cancelInvitation(invitationId, Optional.of(actor), reason);
+        group.cancelInvitation(invitationId, actor, reason);
         freeGroupRepository.save(group);
     }
 

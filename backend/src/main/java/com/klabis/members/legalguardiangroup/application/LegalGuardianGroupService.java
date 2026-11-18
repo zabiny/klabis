@@ -170,6 +170,19 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
         leaveCurrentGroup(findGroupOf(minor), minor);
     }
 
+    @Transactional
+    @Override
+    public void removeGuardianFromGroupsWithOtherGuardians(UserId guardian) {
+        groupRepository.findAll(LegalGuardianGroupFilter.all().withGuardianIs(guardian)).stream()
+                .filter(group -> !group.isLastGuardian(guardian))
+                .forEach(group -> {
+                    Set<UserId> remaining = group.getGuardians().stream()
+                            .filter(other -> !other.equals(guardian))
+                            .collect(Collectors.toUnmodifiableSet());
+                    changeGroupGuardians(group.getId(), remaining);
+                });
+    }
+
     private void leaveCurrentGroup(Optional<LegalGuardianGroup> current, MemberId minorId) {
         current.ifPresent(group -> {
             group.removeMinor(minorId);

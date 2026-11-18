@@ -1,3 +1,5 @@
 package com.klabis.members;
 
-public record OwnedGroup(String groupId, String groupName, String groupType) {}
+import java.net.URI;
+
+public record OwnedGroup(String groupId, String groupName, String groupType, URI groupLink) {}

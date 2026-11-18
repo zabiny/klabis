@@ -1,288 +1,296 @@
 import {act, renderHook} from '@testing-library/react';
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {useSuspendMemberAction} from './useSuspendMemberAction';
 import {ApiError} from '../../api/authorizedFetch';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 
-const makeAffectedGroups409 = () =>
-    new ApiError(409, {params: {
-            groups: {
-                message: 'member is last owner',
-                affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
-            },
-            debt: null,
-        }});
+vi.mock('../../hooks/useAuthorizedFetch', () => ({
+    useAuthorizedMutation: vi.fn(),
+}));
 
-const makeNegativeBalance409 = () =>
-    new ApiError(409, {params: {
-            debt: {
-                balance: {amount: -350, currency: 'CZK'},
-                accountLink: '/api/members/abc-123/account',
-            },
-            groups: null,
-        }});
+const group = {groupId: 'g1', groupName: 'Skupina A', groupType: 'TRAINING', groupLink: 'http://localhost/api/training-groups/g1'};
+const debt = {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/abc-123/account'};
 
-const makeBothBlockers409 = () =>
-    new ApiError(409, {params: {
-            debt: {
-                balance: {amount: -350, currency: 'CZK'},
-                accountLink: '/api/members/abc-123/account',
-            },
-            groups: {
-                message: 'member is last owner',
-                affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
-            },
-        }});
+const groups409 = () => new ApiError(409, {params: {groups: {affectedGroups: [group]}, debt: null}});
+const debt409 = () => new ApiError(409, {params: {debt, groups: null}});
+const both409 = () => new ApiError(409, {params: {debt, groups: {affectedGroups: [group]}}});
 
-const makeUnknown409 = () =>
-    new ApiError(409, {params: {message: 'some other conflict'}});
+const request = {url: '/api/members/m1/suspend', data: {reason: 'ODHLASKA', note: 'pozn'}};
 
-const makeNon409Error = () =>
-    new ApiError(500);
+let mutate: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+    mutate = vi.fn();
+    vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false} as unknown as ReturnType<typeof useAuthorizedMutation>);
+});
 
 describe('useSuspendMemberAction', () => {
-    describe('suspension-blocked problem+json with only the present blocker', () => {
-        it('reads groups and debt from params of the typed error', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-            const error = new ApiError(409, {
-                type: '/errors/suspension-blocked',
-                params: {
-                    groups: {affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}]},
-                    debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/abc/account'},
-                },
-            });
+    it('stores groups and debt from a 409 and reports it handled', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
 
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(error);
-            });
-
-            expect(returnValue).toBe(true);
-            expect(result.current.suspensionWarning).toHaveLength(1);
-            expect(result.current.negativeBalanceWarning?.balance.amount).toBe(-350);
+        let handled: true | undefined;
+        act(() => {
+            handled = result.current.onSubmitError(both409(), request);
         });
 
-        it('handles a debt-only error where groups is absent', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-            const error = new ApiError(409, {
-                type: '/errors/suspension-blocked',
-                params: {debt: {balance: {amount: -10, currency: 'CZK'}, accountLink: '/api/members/abc/account'}},
-            });
-
-            act(() => {
-                result.current.onSubmitError(error);
-            });
-
-            expect(result.current.suspensionWarning).toBeNull();
-            expect(result.current.negativeBalanceWarning).not.toBeNull();
-        });
+        expect(handled).toBe(true);
+        expect(result.current.warning).toEqual({groups: [group], debt});
     });
 
-    describe('affected-groups 409', () => {
-        it('returns true (handled) and sets suspensionWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
+    it('handles a debt-only 409', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
 
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(makeAffectedGroups409());
-            });
-
-            expect(returnValue).toBe(true);
-            expect(result.current.suspensionWarning).toEqual([
-                {groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'},
-            ]);
+        act(() => {
+            result.current.onSubmitError(debt409(), request);
         });
 
-        it('does NOT close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeAffectedGroups409());
-            });
-        });
-
-        it('does NOT set negativeBalanceWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeAffectedGroups409());
-            });
-
-            expect(result.current.negativeBalanceWarning).toBeNull();
-        });
-
-        it('clearSuspensionWarning resets the warning to null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeAffectedGroups409());
-            });
-
-            act(() => {
-                result.current.clearSuspensionWarning();
-            });
-
-            expect(result.current.suspensionWarning).toBeNull();
-        });
+        expect(result.current.warning).toEqual({groups: null, debt});
     });
 
-    describe('negative-balance 409', () => {
-        it('returns true (handled) and sets negativeBalanceWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
+    it('ignores unknown errors so default error handling applies', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
 
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(makeNegativeBalance409());
-            });
-
-            expect(returnValue).toBe(true);
-            expect(result.current.negativeBalanceWarning).toEqual({
-                balance: {amount: -350, currency: 'CZK'},
-                accountLink: '/api/members/abc-123/account',
-            });
+        let handled: true | undefined;
+        act(() => {
+            handled = result.current.onSubmitError(new ApiError(500), request);
+        });
+        act(() => {
+            result.current.onSubmitError(new ApiError(409, {params: {message: 'other'}}), request);
         });
 
-        it('does NOT set suspensionWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeNegativeBalance409());
-            });
-
-            expect(result.current.suspensionWarning).toBeNull();
-        });
-
-        it('clearNegativeBalanceWarning resets the warning to null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeNegativeBalance409());
-            });
-
-            act(() => {
-                result.current.clearNegativeBalanceWarning();
-            });
-
-            expect(result.current.negativeBalanceWarning).toBeNull();
-        });
+        expect(handled).toBeUndefined();
+        expect(result.current.warning).toBeNull();
     });
 
-    describe('both blockers present (debt + groups)', () => {
-        it('returns true (handled) and sets both warning states', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(makeBothBlockers409());
-            });
-
-            expect(returnValue).toBe(true);
-            expect(result.current.negativeBalanceWarning).toEqual({
-                balance: {amount: -350, currency: 'CZK'},
-                accountLink: '/api/members/abc-123/account',
-            });
-            expect(result.current.suspensionWarning).toEqual([
-                {groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'},
-            ]);
+    it('clearWarning closes the warning', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
         });
 
-        it('closes the action modal (debt blocker present)', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeBothBlockers409());
-            });
+        act(() => {
+            result.current.clearWarning();
         });
 
-        it('clearing one warning leaves the other intact', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeBothBlockers409());
-            });
-
-            act(() => {
-                result.current.clearNegativeBalanceWarning();
-            });
-
-            expect(result.current.negativeBalanceWarning).toBeNull();
-            expect(result.current.suspensionWarning).not.toBeNull();
-        });
+        expect(result.current.warning).toBeNull();
     });
 
-    describe('unknown 409 (unrecognised body)', () => {
-        it('returns undefined so HalFormDisplay falls back to default error handling', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(makeUnknown409());
-            });
-
-            expect(returnValue).toBeUndefined();
+    it('finishSuspension resubmits the stored request', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
         });
 
-        it('does not close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeUnknown409());
-            });
+        act(() => {
+            result.current.finishSuspension();
         });
 
-        it('leaves both warning states null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeUnknown409());
-            });
-
-            expect(result.current.suspensionWarning).toBeNull();
-            expect(result.current.negativeBalanceWarning).toBeNull();
-        });
+        expect(mutate).toHaveBeenCalledWith(request, expect.any(Object));
     });
 
-    describe('non-409 error', () => {
-        it('returns undefined so HalFormDisplay falls back to default error handling', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            let returnValue: true | undefined;
-            act(() => {
-                returnValue = result.current.onSubmitError(makeNon409Error());
-            });
-
-            expect(returnValue).toBeUndefined();
+    it('closes the warning after a successful resubmission', () => {
+        mutate.mockImplementation((_r, opts) => opts.onSuccess({data: null, location: null}));
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
         });
 
-        it('does not close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeNon409Error());
-            });
+        act(() => {
+            result.current.finishSuspension();
         });
 
-        it('leaves both warning states null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
-
-            act(() => {
-                result.current.onSubmitError(makeNon409Error());
-            });
-
-            expect(result.current.suspensionWarning).toBeNull();
-            expect(result.current.negativeBalanceWarning).toBeNull();
-        });
+        expect(result.current.warning).toBeNull();
     });
 
-    describe('plain (non-ApiError) exception', () => {
-        it('returns undefined for a plain Error', () => {
-            const {result} = renderHook(() => useSuspendMemberAction());
+    it('rebuilds the warning and forgets resolved groups on a repeated 409', () => {
+        mutate.mockImplementation((_r, opts) => opts.onError(debt409()));
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
+        });
+        act(() => {
+            result.current.markGroupResolved('g1');
+        });
+        expect(result.current.resolvedGroupIds.has('g1')).toBe(true);
 
-            let returnValue: true | undefined;
+        act(() => {
+            result.current.finishSuspension();
+        });
+
+        expect(result.current.warning).toEqual({groups: null, debt});
+        expect(result.current.resolvedGroupIds.size).toBe(0);
+    });
+
+    it('keeps the request of the latest 409 for resubmission', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
+        });
+        const second = {url: '/api/members/m2/suspend', data: {reason: 'PRESTUP'}};
+        act(() => {
+            result.current.onSubmitError(groups409(), second);
+        });
+
+        act(() => {
+            result.current.finishSuspension();
+        });
+
+        expect(mutate).toHaveBeenCalledWith(second, expect.any(Object));
+    });
+
+    it('tracks several resolved groups independently', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.markGroupResolved('g1');
+        });
+        act(() => {
+            result.current.markGroupResolved('g2');
+        });
+
+        expect([...result.current.resolvedGroupIds]).toEqual(['g1', 'g2']);
+    });
+
+    it('drops the stored request when an error arrives without one', () => {
+        const {result} = renderHook(() => useSuspendMemberAction());
+        act(() => {
+            result.current.onSubmitError(groups409(), request);
+        });
+        act(() => {
+            result.current.onSubmitError(groups409());
+        });
+
+        act(() => {
+            result.current.finishSuspension();
+        });
+
+        expect(mutate).not.toHaveBeenCalled();
+    });
+    describe('whole legal guardian group suspension', () => {
+        it('resubmits the stored request with the chosen cascadeGroupIds', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
             act(() => {
-                returnValue = result.current.onSubmitError(new Error('network failure'));
+                result.current.onSubmitError(groups409(), request);
+            });
+            act(() => {
+                result.current.chooseCascade('g1');
             });
 
-            expect(returnValue).toBeUndefined();
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(
+                {url: request.url, data: {...request.data, cascadeGroupIds: ['g1']}},
+                expect.any(Object),
+            );
+        });
+
+        it('does not send cascadeGroupIds when none is chosen', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(request, expect.any(Object));
+        });
+
+        it('drops a cancelled group from the resubmission', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+            act(() => {
+                result.current.chooseCascade('g1');
+            });
+            act(() => {
+                result.current.cancelCascade('g1');
+            });
+            expect(result.current.cascadeGroupIds.size).toBe(0);
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(request, expect.any(Object));
+        });
+
+        const legal = {groupId: 'lg', groupName: 'Rodina', groupType: 'LEGAL_GUARDIAN', groupLink: 'http://localhost/api/legal-guardian-groups/lg'};
+        const dependentsOnly409 = () => new ApiError(409, {params: {
+            dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+        }});
+
+        it('keeps the chosen cascade and its row when the resubmission is blocked by dependents', () => {
+            mutate.mockImplementation((_r, opts) => opts.onError(dependentsOnly409()));
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(result.current.cascadeGroupIds.has('lg')).toBe(true);
+            expect(result.current.warning?.groups).toEqual([legal]);
+            expect(result.current.warning?.dependentMembers).toEqual([{memberId: 'k1', memberName: 'Anna Nováková', debt}]);
+        });
+
+        it('does not duplicate a chosen group that the fresh 409 reports again', () => {
+            mutate.mockImplementation((_r, opts) => opts.onError(new ApiError(409, {params: {
+                groups: {affectedGroups: [legal]},
+                dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+            }})));
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(result.current.warning?.groups).toEqual([legal]);
+        });
+
+        it('starts fresh when a new form submission is blocked', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+
+            expect(result.current.cascadeGroupIds.size).toBe(0);
+            expect(result.current.warning?.groups).toEqual([group]);
+        });
+
+        it('handles a 409 that carries only dependent member blockers', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+
+            let handled: true | undefined;
+            act(() => {
+                handled = result.current.onSubmitError(new ApiError(409, {params: {
+                    dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+                }}), request);
+            });
+
+            expect(handled).toBe(true);
+            expect(result.current.warning?.dependentMembers).toHaveLength(1);
         });
     });
 });

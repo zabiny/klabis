@@ -5,11 +5,15 @@ import com.klabis.groups.freegroup.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.OwnedGroup;
+import com.klabis.groups.infrastructure.restapi.GroupsApi;
 import com.klabis.members.application.MemberOwnedGroupsPort;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @SecondaryAdapter
 @Component
@@ -30,6 +34,7 @@ class FreeGroupSuspensionBlockersAdapter implements MemberOwnedGroupsPort {
     }
 
     private static OwnedGroup toOwnedGroup(FreeGroup group) {
-        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR);
+        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR,
+                linkTo(methodOn(GroupsApi.class).getGroup(group.getId().uuid(), null)).toUri());
     }
 }

@@ -6,5 +6,6 @@ package com.klabis.common.authorization;
 public enum TargetType {
     MEMBER,
     EVENT,
+    GROUP,
     NONE
 }

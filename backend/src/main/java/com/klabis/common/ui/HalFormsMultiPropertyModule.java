@@ -33,10 +33,15 @@ class HalFormsMultiPropertyModule extends SimpleModule {
                 return beanProperties;
             }
 
+            BeanPropertyWriter typeWriter = beanProperties.stream()
+                    .filter(writer -> "type".equals(writer.getName()))
+                    .findFirst()
+                    .orElseThrow();
             return beanProperties.stream()
                     .map(writer -> switch (writer.getName()) {
                         case "multi" -> new MultiPropertyWriter(writer);
-                        case "options" -> new OptionsPropertyWriter(writer);
+                        case "options" -> new OptionsPropertyWriter(writer, typeWriter);
+                        case "type" -> new TypePropertyWriter(writer);
                         default -> writer;
                     })
                     .toList();
@@ -61,18 +66,39 @@ class HalFormsMultiPropertyModule extends SimpleModule {
         }
     }
 
-    private static class OptionsPropertyWriter extends BeanPropertyWriter {
+    private static class TypePropertyWriter extends BeanPropertyWriter {
 
-        OptionsPropertyWriter(BeanPropertyWriter delegate) {
+        TypePropertyWriter(BeanPropertyWriter delegate) {
             super(delegate);
         }
 
         @Override
         public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
-            String propertyName = getHalFormsPropertyName(bean);
+            Object type = get(bean);
+            if (type instanceof String text && text.indexOf(HalFormsSupport.OPTIONS_TOKEN_SEPARATOR) >= 0) {
+                String plain = HalFormsSupport.stripOptionsToken(text);
+                if (!plain.isEmpty()) {
+                    gen.writeStringProperty("type", plain);
+                }
+                return;
+            }
+            super.serializeAsProperty(bean, gen, prov);
+        }
+    }
 
-            if (propertyName != null) {
-                HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForProperty(propertyName);
+    private static class OptionsPropertyWriter extends BeanPropertyWriter {
+
+        private final BeanPropertyWriter typeWriter;
+
+        OptionsPropertyWriter(BeanPropertyWriter delegate, BeanPropertyWriter typeWriter) {
+            super(delegate);
+            this.typeWriter = typeWriter;
+        }
+
+        @Override
+        public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
+            if (typeWriter.get(bean) instanceof String type) {
+                HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForType(type);
                 HalFormsOptions options = switch (optionsDef) {
                     case HalFormsOptionsDef.Values values when !values.values().isEmpty() ->
                             HalFormsOptions.inline(values.values().toArray());

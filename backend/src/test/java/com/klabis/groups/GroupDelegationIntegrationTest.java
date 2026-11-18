@@ -223,10 +223,10 @@ class GroupDelegationIntegrationTest {
     @DisplayName("a former owner loses the permission over the members")
     void formerOwnerLosesPermission() throws Exception {
         FreeGroup group = groupWithMembers(Set.of(Authority.MEMBERS_EDIT_PROFILE), member, otherMember);
-        groupPort.addOwner(group.getId(), otherMember.id(), owner.id());
+        groupPort.addOwner(group.getId(), otherMember.id());
         patchPhone(otherMember, member).andExpect(status().isNoContent());
 
-        groupPort.removeOwner(group.getId(), otherMember.id(), owner.id());
+        groupPort.removeOwner(group.getId(), otherMember.id());
 
         patchPhone(otherMember, member).andExpect(status().isForbidden());
     }

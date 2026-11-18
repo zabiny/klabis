@@ -15,24 +15,25 @@
 # KlabisSpringCodegen#fromProperty reads the same marker off this file and maps the property onto
 # org.springframework.hateoas.EntityModel<Item>. No per-schema schemaMappings entry is involved.
 #
-# Three different authorization patterns coexist in this module — transcribed here exactly as found,
-# never normalized:
-#   a) Declarative — TrainingGroupController (GROUPS_TRAINING) carries @HasAuthority on most
-#      operations -> x-klabis-authority.
-#   b) Authorization inside the domain service — every FreeGroupController operation (Groups tag)
-#      passes @ActingMember into FreeGroupManagementPort and the ownership rule (owner-only /
-#      member-only) is enforced down in FreeGroup itself. The controller carries NO @HasAuthority.
-#      These 13 operations get NO x-klabis-authority / x-klabis-owner-visible — the check is neither
-#      an authority nor a target-is-caller comparison the framework can express, it is "is the
-#      caller a member of THIS group's owner/member set", which only the aggregate can answer.
-#   c) Imperative in the method body — TrainingGroupController.getTrainingGroup throws
-#      InsufficientAuthorityException unless the caller has GROUPS:TRAINING OR is a member of the specific group.
-#      x-klabis-authority alone would lock out those members, and pairing it with
-#      x-klabis-owner-visible (which does OR with an authority) cannot help either: group
-#      membership is a set stored on the group, not an owner ID this spec can name as a parameter.
-#      PendingInvitationsController.getPendingInvitations has
-#      no annotation either — it always acts on the caller's own invitations, via @ActingMember, so
-#      there is nothing to authorize beyond authentication.
+# Three authorization patterns coexist in this module — transcribed here exactly as found, never normalized:
+#   a) Declarative — TrainingGroupController (GROUPS_TRAINING) and the owner-only operations of
+#      FreeGroupController carry @HasAuthority -> x-klabis-authority. Owner-only free group operations use
+#      the relationship authority GROUPS_OWNER (derived from ownership of the group, never granted by hand;
+#      FreeGroupRelationshipSource, TrainingGroupRelationshipSource and LegalGuardianGroupRelationshipSource
+#      grant it to free group owners, trainers and guardians over their group). The id path parameter carries
+#      x-klabis-target-id: GROUP so the authority is evaluated over that group. addGroupOwner and deleteGroup
+#      list [MEMBERS_MANAGE, GROUPS_OWNER]: an administrator may designate a successor owner or dissolve a
+#      group before suspending its last owner.
+#   b) Imperative in the service — removeGroupMember: allowed when the caller removes themselves or holds
+#      GROUPS_OWNER over the group. Not declarative: the self rule needs a MEMBER target and an operation has a
+#      single target parameter.
+#   c) Imperative in the method body — FreeGroupController.getGroup (GROUPS_OWNER over the group, membership,
+#      or MEMBERS:MANAGE) and TrainingGroupController.getTrainingGroup (GROUPS:TRAINING, trainer of the group
+#      via GROUPS_OWNER, or membership) throw InsufficientAuthorityException otherwise. An OR over group
+#      membership cannot be written as x-klabis-authority: membership is not an authority.
+#      PendingInvitationsController.getPendingInvitations has no annotation either — it always acts on the
+#      caller's own invitations, via @ActingMember, so there is nothing to authorize beyond authentication.
+#      acceptInvitation / rejectInvitation are identity rules (the invitee) kept in the aggregate.
 #
 # _embedded keys on the three collection responses come from the deriver (Decision 5): the payload's
 # x-klabis-relation.collectionRelation where declared, else Spring HATEOAS's uncapitalize(name)+"List"
@@ -66,11 +67,8 @@ paths:
   # ---------------------------------------------------------------------------------------------
   # Groups (FreeGroupController, /api/groups) — 13 operations
   #
-  # NONE of these carry x-klabis-authority / x-klabis-owner-visible. Authorization is enforced
-  # inside FreeGroupManagementPort/FreeGroup itself from the @ActingMember passed by the controller
-  # (module header comment, pattern b) — "is the caller a member/owner of THIS group", which is not
-  # an authority check and not a simple target-is-caller comparison on a path variable. Do not add either
-  # extension here; that would either lock out legitimate callers or grant access the domain does not.
+  # Owner-only operations declare x-klabis-authority: GROUPS_OWNER (see the module header comment, pattern a).
+  # removeGroupMember and getGroup stay imperative (patterns b, c); accept/reject invitation are identity rules.
   # ---------------------------------------------------------------------------------------------
 
   /api/groups:
@@ -157,16 +155,18 @@ paths:
     get:
       operationId: getGroup
       tags: [Groups]
-      summary: Get group details (owner or member only)
-      # Imperative check in FreeGroupController.getGroup: FreeGroup.isOwner/hasMember. See module
-      # header comment (pattern b/c).
+      summary: Get group details (owner, member or MEMBERS:MANAGE)
+      # Imperative check in FreeGroupController.getGroup: GROUPS:OWNER over the group, membership, or
+      # MEMBERS:MANAGE. An OR over group membership, which is not an authority, so no x-klabis-authority.
       description: |
         Returns group details including owners, members and — for owners only — pending invitations,
-        each with its own hypermedia links. Caller must be an owner or a member of this group.
+        each with its own hypermedia links. Caller must be an owner or a member of this group, or hold
+        MEMBERS:MANAGE (also without a member profile); such an administrator sees no pending invitations
+        and is offered only addGroupOwner and deleteGroup.
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
       responses:
@@ -188,10 +188,10 @@ paths:
               description: Present only for group owners
             deleteGroup:
               operation: deleteGroup
-              description: Present only for group owners
+              description: Present for group owners and users with MEMBERS:MANAGE
             addGroupOwner:
               operation: addGroupOwner
-              description: Present only for group owners
+              description: Present for group owners and users with MEMBERS:MANAGE
             inviteMember:
               operation: inviteMember
               description: Present only for group owners
@@ -219,11 +219,10 @@ paths:
       operationId: updateGroup
       tags: [Groups]
       summary: Rename a group (owner only)
-      description: Renames a group. Caller must be an owner of this group.
+      description: Renames a group. Requires GROUPS:OWNER over this group (held by its owners).
       security:
         - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      x-klabis-authority: GROUPS_OWNER
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
       requestBody:
@@ -254,12 +253,13 @@ paths:
     delete:
       operationId: deleteGroup
       tags: [Groups]
-      summary: Delete a group (owner only)
-      description: Deletes a group. Caller must be an owner of this group.
+      summary: Delete a group (owner or MEMBERS:MANAGE)
+      description: >-
+        Deletes a group together with its memberships and pending invitations. Requires GROUPS:OWNER over this
+        group (held by its owners) or MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
       responses:
@@ -324,12 +324,14 @@ paths:
     post:
       operationId: addGroupOwner
       tags: [Groups]
-      summary: Add an owner to group (owner only)
-      description: Promotes an existing member to owner. Caller must be an owner of this group.
+      summary: Add an owner to group (owner or MEMBERS:MANAGE)
+      description: >-
+        Promotes a current member of the group to owner. Requires GROUPS:OWNER over this group (held by its
+        owners) or MEMBERS:MANAGE, so that an administrator can designate a successor before suspending the last
+        owner. A person who is not a current member of the group is rejected with 400.
       security:
         - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
       requestBody:
@@ -362,11 +364,12 @@ paths:
       operationId: removeGroupOwner
       tags: [Groups]
       summary: Remove an owner from group (owner only)
-      description: Demotes an owner back to plain member. Caller must be an owner of this group.
+      description: >-
+        Removes an owner from the group; the removed person leaves the group entirely. The last owner cannot be
+        removed. Requires GROUPS:OWNER over this group (held by its owners).
       security:
         - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      x-klabis-authority: GROUPS_OWNER
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
         - name: memberId
@@ -399,9 +402,10 @@ paths:
       operationId: inviteMember
       tags: [Groups]
       summary: Invite a member to a members group (owner only)
-      description: Creates a pending invitation. Caller must be an owner of this group.
+      description: Creates a pending invitation. Requires GROUPS:OWNER over this group (held by its owners).
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_OWNER
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -436,9 +440,10 @@ paths:
       operationId: cancelInvitation
       tags: [Groups]
       summary: Cancel a pending invitation (owner only)
-      description: Cancels a pending invitation. Caller must be an owner of this group.
+      description: Cancels a pending invitation. Requires GROUPS:OWNER over this group (held by its owners).
       security:
         - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_OWNER
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
@@ -946,6 +951,7 @@ components:
       in: path
       required: true
       description: Group UUID
+      x-klabis-target-id: GROUP
       schema:
         type: string
         format: uuid

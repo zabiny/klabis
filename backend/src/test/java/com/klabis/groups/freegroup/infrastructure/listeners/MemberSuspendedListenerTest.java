@@ -65,6 +65,7 @@ class MemberSuspendedListenerTest {
             listener.on(suspendedEvent(INVITEE));
 
             assertThat(group.getPendingInvitations()).isEmpty();
+            assertThat(group.getInvitations()).allSatisfy(inv -> assertThat(inv.getCancelledBy()).isEmpty());
             verify(freeGroupRepository).save(group);
         }
 

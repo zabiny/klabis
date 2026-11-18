@@ -6,13 +6,14 @@ import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
 import {scenarioPrefix} from '../support/parameters';
 import {expectActing, personas, type Persona} from '../support/personas';
+import type {Role} from '../support/roles';
 import {action, click, heading, select, submit} from '../support/ui';
 
 const forbiddenResponses = new WeakMap<Page, string[]>();
 
 const {Given, When, Then} = createBdd(test);
 
-const memberId = async (apiAs: (role: 'admin' | 'member') => Parameters<typeof memberIdentity>[0], persona: Persona) =>
+const memberId = async (apiAs: (role: Role) => Parameters<typeof memberIdentity>[0], persona: Persona) =>
     (await memberIdentity(apiAs(personas[persona]))).id;
 
 Given('{persona} coordinates the draft event {name}', async ({apiAs}, persona: Persona, name: string) => {

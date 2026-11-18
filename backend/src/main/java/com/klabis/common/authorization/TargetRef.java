@@ -22,4 +22,8 @@ public record TargetRef(TargetType type, UUID id) {
     public static TargetRef event(UUID id) {
         return new TargetRef(TargetType.EVENT, id);
     }
+
+    public static TargetRef group(UUID id) {
+        return new TargetRef(TargetType.GROUP, id);
+    }
 }

@@ -1,13 +1,16 @@
-import {expect, type Page} from '@playwright/test';
-import {createBdd} from 'playwright-bdd';
-import {test} from '../support/fixtures';
-import {type Linked} from '../support/halApi';
+import {expect, type Locator, type Page} from '@playwright/test';
+import {createBdd, type DataTable} from 'playwright-bdd';
+import {scenarioPrefix} from '../support/parameters';
+import {test, type ApiClient} from '../support/fixtures';
+import {type Linked, memberIdentity} from '../support/halApi';
+import {addGroupMember, createFreeGroup, deleteGroup} from '../support/groupsApi';
 import {minorDateOfBirth} from '../support/dates';
 import {createTrainingGroup, findMemberPath, guardianEmail, registerMember, REGISTERED_FIRST_NAME, registrationBody} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
-import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
+import type {Role} from '../support/roles';
+import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, section, select, submit} from '../support/ui';
 
-const {Given, When, Then} = createBdd(test);
+const {Given, When, Then, After} = createBdd(test);
 
 // Returning to an already open member list keeps the typed text but not its filtering, so the list is always entered from the home page.
 export const searchMembers = async (page: Page, text: string, status?: string) => {
@@ -26,7 +29,9 @@ export const searchMembers = async (page: Page, text: string, status?: string) =
 
 // Table rows are exposed as buttons named "Row <n>" (a11y follow-up).
 const namedMemberRow = (page: Page, firstName: string, lastName: string) =>
-    page.getByRole('button', {name: /^Row \d+$/}).filter({hasText: lastName}).filter({hasText: firstName});
+    page.getByRole('button', {name: /^Row \d+$/})
+        .filter({has: page.getByRole('cell', {name: lastName, exact: true})})
+        .filter({has: page.getByRole('cell', {name: firstName, exact: true})});
 
 export const memberRow = (page: Page, lastName: string) => namedMemberRow(page, REGISTERED_FIRST_NAME, lastName);
 
@@ -271,6 +276,118 @@ Then('the suspension is blocked because member {name} is the last owner of train
     await expect(warning.getByText(groupName)).toBeVisible();
 });
 
+const WARNING = 'Varování: Správce skupin';
+
+const groupRow = (warning: Locator, groupName: string) => warning.getByRole('listitem').filter({hasText: groupName});
+
+const startSuspension = async (page: Page, firstName: string, lastName: string) => {
+    await openMemberDetailOf(page, firstName, lastName);
+    await click(page, 'Ukončit členství');
+    await select(page, 'Důvod', 'Odhlášení');
+    await submit(page);
+    return page.getByRole('dialog', {name: WARNING});
+};
+
+const designateSuccessor = async (page: Page, warning: Locator, groupName: string, successor: string, ownersEndpoint: string) => {
+    await action(groupRow(warning, groupName), 'Určit nástupce').click();
+    const member = page.getByLabel(/^Člen ?\*?$/);
+    await expect(member).toBeEnabled();
+    const label = await member.getByRole('option', {name: new RegExp(successor)}).textContent();
+    await member.selectOption({label: label!});
+    const added = page.waitForResponse((response) => response.url().includes(ownersEndpoint) && response.request().method() === 'POST');
+    await action(page.getByRole('dialog').last(), 'Odeslat').click();
+    expect((await added).ok()).toBe(true);
+    await expect(groupRow(warning, groupName).getByText('Vyřešeno')).toBeVisible();
+};
+
+When('{persona} suspends member {name} designating member {name} as successor of training group {name}', async ({page, actAs}, persona: Persona, lastName: string, successor: string, groupName: string) => {
+    await actAs(persona);
+    const warning = await startSuspension(page, REGISTERED_FIRST_NAME, lastName);
+    await designateSuccessor(page, warning, groupName, successor, '/trainers');
+    await submit(page, 'Ukončit členství');
+});
+
+const freeGroups = new Map<string, string>();
+const suspendedPersonas = new Set<Persona>();
+
+const groupPathOf = (groupName: string) => {
+    const path = freeGroups.get(groupName);
+    if (!path) throw new Error(`free group "${groupName}" was not set up`);
+    return path;
+};
+
+Given('{persona} is the only owner of the free group {name}', async ({apiAs}, persona: Persona, groupName: string) => {
+    freeGroups.set(groupName, await createFreeGroup(apiAs(personas[persona]), groupName));
+});
+
+Given('{persona} is a member of the free group {name} owned by {persona}', async ({apiAs}, member: Persona, groupName: string, owner: Persona) => {
+    const invitee = apiAs(personas[member]);
+    await addGroupMember(apiAs(personas[owner]), groupPathOf(groupName), invitee, (await memberIdentity(invitee)).id);
+});
+
+const suspendPersona = async (page: Page, apiAs: (role: Role) => ApiClient, target: Persona) => {
+    const {firstName, lastName} = await memberIdentity(apiAs(personas[target]));
+    suspendedPersonas.add(target);
+    return startSuspension(page, firstName, lastName);
+};
+
+When('{persona} suspends {persona}', async ({page, actAs, apiAs}, persona: Persona, target: Persona) => {
+    await actAs(persona);
+    await suspendPersona(page, apiAs, target);
+});
+
+When('{persona} suspends {persona} designating {persona} as successor owner of the free group {name}', async ({page, actAs, apiAs}, persona: Persona, target: Persona, successor: Persona, groupName: string) => {
+    await actAs(persona);
+    const warning = await suspendPersona(page, apiAs, target);
+    const {lastName} = await memberIdentity(apiAs(personas[successor]));
+    await designateSuccessor(page, warning, groupName, lastName, '/owners');
+    await submit(page, 'Ukončit členství');
+});
+
+When('{persona} suspends {persona} dissolving the free group {name}', async ({page, actAs, apiAs}, persona: Persona, target: Persona, groupName: string) => {
+    await actAs(persona);
+    const warning = await suspendPersona(page, apiAs, target);
+    await action(groupRow(warning, groupName), 'Rozpustit skupinu').click();
+    const dissolved = page.waitForResponse((response) => response.url().includes(groupPathOf(groupName)) && response.request().method() === 'DELETE');
+    await action(page.getByRole('dialog').last(), 'Odeslat').click();
+    expect((await dissolved).ok()).toBe(true);
+    await expect(groupRow(warning, groupName).getByText('Vyřešeno')).toBeVisible();
+    await submit(page, 'Ukončit členství');
+});
+
+Then('{persona} is suspended', async ({page, apiAs}, target: Persona) => {
+    const {firstName, lastName} = await memberIdentity(apiAs(personas[target]));
+    await openMemberDetailOf(page, firstName, lastName, 'Vše');
+    await expect(page.getByText('Neaktivní', {exact: true}).first()).toBeVisible();
+});
+
+Then('the warning offers to dissolve the free group {name} but not to designate a successor', async ({page}, groupName: string) => {
+    const row = groupRow(page.getByRole('dialog', {name: WARNING}), groupName);
+    await expect(action(row, 'Rozpustit skupinu')).toBeVisible();
+    await expect(action(row, 'Určit nástupce')).toHaveCount(0);
+});
+
+// Eva is a seeded user other features depend on, and a free group she owns alone would block her next suspension.
+After(async ({apiAs}) => {
+    const admin = apiAs('admin');
+    for (const persona of suspendedPersonas) {
+        const member = await admin.get(`/api/members/${(await memberIdentity(apiAs(personas[persona]))).id}`) as Linked;
+        if (member._templates?.resumeMember) await admin.post(admin.templateTarget(member, 'resumeMember'), {});
+    }
+    suspendedPersonas.clear();
+    for (const path of freeGroups.values()) await deleteGroup(admin, path).catch(() => undefined);
+    freeGroups.clear();
+});
+
+Then('the suspension is blocked by one warning showing the balance {int} CZK and training group {name}', async ({page}, balance: number, groupName: string) => {
+    const warning = page.getByRole('dialog', {name: 'Varování: Správce skupin'});
+    await expect(warning.getByText(groupName)).toBeVisible();
+    await expect(warning.getByText(czechAmount(balance))).toBeVisible();
+    await expect(action(warning, 'Otevřít účet')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await expect(action(warning, 'Ukončit členství')).toHaveCount(0);
+});
+
 Then('the suspension is blocked because the balance is {int} CZK', async ({page}, balance: number) => {
     const warning = page.getByRole('dialog', {name: 'Záporný zůstatek'});
     await expect(warning.getByText(czechAmount(balance))).toBeVisible();
@@ -282,4 +399,39 @@ Then('member {name} is still active', async ({page}, lastName: string) => {
     await openMemberDetail(page, lastName, 'Vše');
     await expect(page.getByText('Aktivní', {exact: true}).first()).toBeVisible();
     await expect(page.getByText('Neaktivní', {exact: true})).toHaveCount(0);
+});
+
+const suspendWithWholeGroup = async (page: Page, lastName: string) => {
+    const warning = await startSuspension(page, REGISTERED_FIRST_NAME, lastName);
+    await action(warning.getByRole('listitem').filter({hasText: 'Skupina zákonných zástupců'}), 'Pozastavit celou skupinu').click();
+    await action(page.getByRole('dialog').last(), 'Potvrdit').click();
+    await expect(warning.getByText('Skupina bude pozastavena společně s členem')).toBeVisible();
+    return warning;
+};
+
+When('{persona} suspends member {name} together with the whole legal guardian group', async ({page, actAs}, persona: Persona, lastName: string) => {
+    await actAs(persona);
+    await suspendWithWholeGroup(page, lastName);
+    await submit(page, 'Ukončit členství');
+});
+
+When('{persona} attempts to suspend member {name} together with the whole legal guardian group', async ({page, actAs}, persona: Persona, lastName: string) => {
+    await actAs(persona);
+    await suspendWithWholeGroup(page, lastName);
+    await action(page.getByRole('dialog', {name: WARNING}), 'Ukončit členství').click();
+});
+
+Then('these members are suspended because of {string}:', async ({page}, reason: string, table: DataTable) => {
+    for (const [name] of table.raw()) {
+        await openMemberDetail(page, `${scenarioPrefix()}${name}`, 'Vše');
+        await expect(heading(page, 'DEAKTIVACE')).toBeVisible();
+        await expect(section(page, 'DEAKTIVACE').getByText(reason, {exact: true})).toBeVisible();
+    }
+});
+
+Then('the whole-group suspension is blocked because member {name} has a negative balance of {int} CZK', async ({page}, lastName: string, balance: number) => {
+    const warning = page.getByRole('dialog', {name: WARNING});
+    const dependent = warning.getByRole('listitem').filter({hasText: `${REGISTERED_FIRST_NAME} ${lastName}`});
+    await expect(dependent.getByText(czechAmount(balance))).toBeVisible();
+    await expect(action(warning, 'Ukončit členství')).toHaveCount(0);
 });

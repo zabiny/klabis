@@ -170,9 +170,10 @@ does not imply it, so rules list both):
 | Source | Module | Grants |
 |---|---|---|
 | `SelfProfileRelationshipSource` | `members.infrastructure` | over own `MemberId` when the member is an adult today (replaces `OwnProfileEditRule`) |
-| `LegalGuardianGroupRelationshipSource` | `members.legalguardiangroup.infrastructure` | for each group where the user is a guardian: the group's `delegatedAuthorities()` over each minor member (age not checked; the minor leaves the group in the daily run after turning 18) |
-| `FreeGroupRelationshipSource` | `groups.freegroup.infrastructure` | for each free group the user owns: its `delegatedAuthorities()` over each member (not over co-owners; follows membership) |
+| `LegalGuardianGroupRelationshipSource` | `members.legalguardiangroup.infrastructure` | for each group where the user is a guardian: the group's `delegatedAuthorities()` over each minor member (age not checked; the minor leaves the group in the daily run after turning 18), plus `GROUPS_OWNER` over each guarded group |
+| `FreeGroupRelationshipSource` | `groups.freegroup.infrastructure` | for each free group the user owns: its `delegatedAuthorities()` over each member (not over co-owners; follows membership), plus `GROUPS_OWNER` over each owned group (all three group sources build their grants with `DelegatedGrants.of` / `DelegatedGrants.ownershipOf(groups, idToUuid)`) |
 | `EventCoordinatorRelationshipSource` | `events.infrastructure` | `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (`SPECIFIC`, target `EVENT`) over every event the user coordinates, read through `EventRepository.findIdsCoordinatedBy` (ids only, no aggregates) |
+| `TrainingGroupRelationshipSource` | `groups.traininggroup.infrastructure` | `GROUPS_OWNER` (`SPECIFIC`, target `GROUP`) over each training group the user trains |
 
 Not every `SPECIFIC` authority is delegatable to others: the event coordinator authorities come from the coordinator
 relationship only. They are not in `FreeGroup`'s delegatable set (MEMBER-typed only), not assignable in the permissions

@@ -161,6 +161,8 @@ paths:
     $ref: './groups.yaml#/paths/~1api~1groups'
   /api/groups/{id}:
     $ref: './groups.yaml#/paths/~1api~1groups~1{id}'
+  /api/groups/{id}/member-options:
+    $ref: './members.yaml#/paths/~1api~1groups~1{id}~1member-options'
   /api/groups/{id}/members/{memberId}:
     $ref: './groups.yaml#/paths/~1api~1groups~1{id}~1members~1{memberId}'
   /api/groups/{id}/owners:

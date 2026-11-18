@@ -549,6 +549,21 @@ describe('MemberDetailPage', () => {
             expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
         });
 
+        it('tells in the suspension form that a guardian with another guardian is removed from the guardians', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    updateMember: adminEditTemplate,
+                    suspendMember: mockHalFormsTemplate({method: 'POST', title: 'Terminate', target: '/api/members/m1/suspend', properties: []}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /ukončit členství/i}));
+
+            expect(within(screen.getByRole('dialog')).getByText(labels.suspensionWarning.suspendFormGuardianNote)).toBeInTheDocument();
+        });
+
         it('closes the suspend dialog and opens the negative-balance dialog on debt 409', async () => {
             const user = userEvent.setup();
             const mutate = vi.fn((_vars: unknown, opts: {onError?: (e: unknown) => void}) => {

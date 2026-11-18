@@ -380,6 +380,13 @@ paths:
         Suspends an active membership. Refused when the member still has outstanding debt on their
         finance account, or when they are the sole owner of at least one group — a successor must
         be designated first.
+
+        With `cascadeGroupIds` the minors of the listed legal guardian groups are suspended together
+        with the member, in one atomic operation with the same reason and note. The checks run for
+        every member of the cascade before anything changes; when any of them is blocked nothing is
+        suspended and the 409 reports the blockers of the dependent minors in `dependentMembers`.
+        Minors that are already suspended are skipped and keep their original reason and note. An id
+        that is not a legal guardian group of which the member is the sole guardian is answered with 400.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -411,7 +418,8 @@ paths:
           description: |
             Suspension is blocked (error type /errors/suspension-blocked) — either the member owes money on their
             finance account, or they are the sole owner of at least one group. The reasons are the problem
-            detail's `debt` and `groups` extension properties.
+            detail's `debt` and `groups` extension properties; blockers of minors suspended together with
+            the member are in `dependentMembers`.
           content:
             application/problem+json:
               schema:
@@ -820,6 +828,55 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/groups/{id}/member-options:
+    get:
+      operationId: listGroupMemberOptions
+      tags: [GroupMemberOptions]
+      summary: List the owners and members of a group as select options
+      description: |
+        Value/prompt pairs for the people in a group of any type (free group, training group, legal guardian
+        group). Owners are free group owners, trainers or guardians; members are members, trainees or minors.
+        Both are returned when role is absent. The value is the person's id (the member id for a member), the
+        prompt the person's name; a non-member legal guardian is named as well. Requires MEMBERS:MANAGE or
+        GROUPS:OWNER over this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: [MEMBERS_MANAGE, GROUPS_OWNER]
+      parameters:
+        - $ref: '#/components/parameters/GroupMemberOptionsGroupIdParam'
+        - name: role
+          in: query
+          description: Restricts the options to owners or to members of the group; both when absent
+          required: false
+          schema:
+            $ref: '#/components/schemas/GroupRole'
+      responses:
+        '200':
+          description: Options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOptionResponse'
+            application/prs.hal-forms+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOptionResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
 components:
   securitySchemes:
     KlabisAuth:
@@ -868,6 +925,16 @@ components:
       in: path
       required: true
       description: Legal guardian group UUID
+      schema:
+        type: string
+        format: uuid
+
+    GroupMemberOptionsGroupIdParam:
+      name: id
+      in: path
+      required: true
+      description: Group UUID (any group type)
+      x-klabis-target-id: GROUP
       schema:
         type: string
         format: uuid
@@ -1246,6 +1313,15 @@ components:
         note:
           type: string
           maxLength: 500
+        cascadeGroupIds:
+          type: array
+          description: |
+            Ids of legal guardian groups of which the member is the sole guardian; the minors of these
+            groups are suspended together with the member. Set by the warning dialog, not by the form.
+          items:
+            type: string
+            format: uuid
+          x-klabis-halforms-access: NONE
 
     # The 409 body of suspendMember. Both blockers are independent (a member can simultaneously
     # owe money AND be a group's last owner), so this is a plain object carrying each as an
@@ -1257,6 +1333,28 @@ components:
         Suspension is blocked by one or both independent reasons. Both `debt` and `groups` are
         checked and reported together, not exclusively.
       properties:
+        debt:
+          $ref: '#/components/schemas/OutstandingDebtWarning'
+        groups:
+          $ref: '#/components/schemas/LastOwnerWarning'
+        dependentMembers:
+          type: array
+          description: |
+            Blockers of the minors that were to be suspended together with the member
+            (`cascadeGroupIds`). Present only for a cascade; nothing was suspended.
+          items:
+            $ref: '#/components/schemas/DependentMemberWarning'
+
+    DependentMemberWarning:
+      type: object
+      description: Blockers of a minor suspended together with the requested member.
+      required: [memberId, memberName]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        memberName:
+          type: string
         debt:
           $ref: '#/components/schemas/OutstandingDebtWarning'
         groups:
@@ -1277,8 +1375,9 @@ components:
     LastOwnerWarning:
       type: object
       description: |
-        The member is the sole owner of the listed groups. Each one needs another owner (or must be
-        dissolved) before the suspension can go through.
+        The member is the sole owner, trainer or guardian of the listed groups. Each free and training
+        group needs another owner/trainer (free groups may instead be dissolved) before the suspension
+        can go through.
       required: [affectedGroups]
       properties:
         affectedGroups:
@@ -1288,7 +1387,8 @@ components:
 
     AffectedGroup:
       type: object
-      required: [groupId, groupName, groupType]
+      description: A group the suspended member is the last owner, trainer or guardian of.
+      required: [groupId, groupName, groupType, groupLink]
       properties:
         groupId:
           type: string
@@ -1298,7 +1398,15 @@ components:
         groupType:
           type: string
           enum: [FREE, LEGAL_GUARDIAN, TRAINING]
-          description: Which of the three group aggregates the member owns
+          description: Which of the three group aggregates the member is the last owner of
+        groupLink:
+          type: string
+          format: uri
+          description: |
+            Absolute URL of the group resource (`GET /api/groups/{id}`, `/api/training-groups/{id}` or
+            `/api/legal-guardian-groups/{id}` by `groupType`). Its HAL-FORMS templates tell the client
+            which resolution actions (e.g. `addTrainer`, `addGroupOwner`, `deleteGroup`) the current
+            user may perform; a 403 means the user has no authority over the group.
 
     MonetaryAmount:
       type: object
@@ -1577,6 +1685,11 @@ components:
     LegalGuardianKind:
       type: string
       enum: [MEMBER, LEGAL_GUARDIAN]
+
+    GroupRole:
+      type: string
+      description: Role of a person in a group - owner (free group owner, trainer, guardian) or member
+      enum: [OWNER, MEMBER]
 
     LegalGuardianOptionResponse:
       type: object

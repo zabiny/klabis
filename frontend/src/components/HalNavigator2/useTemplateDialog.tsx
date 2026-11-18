@@ -5,7 +5,7 @@ import {type HalTemplateAction} from '../../api/halResource';
 import {savedMessage} from '../../localization';
 import {selfHref} from '../../api/hateoas';
 import {Modal} from '../UI';
-import {HalFormDisplay} from './HalFormDisplay.tsx';
+import {HalFormDisplay, type SubmittedRequest} from './HalFormDisplay.tsx';
 import type {HalFormFieldFactory} from './halforms';
 
 export interface TemplateDialogOptions {
@@ -15,7 +15,7 @@ export interface TemplateDialogOptions {
     submitLabel?: string;
     successMessage?: string;
     onSubmitSuccess?: (responseData?: unknown) => void;
-    onSubmitError?: (error: unknown) => boolean | void;
+    onSubmitError?: (error: unknown, request: SubmittedRequest) => boolean | void;
     navigateOnSuccess?: boolean;
     fieldsFactory?: HalFormFieldFactory;
     initialData?: object;

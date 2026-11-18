@@ -157,6 +157,7 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
         'Platnost zdravotního kurzu musí být později než datum jeho absolvování.',
     '/errors/member-already-suspended': () => 'Člen je již pozastaven.',
     '/errors/member-already-active': () => 'Člen je již aktivní.',
+    '/errors/not-sole-guardian-group': () => 'Skupinu lze pozastavit společně se zástupcem jen tehdy, když je zástupce jejím jediným zákonným zástupcem.',
     '/errors/suspension-blocked': () => 'Členství nelze pozastavit, dokud není vyřešeno vlastnictví skupin nebo dluh člena.',
     '/errors/adult-member-cannot-have-guardians': () => 'Zletilý člen nemůže mít zákonné zástupce.',
     '/errors/minor-cannot-take-over-guardian': () => 'Nezletilý člen nemůže převzít roli zákonného zástupce.',
@@ -314,10 +315,6 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
         const who = member ? `Člen ${member} není` : 'Člen není';
         return group ? `${who} ve skupině „${group}“.` : `${who} v této skupině.`;
     },
-    '/errors/group-ownership-required': ({groupName}) =>
-        nonEmptyString(groupName)
-            ? `Tuto akci může provést jen vlastník skupiny „${groupName}“.`
-            : 'Tuto akci může provést jen vlastník skupiny.',
     '/errors/not-invited-member': ({groupName}) =>
         nonEmptyString(groupName)
             ? `Do skupiny „${groupName}“ nejste pozváni.`
@@ -1160,6 +1157,26 @@ export const labels = {
         groupTypeTrainingGroup: 'Tréninková skupina',
         groupTypeLegalGuardianGroup: 'Skupina zákonných zástupců',
         groupTypeFreeGroup: 'Volná skupina',
+        resolved: 'Vyřešeno',
+        finishSuspension: 'Ukončit členství',
+        loadingGroup: 'Načítám skupinu…',
+        groupLoadFailed: 'Skupinu se nepodařilo načíst.',
+        contactTrainingGroupAdmin: 'Nástupce může určit pouze správce tréninkových skupin. Obraťte se na něj.',
+        contactFreeGroupAdmin: 'Tuto skupinu nelze z tohoto místa spravovat. Obraťte se na vlastníka skupiny nebo správce klubu.',
+        suspendWholeGroup: 'Pozastavit celou skupinu',
+        suspendWholeGroupConfirmTitle: 'Pozastavit celou skupinu?',
+        suspendWholeGroupConfirmText: 'Společně s členem budou pozastaveni také všichni nezletilí členové skupiny:',
+        suspendWholeGroupGuardian: 'Zákonný zástupce',
+        suspendWholeGroupMinors: 'Nezletilí',
+        suspendWholeGroupConfirm: 'Potvrdit',
+        suspendWholeGroupMarked: 'Skupina bude pozastavena společně s členem',
+        suspendWholeGroupCancel: 'Zrušit',
+        dependentMembersTitle: 'Pozastavení nelze dokončit kvůli členům skupiny',
+        dependentMembersDescription: 'Následující členové skupiny brání pozastavení. Vyřešte to jinde, nebo pozastavení celé skupiny zrušte, a zkuste to znovu.',
+        dependentDebt: 'záporný zůstatek',
+        dependentLastOwner: 'poslední správce skupiny',
+        suspendFormGuardianNote: 'Je-li člen zákonným zástupcem nezletilého, který má i jiného zástupce, bude ze zástupců odebrán.',
+        dissolveConfirmation: (groupName: string) => `Opravdu chcete rozpustit skupinu „${groupName}“? Skupina i její členství budou odstraněny.`,
     },
 
     negativeBalanceWarning: {

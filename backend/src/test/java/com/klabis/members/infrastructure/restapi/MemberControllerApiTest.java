@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -2416,7 +2417,7 @@ class MemberControllerApiTest {
                     .build();
 
             Mockito.verify(managementService)
-                    .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand));
+                    .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand), eq(Set.of()));
         }
 
         @Test
@@ -2446,7 +2447,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
 
             when(managementService.suspendMember(eq(new MemberId(memberId)),
-                    any(Member.SuspendMembership.class)))
+                    any(Member.SuspendMembership.class), any()))
                     .thenThrow(new MemberAlreadySuspendedException());
 
             // Act & Assert
@@ -2509,11 +2510,12 @@ class MemberControllerApiTest {
         void shouldReturn409WhenMemberIsLastGroupOwner() throws Exception {
             UUID memberId = UUID.randomUUID();
             List<OwnedGroup> groups = List.of(
-                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE",
+                            java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
             );
 
-            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new SuspensionBlockedException(groups, null));
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new SuspensionBlockedException(groups, null, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2526,7 +2528,33 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.groups.affectedGroups").isArray())
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value("FREE"))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupLink").value(
+                            "http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
                     .andExpect(jsonPath("$.debt").doesNotExist());
+        }
+
+        @org.junit.jupiter.params.ParameterizedTest(name = "{0} group link is exposed in 409 body")
+        @org.junit.jupiter.params.provider.CsvSource({
+                "TRAINING, http://localhost/api/training-groups/dddddddd-dddd-dddd-dddd-dddddddddddd",
+                "LEGAL_GUARDIAN, http://localhost/api/legal-guardian-groups/dddddddd-dddd-dddd-dddd-dddddddddddd"
+        })
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeGroupLinkForEveryGroupType(String groupType, String link) throws Exception {
+            UUID memberId = UUID.randomUUID();
+            List<OwnedGroup> groups = List.of(
+                    new OwnedGroup("dddddddd-dddd-dddd-dddd-dddddddddddd", "Žáci", groupType, java.net.URI.create(link)));
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new SuspensionBlockedException(groups, null, List.of()));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value(groupType))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupLink").value(link));
         }
 
         @Test
@@ -2539,8 +2567,8 @@ class MemberControllerApiTest {
                     new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
                     true);
 
-            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot));
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2562,15 +2590,16 @@ class MemberControllerApiTest {
         void shouldReturn409WithBothBlockersWhenBothApply() throws Exception {
             UUID memberId = UUID.randomUUID();
             List<OwnedGroup> groups = List.of(
-                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE",
+                            java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
             );
             var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
                     new MemberId(memberId),
                     new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
                     true);
 
-            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new SuspensionBlockedException(groups, snapshot));
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new SuspensionBlockedException(groups, snapshot, List.of()));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -2582,6 +2611,91 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.debt.balance.amount").value(-250))
                     .andExpect(jsonPath("$.debt.accountLink").value(
                             "http://localhost/api/members/%s/account".formatted(memberId)));
+        }
+
+        @Test
+        @DisplayName("should pass cascadeGroupIds to the service and answer 204")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldPassCascadeGroupIdsToService() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID groupId = UUID.randomUUID();
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "cascadeGroupIds": ["%s"]
+                            }
+                            """.formatted(groupId)))
+                    .andExpect(status().isNoContent());
+
+            Mockito.verify(managementService).suspendMember(eq(new MemberId(memberId)),
+                    any(Member.SuspendMembership.class), eq(Set.of(new LegalGuardianGroupId(groupId))));
+        }
+
+        @Test
+        @DisplayName("should return 400 when a cascade group is not a sole-guardian group of the member")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenCascadeGroupIsNotSoleGuardianGroup() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID groupId = UUID.randomUUID();
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new NotSoleGuardianGroupException(new LegalGuardianGroupId(groupId)));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "cascadeGroupIds": ["%s"]
+                            }
+                            """.formatted(groupId)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/not-sole-guardian-group"));
+        }
+
+        @Test
+        @DisplayName("should return 409 with dependentMembers when a cascaded minor is blocked")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WithDependentMembers() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID minorId = UUID.randomUUID();
+            var debt = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                    new MemberId(minorId), new MonetaryAmount(new java.math.BigDecimal("-100"), "CZK"), true);
+            var freeGroup = new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Kids", "FREE",
+                    java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"));
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
+                    .thenThrow(new SuspensionBlockedException(List.of(), null, List.of(
+                            new SuspensionBlockedException.DependentBlockers(new MemberId(minorId), "Anna Smith",
+                                    List.of(freeGroup), debt))));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "cascadeGroupIds": ["%s"]
+                            }
+                            """.formatted(UUID.randomUUID())))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.debt").doesNotExist())
+                    .andExpect(jsonPath("$.groups").doesNotExist())
+                    .andExpect(jsonPath("$.dependentMembers[0].memberId").value(minorId.toString()))
+                    .andExpect(jsonPath("$.dependentMembers[0].memberName").value("Anna Smith"))
+                    .andExpect(jsonPath("$.dependentMembers[0].debt.balance.amount").value(-100))
+                    .andExpect(jsonPath("$.dependentMembers[0].debt.accountLink").value(
+                            "http://localhost/api/members/%s/account".formatted(minorId)))
+                    .andExpect(jsonPath("$.dependentMembers[0].groups.affectedGroups[0].groupName").value("Kids"));
+        }
+
+        @Test
+        @DisplayName("should return 403 and suspend nobody when caller lacks MEMBERS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403ForCascadeWithoutManageAuthority() throws Exception {
+            mockMvc.perform(postMemberIdSuspend(UUID.randomUUID()).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "cascadeGroupIds": ["%s"]
+                            }
+                            """.formatted(UUID.randomUUID())))
+                    .andExpect(status().isForbidden());
+
+            Mockito.verifyNoInteractions(managementService);
         }
     }
 
@@ -3066,7 +3180,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            when(managementService.suspendMember(any(MemberId.class), any(Member.SuspendMembership.class)))
+            when(managementService.suspendMember(any(MemberId.class), any(Member.SuspendMembership.class), any()))
                     .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
 
             mockMvc.perform(post("/api/members/" + memberId + "/suspend")

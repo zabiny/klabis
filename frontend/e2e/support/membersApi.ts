@@ -47,6 +47,17 @@ export const registerMinorWithNewGuardian = async (admin: ApiClient, lastName: s
     });
 };
 
+// A member's user id is the member id, so existing members become guardians by the last segment of their path.
+export const registerMinorWithGuardians = async (admin: ApiClient, lastName: string, guardianPaths: string[]) => {
+    const members = await admin.follow(await admin.root(), 'members');
+    return admin.create(admin.templateTarget(members, 'registerMember'), {
+        ...registrationBody(lastName, minorDateOfBirth()),
+        email: undefined,
+        phone: undefined,
+        legalGuardians: guardianPaths.map((path) => ({userId: path.split('/').pop()})),
+    });
+};
+
 export const memberAccount = async (admin: ApiClient, memberPath: string) =>
     admin.follow(await admin.get(memberPath), 'account') as Promise<Linked>;
 

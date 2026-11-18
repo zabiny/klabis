@@ -56,6 +56,13 @@ public interface LegalGuardianGroupPort {
     void removeMinor(MemberId minor);
 
     /**
+     * The user stops being a guardian of every group that keeps at least one other guardian; groups in which
+     * they are the sole guardian are left alone. Groups are renamed or merged as by
+     * {@link #changeGroupGuardians(LegalGuardianGroupId, Set)}.
+     */
+    void removeGuardianFromGroupsWithOtherGuardians(UserId guardian);
+
+    /**
      * Contacts of the group's guardians, whether they are members or non-member guardians.
      */
     List<GuardianContact> listGuardians(LegalGuardianGroupId id);

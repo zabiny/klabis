@@ -5,6 +5,7 @@ import type {Role} from './roles';
 export const personas = {
     Jan: 'admin',
     Eva: 'member',
+    Tomáš: 'tester',
 } as const satisfies Record<string, Role>;
 
 export type Persona = keyof typeof personas;

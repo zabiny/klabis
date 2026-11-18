@@ -15,8 +15,8 @@ import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-reac
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
-import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
-import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
+import {SuspendFormNote, SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
+import {formatPersonName} from "../../components/members/formatPersonName.ts";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {
     DEFAULT_MEMBER_STATUS,
@@ -47,18 +47,12 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
     const importFromOrisTarget = importFromOrisTemplate?.target;
     const hasImportFromOris = !!importFromOrisTemplate;
 
-    const {
-        suspensionWarning,
-        negativeBalanceWarning,
-        clearSuspensionWarning,
-        clearNegativeBalanceWarning,
-        onSubmitError: onSuspendSubmitError,
-    } = useSuspendMemberAction();
+    const suspension = useSuspendMemberAction();
 
     const actionDialog = useTemplateDialog({
         size: '2xl',
         title: (template, name) => template.title ?? name,
-        onSubmitError: onSuspendSubmitError,
+        onSubmitError: suspension.onSubmitError,
     });
 
     const hasManageAuthority = resourceData._templates?.registerMember !== undefined;
@@ -137,7 +131,8 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(suspendAction);
+                            suspension.startSuspension(formatPersonName(member));
+                            actionDialog.open(suspendAction, {note: <SuspendFormNote/>});
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -179,7 +174,7 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
     };
 
     const memberName = permissionsDialog
-        ? `${permissionsDialog.member.firstName ?? ''} ${permissionsDialog.member.lastName ?? ''}`.trim()
+        ? formatPersonName(permissionsDialog.member)
         : '';
 
     const memberRegistrationNumber = permissionsDialog
@@ -246,14 +241,16 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
 
             {actionDialog.dialog}
             <SuspensionWarningDialog
-                isOpen={suspensionWarning !== null}
-                onClose={clearSuspensionWarning}
-                affectedGroups={suspensionWarning ?? []}
-            />
-            <NegativeBalanceSuspensionDialog
-                isOpen={negativeBalanceWarning !== null}
-                onClose={clearNegativeBalanceWarning}
-                warning={negativeBalanceWarning}
+                warning={suspension.warning}
+                resolvedGroupIds={suspension.resolvedGroupIds}
+                cascadeGroupIds={suspension.cascadeGroupIds}
+                suspendedMemberName={suspension.suspendedMemberName}
+                isFinishing={suspension.isFinishing}
+                onClose={suspension.clearWarning}
+                onGroupResolved={suspension.markGroupResolved}
+                onCascadeChosen={suspension.chooseCascade}
+                onCascadeCancelled={suspension.cancelCascade}
+                onFinish={suspension.finishSuspension}
             />
             <FinanceTransactionDialog
                 accountLink={transactionDialogAccount ?? {href: ''}}
