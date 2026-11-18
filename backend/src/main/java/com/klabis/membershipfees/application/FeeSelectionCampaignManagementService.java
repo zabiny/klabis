@@ -40,13 +40,13 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
             throw new ActiveCampaignExistsException();
         });
 
-        List<MembershipFeeType> levels = command.typeIds().stream()
+        List<MembershipFeeType> types = command.typeIds().stream()
                 .map(id -> typeRepository.findById(id)
                         .orElseThrow(() -> new MembershipFeeTypeNotFoundException(id)))
                 .toList();
 
         FeeSelectionCampaign.FeeSelectionCampaignWithGroups result = FeeSelectionCampaign.publish(
-                command.year(), command.votingDeadline(), levels);
+                command.year(), command.votingDeadline(), types);
 
         for (MembershipFeeGroup group : result.groups()) {
             groupRepository.save(group);

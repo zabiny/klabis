@@ -41,9 +41,9 @@ public class MembershipFeeType extends KlabisAggregateRoot<MembershipFeeType, Me
     public static MembershipFeeType reconstruct(MembershipFeeTypeId id, String name, Money yearlyFee,
                                                 List<MembershipPaymentRule> rules,
                                                 AuditMetadata auditMetadata) {
-        MembershipFeeType level = new MembershipFeeType(id, name, yearlyFee, rules);
-        level.updateAuditMetadata(auditMetadata);
-        return level;
+        MembershipFeeType type = new MembershipFeeType(id, name, yearlyFee, rules);
+        type.updateAuditMetadata(auditMetadata);
+        return type;
     }
 
     @Override

@@ -110,7 +110,7 @@ KLABIS_EMAIL_FROM=noreply@klabis.cz
 ./gradlew bootRun
 ```
 
-Boots with demo data (members, events, training groups, fee tiers) via the `example-data` profile. Admin user, OAuth2 clients, and event types are always bootstrapped.
+Boots with demo data (members, events, training groups, fee types) via the `example-data` profile. Admin user, OAuth2 clients, and event types are always bootstrapped.
 
 **Clean database (e.g. ORIS sync scenario):**
 

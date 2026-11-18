@@ -72,7 +72,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
     public Optional<MembershipFeeTypeId> getRecommendedTypeForYear(MemberId memberId, int year) {
         return groupRepository.findByMemberAndYear(memberId, year - 1)
                 .map(MembershipFeeGroup::getSourceTypeId)
-                .filter(lastYearLevelId -> groupRepository.existsByYearAndSourceTypeId(year, lastYearLevelId));
+                .filter(lastYearTypeId -> groupRepository.existsByYearAndSourceTypeId(year, lastYearTypeId));
     }
 
     @Transactional(readOnly = true)

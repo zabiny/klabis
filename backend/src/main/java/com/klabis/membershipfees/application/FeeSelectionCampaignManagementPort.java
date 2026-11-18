@@ -20,7 +20,7 @@ public interface FeeSelectionCampaignManagementPort {
     record PublishYearCommand(int year, LocalDate votingDeadline, List<MembershipFeeTypeId> typeIds) {
         public PublishYearCommand {
             Assert.notNull(votingDeadline, "VotingDeadline is required");
-            Assert.notEmpty(typeIds, "At least one level ID is required");
+            Assert.notEmpty(typeIds, "At least one type ID is required");
         }
     }
 

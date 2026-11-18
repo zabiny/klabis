@@ -14,16 +14,16 @@ interface MembershipFeeTypeResponseConverter extends MoneyMapping, Converter<Mem
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "yearlyFeeAmount", source = "yearlyFee")
     @Mapping(target = "yearlyFeeCurrency", source = "yearlyFee", qualifiedByName = "currencyCode")
-    MembershipFeeTypeResponse convert(MembershipFeeType level);
+    MembershipFeeTypeResponse convert(MembershipFeeType type);
 
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "yearlyFeeAmount", source = "yearlyFee")
     @Mapping(target = "yearlyFeeCurrency", source = "yearlyFee", qualifiedByName = "currencyCode")
     @Mapping(target = "ruleCount", source = ".", qualifiedByName = "ruleCount")
-    MembershipFeeTypeSummaryResponse toSummaryResponse(MembershipFeeType level);
+    MembershipFeeTypeSummaryResponse toSummaryResponse(MembershipFeeType type);
 
     @Named("ruleCount")
-    default int ruleCount(MembershipFeeType level) {
-        return level.getRules().size();
+    default int ruleCount(MembershipFeeType type) {
+        return type.getRules().size();
     }
 }

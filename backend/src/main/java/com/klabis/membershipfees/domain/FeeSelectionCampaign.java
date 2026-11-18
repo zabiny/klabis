@@ -41,17 +41,17 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
     }
 
     public static FeeSelectionCampaignWithGroups publish(int year, LocalDate votingDeadline,
-                                                         List<MembershipFeeType> levels) {
+                                                         List<MembershipFeeType> types) {
         Assert.notNull(votingDeadline, "VotingDeadline is required");
-        Assert.notEmpty(levels, "At least one level is required for publishing");
+        Assert.notEmpty(types, "At least one type is required for publishing");
 
-        List<MembershipFeeGroup> groups = levels.stream()
-                .map(level -> MembershipFeeGroup.createSnapshot(
-                        level.getId(),
-                        level.getName(),
+        List<MembershipFeeGroup> groups = types.stream()
+                .map(type -> MembershipFeeGroup.createSnapshot(
+                        type.getId(),
+                        type.getName(),
                         year,
-                        level.getYearlyFee(),
-                        level.getRules(),
+                        type.getYearlyFee(),
+                        type.getRules(),
                         votingDeadline))
                 .toList();
 

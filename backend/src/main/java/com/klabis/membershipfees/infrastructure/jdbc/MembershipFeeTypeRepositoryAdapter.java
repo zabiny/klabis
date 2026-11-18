@@ -20,8 +20,8 @@ class MembershipFeeTypeRepositoryAdapter implements MembershipFeeTypeRepository 
     }
 
     @Override
-    public MembershipFeeType save(MembershipFeeType level) {
-        return jdbcRepository.save(MembershipFeeTypeMemento.from(level)).toType();
+    public MembershipFeeType save(MembershipFeeType type) {
+        return jdbcRepository.save(MembershipFeeTypeMemento.from(type)).toType();
     }
 
     @Override

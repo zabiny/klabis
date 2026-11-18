@@ -9,7 +9,7 @@ import java.util.Optional;
 @SecondaryPort
 public interface MembershipFeeTypeRepository {
 
-    MembershipFeeType save(MembershipFeeType level);
+    MembershipFeeType save(MembershipFeeType type);
 
     Optional<MembershipFeeType> findById(MembershipFeeTypeId id);
 

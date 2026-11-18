@@ -33,17 +33,17 @@ class MembershipFeeTypeMemento extends AbstractMembershipFeeMemento {
     protected MembershipFeeTypeMemento() {
     }
 
-    static MembershipFeeTypeMemento from(MembershipFeeType level) {
+    static MembershipFeeTypeMemento from(MembershipFeeType type) {
         MembershipFeeTypeMemento memento = new MembershipFeeTypeMemento();
-        memento.id = level.getId().value();
-        memento.name = level.getName();
-        memento.yearlyFeeAmount = level.getYearlyFee().amount();
-        memento.yearlyFeeCurrency = level.getYearlyFee().currency().getCurrencyCode();
-        memento.rules = level.getRules().stream()
+        memento.id = type.getId().value();
+        memento.name = type.getName();
+        memento.yearlyFeeAmount = type.getYearlyFee().amount();
+        memento.yearlyFeeCurrency = type.getYearlyFee().currency().getCurrencyCode();
+        memento.rules = type.getRules().stream()
                 .map(MembershipPaymentRuleMemento::from)
                 .collect(Collectors.toSet());
-        memento.isNew = (level.getAuditMetadata() == null);
-        memento.applyAudit(level.getAuditMetadata());
+        memento.isNew = (type.getAuditMetadata() == null);
+        memento.applyAudit(type.getAuditMetadata());
         return memento;
     }
 
