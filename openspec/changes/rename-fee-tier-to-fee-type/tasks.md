@@ -22,8 +22,8 @@
 
 ## 5. E2E and final verification
 
-- [ ] 5.1 Update E2E support and steps (`membershipFeesApi.ts`, `membershipFeesPages.ts`, step files, README mentions) to the new URLs and names; run the membership-fee scenarios with `npm run test:e2e` and verify they pass
-- [ ] 5.2 Final sweep: `grep -rniE "tier" backend/src docs/openapi frontend/src frontend/e2e` shows nothing except the old migration and `MembershipFeeGroup`-related comments; verify
+- [x] 5.1 Update E2E support and steps (`membershipFeesApi.ts`, `membershipFeesPages.ts`, step files, README mentions) to the new URLs and names; run the membership-fee scenarios with `npm run test:e2e` and verify they pass
+- [x] 5.2 Final sweep: `grep -rniE "tier" backend/src docs/openapi frontend/src frontend/e2e` shows nothing except the old migration and `MembershipFeeGroup`-related comments; verify
 - [ ] 5.3 Run the full suites (`SKIP_OPTIMIZATIONS` + `--rerun-tasks` for the final backend run) and `npm run build`; verify results equal the baseline from 1.1
 - [ ] 5.4 Do a code review (code-reviewer agent) before committing, per project rules; verify findings are addressed
 

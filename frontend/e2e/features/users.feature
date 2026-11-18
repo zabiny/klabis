@@ -17,6 +17,6 @@ Feature: Return to the requested page after sign-in
 
     Scenario: Member opens a shared link while still signed in at the login service
       Given Eva signed in earlier but the application session has ended
-      When the shared link to the membership fee tiers page is opened
-      Then the membership fee tiers page is shown
+      When the shared link to the membership fee types page is opened
+      Then the membership fee types page is shown
       And the sign-in completed without the login page

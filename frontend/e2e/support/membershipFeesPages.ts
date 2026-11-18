@@ -17,7 +17,7 @@ export const openFeesPage = async (page: Page) => {
     if (await menuEntry(page, 'Členské příspěvky').count()) {
         await openFromMenu(page, 'Členské příspěvky');
     } else {
-        await openAddress(page, '/membership-fee-tiers');
+        await openAddress(page, '/membership-fee-types');
     }
     await expect(heading(page, CATALOG)).toBeVisible();
 };
