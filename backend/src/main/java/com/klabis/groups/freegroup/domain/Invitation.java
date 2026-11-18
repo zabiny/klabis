@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
+import org.jspecify.annotations.Nullable;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
@@ -65,7 +66,7 @@ public class Invitation {
         this.status = InvitationStatus.REJECTED;
     }
 
-    public void cancel(Optional<MemberId> actor, String reason) {
+    public void cancel(@Nullable MemberId actor, String reason) {
         if (reason != null) {
             Assert.isTrue(reason.length() <= 500, "Cancellation reason must not exceed 500 characters");
         }
@@ -74,7 +75,7 @@ public class Invitation {
         }
         this.status = InvitationStatus.CANCELLED;
         this.cancelledAt = Instant.now();
-        this.cancelledBy = actor.orElse(null);
+        this.cancelledBy = actor;
         this.cancellationReason = reason;
     }
 

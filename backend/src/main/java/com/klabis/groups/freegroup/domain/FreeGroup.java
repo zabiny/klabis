@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
+import org.jspecify.annotations.Nullable;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
@@ -167,7 +168,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         rejectInvitation(invitationId);
     }
 
-    public void cancelInvitation(InvitationId invitationId, Optional<MemberId> actor, String reason) {
+    public void cancelInvitation(InvitationId invitationId, @Nullable MemberId actor, String reason) {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
