@@ -22,7 +22,6 @@ import {SuspendFormNote, SuspensionWarningDialog} from "./SuspensionWarningDialo
 import {formatPersonName} from "../../components/members/formatPersonName.ts";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
-import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 import {LegalGuardiansSection} from "../../components/legal-guardians/LegalGuardiansSection.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
@@ -35,7 +34,6 @@ type MemberDetail = GetMemberResource;
 // at runtime. `memberRel` is a typed identity: its argument must be a real key of `_links`.
 type MemberLinks = NonNullable<GetMemberHal['_links']>;
 const memberRel = <K extends keyof MemberLinks>(rel: K): K => rel;
-const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined, rel: K): MemberLinks[K] => links?.[rel];
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -95,17 +93,8 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
 
-    const icalTokenLink = memberLink(resourceData._links as MemberLinks | undefined, 'ical-token');
-    const icalTokenHref = icalTokenLink != null
-        ? (Array.isArray(icalTokenLink)
-            ? (icalTokenLink[0] as {href: string}).href
-            : (icalTokenLink as {href: string}).href)
-        : null;
-
-    // The ical-token link is only present on the authenticated user's own profile
-    const isOwnProfile = icalTokenHref != null;
-
     const member = resourceData;
+    const canChangePassword = !!resourceData._links?.[memberRel('changePassword')];
     const address = member.address;
     const identityCard = member.identityCard;
     const medicalCourse = member.medicalCourse;
@@ -291,7 +280,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                                     {labels.templates.updateMember}
                                 </Button>
                             )}
-                            {isOwnProfile && (
+                            {canChangePassword && (
                                 <Button
                                     variant="secondary"
                                     onClick={() => setIsChangePasswordOpen(true)}
@@ -415,10 +404,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                             <DetailRow label="Deaktivoval/a">{member.suspendedBy}</DetailRow>
                         )}
                     </Section>
-                )}
-
-                {!isEditing && icalTokenHref && (
-                    <CalendarFeedSection icalTokenHref={icalTokenHref}/>
                 )}
 
                 {isEditing && (

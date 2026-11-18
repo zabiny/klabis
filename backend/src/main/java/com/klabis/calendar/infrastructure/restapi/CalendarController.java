@@ -216,6 +216,11 @@ class CalendarItemListPostprocessor
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(klabisAfford(methodOn(CalendarApi.class).createCalendarItem(null))));
 
+        klabisLinkTo(methodOn(IcalTokenApi.class).getTokenState(null))
+                .ifPresent(link -> model.add(
+                        link.withRel("ical-token")
+                                .andAffordances(klabisAfford(methodOn(IcalTokenApi.class).generateToken(null)))));
+
         model.getLink(IanaLinkRelations.SELF)
                 .map(Link::getHref)
                 .ifPresent(selfHref -> addMonthNavigationLinks(model, selfHref));

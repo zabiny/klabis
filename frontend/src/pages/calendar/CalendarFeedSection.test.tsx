@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
@@ -58,7 +58,7 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            expect(screen.getByText(/Kalendářový feed/i)).toBeInTheDocument();
+            expect(screen.getByText(/Načítání/i)).toBeInTheDocument();
         });
     });
 
@@ -71,11 +71,6 @@ describe('CalendarFeedSection', () => {
                 status: 'success',
             } as ReturnType<typeof useAuthorizedQuery>);
             mockMutation();
-        });
-
-        it('renders the section heading', () => {
-            renderSection();
-            expect(screen.getByRole('heading', {name: /Kalendářový feed/i})).toBeInTheDocument();
         });
 
         it('shows "Vytvořit kalendářový feed" button when no token exists', () => {
@@ -159,17 +154,20 @@ describe('CalendarFeedSection', () => {
             expect(screen.getByText(/Vygenerováno/i)).toBeInTheDocument();
         });
 
-        it('opens confirm dialog when "Vygenerovat nový token" is clicked', async () => {
+        it('shows inline confirmation instead of a nested modal when "Vygenerovat nový token" is clicked', async () => {
             const user = userEvent.setup();
             renderSection();
 
             await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
 
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(screen.getByText(/předchozí URL přestane fungovat/i)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Zrušit/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /^Vygenerovat$/i})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Vygenerovat nový token/i})).not.toBeInTheDocument();
         });
 
-        it('cancels confirm dialog without calling mutation', async () => {
+        it('cancels the inline confirmation without calling mutation', async () => {
             const user = userEvent.setup();
             const mutateMock = vi.fn();
             mockMutation({mutate: mutateMock});
@@ -180,10 +178,11 @@ describe('CalendarFeedSection', () => {
             await user.click(screen.getByRole('button', {name: /Zrušit/i}));
 
             expect(mutateMock).not.toHaveBeenCalled();
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(screen.queryByText(/předchozí URL přestane fungovat/i)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Vygenerovat nový token/i})).toBeInTheDocument();
         });
 
-        it('calls POST when confirm button is clicked in dialog', async () => {
+        it('calls POST when the inline confirm button is clicked', async () => {
             const user = userEvent.setup();
             const mutateMock = vi.fn();
             mockMutation({mutate: mutateMock});
@@ -191,8 +190,7 @@ describe('CalendarFeedSection', () => {
             renderSection();
 
             await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
-            const dialog = screen.getByRole('dialog');
-            await user.click(within(dialog).getByRole('button', {name: /Vygenerovat/i}));
+            await user.click(screen.getByRole('button', {name: /^Vygenerovat$/i}));
 
             expect(mutateMock).toHaveBeenCalledWith(
                 {url: '/api/me/ical-token'},
@@ -280,6 +278,60 @@ describe('CalendarFeedSection', () => {
             await waitFor(() => {
                 expect(screen.getByRole('button', {name: /Kopírovat/i})).toBeInTheDocument();
             });
+        });
+    });
+
+    describe('revealed full URL', () => {
+        const fullUrl = 'https://api.klabis.otakar.io/ical/my-schedule.ics?token=abc123def456ghi789jkl012mno345pqr678stu';
+
+        const renderAndReveal = async () => {
+            const user = userEvent.setup();
+            let onSuccessCallback: ((result: unknown) => void) | undefined;
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {url: null, lastSetAt: null},
+                isLoading: false,
+                error: null,
+                status: 'success',
+            } as ReturnType<typeof useAuthorizedQuery>);
+            mockMutation({
+                mutate: vi.fn().mockImplementation((_vars, opts) => {
+                    onSuccessCallback = opts?.onSuccess;
+                }),
+            });
+            const view = renderSection();
+            await user.click(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i}));
+            act(() => onSuccessCallback?.({data: {url: fullUrl, lastSetAt: '2026-05-21T10:00:00Z'}, location: null}));
+            return {user, view};
+        };
+
+        it('copies the full URL to the clipboard', async () => {
+            const {user} = await renderAndReveal();
+            const writeText = vi.fn().mockResolvedValue(undefined);
+            Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true});
+
+            await user.click(screen.getByRole('button', {name: /Kopírovat/i}));
+
+            expect(writeText).toHaveBeenCalledWith(fullUrl);
+            expect(await screen.findByRole('button', {name: /Zkopírováno/i})).toBeInTheDocument();
+        });
+
+        it('offers inline regeneration confirmation while the full URL is shown', async () => {
+            const {user} = await renderAndReveal();
+
+            await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
+
+            expect(screen.getByText(/předchozí URL přestane fungovat/i)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Zrušit/i})).toBeInTheDocument();
+        });
+
+        it('does not show the full URL again after the section is unmounted and mounted again', async () => {
+            const {view} = await renderAndReveal();
+            expect(screen.getByText(fullUrl)).toBeInTheDocument();
+
+            view.unmount();
+            renderSection();
+
+            expect(screen.queryByText(fullUrl)).not.toBeInTheDocument();
         });
     });
 });

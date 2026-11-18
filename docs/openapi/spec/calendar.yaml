@@ -94,6 +94,9 @@ paths:
               description: Same range shifted forward by one month
             prev:
               description: Same range shifted back by one month
+            ical-token:
+              operation: getTokenState
+              description: Calendar feed token state of the caller; carries the generateToken affordance
           x-hal-templates:
             createCalendarItem:
               operation: createCalendarItem

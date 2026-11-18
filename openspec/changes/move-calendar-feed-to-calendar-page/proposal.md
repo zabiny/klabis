@@ -31,7 +31,7 @@ flowchart LR
 
 ## Impact
 
-- Backend (calendar module): `IcalTokenMemberDetailLinkProcessor` removed; `ical-token` link added in the calendar items collection postprocessor.
+- Backend: member detail gets a `changePassword` affordance on the caller's own profile (replaces the implicit own-profile signal). Calendar module: `IcalTokenMemberDetailLinkProcessor` removed; `ical-token` link added in the calendar items collection postprocessor.
 - API spec: `docs/openapi/spec/members.yaml` (drop `ical-token` link), `docs/openapi/spec/calendar.yaml` (add `ical-token` to `listCalendarItems` links); regenerate bundle and frontend types.
 - Frontend: `CalendarFeedSection` moves from `pages/members` to `pages/calendar` and becomes modal content; `MemberDetailPage` and `CalendarPage` (plus their tests) change.
 - E2E scenarios touching the profile feed section (if any) need updating.

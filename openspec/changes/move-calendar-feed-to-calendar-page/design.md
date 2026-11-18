@@ -36,12 +36,17 @@ A nested modal inside a modal is avoided: the "Vygenerovat nový token" button s
 
 It no longer depends on the member profile's `Section` wrapper; it renders as dialog content.
 
+### D5: Own-profile detection becomes a `changePassword` affordance
+
+The "Změnit heslo" button was gated on the presence of `ical-token` on the member detail, which only existed on the caller's own profile. Removing that link would hide the button, so the member detail gets a `changePassword` link/affordance (target `/api/me/password-change`, operation `changePassword`) added only when the detail is the caller's own, replacing the implicit signal. The frontend shows the button when the affordance is present; it does not compare member ids.
+
 ## API (affected parts)
 
 | Aspect | Before | After |
 |---|---|---|
 | `GET /api/calendar-items` HAL links | `self`, `next`, `prev` | adds `ical-token` (href `/api/me/ical-token`, affordance `generateToken` = POST), for every authenticated caller |
 | member detail HAL links | `ical-token` on caller's own detail | `ical-token` removed |
+| member detail HAL links | no `changePassword` | `changePassword` link with affordance, only on the caller's own detail |
 | `/api/me/ical-token` GET / POST | unchanged | unchanged (request/response, template name unchanged) |
 
 Spec updates: `docs/openapi/spec/members.yaml` (drop `ical-token` link description), `docs/openapi/spec/calendar.yaml` (add `ical-token` to `x-hal-links` of `listCalendarItems`); regenerate the bundle and frontend types.

@@ -35,6 +35,19 @@ vi.mock('../../components/UI', () => ({
         </button>
     ),
     Spinner: () => <div data-testid="spinner" aria-label="Loading"/>,
+    Modal: ({isOpen, onClose, title, children}: {isOpen: boolean; onClose: () => void; title?: string; children: React.ReactNode}) =>
+        isOpen ? (
+            <div role="dialog" aria-label={title}>
+                <button onClick={onClose}>Zavřít</button>
+                {children}
+            </div>
+        ) : null,
+}));
+
+vi.mock('./CalendarFeedSection.tsx', () => ({
+    CalendarFeedSection: ({icalTokenHref}: {icalTokenHref: string}) => (
+        <div data-testid="calendar-feed-section">{icalTokenHref}</div>
+    ),
 }));
 
 vi.mock('../../components/JsonPreview', () => ({
@@ -362,6 +375,56 @@ describe('CalendarPage Component', () => {
             await user.click(toggle);
 
             expect(locationRef.current?.search).not.toContain('mySchedule');
+        });
+    });
+
+    describe('Calendar feed dialog', () => {
+        const withIcalToken = () => ({
+            ...mockCalendarData(),
+            _links: {
+                self: {href: '/api/calendar'},
+                'ical-token': {href: '/api/me/ical-token'},
+            },
+        });
+
+        it('shows the "Kalendářový feed" button when the ical-token link is present', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(withIcalToken()));
+
+            renderWithRouter(<CalendarPage/>);
+
+            expect(screen.getByRole('button', {name: 'Kalendářový feed'})).toBeInTheDocument();
+        });
+
+        it('hides the "Kalendářový feed" button when the ical-token link is absent', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
+
+            renderWithRouter(<CalendarPage/>);
+
+            expect(screen.queryByRole('button', {name: 'Kalendářový feed'})).not.toBeInTheDocument();
+        });
+
+        it('does not render the feed content until the dialog is opened', () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(withIcalToken()));
+
+            renderWithRouter(<CalendarPage/>);
+
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('calendar-feed-section')).not.toBeInTheDocument();
+        });
+
+        it('opens the dialog with feed content from the ical-token link and closes it again', async () => {
+            mockUseHalPageData.mockReturnValue(createMockContext(withIcalToken()));
+            const user = userEvent.setup();
+
+            renderWithRouter(<CalendarPage/>);
+            await user.click(screen.getByRole('button', {name: 'Kalendářový feed'}));
+
+            expect(screen.getByRole('dialog', {name: 'Kalendářový feed'})).toBeInTheDocument();
+            expect(screen.getByTestId('calendar-feed-section')).toHaveTextContent('/api/me/ical-token');
+
+            await user.click(screen.getByRole('button', {name: 'Zavřít'}));
+
+            expect(screen.queryByTestId('calendar-feed-section')).not.toBeInTheDocument();
         });
     });
 

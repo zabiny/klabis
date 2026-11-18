@@ -291,10 +291,11 @@ paths:
                 Legal guardians of a minor who belongs to a legal guardian group; present for callers with
                 MEMBERS:MANAGE, for the minor themself and for holders of MEMBERS:EDIT_PROFILE over a minor
                 of the group (the minor's legal guardians). Absent for adults and for minors without a group.
+            changePassword:
+              operation: changePassword
+              description: Change the caller's password (POST /api/me/password-change); only on the caller's own detail
             trainingGroup:
               description: Training group the member belongs to, when there is one
-            ical-token:
-              description: Calendar subscription token — only on the caller's own detail
             sync:
               operation: getSyncState
               description: |
@@ -313,6 +314,9 @@ paths:
             setMemberLegalGuardians:
               operation: setMemberLegalGuardians
               description: Present only for a minor and for callers with MEMBERS:MANAGE
+            changePassword:
+              operation: changePassword
+              description: Present only on the caller's own detail
             sendMemberAccountActivation:
               operation: sendMemberAccountActivation
               description: |

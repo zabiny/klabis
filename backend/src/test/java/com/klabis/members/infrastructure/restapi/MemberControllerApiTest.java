@@ -666,27 +666,9 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("member viewing own profile — ical-token link is present")
+        @DisplayName("member detail never contains ical-token link")
         @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
-        void ownProfileShouldIncludeIcalTokenLink() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
-                    .thenReturn(member);
-            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
-                    .thenReturn(java.util.Optional.empty());
-            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
-                    .thenReturn(java.util.Optional.empty());
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links['ical-token'].href").value(org.hamcrest.Matchers.containsString("/api/me/ical-token")));
-        }
-
-        @Test
-        @DisplayName("member viewing another member's profile — ical-token link is absent")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
-        void otherMemberProfileShouldNotIncludeIcalTokenLink() throws Exception {
+        void memberDetailShouldNotIncludeIcalTokenLink() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
@@ -699,6 +681,36 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links['ical-token']").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("own member detail contains changePassword link with affordance")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void ownDetailShouldIncludeChangePasswordLink() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
+                    .thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.changePassword.href").value("http://localhost/api/me/password-change"))
+                    .andExpect(jsonPath("$._templates.changePassword.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("another member's detail does not contain changePassword link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void otherDetailShouldNotIncludeChangePasswordLink() throws Exception {
+            UUID otherId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(otherId).withActive(true).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
+                    .thenReturn(member);
+
+            mockMvc.perform(getMemberById(otherId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.changePassword").doesNotExist())
+                    .andExpect(jsonPath("$._templates.changePassword").doesNotExist());
         }
 
         @Test
