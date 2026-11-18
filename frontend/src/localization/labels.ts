@@ -448,6 +448,7 @@ export const labels = {
         'category-presets': 'Šablony kategorií',
         'event-types': 'Typy akcí',
         disciplines: 'Disciplíny',
+        'event-settings': 'Nastavení akcí',
         account: 'Finance',
         'membership-fee-tiers': 'Katalog tierů',
         'fee-selection-campaigns': 'Kampaň volby členského příspěvku',

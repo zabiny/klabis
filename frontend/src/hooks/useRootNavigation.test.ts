@@ -76,7 +76,7 @@ describe('useRootNavigation — section assignment', () => {
         expect(result.current.data!.find(i => i.rel === 'notifications')?.section).toBe('personal');
     });
 
-    it('assigns main section to events and admin section to training-groups, category-presets, legalGuardianGroups', async () => {
+    it('assigns main section to events and admin section to training-groups, legalGuardianGroups, event-settings', async () => {
         mockFetchWithResponse(buildHalResponse(['events', 'training-groups', 'category-presets', 'legalGuardianGroups']));
 
         const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
@@ -88,7 +88,7 @@ describe('useRootNavigation — section assignment', () => {
 
         expect(findItem('events')?.section).toBe('main');
         expect(findItem('training-groups')?.section).toBe('admin');
-        expect(findItem('category-presets')?.section).toBe('admin');
+        expect(findItem('event-settings')?.section).toBe('admin');
         expect(findItem('legalGuardianGroups')?.section).toBe('admin');
     });
 
@@ -121,7 +121,7 @@ describe('useRootNavigation — section assignment', () => {
 
         await waitFor(() => expect(result.current.data).toBeDefined());
 
-        const items = result.current.data!;
+        const items = result.current.data!.filter(i => i.section !== 'event-settings-tab');
         expect(items.every(i => i.section === 'admin')).toBe(true);
         expect(items.some(i => i.section === 'main')).toBe(false);
     });
@@ -206,5 +206,56 @@ describe('useRootNavigation — section assignment', () => {
 
         const items = result.current.data!;
         expect(items.find(i => i.rel === 'fee-selection-campaigns')).toBeUndefined();
+    });
+});
+
+describe('useRootNavigation — event settings entry', () => {
+    const load = async (rels: string[]) => {
+        mockFetchWithResponse(buildHalResponse(rels));
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+        return result.current.data!;
+    };
+
+    it('merges disciplines, event-types and category-presets into one admin item "Nastavení akcí"', async () => {
+        const items = await load(['events', 'disciplines', 'event-types', 'category-presets']);
+
+        const adminItems = items.filter(i => i.section === 'admin');
+        expect(adminItems).toHaveLength(1);
+        expect(adminItems[0]).toMatchObject({
+            rel: 'event-settings',
+            label: 'Nastavení akcí',
+            href: '/event-settings/disciplines',
+        });
+    });
+
+    it('targets the first available tab when the discipline link is missing', async () => {
+        const items = await load(['event-types', 'category-presets']);
+
+        expect(items.find(i => i.rel === 'event-settings')?.href).toBe('/event-settings/event-types');
+    });
+
+    it('creates no event settings item when none of the three links exist', async () => {
+        const items = await load(['events', 'training-groups']);
+
+        expect(items.find(i => i.rel === 'event-settings')).toBeUndefined();
+    });
+
+    it('keeps the original three links available outside the menu sections for tab rendering', async () => {
+        const items = await load(['disciplines', 'event-types', 'category-presets']);
+
+        for (const rel of ['disciplines', 'event-types', 'category-presets']) {
+            const item = items.find(i => i.rel === rel);
+            expect(item).toBeDefined();
+            expect(item?.section).not.toBe('admin');
+            expect(item?.section).not.toBe('main');
+        }
+    });
+
+    it('places the merged item at the position of the first of the three links', async () => {
+        const items = await load(['training-groups', 'event-types', 'legalGuardianGroups']);
+
+        const adminRels = items.filter(i => i.section === 'admin').map(i => i.rel);
+        expect(adminRels).toEqual(['training-groups', 'event-settings', 'legalGuardianGroups']);
     });
 });

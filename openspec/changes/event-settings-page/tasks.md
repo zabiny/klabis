@@ -2,8 +2,8 @@
 
 ## 1. Navigace a routy
 
-- [ ] 1.1 Test `useRootNavigation`: ze tří linků vznikne jedna položka „Nastavení akcí" v sekci `admin`, bez linků žádná; implementovat a ověřit spuštěním testu
-- [ ] 1.2 Přidat vnořené routy `/event-settings/*` a přesměrování `/disciplines`, `/event-types`, `/category-presets` v `App.tsx`; ověřit testem routování
+- [x] 1.1 Test `useRootNavigation`: ze tří linků vznikne jedna položka „Nastavení akcí" v sekci `admin`, bez linků žádná; implementovat a ověřit spuštěním testu
+- [x] 1.2 Přidat vnořené routy `/event-settings/*` a přesměrování `/disciplines`, `/event-types`, `/category-presets` v `App.tsx`; ověřit testem routování
 
 ## 2. Stránka se záložkami
 

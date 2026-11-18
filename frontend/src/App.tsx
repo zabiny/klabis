@@ -27,9 +27,8 @@ import {TrainingGroupDetailPage} from "./pages/training-groups/TrainingGroupDeta
 import {LegalGuardianDetailPage} from "./pages/legal-guardians/LegalGuardianDetailPage.tsx";
 import {LegalGuardianGroupsPage} from "./pages/legal-guardian-groups/LegalGuardianGroupsPage.tsx";
 import {LegalGuardianGroupDetailPage} from "./pages/legal-guardian-groups/LegalGuardianGroupDetailPage.tsx";
-import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
+import {eventSettingsRoutes} from "./pages/event-settings/eventSettingsRoutes.tsx";
 import {SyncOverviewPage} from "./pages/sync/SyncOverviewPage.tsx";
-import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
 import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdminPage.tsx";
 import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
 import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
@@ -118,8 +117,7 @@ function App() {
                                 <Route path="/legal-guardians/:id" element={<LegalGuardianDetailPage/>}/>
                                 <Route path="/legal-guardian-groups" element={<LegalGuardianGroupsPage/>}/>
                                 <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
-                                <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
-                                <Route path="/event-types" element={<EventTypesPage/>}/>
+                                {eventSettingsRoutes}
                                 <Route path="/sync/attempts" element={<SyncOverviewPage/>}/>
                                 <Route path="/notifications" element={<NotificationSettingsPage/>}/>
                                 <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
