@@ -244,7 +244,7 @@ class FreeGroupPersistenceTest {
                     new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, "No longer needed");
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -256,6 +256,7 @@ class FreeGroupPersistenceTest {
                     .findFirst().orElseThrow();
             assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
             assertThat(cancelled.getCancelledAt()).isPresent();
+            assertThat(cancelled.getCancelledBy()).contains(CREATOR);
             assertThat(cancelled.getCancellationReason()).contains("No longer needed");
         }
 
@@ -266,7 +267,7 @@ class FreeGroupPersistenceTest {
                     new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, "Member deactivated");
+            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -275,6 +276,7 @@ class FreeGroupPersistenceTest {
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(cancelled.getCancelledBy()).isEmpty();
             assertThat(cancelled.getCancellationReason()).contains("Member deactivated");
         }
     }

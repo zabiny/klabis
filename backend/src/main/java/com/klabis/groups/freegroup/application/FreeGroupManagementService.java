@@ -15,6 +15,7 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -118,9 +119,9 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
 
     @Transactional
     @Override
-    public void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, String reason) {
+    public void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, MemberId actor, String reason) {
         FreeGroup group = loadGroup(groupId);
-        group.cancelInvitation(invitationId, reason);
+        group.cancelInvitation(invitationId, Optional.of(actor), reason);
         freeGroupRepository.save(group);
     }
 

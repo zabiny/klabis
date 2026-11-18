@@ -154,12 +154,12 @@ class FreeGroupController implements GroupsApi {
 
     @Override
     public ResponseEntity<Void> cancelInvitation(UUID id, UUID invitationId,
-            CancelInvitationRequest request) {
+            CancelInvitationRequest request, @ActingMember MemberId actingMember) {
 
         FreeGroupId groupId = new FreeGroupId(id);
         InvitationId invId = new InvitationId(invitationId);
         String reason = request != null ? request.reason() : null;
-        membersGroupManagementService.cancelInvitation(groupId, invId, reason);
+        membersGroupManagementService.cancelInvitation(groupId, invId, actingMember, reason);
         return ResponseEntity.noContent().build();
     }
 

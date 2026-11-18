@@ -705,6 +705,7 @@ CREATE TABLE groups.user_group_invitations
     status               VARCHAR(20) NOT NULL,
     created_at           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     cancelled_at         TIMESTAMP   NULL,
+    cancelled_by         UUID        NULL,
     cancellation_reason  VARCHAR(500) NULL
 );
 
@@ -716,6 +717,7 @@ CREATE INDEX idx_user_group_invitations_invited_member_status ON groups.user_gro
 COMMENT ON TABLE groups.user_group_invitations IS 'Membership invitations for FREE (FreeGroup) groups';
 COMMENT ON COLUMN groups.user_group_invitations.status IS 'Invitation status: PENDING, ACCEPTED, REJECTED, CANCELLED';
 COMMENT ON COLUMN groups.user_group_invitations.cancelled_at IS 'Timestamp when the invitation was cancelled';
+COMMENT ON COLUMN groups.user_group_invitations.cancelled_by IS 'MemberId of the member who cancelled the invitation';
 COMMENT ON COLUMN groups.user_group_invitations.cancellation_reason IS 'Optional free-text reason for cancellation';
 
 -- ============================================================================

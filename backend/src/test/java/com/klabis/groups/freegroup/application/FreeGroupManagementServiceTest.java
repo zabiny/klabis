@@ -430,6 +430,29 @@ class FreeGroupManagementServiceTest {
     }
 
     @Nested
+    @DisplayName("cancelInvitation()")
+    class CancelInvitationMethod {
+
+        @Test
+        @DisplayName("should record the acting member as the one who cancelled the invitation")
+        void shouldRecordActingMember() {
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(), Set.of(), null);
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.cancelInvitation(GROUP_ID, invitationId, CREATOR, "Changed plans");
+
+            ArgumentCaptor<FreeGroup> captor = ArgumentCaptor.forClass(FreeGroup.class);
+            verify(freeGroupRepository).save(captor.capture());
+            Invitation cancelled = captor.getValue().getInvitations().iterator().next();
+            assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
+            assertThat(cancelled.getCancelledBy()).contains(CREATOR);
+        }
+    }
+
+    @Nested
     @DisplayName("getGroupsWithPendingInvitations()")
     class GetGroupsWithPendingInvitationsMethod {
 
@@ -466,7 +489,7 @@ class FreeGroupManagementServiceTest {
         void shouldReturnFlatListOfPendingInvitations() {
             InvitationId invitationId = InvitationId.newId();
             Invitation invitation = Invitation.reconstruct(
-                    invitationId, OTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null);
+                    invitationId, OTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(invitation), Set.of(), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));
@@ -484,7 +507,7 @@ class FreeGroupManagementServiceTest {
         void shouldFilterInvitationsForOtherMembers() {
             InvitationId invForOther = InvitationId.newId();
             Invitation otherInvitation = Invitation.reconstruct(
-                    invForOther, ANOTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null);
+                    invForOther, ANOTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(otherInvitation), Set.of(), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));

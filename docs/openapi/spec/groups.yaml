@@ -444,6 +444,8 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: GROUPS_OWNER
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FreeGroupIdParam'
         - $ref: '#/components/parameters/InvitationIdParam'

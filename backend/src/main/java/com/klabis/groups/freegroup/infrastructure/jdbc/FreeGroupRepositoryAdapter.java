@@ -160,6 +160,7 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
                                 inv.getStatus().name(),
                                 inv.getCreatedAt(),
                                 inv.getCancelledAt().orElse(null),
+                                inv.getCancelledBy().map(MemberId::value).orElse(null),
                                 inv.getCancellationReason().orElse(null)))
                         .collect(Collectors.toSet()));
     }
@@ -173,6 +174,7 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
                         InvitationStatus.valueOf(inv.getStatus()),
                         inv.getCreatedAt(),
                         inv.getCancelledAt(),
+                        inv.getCancelledBy() != null ? new MemberId(inv.getCancelledBy()) : null,
                         inv.getCancellationReason()))
                 .collect(Collectors.toSet());
         return FreeGroup.reconstruct(new FreeGroupId(memento.getId()), memento.getName(),

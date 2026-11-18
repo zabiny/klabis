@@ -372,7 +372,7 @@ class FreeGroupControllerTest {
             MemberId invited = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner), Set.of(),
                     Set.of(Invitation.reconstruct(INVITATION_ID, invited, owner, InvitationStatus.PENDING,
-                            Instant.now(), null, null)),
+                            Instant.now(), null, null, null)),
                     Set.of(Authority.MEMBERS_EDIT_PROFILE), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
@@ -602,7 +602,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitee = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
-                    INVITATION_ID, invitee, owner, InvitationStatus.PENDING, Instant.now(), null, null);
+                    INVITATION_ID, invitee, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(
                     GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), Set.of(), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
@@ -1304,6 +1304,9 @@ class FreeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+
+            verify(membersGroupManagementService).cancelInvitation(GROUP_ID, INVITATION_ID,
+                    new MemberId(UUID.fromString(MEMBER_ID)), null);
         }
 
         @Test
@@ -1327,7 +1330,7 @@ class FreeGroupControllerTest {
         void shouldReturn409WhenInvitationNotCancellable() throws Exception {
             doThrow(new InvitationNotCancellableException(INVITATION_ID, InvitationStatus.ACCEPTED))
                     .when(membersGroupManagementService).cancelInvitation(
-                            any(FreeGroupId.class), any(InvitationId.class), isNull());
+                            any(FreeGroupId.class), any(InvitationId.class), any(MemberId.class), isNull());
 
             mockMvc.perform(
                             delete("/api/groups/{id}/invitations/{invitationId}", GROUP_UUID, INVITATION_UUID)
@@ -1382,7 +1385,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
-                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null);
+                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation, Set.of());
             when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of(view));
@@ -1402,7 +1405,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             Invitation invitation = Invitation.reconstruct(
-                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null);
+                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of(
                             new PendingInvitationView(GROUP_ID, "Trail Runners", invitation,

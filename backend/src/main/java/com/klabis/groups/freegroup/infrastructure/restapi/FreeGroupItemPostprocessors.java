@@ -107,10 +107,10 @@ class GroupDetailPendingInvitationPostprocessor implements RepresentationModelPr
                         "Invitation " + invitationUuid + " is not pending in group " + groupUuid));
 
         InvitationLinks.addRecipientLinks(model, groupUuid, invitation);
-        klabisLinkTo(methodOn(GroupsApi.class).cancelInvitation(groupUuid, invitationUuid, null))
+        klabisLinkTo(methodOn(GroupsApi.class).cancelInvitation(groupUuid, invitationUuid, null, null))
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(GroupsApi.class)
-                                .cancelInvitation(groupUuid, invitationUuid, null)))));
+                                .cancelInvitation(groupUuid, invitationUuid, null, null)))));
         return model;
     }
 }

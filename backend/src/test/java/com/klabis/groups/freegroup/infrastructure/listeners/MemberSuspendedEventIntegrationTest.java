@@ -68,6 +68,7 @@ class MemberSuspendedEventIntegrationTest {
                     var cancelled = reloaded.getInvitations().iterator().next();
                     assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
                     assertThat(cancelled.getInvitedMember()).isEqualTo(INVITEE);
+                    assertThat(cancelled.getCancelledBy()).isEmpty();
                     assertThat(cancelled.getCancellationReason())
                             .contains(MemberSuspendedListener.SYSTEM_CANCEL_REASON);
                 });

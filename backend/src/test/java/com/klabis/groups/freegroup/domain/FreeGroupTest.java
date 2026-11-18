@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -682,13 +683,14 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            group.cancelInvitation(invitationId, "Changed plans");
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), "Changed plans");
 
             Invitation invitation = group.getInvitations().stream()
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
             assertThat(invitation.getCancelledAt()).isPresent();
+            assertThat(invitation.getCancelledBy()).contains(CREATOR);
             assertThat(invitation.getCancellationReason()).contains("Changed plans");
             assertThat(group.getPendingInvitations()).isEmpty();
         }
@@ -700,7 +702,7 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            group.cancelInvitation(invitationId, null);
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
 
             Invitation invitation = group.getInvitations().stream()
                     .filter(inv -> inv.getId().equals(invitationId))
@@ -711,6 +713,18 @@ class FreeGroupTest {
         }
 
         @Test
+        @DisplayName("should record no actor when cancelled by the system")
+        void shouldRecordNoActorForSystemCancellation() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
+            group.invite(CREATOR, OTHER_MEMBER);
+            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
+
+            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
+
+            assertThat(group.getInvitations().iterator().next().getCancelledBy()).isEmpty();
+        }
+
+        @Test
         @DisplayName("should throw InvitationNotCancellableException when cancelling an ACCEPTED invitation")
         void shouldThrowWhenCancellingAcceptedInvitation() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
@@ -718,7 +732,7 @@ class FreeGroupTest {
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.acceptInvitation(invitationId);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -730,7 +744,7 @@ class FreeGroupTest {
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(invitationId);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -740,9 +754,9 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, null);
+            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -752,7 +766,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId firstId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(firstId, null);
+            group.cancelInvitation(firstId, Optional.of(CREATOR), null);
 
             group.invite(CREATOR, OTHER_MEMBER);
 

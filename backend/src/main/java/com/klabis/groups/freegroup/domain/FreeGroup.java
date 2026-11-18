@@ -167,13 +167,13 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         rejectInvitation(invitationId);
     }
 
-    public void cancelInvitation(InvitationId invitationId, String reason) {
+    public void cancelInvitation(InvitationId invitationId, Optional<MemberId> actor, String reason) {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
                 .findFirst()
                 .orElseThrow(() -> new InvitationNotFoundException(invitationId));
-        invitation.cancel(reason);
+        invitation.cancel(actor, reason);
     }
 
     @Override

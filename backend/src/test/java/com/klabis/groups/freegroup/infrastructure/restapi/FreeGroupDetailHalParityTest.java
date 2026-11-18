@@ -57,7 +57,7 @@ class FreeGroupDetailHalParityTest {
 
     private FreeGroup groupWithTwoOwnersMemberAndInvitation() {
         Invitation invitation = Invitation.reconstruct(new InvitationId(INVITATION_UUID), member(INVITEE_ID),
-                member(OWNER_ID), InvitationStatus.PENDING, Instant.now(), null, null);
+                member(OWNER_ID), InvitationStatus.PENDING, Instant.now(), null, null, null);
         return FreeGroup.reconstruct(new FreeGroupId(GROUP_UUID), "Sprint Team",
                 Set.of(member(OWNER_ID), member(SECOND_OWNER_ID)),
                 Set.of(GroupMembership.of(member(MEMBER_ID))), Set.of(invitation), Set.of(), null);
