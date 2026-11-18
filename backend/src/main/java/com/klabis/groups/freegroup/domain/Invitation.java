@@ -20,7 +20,6 @@ public class Invitation {
     private final Instant createdAt;
 
     private Instant cancelledAt;
-    private MemberId cancelledBy;
     private String cancellationReason;
 
     private Invitation(InvitationId id, MemberId invitedMember, MemberId invitedBy,
@@ -43,10 +42,9 @@ public class Invitation {
 
     public static Invitation reconstruct(InvitationId id, MemberId invitedMember, MemberId invitedBy,
                                          InvitationStatus status, Instant createdAt,
-                                         Instant cancelledAt, MemberId cancelledBy, String cancellationReason) {
+                                         Instant cancelledAt, String cancellationReason) {
         Invitation invitation = new Invitation(id, invitedMember, invitedBy, status, createdAt);
         invitation.cancelledAt = cancelledAt;
-        invitation.cancelledBy = cancelledBy;
         invitation.cancellationReason = cancellationReason;
         return invitation;
     }
@@ -65,7 +63,7 @@ public class Invitation {
         this.status = InvitationStatus.REJECTED;
     }
 
-    public void cancel(Optional<MemberId> actor, String reason) {
+    public void cancel(String reason) {
         if (reason != null) {
             Assert.isTrue(reason.length() <= 500, "Cancellation reason must not exceed 500 characters");
         }
@@ -74,7 +72,6 @@ public class Invitation {
         }
         this.status = InvitationStatus.CANCELLED;
         this.cancelledAt = Instant.now();
-        this.cancelledBy = actor.orElse(null);
         this.cancellationReason = reason;
     }
 
@@ -108,10 +105,6 @@ public class Invitation {
 
     public Optional<Instant> getCancelledAt() {
         return Optional.ofNullable(cancelledAt);
-    }
-
-    public Optional<MemberId> getCancelledBy() {
-        return Optional.ofNullable(cancelledBy);
     }
 
     public Optional<String> getCancellationReason() {

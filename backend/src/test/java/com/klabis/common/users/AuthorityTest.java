@@ -25,6 +25,7 @@ class AuthorityTest {
                 Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTRATIONS_READ, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.GROUPS_OWNER, TargetType.GROUP, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_READ, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_MANAGE, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.CALENDAR_MANAGE, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
@@ -80,7 +81,8 @@ class AuthorityTest {
     @DisplayName("authorities holdable over specific targets are profile editing and the coordinator authorities")
     void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
-                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ,
+                Authority.GROUPS_OWNER);
     }
 
     @Test
@@ -90,6 +92,13 @@ class AuthorityTest {
                 .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
         assertThat(Authority.grantableOverAll())
                 .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+    }
+
+    @Test
+    @DisplayName("group ownership is neither assignable nor grantable over everything")
+    void shouldNotOfferGroupOwnershipForDirectGrant() {
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.GROUPS_OWNER);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.GROUPS_OWNER);
     }
 
     @Test

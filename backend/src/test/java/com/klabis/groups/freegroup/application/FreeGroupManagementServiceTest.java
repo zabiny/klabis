@@ -1,5 +1,8 @@
 package com.klabis.groups.freegroup.application;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.GroupNotFoundException;
@@ -41,11 +44,14 @@ class FreeGroupManagementServiceTest {
     @Mock
     private FreeGroupRepository freeGroupRepository;
 
+    @Mock
+    private AuthorizationEvaluator authorizationEvaluator;
+
     private FreeGroupManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new FreeGroupManagementService(freeGroupRepository);
+        service = new FreeGroupManagementService(freeGroupRepository, authorizationEvaluator);
     }
 
     @Nested
@@ -142,20 +148,10 @@ class FreeGroupManagementServiceTest {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            FreeGroup result = service.renameGroup(GROUP_ID, "New Name", CREATOR);
+            FreeGroup result = service.renameGroup(GROUP_ID, "New Name");
 
             assertThat(result.getName()).isEqualTo("New Name");
             verify(freeGroupRepository).save(any(FreeGroup.class));
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
-        void shouldThrowWhenNotOwner() {
-            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Old Name", Set.of(CREATOR), Set.of(), Set.of(), Set.of(), null);
-            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-
-            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name", OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -163,7 +159,7 @@ class FreeGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name", CREATOR))
+            assertThatThrownBy(() -> service.renameGroup(GROUP_ID, "New Name"))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -178,19 +174,9 @@ class FreeGroupManagementServiceTest {
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(), Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
-            service.deleteGroup(GROUP_ID, CREATOR);
+            service.deleteGroup(GROUP_ID);
 
             verify(freeGroupRepository).delete(GROUP_ID);
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
-        void shouldThrowWhenNotOwner() {
-            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(), Set.of(), null);
-            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-
-            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -198,7 +184,7 @@ class FreeGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID, CREATOR))
+            assertThatThrownBy(() -> service.deleteGroup(GROUP_ID))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -214,7 +200,7 @@ class FreeGroupManagementServiceTest {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            service.addOwner(GROUP_ID, OTHER_MEMBER, CREATOR);
+            service.addOwner(GROUP_ID, OTHER_MEMBER);
 
             ArgumentCaptor<FreeGroup> captor = ArgumentCaptor.forClass(FreeGroup.class);
             verify(freeGroupRepository).save(captor.capture());
@@ -222,21 +208,11 @@ class FreeGroupManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
-        void shouldThrowWhenNotOwner() {
-            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(GroupMembership.of(OTHER_MEMBER)), Set.of(), Set.of(), null);
-            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-
-            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
-        }
-
-        @Test
         @DisplayName("should throw GroupNotFoundException when group does not exist")
         void shouldThrowWhenGroupNotFound() {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER, CREATOR))
+            assertThatThrownBy(() -> service.addOwner(GROUP_ID, OTHER_MEMBER))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -252,21 +228,11 @@ class FreeGroupManagementServiceTest {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            service.removeOwner(GROUP_ID, OTHER_MEMBER, CREATOR);
+            service.removeOwner(GROUP_ID, OTHER_MEMBER);
 
             ArgumentCaptor<FreeGroup> captor = ArgumentCaptor.forClass(FreeGroup.class);
             verify(freeGroupRepository).save(captor.capture());
             assertThat(captor.getValue().isOwner(OTHER_MEMBER)).isFalse();
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
-        void shouldThrowWhenNotOwner() {
-            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR, OTHER_MEMBER), Set.of(), Set.of(), Set.of(), null);
-            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-
-            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, OTHER_MEMBER, ANOTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -275,7 +241,7 @@ class FreeGroupManagementServiceTest {
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(), Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
 
-            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR, CREATOR))
+            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR))
                     .isInstanceOf(CannotRemoveLastOwnerException.class);
         }
 
@@ -284,7 +250,7 @@ class FreeGroupManagementServiceTest {
         void shouldThrowWhenGroupNotFound() {
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR, CREATOR))
+            assertThatThrownBy(() -> service.removeOwner(GROUP_ID, CREATOR))
                     .isInstanceOf(GroupNotFoundException.class);
         }
     }
@@ -301,6 +267,7 @@ class FreeGroupManagementServiceTest {
                     Set.of(), Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(authorizationEvaluator.has(Authority.GROUPS_OWNER, TargetRef.group(GROUP_ID.uuid()))).thenReturn(true);
 
             service.removeMember(GROUP_ID, OTHER_MEMBER, CREATOR);
 
@@ -324,15 +291,17 @@ class FreeGroupManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when a non-owner removes someone else")
+        @DisplayName("should throw InsufficientAuthorityException when a caller without group ownership removes someone else")
         void shouldThrowWhenNotOwner() {
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(OTHER_MEMBER), GroupMembership.of(ANOTHER_MEMBER)),
                     Set.of(), Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(authorizationEvaluator.has(Authority.GROUPS_OWNER, TargetRef.group(GROUP_ID.uuid()))).thenReturn(false);
 
             assertThatThrownBy(() -> service.removeMember(GROUP_ID, ANOTHER_MEMBER, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
+                    .isInstanceOf(InsufficientAuthorityException.class);
+            verify(freeGroupRepository, never()).save(any());
         }
 
         @Test
@@ -497,7 +466,7 @@ class FreeGroupManagementServiceTest {
         void shouldReturnFlatListOfPendingInvitations() {
             InvitationId invitationId = InvitationId.newId();
             Invitation invitation = Invitation.reconstruct(
-                    invitationId, OTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null, null);
+                    invitationId, OTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(invitation), Set.of(), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));
@@ -515,7 +484,7 @@ class FreeGroupManagementServiceTest {
         void shouldFilterInvitationsForOtherMembers() {
             InvitationId invForOther = InvitationId.newId();
             Invitation otherInvitation = Invitation.reconstruct(
-                    invForOther, ANOTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null, null);
+                    invForOther, ANOTHER_MEMBER, CREATOR, InvitationStatus.PENDING, Instant.now(), null, null);
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR), Set.of(), Set.of(otherInvitation), Set.of(), null);
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(OTHER_MEMBER)))
                     .thenReturn(List.of(group));

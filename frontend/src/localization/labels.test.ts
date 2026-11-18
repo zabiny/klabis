@@ -431,8 +431,6 @@ describe('labels.errorTypes finance, groups, users, sync and notifications', () 
         ['/errors/member-already-in-group', {groupName: 'Trenéři'}, 'Člen již je ve skupině „Trenéři“.'],
         ['/errors/member-not-in-group', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák není ve skupině „Trenéři“.'],
         ['/errors/member-not-in-group', {}, 'Člen není v této skupině.'],
-        ['/errors/group-ownership-required', {groupName: 'Trenéři'}, 'Tuto akci může provést jen vlastník skupiny „Trenéři“.'],
-        ['/errors/group-ownership-required', {}, 'Tuto akci může provést jen vlastník skupiny.'],
         ['/errors/not-invited-member', {groupName: 'Trenéři'}, 'Do skupiny „Trenéři“ nejste pozváni.'],
         ['/errors/not-invited-member', {}, 'Do této skupiny nejste pozváni.'],
         ['/errors/cannot-invite-existing-member', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák již je členem skupiny „Trenéři“, nelze ho pozvat.'],

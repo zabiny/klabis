@@ -70,7 +70,6 @@ class MemberSuspendedEventIntegrationTest {
                     assertThat(cancelled.getInvitedMember()).isEqualTo(INVITEE);
                     assertThat(cancelled.getCancellationReason())
                             .contains(MemberSuspendedListener.SYSTEM_CANCEL_REASON);
-                    assertThat(cancelled.getCancelledBy()).isEmpty();
                 });
     }
 
@@ -95,7 +94,6 @@ class MemberSuspendedEventIntegrationTest {
                     assertThat(cancelledInvitation.getInvitedMember()).isEqualTo(INVITEE);
                     assertThat(cancelledInvitation.getCancellationReason())
                             .contains(MemberSuspendedListener.SYSTEM_CANCEL_REASON);
-                    assertThat(cancelledInvitation.getCancelledBy()).isEmpty();
                 });
     }
 }

@@ -6,7 +6,6 @@ import com.klabis.common.groups.infrastructure.restapi.MemberNameParameter;
 import com.klabis.groups.freegroup.domain.CannotInviteExistingMemberException;
 import com.klabis.groups.freegroup.domain.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.freegroup.domain.DuplicatePendingInvitationException;
-import com.klabis.groups.freegroup.domain.GroupOwnershipRequiredException;
 import com.klabis.groups.freegroup.domain.NotInvitedMemberException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
@@ -23,11 +22,6 @@ class FreeGroupExceptionHandler {
 
     FreeGroupExceptionHandler(ObjectProvider<MemberNameLookup> memberNames) {
         this.memberNames = memberNames;
-    }
-
-    @ExceptionHandler(GroupOwnershipRequiredException.class)
-    public ErrorResponse handleGroupOwnershipRequired(GroupOwnershipRequiredException ex) {
-        return UserFacingErrorResponses.of(ex, HttpStatus.FORBIDDEN, "Group Ownership Required");
     }
 
     @ExceptionHandler(NotInvitedMemberException.class)

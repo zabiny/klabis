@@ -97,43 +97,21 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         return id;
     }
 
-    public void rename(String newName, MemberId actingMember) {
-        requireOwner(actingMember);
-        rename(newName);
-    }
-
-    public void addOwner(MemberId memberId, MemberId actingMember) {
+    /**
+     * Only a current member may be promoted: owners are chosen among the people already in the group.
+     */
+    @Override
+    public void addOwner(MemberId memberId) {
         Assert.notNull(memberId, "MemberId is required");
-        requireOwner(actingMember);
         if (!hasMember(memberId)) {
             throw new CannotPromoteNonMemberToOwnerException(memberId, getName());
         }
-        addOwner(memberId);
+        super.addOwner(memberId);
     }
 
-    public void removeOwner(MemberId memberId, MemberId actingMember) {
-        Assert.notNull(memberId, "MemberId is required");
-        requireOwner(actingMember);
-        removeOwner(memberId);
-    }
-
-    /**
-     * Removing a member is an owner action; a member may also remove themselves to leave the group.
-     * Owners never reach this path — they give up ownership via {@link #removeOwner}.
-     */
-    public void removeMember(MemberId memberId, MemberId actingMember) {
-        Assert.notNull(memberId, "MemberId is required");
-        if (!memberId.equals(actingMember)) {
-            requireOwner(actingMember);
-        }
-        removeMember(memberId);
-    }
-
-    public void requireOwner(MemberId actingMember) {
-        Assert.notNull(actingMember, "actingMember is required");
-        if (!isOwner(actingMember)) {
-            throw new GroupOwnershipRequiredException(actingMember, id, getName());
-        }
+    @Override
+    public void removeMember(MemberId memberId) {
+        super.removeMember(memberId);
     }
 
     // Direct member addition is not allowed — members must go through the invitation flow
@@ -189,14 +167,13 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         rejectInvitation(invitationId);
     }
 
-    public void cancelInvitation(InvitationId invitationId, Optional<MemberId> actor, String reason) {
+    public void cancelInvitation(InvitationId invitationId, String reason) {
         Assert.notNull(invitationId, "invitationId is required");
-        actor.ifPresent(this::requireOwner);
         Invitation invitation = invitations.stream()
                 .filter(inv -> inv.getId().equals(invitationId))
                 .findFirst()
                 .orElseThrow(() -> new InvitationNotFoundException(invitationId));
-        invitation.cancel(actor, reason);
+        invitation.cancel(reason);
     }
 
     @Override

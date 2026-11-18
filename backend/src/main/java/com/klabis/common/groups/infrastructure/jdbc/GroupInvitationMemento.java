@@ -29,9 +29,6 @@ public class GroupInvitationMemento {
     @Column("cancelled_at")
     private Instant cancelledAt;
 
-    @Column("cancelled_by")
-    private UUID cancelledBy;
-
     @Column("cancellation_reason")
     private String cancellationReason;
 
@@ -40,14 +37,13 @@ public class GroupInvitationMemento {
 
     public GroupInvitationMemento(UUID id, UUID invitedMemberId, UUID invitedByMemberId,
                            String status, Instant createdAt,
-                           Instant cancelledAt, UUID cancelledBy, String cancellationReason) {
+                           Instant cancelledAt, String cancellationReason) {
         this.id = id;
         this.invitedMemberId = invitedMemberId;
         this.invitedByMemberId = invitedByMemberId;
         this.status = status;
         this.createdAt = createdAt;
         this.cancelledAt = cancelledAt;
-        this.cancelledBy = cancelledBy;
         this.cancellationReason = cancellationReason;
     }
 
@@ -73,10 +69,6 @@ public class GroupInvitationMemento {
 
     public Instant getCancelledAt() {
         return cancelledAt;
-    }
-
-    public UUID getCancelledBy() {
-        return cancelledBy;
     }
 
     public String getCancellationReason() {

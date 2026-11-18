@@ -314,10 +314,6 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
         const who = member ? `Člen ${member} není` : 'Člen není';
         return group ? `${who} ve skupině „${group}“.` : `${who} v této skupině.`;
     },
-    '/errors/group-ownership-required': ({groupName}) =>
-        nonEmptyString(groupName)
-            ? `Tuto akci může provést jen vlastník skupiny „${groupName}“.`
-            : 'Tuto akci může provést jen vlastník skupiny.',
     '/errors/not-invited-member': ({groupName}) =>
         nonEmptyString(groupName)
             ? `Do skupiny „${groupName}“ nejste pozváni.`

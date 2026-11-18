@@ -48,11 +48,11 @@ class OwnerItemPostprocessor implements RepresentationModelProcessor<EntityModel
         klabisLinkTo(methodOn(MembersApi.class).getMember(ownerUuid, null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
-        if (context.requestingUserIsOwner() && context.group().getOwners().size() > 1) {
-            klabisLinkTo(methodOn(GroupsApi.class).removeGroupOwner(groupUuid, ownerUuid, null))
+        if (context.group().getOwners().size() > 1) {
+            klabisLinkTo(methodOn(GroupsApi.class).removeGroupOwner(groupUuid, ownerUuid))
                     .ifPresent(link -> model.add(link.withSelfRel()
                             .andAffordances(klabisAfford(methodOn(GroupsApi.class)
-                                    .removeGroupOwner(groupUuid, ownerUuid, null)))));
+                                    .removeGroupOwner(groupUuid, ownerUuid)))));
         }
         return model;
     }
@@ -107,10 +107,10 @@ class GroupDetailPendingInvitationPostprocessor implements RepresentationModelPr
                         "Invitation " + invitationUuid + " is not pending in group " + groupUuid));
 
         InvitationLinks.addRecipientLinks(model, groupUuid, invitation);
-        klabisLinkTo(methodOn(GroupsApi.class).cancelInvitation(groupUuid, invitationUuid, null, null))
+        klabisLinkTo(methodOn(GroupsApi.class).cancelInvitation(groupUuid, invitationUuid, null))
                 .ifPresent(link -> model.add(link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(GroupsApi.class)
-                                .cancelInvitation(groupUuid, invitationUuid, null, null)))));
+                                .cancelInvitation(groupUuid, invitationUuid, null)))));
         return model;
     }
 }

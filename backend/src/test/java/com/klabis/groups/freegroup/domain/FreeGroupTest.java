@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -156,7 +155,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(
                     "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE)));
 
-            group.rename("Renamed", CREATOR);
+            group.rename("Renamed");
             group.invite(CREATOR, OTHER_MEMBER);
             group.acceptInvitation(group.getPendingInvitations().getFirst().getId());
 
@@ -190,7 +189,7 @@ class FreeGroupTest {
         void shouldRenameGroup() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
 
-            group.rename("New Name", CREATOR);
+            group.rename("New Name");
 
             assertThat(group.getName()).isEqualTo("New Name");
         }
@@ -200,19 +199,10 @@ class FreeGroupTest {
         void shouldRejectBlankName() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
 
-            assertThatThrownBy(() -> group.rename("", CREATOR))
+            assertThatThrownBy(() -> group.rename(""))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when non-owner renames")
-        void shouldThrowWhenNonOwnerRenames() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-
-            assertThatThrownBy(() -> group.rename("New Name", OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
-        }
     }
 
     @Nested
@@ -239,7 +229,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
-            group.removeMember(OTHER_MEMBER, CREATOR);
+            group.removeMember(OTHER_MEMBER);
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
             assertThat(group.getMembers()).isEmpty();
@@ -250,7 +240,7 @@ class FreeGroupTest {
         void shouldThrowWhenRemovingOwner() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
-            assertThatThrownBy(() -> group.removeMember(CREATOR, CREATOR))
+            assertThatThrownBy(() -> group.removeMember(CREATOR))
                     .isInstanceOf(BusinessRuleViolationException.class);
         }
 
@@ -259,19 +249,8 @@ class FreeGroupTest {
         void shouldThrowWhenRemovingMemberNotInGroup() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
-            assertThatThrownBy(() -> group.removeMember(OTHER_MEMBER, CREATOR))
+            assertThatThrownBy(() -> group.removeMember(OTHER_MEMBER))
                     .isInstanceOf(BusinessRuleViolationException.class);
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when non-owner removes member")
-        void shouldThrowWhenNonOwnerRemovesMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            addMemberViaInvitation(group, ANOTHER_MEMBER);
-
-            assertThatThrownBy(() -> group.removeMember(ANOTHER_MEMBER, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -281,7 +260,7 @@ class FreeGroupTest {
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
-            group.removeMember(OTHER_MEMBER, OTHER_MEMBER);
+            group.removeMember(OTHER_MEMBER);
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
             assertThat(group.hasMember(ANOTHER_MEMBER)).isTrue();
@@ -294,7 +273,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
-            assertThatThrownBy(() -> group.removeMember(ANOTHER_MEMBER, ANOTHER_MEMBER))
+            assertThatThrownBy(() -> group.removeMember(ANOTHER_MEMBER))
                     .isInstanceOf(MemberNotInGroupException.class)
                     .hasMessageContaining(ANOTHER_MEMBER.toString());
         }
@@ -305,7 +284,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
-            assertThatThrownBy(() -> group.removeMember(CREATOR, CREATOR))
+            assertThatThrownBy(() -> group.removeMember(CREATOR))
                     .isInstanceOf(MemberNotInGroupException.class);
             assertThat(group.isOwner(CREATOR)).isTrue();
         }
@@ -315,7 +294,7 @@ class FreeGroupTest {
         void shouldAllowReInviteAfterLeaving() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
-            group.removeMember(OTHER_MEMBER, OTHER_MEMBER);
+            group.removeMember(OTHER_MEMBER);
 
             group.invite(CREATOR, OTHER_MEMBER);
 
@@ -332,7 +311,7 @@ class FreeGroupTest {
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
-            group.removeMember(OTHER_MEMBER, CREATOR);
+            group.removeMember(OTHER_MEMBER);
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
             assertThat(group.hasMember(ANOTHER_MEMBER)).isTrue();
@@ -350,20 +329,9 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             int memberCountBefore = group.getMembers().size();
 
-            assertThatThrownBy(() -> group.addOwner(OTHER_MEMBER, CREATOR))
+            assertThatThrownBy(() -> group.addOwner(OTHER_MEMBER))
                     .isInstanceOf(com.klabis.groups.freegroup.domain.CannotPromoteNonMemberToOwnerException.class);
             assertThat(group.getMembers()).hasSize(memberCountBefore);
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when non-owner promotes a member")
-        void shouldThrowWhenNonOwnerPromotesMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            addMemberViaInvitation(group, ANOTHER_MEMBER);
-
-            assertThatThrownBy(() -> group.addOwner(ANOTHER_MEMBER, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -372,7 +340,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
-            group.addOwner(OTHER_MEMBER, CREATOR);
+            group.addOwner(OTHER_MEMBER);
 
             assertThat(group.isOwner(OTHER_MEMBER)).isTrue();
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
@@ -384,22 +352,12 @@ class FreeGroupTest {
         void shouldRemoveOwner() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
-            group.addOwner(OTHER_MEMBER, CREATOR);
+            group.addOwner(OTHER_MEMBER);
 
-            group.removeOwner(OTHER_MEMBER, CREATOR);
+            group.removeOwner(OTHER_MEMBER);
 
             assertThat(group.isOwner(OTHER_MEMBER)).isFalse();
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when non-owner removes an owner")
-        void shouldThrowWhenNonOwnerRemovesOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-
-            assertThatThrownBy(() -> group.removeOwner(CREATOR, OTHER_MEMBER))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -407,7 +365,7 @@ class FreeGroupTest {
         void shouldThrowWhenRemovingLastOwner() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
-            assertThatThrownBy(() -> group.removeOwner(CREATOR, CREATOR))
+            assertThatThrownBy(() -> group.removeOwner(CREATOR))
                     .isInstanceOf(CannotRemoveLastOwnerException.class);
         }
 
@@ -424,7 +382,7 @@ class FreeGroupTest {
         void shouldReturnFalseWhenMultipleOwners() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
-            group.addOwner(OTHER_MEMBER, CREATOR);
+            group.addOwner(OTHER_MEMBER);
 
             assertThat(group.isLastOwner(CREATOR)).isFalse();
         }
@@ -718,20 +676,19 @@ class FreeGroupTest {
     class CancelInvitationMethod {
 
         @Test
-        @DisplayName("should cancel pending invitation with reason and populate audit fields")
+        @DisplayName("should cancel pending invitation with reason")
         void shouldCancelPendingInvitationWithReason() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            group.cancelInvitation(invitationId, Optional.of(CREATOR), "Changed plans");
+            group.cancelInvitation(invitationId, "Changed plans");
 
             Invitation invitation = group.getInvitations().stream()
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
             assertThat(invitation.getCancelledAt()).isPresent();
-            assertThat(invitation.getCancelledBy()).contains(CREATOR);
             assertThat(invitation.getCancellationReason()).contains("Changed plans");
             assertThat(group.getPendingInvitations()).isEmpty();
         }
@@ -743,46 +700,14 @@ class FreeGroupTest {
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
-            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
+            group.cancelInvitation(invitationId, null);
 
             Invitation invitation = group.getInvitations().stream()
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
             assertThat(invitation.getCancelledAt()).isPresent();
-            assertThat(invitation.getCancelledBy()).contains(CREATOR);
             assertThat(invitation.getCancellationReason()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when former owner attempts to cancel")
-        void shouldThrowWhenFormerOwnerAttemptsToCancel() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            group.addOwner(OTHER_MEMBER, CREATOR);
-            group.invite(CREATOR, ANOTHER_MEMBER);
-            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.removeOwner(OTHER_MEMBER, CREATOR);
-
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(OTHER_MEMBER), null))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
-
-            Invitation invitation = group.getInvitations().stream()
-                    .filter(inv -> inv.getId().equals(invitationId))
-                    .findFirst().orElseThrow();
-            assertThat(invitation.getStatus()).isEqualTo(InvitationStatus.PENDING);
-        }
-
-        @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when non-owner member attempts to cancel")
-        void shouldThrowWhenNonOwnerMemberAttemptsToCancel() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            group.invite(CREATOR, ANOTHER_MEMBER);
-            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(OTHER_MEMBER), null))
-                    .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 
         @Test
@@ -793,7 +718,7 @@ class FreeGroupTest {
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.acceptInvitation(invitationId);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -805,7 +730,7 @@ class FreeGroupTest {
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(invitationId);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -815,9 +740,9 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
+            group.cancelInvitation(invitationId, null);
 
-            assertThatThrownBy(() -> group.cancelInvitation(invitationId, Optional.of(CREATOR), null))
+            assertThatThrownBy(() -> group.cancelInvitation(invitationId, null))
                     .isInstanceOf(InvitationNotCancellableException.class);
         }
 
@@ -827,7 +752,7 @@ class FreeGroupTest {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId firstId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(firstId, Optional.of(CREATOR), null);
+            group.cancelInvitation(firstId, null);
 
             group.invite(CREATOR, OTHER_MEMBER);
 

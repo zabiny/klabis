@@ -1,6 +1,7 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsOptionsDef;
@@ -86,7 +87,7 @@ class TrainingGroupController implements TrainingGroupsApi {
 
         boolean hasTrainingAuthority = authorizationEvaluator.has(Authority.GROUPS_TRAINING);
         boolean isMember = currentUser.isMemberOf(group::hasMember);
-        boolean isTrainer = currentUser.isMemberOf(group::hasTrainer);
+        boolean isTrainer = authorizationEvaluator.has(Authority.GROUPS_OWNER, TargetRef.group(id));
 
         if (!hasTrainingAuthority && !isMember && !isTrainer) {
             throw new InsufficientAuthorityException("GROUPS:TRAINING or group membership required");

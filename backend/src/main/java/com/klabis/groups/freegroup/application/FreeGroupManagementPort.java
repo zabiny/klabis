@@ -19,13 +19,13 @@ public interface FreeGroupManagementPort {
 
     List<FreeGroup> listGroupsForMember(MemberId memberId);
 
-    FreeGroup renameGroup(FreeGroupId id, String newName, MemberId actingMember);
+    FreeGroup renameGroup(FreeGroupId id, String newName);
 
-    void deleteGroup(FreeGroupId id, MemberId actingMember);
+    void deleteGroup(FreeGroupId id);
 
-    void addOwner(FreeGroupId id, MemberId memberId, MemberId actingMember);
+    void addOwner(FreeGroupId id, MemberId memberId);
 
-    void removeOwner(FreeGroupId id, MemberId memberId, MemberId actingMember);
+    void removeOwner(FreeGroupId id, MemberId memberId);
 
     void removeMember(FreeGroupId id, MemberId memberId, MemberId actingMember);
 
@@ -35,7 +35,7 @@ public interface FreeGroupManagementPort {
 
     void rejectInvitation(FreeGroupId id, InvitationId invitationId, MemberId rejectingMember);
 
-    void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, MemberId actor, String reason);
+    void cancelInvitation(FreeGroupId groupId, InvitationId invitationId, String reason);
 
     List<FreeGroup> getGroupsWithPendingInvitations(MemberId memberId);
 

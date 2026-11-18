@@ -12,7 +12,6 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @PrimaryAdapter
 @Component
@@ -45,7 +44,7 @@ class MemberSuspendedListener {
             try {
                 group.getPendingInvitations().stream()
                         .filter(inv -> inv.isForMember(deactivatedMember))
-                        .forEach(inv -> group.cancelInvitation(inv.getId(), Optional.empty(), SYSTEM_CANCEL_REASON));
+                        .forEach(inv -> group.cancelInvitation(inv.getId(), SYSTEM_CANCEL_REASON));
                 freeGroupRepository.save(group);
             } catch (Exception e) {
                 log.error("Failed to auto-cancel invitations in group {} for deactivated member {}: {}",

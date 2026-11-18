@@ -1,7 +1,9 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.common.HalShape;
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.GroupsWebMvcTest;
@@ -55,7 +57,7 @@ class FreeGroupDetailHalParityTest {
 
     private FreeGroup groupWithTwoOwnersMemberAndInvitation() {
         Invitation invitation = Invitation.reconstruct(new InvitationId(INVITATION_UUID), member(INVITEE_ID),
-                member(OWNER_ID), InvitationStatus.PENDING, Instant.now(), null, null, null);
+                member(OWNER_ID), InvitationStatus.PENDING, Instant.now(), null, null);
         return FreeGroup.reconstruct(new FreeGroupId(GROUP_UUID), "Sprint Team",
                 Set.of(member(OWNER_ID), member(SECOND_OWNER_ID)),
                 Set.of(GroupMembership.of(member(MEMBER_ID))), Set.of(invitation), Set.of(), null);
@@ -74,7 +76,8 @@ class FreeGroupDetailHalParityTest {
 
     @Test
     @DisplayName("owner sees a removal affordance on every owner while more than one owner exists")
-    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ)
+    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ,
+            targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP, ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
     void ownersForOwner() throws Exception {
         String body = getGroupBody();
 
@@ -83,7 +86,8 @@ class FreeGroupDetailHalParityTest {
 
     @Test
     @DisplayName("owner sees no removal affordance on the only owner")
-    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ)
+    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ,
+            targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP, ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
     void singleOwnerHasNoRemoval() throws Exception {
         FreeGroup group = FreeGroup.reconstruct(new FreeGroupId(GROUP_UUID), "Sprint Team",
                 Set.of(member(OWNER_ID)), Set.of(GroupMembership.of(member(MEMBER_ID))), Set.of(), Set.of(), null);
@@ -95,7 +99,8 @@ class FreeGroupDetailHalParityTest {
 
     @Test
     @DisplayName("owner sees a removal affordance on every member")
-    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ)
+    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ,
+            targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP, ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
     void membersForOwner() throws Exception {
         String body = getGroupBody();
 
@@ -104,7 +109,8 @@ class FreeGroupDetailHalParityTest {
 
     @Test
     @DisplayName("owner sees accept, reject and cancel affordances on pending invitations")
-    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ)
+    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ,
+            targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP, ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
     void pendingInvitationsForOwner() throws Exception {
         String body = getGroupBody();
 
@@ -124,7 +130,8 @@ class FreeGroupDetailHalParityTest {
 
     @Test
     @DisplayName("without MEMBERS:READ the member links disappear but owner affordances stay")
-    @WithKlabisMockUser(memberId = OWNER_ID)
+    @WithKlabisMockUser(memberId = OWNER_ID,
+            targetGrants = @TargetGrant(authority = Authority.GROUPS_OWNER, type = TargetType.GROUP, ids = "cccccccc-cccc-cccc-cccc-cccccccccccc"))
     void ownerWithoutMembersRead() throws Exception {
         String body = getGroupBody();
 

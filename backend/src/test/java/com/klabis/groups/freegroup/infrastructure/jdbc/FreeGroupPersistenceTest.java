@@ -164,7 +164,7 @@ class FreeGroupPersistenceTest {
         void shouldKeepDelegatedAuthoritiesOnResave() {
             FreeGroup group = freeGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup(
                     "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE))));
-            group.rename("Renamed", CREATOR);
+            group.rename("Renamed");
 
             freeGroupRepository.save(group);
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -238,13 +238,13 @@ class FreeGroupPersistenceTest {
         }
 
         @Test
-        @DisplayName("should persist and restore cancelled invitation with all audit fields")
+        @DisplayName("should persist and restore cancelled invitation")
         void shouldPersistAndRestoreCancelledInvitation() {
             FreeGroup group = FreeGroup.create(
                     new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
+            group.cancelInvitation(invitationId, "No longer needed");
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -256,18 +256,17 @@ class FreeGroupPersistenceTest {
                     .findFirst().orElseThrow();
             assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
             assertThat(cancelled.getCancelledAt()).isPresent();
-            assertThat(cancelled.getCancelledBy()).contains(CREATOR);
             assertThat(cancelled.getCancellationReason()).contains("No longer needed");
         }
 
         @Test
-        @DisplayName("should persist cancelled invitation with SYSTEM actor — cancelledBy is empty")
+        @DisplayName("should persist cancelled invitation without actor")
         void shouldPersistCancelledInvitationWithSystemActor() {
             FreeGroup group = FreeGroup.create(
                     new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
+            group.cancelInvitation(invitationId, "Member deactivated");
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -276,7 +275,6 @@ class FreeGroupPersistenceTest {
                     .filter(inv -> inv.getId().equals(invitationId))
                     .findFirst().orElseThrow();
             assertThat(cancelled.getStatus()).isEqualTo(InvitationStatus.CANCELLED);
-            assertThat(cancelled.getCancelledBy()).isEmpty();
             assertThat(cancelled.getCancellationReason()).contains("Member deactivated");
         }
     }
@@ -292,7 +290,7 @@ class FreeGroupPersistenceTest {
                     FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of())));
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
-            group.addOwner(MEMBER_A, CREATOR);
+            group.addOwner(MEMBER_A);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -314,7 +312,7 @@ class FreeGroupPersistenceTest {
                     Set.of(),
                     Set.of(), Set.of(), null);
             group = freeGroupRepository.save(group);
-            group.removeOwner(MEMBER_A, CREATOR);
+            group.removeOwner(MEMBER_A);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -330,7 +328,7 @@ class FreeGroupPersistenceTest {
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             group = freeGroupRepository.save(group);
-            group.removeMember(MEMBER_A, CREATOR);
+            group.removeMember(MEMBER_A);
             freeGroupRepository.save(group);
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();

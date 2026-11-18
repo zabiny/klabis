@@ -47,16 +47,6 @@ class FreeGroupErrorTypesTest {
     }
 
     @Test
-    @DisplayName("a non-owner is refused with the group name, as an authorization error")
-    void groupOwnershipRequired() {
-        GroupOwnershipRequiredException ex = new GroupOwnershipRequiredException(MEMBER, new FreeGroupId(UUID.randomUUID()), GROUP);
-
-        assertThat(ex).isInstanceOf(AuthorizationException.class);
-        assertThat(ex.errorType()).isEqualTo("group-ownership-required");
-        assertThat(ex.messageParameters()).containsOnly(Map.entry("groupName", GROUP));
-    }
-
-    @Test
     @DisplayName("answering someone else's invitation names the group")
     void notInvitedMember() {
         NotInvitedMemberException ex = new NotInvitedMemberException(MEMBER, new InvitationId(UUID.randomUUID()), GROUP);

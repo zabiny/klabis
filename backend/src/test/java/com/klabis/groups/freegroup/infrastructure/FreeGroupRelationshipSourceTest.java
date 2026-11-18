@@ -63,7 +63,7 @@ class FreeGroupRelationshipSourceTest {
 
         var grants = source.grantsOf(user(OWNER));
 
-        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.GROUPS_OWNER);
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE))
                 .containsExactlyInAnyOrder(target(first), target(second));
     }
@@ -73,7 +73,7 @@ class FreeGroupRelationshipSourceTest {
     void shouldNotGrantOverCoOwners() {
         MemberId member = memberId();
         FreeGroup group = groupWithMembers(OWNER, EDIT_PROFILE, member, CO_OWNER);
-        group.addOwner(CO_OWNER, OWNER);
+        group.addOwner(CO_OWNER);
 
         var grants = source.grantsOf(user(OWNER));
 
@@ -85,7 +85,7 @@ class FreeGroupRelationshipSourceTest {
     void shouldGrantCoOwner() {
         MemberId member = memberId();
         FreeGroup group = groupWithMembers(OWNER, EDIT_PROFILE, member, CO_OWNER);
-        group.addOwner(CO_OWNER, OWNER);
+        group.addOwner(CO_OWNER);
 
         var grants = source.grantsOf(user(CO_OWNER));
 
@@ -108,7 +108,7 @@ class FreeGroupRelationshipSourceTest {
         MemberId staying = memberId();
         MemberId leaving = memberId();
         FreeGroup group = groupWithMembers(OWNER, EDIT_PROFILE, staying, leaving);
-        group.removeMember(leaving, leaving);
+        group.removeMember(leaving);
 
         var grants = source.grantsOf(user(OWNER));
 
@@ -120,9 +120,9 @@ class FreeGroupRelationshipSourceTest {
     void shouldDropMemberRemovedByOwner() {
         MemberId removed = memberId();
         FreeGroup group = groupWithMembers(OWNER, EDIT_PROFILE, removed);
-        group.removeMember(removed, OWNER);
+        group.removeMember(removed);
 
-        assertThat(source.grantsOf(user(OWNER))).isEmpty();
+        assertThat(source.grantsOf(user(OWNER))).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -133,7 +133,7 @@ class FreeGroupRelationshipSourceTest {
         group.invite(OWNER, invitee);
         groups.save(group);
 
-        assertThat(source.grantsOf(user(OWNER))).isEmpty();
+        assertThat(source.grantsOf(user(OWNER))).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -141,8 +141,8 @@ class FreeGroupRelationshipSourceTest {
     void shouldGrantNothingToRemovedOwner() {
         MemberId member = memberId();
         FreeGroup group = groupWithMembers(OWNER, EDIT_PROFILE, member, CO_OWNER);
-        group.addOwner(CO_OWNER, OWNER);
-        group.removeOwner(OWNER, CO_OWNER);
+        group.addOwner(CO_OWNER);
+        group.removeOwner(OWNER);
 
         assertThat(source.grantsOf(user(OWNER))).isEmpty();
         assertThat(source.grantsOf(user(CO_OWNER))).isNotEmpty();
@@ -153,7 +153,7 @@ class FreeGroupRelationshipSourceTest {
     void shouldGrantNothingWhenNothingDelegated() {
         groupWithMembers(OWNER, Set.of(), memberId());
 
-        assertThat(source.grantsOf(user(OWNER))).isEmpty();
+        assertThat(source.grantsOf(user(OWNER))).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -161,7 +161,7 @@ class FreeGroupRelationshipSourceTest {
     void shouldGrantNothingForGroupWithoutMembers() {
         groupWithMembers(OWNER, EDIT_PROFILE);
 
-        assertThat(source.grantsOf(user(OWNER))).isEmpty();
+        assertThat(source.grantsOf(user(OWNER))).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -190,6 +190,47 @@ class FreeGroupRelationshipSourceTest {
         var grants = source.grantsOf(user(OWNER));
 
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(target(delegated));
+    }
+
+    @Test
+    @DisplayName("grants an owner group ownership over the groups they own and over no other")
+    void shouldGrantGroupOwnershipOverOwnedGroupsOnly() {
+        FreeGroup owned = groupWithMembers(OWNER, Set.of());
+        FreeGroup coOwned = groupWithMembers(CO_OWNER, Set.of(), OWNER);
+        FreeGroup foreign = groupWithMembers(CO_OWNER, Set.of());
+
+        var grants = source.grantsOf(user(OWNER));
+
+        assertThat(grants.get(Authority.GROUPS_OWNER)).containsExactly(TargetRef.group(owned.getId().uuid()));
+        assertThat(grants.get(Authority.GROUPS_OWNER))
+                .doesNotContain(TargetRef.group(coOwned.getId().uuid()), TargetRef.group(foreign.getId().uuid()));
+    }
+
+    @Test
+    @DisplayName("grants group ownership to a promoted co-owner and takes it from a removed owner")
+    void shouldFollowOwnershipChanges() {
+        FreeGroup group = groupWithMembers(OWNER, Set.of(), CO_OWNER);
+        group.addOwner(CO_OWNER);
+        TargetRef target = TargetRef.group(group.getId().uuid());
+
+        assertThat(source.grantsOf(user(CO_OWNER)).get(Authority.GROUPS_OWNER)).containsExactly(target);
+
+        group.removeOwner(OWNER);
+
+        assertThat(source.grantsOf(user(OWNER))).doesNotContainKey(Authority.GROUPS_OWNER);
+    }
+
+    @Test
+    @DisplayName("grants group ownership neither to members nor to invitees")
+    void shouldNotGrantGroupOwnershipToMembersAndInvitees() {
+        MemberId member = memberId();
+        MemberId invitee = memberId();
+        FreeGroup group = groupWithMembers(OWNER, Set.of(), member);
+        group.invite(OWNER, invitee);
+        groups.save(group);
+
+        assertThat(source.grantsOf(user(member))).isEmpty();
+        assertThat(source.grantsOf(user(invitee))).isEmpty();
     }
 
     @Test

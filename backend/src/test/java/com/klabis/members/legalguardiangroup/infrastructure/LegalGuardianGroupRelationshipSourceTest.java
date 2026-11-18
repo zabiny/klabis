@@ -50,7 +50,7 @@ class LegalGuardianGroupRelationshipSourceTest {
 
         var grants = source.grantsOf(ANNA.userId());
 
-        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.GROUPS_OWNER);
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactlyInAnyOrder(member(first), member(second));
     }
 
@@ -115,7 +115,32 @@ class LegalGuardianGroupRelationshipSourceTest {
         group.removeMinor(leaving.id());
         groups.save(group);
 
-        assertThat(source.grantsOf(ANNA.userId())).isEmpty();
+        assertThat(source.grantsOf(ANNA.userId())).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
+    }
+
+    @Test
+    @DisplayName("grants a guardian group ownership over their groups and over no other")
+    void shouldGrantGroupOwnershipOverGuardedGroupsOnly() {
+        LegalGuardianGroup annas = LegalGuardianGroup.create(Set.of(ANNA), aMinor());
+        LegalGuardianGroup shared = LegalGuardianGroup.create(Set.of(ANNA, BOHUMIL), aMinor());
+        LegalGuardianGroup bohumils = LegalGuardianGroup.create(Set.of(BOHUMIL), aMinor());
+        groups.save(annas);
+        groups.save(shared);
+        groups.save(bohumils);
+
+        var grants = source.grantsOf(ANNA.userId());
+
+        assertThat(grants.get(Authority.GROUPS_OWNER)).containsExactlyInAnyOrder(
+                TargetRef.group(annas.getId().uuid()), TargetRef.group(shared.getId().uuid()));
+    }
+
+    @Test
+    @DisplayName("grants a minor no group ownership")
+    void shouldNotGrantGroupOwnershipToMinor() {
+        Minor minor = aMinor();
+        groups.save(LegalGuardianGroup.create(Set.of(ANNA), minor));
+
+        assertThat(source.grantsOf(minor.id().toUserId())).doesNotContainKey(Authority.GROUPS_OWNER);
     }
 
     @Test

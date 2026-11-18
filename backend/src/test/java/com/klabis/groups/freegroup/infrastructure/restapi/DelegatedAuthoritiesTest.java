@@ -32,7 +32,7 @@ class DelegatedAuthoritiesTest {
     @DisplayName("administrator authorities are never delegatable")
     void administratorAuthoritiesAreNotDelegatable() {
         assertThat(FreeGroup.delegatableAuthorities())
-                .doesNotContain(Authority.MEMBERS_MANAGE, Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_READ)
+                .doesNotContain(Authority.MEMBERS_MANAGE, Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_READ, Authority.GROUPS_OWNER)
                 .containsExactly(Authority.MEMBERS_EDIT_PROFILE);
     }
 
