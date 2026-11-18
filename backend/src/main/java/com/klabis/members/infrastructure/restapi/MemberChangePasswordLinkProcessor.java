@@ -40,8 +40,6 @@ class MemberChangePasswordLinkProcessor implements RepresentationModelProcessor<
         if (!(authentication instanceof KlabisJwtAuthenticationToken token)) {
             return false;
         }
-        return token.getMemberIdUuid()
-                .map(content.id()::equals)
-                .orElse(false);
+        return token.isSelf(content.id());
     }
 }

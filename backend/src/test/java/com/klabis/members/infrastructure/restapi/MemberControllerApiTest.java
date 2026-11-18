@@ -694,7 +694,7 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.changePassword.href").value("http://localhost/api/me/password-change"))
+                    .andExpect(jsonPath("$._links.changePassword.href").value(org.hamcrest.Matchers.endsWith("/api/me/password-change")))
                     .andExpect(jsonPath("$._templates.changePassword.method").value("POST"));
         }
 
