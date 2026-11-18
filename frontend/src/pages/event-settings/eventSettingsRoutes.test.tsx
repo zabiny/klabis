@@ -2,11 +2,11 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter, Outlet, Route, Routes, useLocation} from 'react-router-dom';
 import {describe, expect, it, vi} from 'vitest';
 import {eventSettingsRoutes} from './eventSettingsRoutes';
-import {useRootNavigation, type NavigationItem} from '../../hooks/useRootNavigation';
+import {useEventSettingsTabs, type NavigationItem} from '../../hooks/useRootNavigation';
 
 vi.mock('../../hooks/useRootNavigation', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../hooks/useRootNavigation')>()),
-    useRootNavigation: vi.fn(),
+    useEventSettingsTabs: vi.fn(),
 }));
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({routeLink, children}: { routeLink: { href: string }; children: React.ReactNode }) =>
@@ -17,15 +17,15 @@ vi.mock('../events/CategoryPresetsPage.tsx', () => ({CategoryPresetsPage: () => 
 vi.mock('./DisciplinesPage.tsx', () => ({DisciplinesPage: () => <div>disciplines-page</div>}));
 
 const items: NavigationItem[] = [
-    {rel: 'disciplines', href: '/disciplines', label: 'Disciplíny', section: 'event-settings-tab'},
-    {rel: 'event-types', href: '/event-types', label: 'Typy akcí', section: 'event-settings-tab'},
-    {rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'event-settings-tab'},
+    {rel: 'disciplines', href: '/disciplines', label: 'Disciplíny', section: 'admin'},
+    {rel: 'event-types', href: '/event-types', label: 'Typy akcí', section: 'admin'},
+    {rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'admin'},
 ];
 
 const Location = () => <div data-testid="location">{useLocation().pathname}</div>;
 
 const renderAt = (path: string) => {
-    vi.mocked(useRootNavigation).mockReturnValue({data: items, isLoading: false} as never);
+    vi.mocked(useEventSettingsTabs).mockReturnValue({data: items, isLoading: false} as never);
     return render(
         <MemoryRouter initialEntries={[path]}>
             <Routes>

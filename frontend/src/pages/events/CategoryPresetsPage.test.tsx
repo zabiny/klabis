@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import {render, screen, fireEvent, within, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useRootNavigation} from '../../hooks/useRootNavigation';
+import {useEventSettingsTabs} from '../../hooks/useRootNavigation';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -15,7 +15,7 @@ import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 
 vi.mock('../../hooks/useRootNavigation', () => ({
-    useRootNavigation: vi.fn(),
+    useEventSettingsTabs: vi.fn(),
 }));
 
 vi.mock('../../hooks/useHalPageData', () => ({
@@ -101,7 +101,7 @@ const buildPresetRow = (overrides?: Record<string, unknown>) => ({
 });
 
 const mockRootItems = (items: {rel: string; href: string; label: string; section: string}[]) => {
-    vi.mocked(useRootNavigation).mockReturnValue({data: items} as unknown as ReturnType<typeof useRootNavigation>);
+    vi.mocked(useEventSettingsTabs).mockReturnValue({data: items} as unknown as ReturnType<typeof useEventSettingsTabs>);
 };
 
 const renderPageWithPresets = (presets: unknown[]) => {
@@ -132,7 +132,7 @@ describe('CategoryPresetsPage', () => {
         });
 
         it('shows no content while root navigation is loading', () => {
-            vi.mocked(useRootNavigation).mockReturnValue({data: undefined} as unknown as ReturnType<typeof useRootNavigation>);
+            vi.mocked(useEventSettingsTabs).mockReturnValue({data: undefined} as unknown as ReturnType<typeof useEventSettingsTabs>);
             renderPage(createMockPageData(null));
 
             expect(screen.queryByText('Přístup odepřen')).not.toBeInTheDocument();

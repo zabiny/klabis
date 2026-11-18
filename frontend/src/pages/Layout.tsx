@@ -17,17 +17,15 @@ import {describeError, labels} from '../localization'
 import type {LucideIcon} from 'lucide-react'
 import {
     Banknote,
-    BookOpen,
     Calendar,
     Dumbbell,
     Heart,
     Home,
     Layers,
     LayoutDashboard,
-    ListChecks,
-    Tags,
     Trophy,
     RefreshCw,
+    Settings,
     Users,
     UsersRound
 } from 'lucide-react'
@@ -40,9 +38,7 @@ const navIcons: Record<string, LucideIcon> = {
     groups: UsersRound,
     'training-groups': Dumbbell,
     legalGuardianGroups: Heart,
-    'category-presets': Tags,
-    'event-types': ListChecks,
-    disciplines: BookOpen,
+    'event-settings': Settings,
     syncOverview: RefreshCw,
     account: Banknote,
     admin: LayoutDashboard,

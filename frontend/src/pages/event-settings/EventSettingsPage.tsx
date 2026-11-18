@@ -1,14 +1,13 @@
 import type {ReactElement} from 'react';
 import {Navigate, NavLink, Outlet, useLocation} from 'react-router-dom';
 import {Skeleton, TabButton} from '../../components/UI';
-import {EVENT_SETTINGS_TAB_RELS, useRootNavigation} from '../../hooks/useRootNavigation';
+import {EVENT_SETTINGS_TAB_RELS, useEventSettingsTabs} from '../../hooks/useRootNavigation';
 import {labels} from '../../localization';
 import ForbiddenPage from '../ForbiddenPage';
-
-export const EVENT_SETTINGS_BASE = '/event-settings';
+import {EVENT_SETTINGS_BASE} from './eventSettingsBase';
 
 export const EventSettingsPage = (): ReactElement => {
-    const {data: items, isLoading} = useRootNavigation();
+    const {data: items, isLoading} = useEventSettingsTabs();
     const {pathname} = useLocation();
 
     if (isLoading || !items) {

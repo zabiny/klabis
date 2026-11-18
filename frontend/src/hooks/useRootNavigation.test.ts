@@ -2,7 +2,7 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import React from 'react';
-import {useRootNavigation} from './useRootNavigation';
+import {useEventSettingsTabs, useRootNavigation} from './useRootNavigation';
 import {vi} from 'vitest';
 
 vi.mock('../api/klabisUserManager', () => ({
@@ -121,7 +121,7 @@ describe('useRootNavigation — section assignment', () => {
 
         await waitFor(() => expect(result.current.data).toBeDefined());
 
-        const items = result.current.data!.filter(i => i.section !== 'event-settings-tab');
+        const items = result.current.data!;
         expect(items.every(i => i.section === 'admin')).toBe(true);
         expect(items.some(i => i.section === 'main')).toBe(false);
     });
@@ -241,15 +241,10 @@ describe('useRootNavigation — event settings entry', () => {
         expect(items.find(i => i.rel === 'event-settings')).toBeUndefined();
     });
 
-    it('keeps the original three links available outside the menu sections for tab rendering', async () => {
+    it('keeps the three links out of the menu items', async () => {
         const items = await load(['disciplines', 'event-types', 'category-presets']);
 
-        for (const rel of ['disciplines', 'event-types', 'category-presets']) {
-            const item = items.find(i => i.rel === rel);
-            expect(item).toBeDefined();
-            expect(item?.section).not.toBe('admin');
-            expect(item?.section).not.toBe('main');
-        }
+        expect(items.map(i => i.rel)).toEqual(['event-settings']);
     });
 
     it('places the merged item at the position of the first of the three links', async () => {
@@ -257,5 +252,28 @@ describe('useRootNavigation — event settings entry', () => {
 
         const adminRels = items.filter(i => i.section === 'admin').map(i => i.rel);
         expect(adminRels).toEqual(['training-groups', 'event-settings', 'legalGuardianGroups']);
+    });
+});
+
+describe('useEventSettingsTabs', () => {
+    it('returns the available tab links in tab order with route paths', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'category-presets', 'disciplines']));
+
+        const {result} = renderHook(() => useEventSettingsTabs(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.map(i => [i.rel, i.href])).toEqual([
+            ['disciplines', '/disciplines'],
+            ['category-presets', '/category-presets'],
+        ]);
+    });
+
+    it('returns an empty list when no tab link exists', async () => {
+        mockFetchWithResponse(buildHalResponse(['events']));
+
+        const {result} = renderHook(() => useEventSettingsTabs(), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data).toEqual([]);
     });
 });

@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {EventSettingsPage} from './EventSettingsPage';
-import {useRootNavigation, type NavigationItem} from '../../hooks/useRootNavigation';
+import {useEventSettingsTabs, type NavigationItem} from '../../hooks/useRootNavigation';
 
 vi.mock('../../hooks/useRootNavigation', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../hooks/useRootNavigation')>()),
-    useRootNavigation: vi.fn(),
+    useEventSettingsTabs: vi.fn(),
 }));
 
 const tab = (rel: string, href: string): NavigationItem => ({
-    rel, href, label: rel, section: 'event-settings-tab',
+    rel, href, label: rel, section: 'admin',
 });
 
 const ALL_TABS = [
@@ -22,7 +22,7 @@ const ALL_TABS = [
 ];
 
 const mockNavigation = (items: NavigationItem[] | undefined, isLoading = false) => {
-    vi.mocked(useRootNavigation).mockReturnValue({data: items, isLoading} as never);
+    vi.mocked(useEventSettingsTabs).mockReturnValue({data: items, isLoading} as never);
 };
 
 const Location = () => <div data-testid="location">{useLocation().pathname}</div>;

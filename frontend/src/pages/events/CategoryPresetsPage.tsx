@@ -5,7 +5,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
 import {halResource} from "../../api/halResource";
-import {useRootNavigation} from "../../hooks/useRootNavigation.ts";
+import {useEventSettingsTabs} from "../../hooks/useRootNavigation.ts";
 import ForbiddenPage from "../ForbiddenPage.tsx";
 import {labels} from "../../localization";
 import {Badge, Button} from "../../components/UI";
@@ -15,7 +15,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 type CategoryPresetListItem = ListPresetsItemResource;
 
 export const CategoryPresetsPage = (): ReactElement | null => {
-    const {data: rootItems} = useRootNavigation();
+    const {data: rootItems} = useEventSettingsTabs();
 
     if (!rootItems) {
         return null;

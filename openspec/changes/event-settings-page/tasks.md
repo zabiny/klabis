@@ -13,9 +13,9 @@
 
 ## 3. Úklid a ověření
 
-- [ ] 3.1 Odstranit nepoužívané ikony a labely tří původních položek (`Layout.tsx`, `labels.ts`) a ověřit `npm run build`
-- [ ] 3.2 Aktualizovat E2E scénáře navigace (položka „Nastavení akcí", záložky, staré adresy) a spustit `npm run test:e2e`
-- [ ] 3.3 Ručně ověřit na `:3000` jako ZBM9000 (vidí záložky) a ZBM9500 (nevidí položku, přímé otevření je odepřeno); code review před commitem
+- [x] 3.1 Odstranit nepoužívané ikony a labely tří původních položek (`Layout.tsx`, `labels.ts`) a ověřit `npm run build`
+- [x] 3.2 Aktualizovat E2E scénáře navigace (položka „Nastavení akcí", záložky, staré adresy) a spustit `npm run test:e2e`
+- [x] 3.3 Ručně ověřit na `:3000` jako ZBM9000 (vidí záložky) a ZBM9500 (nevidí položku, přímé otevření je odepřeno); code review před commitem
 
 ## Workflow follow-up
 
