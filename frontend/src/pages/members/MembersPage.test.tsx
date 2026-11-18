@@ -332,6 +332,22 @@ describe('MembersPage — row data rendering', () => {
             expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Ukončit členství člena'})[0]).toBeInTheDocument();
         });
 
+        it('tells in the suspension form that a guardian with another guardian is removed from the guardians', () => {
+            renderPageWithMembers([suspendRow()]);
+            fireEvent.click(screen.getByRole('button', {name: /ukončit členství/i}));
+
+            expect(within(screen.getByRole('dialog')).getByText(labels.suspensionWarning.suspendFormGuardianNote)).toBeInTheDocument();
+        });
+
+        it('does not show the guardian note in the resume dialog', () => {
+            renderPageWithMembers([buildMemberRow({
+                _templates: {resumeMember: mockHalFormsTemplate({method: 'POST', title: 'Reaktivace člena', properties: []})},
+            })]);
+            fireEvent.click(screen.getByRole('button', {name: /reaktivovat/i}));
+
+            expect(screen.queryByText(labels.suspensionWarning.suspendFormGuardianNote)).not.toBeInTheDocument();
+        });
+
         it('opens resume dialog titled by the template title', () => {
             renderPageWithMembers([buildMemberRow({
                 _templates: {resumeMember: mockHalFormsTemplate({method: 'POST', title: 'Reaktivace člena', properties: []})},

@@ -1,9 +1,14 @@
 package com.klabis.members.application;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.exceptions.InsufficientAuthorityException;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.*;
 import com.klabis.members.domain.*;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,8 +29,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,13 +58,20 @@ class ManagementServiceTest {
     @Mock
     private MemberCompletenessPort memberCompletenessPort;
 
+    @Mock
+    private LegalGuardianCascadePort legalGuardianCascadePort;
+
+    @Mock
+    private AuthorizationEvaluator authorizationEvaluator;
+
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort), memberCompletenessPort);
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort), memberCompletenessPort, legalGuardianCascadePort, authorizationEvaluator);
+        lenient().when(authorizationEvaluator.has(eq(Authority.MEMBERS_MANAGE), any(TargetRef.class))).thenReturn(true);
         lenient().when(memberCompletenessPort.guardianContactsOf(any())).thenReturn(GuardianContacts.NONE);
         lenient().when(memberCompletenessPort.missingData(any())).thenReturn(Set.of());
 
@@ -426,6 +440,207 @@ class ManagementServiceTest {
 
                 verify(memberRepository, never()).save(any(Member.class));
                 verify(userService, never()).suspendUser(any(UserId.class));
+            }
+        }
+
+        @Nested
+        @DisplayName("Whole Legal Guardian Group Cascade Tests")
+        class WholeGroupCascadeTests {
+
+            private final LegalGuardianGroupId groupId = new LegalGuardianGroupId(UUID.randomUUID());
+            private MemberId guardianId;
+            private MemberId minorOneId;
+            private MemberId minorTwoId;
+            private Member minorOne;
+            private Member minorTwo;
+            private Member.SuspendMembership command;
+
+            @BeforeEach
+            void setUpCascade() {
+                guardianId = new MemberId(testMemberId);
+                minorOneId = new MemberId(UUID.randomUUID());
+                minorTwoId = new MemberId(UUID.randomUUID());
+                minorOne = aMinor(minorOneId, "Anna");
+                minorTwo = aMinor(minorTwoId, "Berta");
+                command = MemberSuspendMembershipBuilder.builder()
+                        .suspendedBy(new UserId(adminUserId))
+                        .reason(DeactivationReason.OTHER)
+                        .note("Family left the club")
+                        .build();
+
+                when(memberRepository.findById(guardianId)).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(minorOneId)).thenReturn(Optional.of(minorOne));
+                when(memberRepository.findById(minorTwoId)).thenReturn(Optional.of(minorTwo));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+                when(legalGuardianCascadePort.minorsOfSoleGuardianGroups(guardianId, Set.of(groupId)))
+                        .thenReturn(List.of(minorOneId, minorTwoId));
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId)).thenReturn(List.of(guardianGroup()));
+            }
+
+            private Member aMinor(MemberId id, String firstName) {
+                return MemberTestDataBuilder.aMember()
+                        .withId(id.uuid())
+                        .withFirstName(firstName)
+                        .withLastName("Smith")
+                        .withRegistrationNumber("ZBM" + (1000 + Math.abs(id.uuid().hashCode() % 8000)))
+                        .withDateOfBirth(java.time.LocalDate.now().minusYears(10))
+                        .build();
+            }
+
+            private OwnedGroup guardianGroup() {
+                return new OwnedGroup(groupId.uuid().toString(), "Smith", "LEGAL_GUARDIAN",
+                        java.net.URI.create("/api/legal-guardian-groups/" + groupId.uuid()));
+            }
+
+            private void minorOwesMoney(MemberId minorId) {
+                when(memberFinancialStatePort.getFinancialSnapshot(minorId)).thenReturn(
+                        new MemberFinancialStatePort.MemberFinancialSnapshot(minorId,
+                                new MonetaryAmount(new BigDecimal("-100"), "CZK"), true));
+            }
+
+            private void assertNobodySuspended() {
+                verify(memberRepository, never()).save(any(Member.class));
+                verify(userService, never()).suspendUser(any(UserId.class));
+            }
+
+            @Test
+            @DisplayName("should suspend guardian and all minors with the same reason and note")
+            void shouldSuspendGuardianAndMinorsWithSameReasonAndNote() {
+                testedSubject.suspendMember(guardianId, command, Set.of(groupId));
+
+                assertThat(List.of(testActiveMember, minorOne, minorTwo)).allSatisfy(member -> {
+                    assertThat(member.isActive()).isFalse();
+                    assertThat(member.getSuspensionReason()).isEqualTo(DeactivationReason.OTHER);
+                    assertThat(member.getSuspensionNote()).isEqualTo("Family left the club");
+                    assertThat(member.getSuspendedBy().uuid()).isEqualTo(adminUserId);
+                    assertThat(member.getDomainEvents()).hasSize(1).first().isInstanceOf(MemberSuspendedEvent.class);
+                });
+                verify(userService).suspendUser(guardianId.toUserId());
+                verify(userService).suspendUser(minorOneId.toUserId());
+                verify(userService).suspendUser(minorTwoId.toUserId());
+            }
+
+            @Test
+            @DisplayName("should not report the cascaded group as a blocker of the guardian")
+            void shouldIgnoreCascadedGroupAsGuardianBlocker() {
+                assertThatCode(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .doesNotThrowAnyException();
+            }
+
+            @Test
+            @DisplayName("should block everybody and attribute the debt to the minor")
+            void shouldBlockEverybodyWhenMinorHasDebt() {
+                minorOwesMoney(minorTwoId);
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOfSatisfying(SuspensionBlockedException.class, e -> {
+                            assertThat(e.getDebtSnapshot()).isNull();
+                            assertThat(e.getBlockingGroups()).isEmpty();
+                            assertThat(e.getDependents()).singleElement().satisfies(dependent -> {
+                                assertThat(dependent.memberId()).isEqualTo(minorTwoId);
+                                assertThat(dependent.memberName()).isEqualTo("Berta Smith");
+                                assertThat(dependent.debtSnapshot().hasOutstandingDebt()).isTrue();
+                                assertThat(dependent.blockingGroups()).isEmpty();
+                            });
+                        });
+
+                assertNobodySuspended();
+            }
+
+            @Test
+            @DisplayName("should block everybody when a minor is the last owner of a group")
+            void shouldBlockEverybodyWhenMinorIsLastOwner() {
+                var freeGroup = new OwnedGroup("free-1", "Kids", "FREE", java.net.URI.create("/api/groups/free-1"));
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(minorOneId)).thenReturn(List.of(freeGroup));
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOfSatisfying(SuspensionBlockedException.class, e ->
+                                assertThat(e.getDependents()).singleElement().satisfies(dependent -> {
+                                    assertThat(dependent.memberId()).isEqualTo(minorOneId);
+                                    assertThat(dependent.blockingGroups()).containsExactly(freeGroup);
+                                }));
+
+                assertNobodySuspended();
+            }
+
+            @Test
+            @DisplayName("should still report other blockers of the guardian together with the dependents' blockers")
+            void shouldReportGuardiansOtherBlockers() {
+                var trainingGroup = new OwnedGroup("training-1", "Juniors", "TRAINING",
+                        java.net.URI.create("/api/training-groups/training-1"));
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId))
+                        .thenReturn(List.of(guardianGroup(), trainingGroup));
+                minorOwesMoney(minorOneId);
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOfSatisfying(SuspensionBlockedException.class, e -> {
+                            assertThat(e.getBlockingGroups()).containsExactly(trainingGroup);
+                            assertThat(e.getDependents()).extracting(SuspensionBlockedException.DependentBlockers::memberId)
+                                    .containsExactly(minorOneId);
+                        });
+
+                assertNobodySuspended();
+            }
+
+            @Test
+            @DisplayName("should propagate the rejection of an id that is not a sole guardian group of the member")
+            void shouldRejectGroupWhereMemberIsNotSoleGuardian() {
+                when(legalGuardianCascadePort.minorsOfSoleGuardianGroups(guardianId, Set.of(groupId)))
+                        .thenThrow(new NotSoleGuardianGroupException(groupId));
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOf(NotSoleGuardianGroupException.class);
+
+                assertNobodySuspended();
+            }
+
+            @Test
+            @DisplayName("should skip an already suspended minor and keep its original suspension")
+            void shouldSkipAlreadySuspendedMinor() {
+                minorOne.suspend(new Member.SuspendMembership(new UserId(UUID.randomUUID()), DeactivationReason.ODHLASKA, "Earlier"));
+                minorOne.clearDomainEvents();
+                minorOwesMoney(minorOneId);
+
+                testedSubject.suspendMember(guardianId, command, Set.of(groupId));
+
+                assertThat(minorOne.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
+                assertThat(minorOne.getSuspensionNote()).isEqualTo("Earlier");
+                assertThat(minorOne.getDomainEvents()).isEmpty();
+                assertThat(minorTwo.isActive()).isFalse();
+                assertThat(testActiveMember.isActive()).isFalse();
+                verify(userService, never()).suspendUser(minorOneId.toUserId());
+            }
+
+            @Test
+            @DisplayName("should fail as a whole when suspension of a later member fails")
+            void shouldFailWhenSuspensionOfLaterMemberFails() {
+                when(memberRepository.save(minorTwo)).thenThrow(new OptimisticLockingFailureException("conflict"));
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOf(OptimisticLockingFailureException.class);
+            }
+
+            @Test
+            @DisplayName("should refuse to suspend a minor the caller has no MEMBERS:MANAGE authority over")
+            void shouldRequireAuthorityOverEachMinor() {
+                when(authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(minorTwoId.uuid())))
+                        .thenReturn(false);
+
+                assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
+                        .isInstanceOf(InsufficientAuthorityException.class);
+
+                assertNobodySuspended();
+            }
+
+            @Test
+            @DisplayName("should behave as a plain suspension without cascade group ids")
+            void shouldNotLookUpMinorsWithoutCascade() {
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId)).thenReturn(List.of());
+
+                testedSubject.suspendMember(guardianId, command, Set.of());
+
+                verifyNoInteractions(legalGuardianCascadePort);
+                assertThat(minorOne.isActive()).isTrue();
             }
         }
 

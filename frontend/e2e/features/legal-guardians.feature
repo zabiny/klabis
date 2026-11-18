@@ -14,3 +14,12 @@ Feature: Registering a non-member legal guardian as a member
       When Jan registers guardian "Rodic" as a member from the guardian's profile
       Then the detail of member "Rodic" shows a new registration number
       And the detail of member "Dite" lists "Rodic" as legal guardian
+
+  Rule: A suspended member does not remain a legal guardian of a group that has other guardians
+
+    Scenario: Suspended guardian is removed from a group with another guardian
+      Given member "Novak" is registered
+      And member "Svobodova" is registered
+      And members "Novak" and "Svobodova" are legal guardians of minor "Dite"
+      When Jan suspends member "Novak"
+      Then the detail of member "Dite" lists only "Svobodova" as legal guardian

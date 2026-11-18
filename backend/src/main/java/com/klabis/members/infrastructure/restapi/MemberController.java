@@ -19,6 +19,7 @@ import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.MemberViewAccess;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
@@ -150,7 +152,11 @@ public class MemberController implements MembersApi {
                 request.note()
         );
 
-        managementService.suspendMember(new MemberId(id), command);
+        Set<LegalGuardianGroupId> cascadeGroupIds = request.cascadeGroupIds() == null
+                ? Set.of()
+                : request.cascadeGroupIds().stream().map(LegalGuardianGroupId::new).collect(Collectors.toSet());
+
+        managementService.suspendMember(new MemberId(id), command, cascadeGroupIds);
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null)).toUri())
                 .build();

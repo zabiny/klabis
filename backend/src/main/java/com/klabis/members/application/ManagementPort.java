@@ -4,11 +4,13 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Set;
 
 @PrimaryPort
 public interface ManagementPort {
@@ -31,7 +33,19 @@ public interface ManagementPort {
      */
     Member syncMemberFromOris(MemberId memberId, Member.SyncFromOris command);
 
-    Member suspendMember(MemberId memberId, Member.SuspendMembership command);
+    default Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
+        return suspendMember(memberId, command, Set.of());
+    }
+
+    /**
+     * Suspends the member and, atomically, the minors of the given legal guardian groups with the same reason
+     * and note. Every member is checked before anything changes; minors that are already suspended are skipped.
+     *
+     * @param cascadeGroupIds groups of which the member is the sole guardian
+     * @throws SuspensionBlockedException   when the member or any cascaded minor is blocked; nothing is suspended
+     * @throws NotSoleGuardianGroupException when a group id is not a sole-guardian group of the member
+     */
+    Member suspendMember(MemberId memberId, Member.SuspendMembership command, Set<LegalGuardianGroupId> cascadeGroupIds);
 
     Member resumeMember(MemberId memberId, Member.ResumeMembership command);
 

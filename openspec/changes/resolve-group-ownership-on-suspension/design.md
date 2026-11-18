@@ -218,6 +218,7 @@ The `id` path parameter of the owner-only operations gets `x-klabis-target-id: G
 ## Risks / Trade-offs
 
 - [Authorization of the existing free-group operations moves out of the aggregate] -> controller regression tests per operation (owner, member, outsider, manager) are written before the change and must stay green.
+- [Removing a suspended guardian runs after commit (asynchronous module listener)] -> the removal is eventually consistent: if two guardians of one group are suspended in quick succession, the second suspension still sees the first guardian and is not blocked, leaving a suspended sole guardian. Accepted at the expected load (admins suspend rarely, one at a time); the event registry retries a failed removal.
 - [GROUPS:OWNER must never be grantable by hand] -> SPECIFIC-only; a test asserts it is not in the grantable set.
 - [MEMBERS:MANAGE gains standing power over free groups] -> explicit user decision; documented in ADR.
 - [Group changed by someone else between GET and submit] -> the action's normal error is shown in the row (toast); final resubmission is authoritative.

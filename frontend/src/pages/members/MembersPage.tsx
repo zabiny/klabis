@@ -47,6 +47,7 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
     const hasImportFromOris = !!importFromOrisTemplate;
 
     const suspension = useSuspendMemberAction();
+    const [suspendedMemberName, setSuspendedMemberName] = useState('');
 
     const actionDialog = useTemplateDialog({
         size: '2xl',
@@ -130,7 +131,10 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(suspendAction);
+                            setSuspendedMemberName(`${member.firstName ?? ''} ${member.lastName ?? ''}`.trim());
+                            actionDialog.open(suspendAction, {
+                                note: <p className="text-text-secondary">{labels.suspensionWarning.suspendFormGuardianNote}</p>,
+                            });
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -241,9 +245,13 @@ const MembersPageContent = ({resourceData}: {resourceData: HalResponse}): ReactE
             <SuspensionWarningDialog
                 warning={suspension.warning}
                 resolvedGroupIds={suspension.resolvedGroupIds}
+                cascadeGroupIds={suspension.cascadeGroupIds}
+                suspendedMemberName={suspendedMemberName}
                 isFinishing={suspension.isFinishing}
                 onClose={suspension.clearWarning}
                 onGroupResolved={suspension.markGroupResolved}
+                onCascadeChosen={suspension.chooseCascade}
+                onCascadeCancelled={suspension.cancelCascade}
                 onFinish={suspension.finishSuspension}
             />
             <FinanceTransactionDialog

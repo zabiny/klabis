@@ -4,6 +4,8 @@ import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.common.users.UserId;
 import com.klabis.members.application.AccountActivationNotAvailableException;
 import com.klabis.members.application.MemberNotFoundException;
+import com.klabis.members.application.NotSoleGuardianGroupException;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.application.SuspensionBlockedException;
 import com.klabis.members.legalguardian.application.LegalGuardianNotFoundException;
 import com.klabis.members.legalguardian.domain.LegalGuardianEmailAlreadyInUseException;
@@ -47,6 +49,8 @@ class MembersErrorTypesTest {
         assertError(new GuardianNotFoundException(new UserId(MEMBER_ID.uuid())), "guardian-not-found", Map.of());
         assertError(new LegalGuardianGroupWithoutGuardianException(), "legal-guardian-group-without-guardian", Map.of());
         assertError(new OnlyMinorsAllowedException(MEMBER_ID), "only-minors-allowed", Map.of());
+        assertError(new NotSoleGuardianGroupException(new LegalGuardianGroupId(UUID.randomUUID())),
+                "not-sole-guardian-group", Map.of());
     }
 
     @Test

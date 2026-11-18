@@ -165,4 +165,132 @@ describe('useSuspendMemberAction', () => {
 
         expect(mutate).not.toHaveBeenCalled();
     });
+    describe('whole legal guardian group suspension', () => {
+        it('resubmits the stored request with the chosen cascadeGroupIds', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+            act(() => {
+                result.current.chooseCascade('g1');
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(
+                {url: request.url, data: {...request.data, cascadeGroupIds: ['g1']}},
+                expect.any(Object),
+            );
+        });
+
+        it('does not send cascadeGroupIds when none is chosen', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(request, expect.any(Object));
+        });
+
+        it('drops a cancelled group from the resubmission', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+            act(() => {
+                result.current.chooseCascade('g1');
+            });
+            act(() => {
+                result.current.cancelCascade('g1');
+            });
+            expect(result.current.cascadeGroupIds.size).toBe(0);
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(mutate).toHaveBeenCalledWith(request, expect.any(Object));
+        });
+
+        const legal = {groupId: 'lg', groupName: 'Rodina', groupType: 'LEGAL_GUARDIAN', groupLink: 'http://localhost/api/legal-guardian-groups/lg'};
+        const dependentsOnly409 = () => new ApiError(409, {params: {
+            dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+        }});
+
+        it('keeps the chosen cascade and its row when the resubmission is blocked by dependents', () => {
+            mutate.mockImplementation((_r, opts) => opts.onError(dependentsOnly409()));
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(result.current.cascadeGroupIds.has('lg')).toBe(true);
+            expect(result.current.warning?.groups).toEqual([legal]);
+            expect(result.current.warning?.dependentMembers).toEqual([{memberId: 'k1', memberName: 'Anna Nováková', debt}]);
+        });
+
+        it('does not duplicate a chosen group that the fresh 409 reports again', () => {
+            mutate.mockImplementation((_r, opts) => opts.onError(new ApiError(409, {params: {
+                groups: {affectedGroups: [legal]},
+                dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+            }})));
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.finishSuspension();
+            });
+
+            expect(result.current.warning?.groups).toEqual([legal]);
+        });
+
+        it('starts fresh when a new form submission is blocked', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+            act(() => {
+                result.current.onSubmitError(new ApiError(409, {params: {groups: {affectedGroups: [legal]}}}), request);
+            });
+            act(() => {
+                result.current.chooseCascade('lg');
+            });
+
+            act(() => {
+                result.current.onSubmitError(groups409(), request);
+            });
+
+            expect(result.current.cascadeGroupIds.size).toBe(0);
+            expect(result.current.warning?.groups).toEqual([group]);
+        });
+
+        it('handles a 409 that carries only dependent member blockers', () => {
+            const {result} = renderHook(() => useSuspendMemberAction());
+
+            let handled: true | undefined;
+            act(() => {
+                handled = result.current.onSubmitError(new ApiError(409, {params: {
+                    dependentMembers: [{memberId: 'k1', memberName: 'Anna Nováková', debt}],
+                }}), request);
+            });
+
+            expect(handled).toBe(true);
+            expect(result.current.warning?.dependentMembers).toHaveLength(1);
+        });
+    });
 });

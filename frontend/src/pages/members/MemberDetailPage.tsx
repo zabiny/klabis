@@ -88,6 +88,7 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
     const suspension = useSuspendMemberAction();
     const suspendDialog = useTemplateDialog({
         size: '2xl',
+        note: <p className="text-text-secondary">{labels.suspensionWarning.suspendFormGuardianNote}</p>,
         onSubmitError: suspension.onSubmitError,
     });
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -448,9 +449,13 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
             <SuspensionWarningDialog
                 warning={suspension.warning}
                 resolvedGroupIds={suspension.resolvedGroupIds}
+                cascadeGroupIds={suspension.cascadeGroupIds}
+                suspendedMemberName={`${member.firstName ?? ''} ${member.lastName ?? ''}`.trim()}
                 isFinishing={suspension.isFinishing}
                 onClose={suspension.clearWarning}
                 onGroupResolved={suspension.markGroupResolved}
+                onCascadeChosen={suspension.chooseCascade}
+                onCascadeCancelled={suspension.cancelCascade}
                 onFinish={suspension.finishSuspension}
             />
             {accountActivationDialog.dialog}

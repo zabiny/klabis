@@ -1,4 +1,5 @@
-import {type ReactElement, type ReactNode} from 'react';
+import {type ReactElement, type ReactNode, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router-dom';
 import {Button, Modal} from '../../components/UI';
 import {labels} from '../../localization';
@@ -9,14 +10,18 @@ import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialo
 import {halResource} from '../../api/halResource';
 import type {HalResponse} from '../../api';
 import type {ApiError} from '../../api/apiError';
-import {type AffectedGroup, type NegativeBalanceWarning, type SuspensionBlockedWarning} from './suspensionUtils';
+import {type AffectedGroup, type DependentMemberWarning, type NegativeBalanceWarning, type SuspensionBlockedWarning} from './suspensionUtils';
 
 interface SuspensionWarningDialogProps {
     warning: SuspensionBlockedWarning | null;
     resolvedGroupIds: ReadonlySet<string>;
+    cascadeGroupIds: ReadonlySet<string>;
+    suspendedMemberName: string;
     isFinishing: boolean;
     onClose: () => void;
     onGroupResolved: (groupId: string) => void;
+    onCascadeChosen: (groupId: string) => void;
+    onCascadeCancelled: (groupId: string) => void;
     onFinish: () => void;
 }
 
@@ -118,17 +123,113 @@ const ResolvableGroupRow = ({group, resolved, onResolved, config}: RowProps & {c
     );
 };
 
-const StaticGroupRow = ({group}: Pick<RowProps, 'group'>): ReactElement => (
-    <GroupRowFrame group={group}>
-        <div className="flex gap-2 flex-wrap">
-            <Button variant="primary" size="sm">
-                {labels.suspensionWarning.designateSuccessor}
-            </Button>
-            <Button variant="danger" size="sm">
-                {labels.suspensionWarning.dissolveGroup}
-            </Button>
-        </div>
-    </GroupRowFrame>
+interface LegalGuardianGroupData {
+    minors?: Array<{firstName?: string; lastName?: string}>;
+}
+
+interface LegalGuardianRowProps {
+    group: AffectedGroup;
+    cascaded: boolean;
+    guardianName: string;
+    onChosen: () => void;
+    onCancelled: () => void;
+    onSuccessorRequested: () => void;
+}
+
+const LegalGuardianGroupRow = ({group, cascaded, guardianName, onChosen, onCancelled, onSuccessorRequested}: LegalGuardianRowProps): ReactElement => {
+    const {data, error, isLoading} = useAuthorizedQuery<HalResponse>(group.groupLink, {retry: false});
+    const [confirming, setConfirming] = useState(false);
+    const groupData = data as LegalGuardianGroupData | undefined;
+
+    const groupUnavailable = isLoading || !!error;
+
+    let content: ReactElement;
+    if (cascaded) {
+        content = (
+            <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-green-700">✓ {labels.suspensionWarning.suspendWholeGroupMarked}</span>
+                <Button variant="secondary" size="sm" onClick={onCancelled}>
+                    {labels.suspensionWarning.suspendWholeGroupCancel}
+                </Button>
+            </div>
+        );
+    } else {
+        content = (
+            <div className="flex flex-col gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <Button variant="primary" size="sm" onClick={onSuccessorRequested}>
+                        {labels.suspensionWarning.designateSuccessor}
+                    </Button>
+                    <Button variant="danger" size="sm" disabled={groupUnavailable} onClick={() => setConfirming(true)}>
+                        {labels.suspensionWarning.suspendWholeGroup}
+                    </Button>
+                </div>
+                {isLoading && <span className="text-sm text-text-secondary">{labels.suspensionWarning.loadingGroup}</span>}
+                {!isLoading && error && <span className="text-sm text-red-600">{labels.suspensionWarning.groupLoadFailed}</span>}
+            </div>
+        );
+    }
+
+    return (
+        <GroupRowFrame group={group}>
+            {content}
+            {confirming && createPortal(
+                <Modal isOpen onClose={() => setConfirming(false)} title={labels.suspensionWarning.suspendWholeGroupConfirmTitle} size="md">
+                    <div className="flex flex-col gap-3">
+                        <p className="text-sm text-text-secondary">{labels.suspensionWarning.suspendWholeGroupConfirmText}</p>
+                        <div>
+                            <span className="text-xs text-text-tertiary uppercase">{labels.suspensionWarning.suspendWholeGroupGuardian}</span>
+                            <p className="text-text-primary">{guardianName}</p>
+                        </div>
+                        <div>
+                            <span className="text-xs text-text-tertiary uppercase">{labels.suspensionWarning.suspendWholeGroupMinors}</span>
+                            <ul className="list-disc pl-5 text-text-primary">
+                                {(groupData?.minors ?? []).map((minor, index) => (
+                                    <li key={index}>{[minor.firstName, minor.lastName].filter(Boolean).join(' ')}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="secondary" onClick={() => setConfirming(false)}>
+                                {labels.buttons.cancel}
+                            </Button>
+                            <Button variant="danger" onClick={() => {
+                                setConfirming(false);
+                                onChosen();
+                            }}>
+                                {labels.suspensionWarning.suspendWholeGroupConfirm}
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>,
+                document.body,
+            )}
+        </GroupRowFrame>
+    );
+};
+
+const DependentMembersSection = ({dependents}: {dependents: DependentMemberWarning[]}) => (
+    <div className="flex flex-col gap-3">
+        <h3 className="font-semibold text-text-primary">{labels.suspensionWarning.dependentMembersTitle}</h3>
+        <p className="text-sm text-text-secondary">{labels.suspensionWarning.dependentMembersDescription}</p>
+        <ul className="flex flex-col gap-2">
+            {dependents.map((dependent) => (
+                <li key={dependent.memberId} className="border border-border rounded-md p-3 flex flex-col gap-1">
+                    <span className="font-semibold text-text-primary">{dependent.memberName}</span>
+                    {dependent.debt && (
+                        <span className="text-sm text-red-600">
+                            {labels.suspensionWarning.dependentDebt}: {formatCurrency(dependent.debt.balance.amount, dependent.debt.balance.currency)}
+                        </span>
+                    )}
+                    {(dependent.groups ?? []).map((group) => (
+                        <span key={group.groupId} className="text-sm text-text-secondary">
+                            {labels.suspensionWarning.dependentLastOwner}: {group.groupName}
+                        </span>
+                    ))}
+                </li>
+            ))}
+        </ul>
+    </div>
 );
 
 const DebtSection = ({debt, onOpenAccount}: {debt: NegativeBalanceWarning; onOpenAccount: () => void}) => (
@@ -151,9 +252,13 @@ const DebtSection = ({debt, onOpenAccount}: {debt: NegativeBalanceWarning; onOpe
 export const SuspensionWarningDialog = ({
                                             warning,
                                             resolvedGroupIds,
+                                            cascadeGroupIds,
+                                            suspendedMemberName,
                                             isFinishing,
                                             onClose,
                                             onGroupResolved,
+                                            onCascadeChosen,
+                                            onCascadeCancelled,
                                             onFinish,
                                         }: SuspensionWarningDialogProps): ReactElement | null => {
     const navigate = useNavigate();
@@ -161,7 +266,10 @@ export const SuspensionWarningDialog = ({
 
     const groups = warning.groups ?? [];
     const {debt} = warning;
-    const canFinish = !debt && groups.every(group => resolvedGroupIds.has(group.groupId));
+    // Dependents' blockers belong to the cascade; once it is cancelled they no longer apply.
+    const dependents = cascadeGroupIds.size > 0 ? warning.dependentMembers ?? [] : [];
+    const isResolved = (groupId: string) => resolvedGroupIds.has(groupId) || cascadeGroupIds.has(groupId);
+    const canFinish = !debt && dependents.length === 0 && groups.every(group => isResolved(group.groupId));
 
     const handleOpenAccount = () => {
         if (!debt) return;
@@ -169,7 +277,7 @@ export const SuspensionWarningDialog = ({
         navigate(toRoutePath(debt.accountLink));
     };
 
-    const title = groups.length > 0 ? labels.suspensionWarning.title : labels.negativeBalanceWarning.title;
+    const title = groups.length > 0 || dependents.length > 0 ? labels.suspensionWarning.title : labels.negativeBalanceWarning.title;
 
     return (
         <Modal isOpen onClose={onClose} title={title} size="lg">
@@ -179,19 +287,34 @@ export const SuspensionWarningDialog = ({
                         <p className="text-sm text-text-secondary">{labels.suspensionWarning.description}</p>
                         <ul className="flex flex-col gap-3">
                             {groups.map((group) => {
+                                if (group.groupType === 'LEGAL_GUARDIAN') {
+                                    return (
+                                        <LegalGuardianGroupRow
+                                            key={group.groupId}
+                                            group={group}
+                                            cascaded={cascadeGroupIds.has(group.groupId)}
+                                            guardianName={suspendedMemberName}
+                                            onChosen={() => onCascadeChosen(group.groupId)}
+                                            onCancelled={() => onCascadeCancelled(group.groupId)}
+                                            onSuccessorRequested={() => {
+                                                onClose();
+                                                navigate(toRoutePath(group.groupLink));
+                                            }}
+                                        />
+                                    );
+                                }
                                 const rowProps = {
                                     group,
                                     resolved: resolvedGroupIds.has(group.groupId),
                                     onResolved: () => onGroupResolved(group.groupId),
                                 };
-                                if (group.groupType === 'TRAINING' || group.groupType === 'FREE') {
-                                    return <ResolvableGroupRow key={group.groupId} config={RESOLVABLE_GROUPS[group.groupType]} {...rowProps}/>;
-                                }
-                                return <StaticGroupRow key={group.groupId} group={group}/>;
+                                return <ResolvableGroupRow key={group.groupId} config={RESOLVABLE_GROUPS[group.groupType]} {...rowProps}/>;
                             })}
                         </ul>
                     </>
                 )}
+
+                {dependents.length > 0 && <DependentMembersSection dependents={dependents}/>}
 
                 {debt && <DebtSection debt={debt} onOpenAccount={handleOpenAccount}/>}
 

@@ -179,6 +179,56 @@ class LegalGuardianGroupServiceTest {
     }
 
     @Nested
+    @DisplayName("removeGuardianFromGroupsWithOtherGuardians()")
+    class RemoveGuardianFromGroupsWithOtherGuardians {
+
+        @Test
+        @DisplayName("removes the guardian from groups that keep another guardian and renames them")
+        void removesAndRenames() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK, SVOBODOVA), CHILD_A);
+
+            service.removeGuardianFromGroupsWithOtherGuardians(NOVAK.userId());
+
+            LegalGuardianGroup saved = groups.findById(group.getId()).orElseThrow();
+            assertThat(saved.getGuardians()).isEqualTo(ids(SVOBODOVA));
+            assertThat(saved.getName()).isEqualTo("Svobodová");
+        }
+
+        @Test
+        @DisplayName("merges into the group that already has exactly the remaining guardians")
+        void mergesWithExistingGroup() {
+            LegalGuardianGroup source = groupOf(Set.of(NOVAK, SVOBODOVA), CHILD_A);
+            LegalGuardianGroup existing = groupOf(Set.of(SVOBODOVA), CHILD_B);
+
+            service.removeGuardianFromGroupsWithOtherGuardians(NOVAK.userId());
+
+            assertThat(groups.findById(source.getId())).isEmpty();
+            assertThat(groups.findById(existing.getId()).orElseThrow().getMinors())
+                    .extracting(m -> m.memberId()).containsExactlyInAnyOrder(CHILD_A, CHILD_B);
+        }
+
+        @Test
+        @DisplayName("leaves a group in which the guardian is the sole guardian untouched")
+        void leavesSoleGuardianGroup() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK), CHILD_A);
+
+            service.removeGuardianFromGroupsWithOtherGuardians(NOVAK.userId());
+
+            assertThat(groups.findById(group.getId()).orElseThrow().getGuardians()).isEqualTo(ids(NOVAK));
+        }
+
+        @Test
+        @DisplayName("leaves groups of other guardians untouched")
+        void leavesOtherGroups() {
+            LegalGuardianGroup group = groupOf(Set.of(SVOBODOVA, DVORAK), CHILD_A);
+
+            service.removeGuardianFromGroupsWithOtherGuardians(NOVAK.userId());
+
+            assertThat(groups.findById(group.getId()).orElseThrow().getGuardians()).isEqualTo(ids(SVOBODOVA, DVORAK));
+        }
+    }
+
+    @Nested
     @DisplayName("setGuardiansOf()")
     class SetGuardiansOf {
 

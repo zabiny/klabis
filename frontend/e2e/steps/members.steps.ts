@@ -1,5 +1,6 @@
 import {expect, type Locator, type Page} from '@playwright/test';
-import {createBdd} from 'playwright-bdd';
+import {createBdd, type DataTable} from 'playwright-bdd';
+import {scenarioPrefix} from '../support/parameters';
 import {test, type ApiClient} from '../support/fixtures';
 import {type Linked, memberIdentity} from '../support/halApi';
 import {addGroupMember, createFreeGroup, deleteGroup} from '../support/groupsApi';
@@ -7,7 +8,7 @@ import {minorDateOfBirth} from '../support/dates';
 import {createTrainingGroup, findMemberPath, guardianEmail, registerMember, REGISTERED_FIRST_NAME, registrationBody} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import type {Role} from '../support/roles';
-import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, select, submit} from '../support/ui';
+import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, section, select, submit} from '../support/ui';
 
 const {Given, When, Then, After} = createBdd(test);
 
@@ -28,7 +29,9 @@ export const searchMembers = async (page: Page, text: string, status?: string) =
 
 // Table rows are exposed as buttons named "Row <n>" (a11y follow-up).
 const namedMemberRow = (page: Page, firstName: string, lastName: string) =>
-    page.getByRole('button', {name: /^Row \d+$/}).filter({hasText: lastName}).filter({hasText: firstName});
+    page.getByRole('button', {name: /^Row \d+$/})
+        .filter({has: page.getByRole('cell', {name: lastName, exact: true})})
+        .filter({has: page.getByRole('cell', {name: firstName, exact: true})});
 
 export const memberRow = (page: Page, lastName: string) => namedMemberRow(page, REGISTERED_FIRST_NAME, lastName);
 
@@ -396,4 +399,39 @@ Then('member {name} is still active', async ({page}, lastName: string) => {
     await openMemberDetail(page, lastName, 'Vše');
     await expect(page.getByText('Aktivní', {exact: true}).first()).toBeVisible();
     await expect(page.getByText('Neaktivní', {exact: true})).toHaveCount(0);
+});
+
+const suspendWithWholeGroup = async (page: Page, lastName: string) => {
+    const warning = await startSuspension(page, REGISTERED_FIRST_NAME, lastName);
+    await action(warning.getByRole('listitem').filter({hasText: 'Skupina zákonných zástupců'}), 'Pozastavit celou skupinu').click();
+    await action(page.getByRole('dialog').last(), 'Potvrdit').click();
+    await expect(warning.getByText('Skupina bude pozastavena společně s členem')).toBeVisible();
+    return warning;
+};
+
+When('{persona} suspends member {name} together with the whole legal guardian group', async ({page, actAs}, persona: Persona, lastName: string) => {
+    await actAs(persona);
+    await suspendWithWholeGroup(page, lastName);
+    await submit(page, 'Ukončit členství');
+});
+
+When('{persona} attempts to suspend member {name} together with the whole legal guardian group', async ({page, actAs}, persona: Persona, lastName: string) => {
+    await actAs(persona);
+    await suspendWithWholeGroup(page, lastName);
+    await action(page.getByRole('dialog', {name: WARNING}), 'Ukončit členství').click();
+});
+
+Then('these members are suspended because of {string}:', async ({page}, reason: string, table: DataTable) => {
+    for (const [name] of table.raw()) {
+        await openMemberDetail(page, `${scenarioPrefix()}${name}`, 'Vše');
+        await expect(heading(page, 'DEAKTIVACE')).toBeVisible();
+        await expect(section(page, 'DEAKTIVACE').getByText(reason, {exact: true})).toBeVisible();
+    }
+});
+
+Then('the whole-group suspension is blocked because member {name} has a negative balance of {int} CZK', async ({page}, lastName: string, balance: number) => {
+    const warning = page.getByRole('dialog', {name: WARNING});
+    const dependent = warning.getByRole('listitem').filter({hasText: `${REGISTERED_FIRST_NAME} ${lastName}`});
+    await expect(dependent.getByText(czechAmount(balance))).toBeVisible();
+    await expect(action(warning, 'Ukončit členství')).toHaveCount(0);
 });

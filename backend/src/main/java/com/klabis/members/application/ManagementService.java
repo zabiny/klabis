@@ -1,5 +1,9 @@
 package com.klabis.members.application;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.exceptions.InsufficientAuthorityException;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
@@ -9,6 +13,7 @@ import com.klabis.members.OwnedGroup;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ManagementService implements ManagementPort {
@@ -32,18 +39,24 @@ public class ManagementService implements ManagementPort {
     private final MemberFinancialStatePort memberFinancialStatePort;
     private final List<MemberOwnedGroupsPort> memberOwnedGroupsPorts;
     private final MemberCompletenessPort memberCompletenessPort;
+    private final LegalGuardianCascadePort legalGuardianCascadePort;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
     public ManagementService(MemberRepository memberRepository, UserService userService,
                              ApplicationEventPublisher eventPublisher,
                              Optional<MemberFinancialStatePort> memberFinancialStatePort,
                              List<MemberOwnedGroupsPort> memberOwnedGroupsPorts,
-                             MemberCompletenessPort memberCompletenessPort) {
+                             MemberCompletenessPort memberCompletenessPort,
+                             LegalGuardianCascadePort legalGuardianCascadePort,
+                             AuthorizationEvaluator authorizationEvaluator) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.eventPublisher = eventPublisher;
         this.memberFinancialStatePort = memberFinancialStatePort.orElseGet(NoOpMemberFinancialStatePort::new);
         this.memberOwnedGroupsPorts = memberOwnedGroupsPorts;
         this.memberCompletenessPort = memberCompletenessPort;
+        this.legalGuardianCascadePort = legalGuardianCascadePort;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Transactional(readOnly = true)
@@ -86,25 +99,30 @@ public class ManagementService implements ManagementPort {
 
     @Transactional
     @Override
-    public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
+    public Member suspendMember(MemberId memberId, Member.SuspendMembership command,
+                                Set<LegalGuardianGroupId> cascadeGroupIds) {
         Member member = loadMember(memberId);
+        List<Member> minors = loadActiveCascadedMinors(memberId, cascadeGroupIds);
 
-        List<OwnedGroup> blockingGroups = memberOwnedGroupsPorts.stream()
-                .flatMap(port -> port.findGroupsBlockingSuspension(memberId).stream())
+        Blockers own = blockersOf(memberId, cascadeGroupIds);
+        List<SuspensionBlockedException.DependentBlockers> dependents = minors.stream()
+                .map(this::dependentBlockersOf)
+                .filter(dependent -> !dependent.blockingGroups().isEmpty() || dependent.debtSnapshot() != null)
                 .toList();
-
-        MemberFinancialStatePort.MemberFinancialSnapshot snapshot = memberFinancialStatePort.getFinancialSnapshot(memberId);
-
-        boolean hasBlockingGroups = !blockingGroups.isEmpty();
-        boolean hasOutstandingDebt = snapshot.hasOutstandingDebt();
-        if (hasBlockingGroups || hasOutstandingDebt) {
-            throw new SuspensionBlockedException(
-                    blockingGroups,
-                    hasOutstandingDebt ? snapshot : null);
+        if (!own.isEmpty() || !dependents.isEmpty()) {
+            throw new SuspensionBlockedException(own.groups(), own.debt(), dependents);
         }
 
-        log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());
+        log.info("Processing membership suspension: memberId={}, reason={}, cascadedMinors={}",
+                memberId, command.reason(), minors.size());
 
+        Member saved = suspend(member, command);
+        minors.forEach(minor -> suspend(minor, command));
+
+        return saved;
+    }
+
+    private Member suspend(Member member, Member.SuspendMembership command) {
         member.suspend(command);
 
         Member saved = memberRepository.save(member);
@@ -115,6 +133,47 @@ public class ManagementService implements ManagementPort {
                 saved.getId(), saved.getSuspendedAt(), command.suspendedBy());
 
         return saved;
+    }
+
+    private List<Member> loadActiveCascadedMinors(MemberId guardian, Set<LegalGuardianGroupId> cascadeGroupIds) {
+        if (cascadeGroupIds.isEmpty()) {
+            return List.of();
+        }
+        List<Member> minors = legalGuardianCascadePort.minorsOfSoleGuardianGroups(guardian, cascadeGroupIds).stream()
+                .map(this::loadMember)
+                .toList();
+        minors.forEach(minor -> {
+            if (!authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(minor.getId().uuid()))) {
+                throw new InsufficientAuthorityException(Authority.MEMBERS_MANAGE.name());
+            }
+        });
+        return minors.stream().filter(Member::isActive).toList();
+    }
+
+    private SuspensionBlockedException.DependentBlockers dependentBlockersOf(Member minor) {
+        Blockers blockers = blockersOf(minor.getId(), Set.of());
+        return new SuspensionBlockedException.DependentBlockers(minor.getId(),
+                minor.getFirstName() + " " + minor.getLastName(), blockers.groups(), blockers.debt());
+    }
+
+    /**
+     * Legal guardian groups that are suspended along with the member do not block: their minors are not left
+     * without a guardian.
+     */
+    private Blockers blockersOf(MemberId memberId, Set<LegalGuardianGroupId> cascadeGroupIds) {
+        Set<String> cascaded = cascadeGroupIds.stream().map(id -> id.uuid().toString()).collect(Collectors.toSet());
+        List<OwnedGroup> blockingGroups = memberOwnedGroupsPorts.stream()
+                .flatMap(port -> port.findGroupsBlockingSuspension(memberId).stream())
+                .filter(group -> !cascaded.contains(group.groupId()))
+                .toList();
+        var snapshot = memberFinancialStatePort.getFinancialSnapshot(memberId);
+        return new Blockers(blockingGroups, snapshot.hasOutstandingDebt() ? snapshot : null);
+    }
+
+    private record Blockers(List<OwnedGroup> groups, MemberFinancialStatePort.MemberFinancialSnapshot debt) {
+        boolean isEmpty() {
+            return groups.isEmpty() && debt == null;
+        }
     }
 
     @Transactional

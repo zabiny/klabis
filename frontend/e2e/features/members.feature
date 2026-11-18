@@ -126,3 +126,23 @@ Feature: Members
       Given Tomáš is the only owner of the free group "Samotari"
       When Jan suspends Tomáš
       Then the warning offers to dissolve the free group "Samotari" but not to designate a successor
+
+  Rule: Suspending the sole legal guardian of minors can suspend the whole legal guardian group
+
+    Scenario: Admin suspends the whole legal guardian group
+      Given member "Zastupce" is registered
+      And member "Zastupce" is the only legal guardian of minors "Prvni" and "Druhy"
+      When Jan suspends member "Zastupce" together with the whole legal guardian group
+      Then these members are suspended because of "Odhlášení":
+        | Zastupce |
+        | Prvni    |
+        | Druhy    |
+
+    Scenario: Whole-group suspension blocked by a minor's negative balance
+      Given member "Zastupce" is registered
+      And member "Zastupce" is the only legal guardian of minor "Dluznik"
+      And the account of member "Dluznik" is overdrawn by 150 CZK
+      When Jan attempts to suspend member "Zastupce" together with the whole legal guardian group
+      Then the whole-group suspension is blocked because member "Dluznik" has a negative balance of -150 CZK
+      And member "Zastupce" is still active
+      And member "Dluznik" is still active

@@ -297,6 +297,7 @@ describe('labels.errorTypes members, events and calendar', () => {
         ['/errors/medical-course-validity-not-after-completion', 'Platnost zdravotního kurzu musí být později než datum jeho absolvování.'],
         ['/errors/member-already-suspended', 'Člen je již pozastaven.'],
         ['/errors/member-already-active', 'Člen je již aktivní.'],
+        ['/errors/not-sole-guardian-group', 'Skupinu lze pozastavit společně se zástupcem jen tehdy, když je zástupce jejím jediným zákonným zástupcem.'],
         ['/errors/suspension-blocked', 'Členství nelze pozastavit, dokud není vyřešeno vlastnictví skupin nebo dluh člena.'],
         ['/errors/adult-member-cannot-have-guardians', 'Zletilý člen nemůže mít zákonné zástupce.'],
         ['/errors/minor-cannot-take-over-guardian', 'Nezletilý člen nemůže převzít roli zákonného zástupce.'],
