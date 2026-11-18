@@ -1277,8 +1277,9 @@ components:
     LastOwnerWarning:
       type: object
       description: |
-        The member is the sole owner of the listed groups. Each one needs another owner (or must be
-        dissolved) before the suspension can go through.
+        The member is the sole owner, trainer or guardian of the listed groups. Each free and training
+        group needs another owner/trainer (free groups may instead be dissolved) before the suspension
+        can go through.
       required: [affectedGroups]
       properties:
         affectedGroups:
@@ -1288,7 +1289,8 @@ components:
 
     AffectedGroup:
       type: object
-      required: [groupId, groupName, groupType]
+      description: A group the suspended member is the last owner, trainer or guardian of.
+      required: [groupId, groupName, groupType, groupLink]
       properties:
         groupId:
           type: string
@@ -1298,7 +1300,15 @@ components:
         groupType:
           type: string
           enum: [FREE, LEGAL_GUARDIAN, TRAINING]
-          description: Which of the three group aggregates the member owns
+          description: Which of the three group aggregates the member is the last owner of
+        groupLink:
+          type: string
+          format: uri
+          description: |
+            Absolute URL of the group resource (`GET /api/groups/{id}`, `/api/training-groups/{id}` or
+            `/api/legal-guardian-groups/{id}` by `groupType`). Its HAL-FORMS templates tell the client
+            which resolution actions (e.g. `addTrainer`, `addGroupOwner`, `deleteGroup`) the current
+            user may perform; a 403 means the user has no authority over the group.
 
     MonetaryAmount:
       type: object

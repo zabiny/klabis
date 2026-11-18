@@ -1,49 +1,65 @@
 import {useState} from "react";
-import {type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {type NegativeBalanceWarning, parseSuspensionBlockedWarning409} from "./suspensionUtils.ts";
+import {useAuthorizedMutation} from "../../hooks/useAuthorizedFetch";
+import {useToast} from "../../contexts/toastContext";
+import {describeError, labels, savedMessage} from "../../localization";
+import type {SubmittedRequest} from "../../components/HalNavigator2/HalFormDisplay.tsx";
+import {parseSuspensionBlockedWarning409, type SuspensionBlockedWarning} from "./suspensionUtils.ts";
 
 export interface UseSuspendMemberActionResult {
-    suspensionWarning: AffectedGroup[] | null;
-    negativeBalanceWarning: NegativeBalanceWarning | null;
-    clearSuspensionWarning: () => void;
-    clearNegativeBalanceWarning: () => void;
+    warning: SuspensionBlockedWarning | null;
+    resolvedGroupIds: ReadonlySet<string>;
+    isFinishing: boolean;
+    clearWarning: () => void;
+    markGroupResolved: (groupId: string) => void;
+    finishSuspension: () => void;
     /** Compatible with HalFormDisplay onSubmitError. Returns true when the error is handled. */
-    onSubmitError: (error: unknown) => true | undefined;
+    onSubmitError: (error: unknown, request?: SubmittedRequest) => true | undefined;
 }
 
 /**
- * Encapsulates 409-error handling for the suspend-member action.
+ * Handles the 409 of the suspend-member action: one warning carries every blocking reason
+ * (debt and groups), the last request is kept so the dialog can resubmit it once the groups are resolved.
+ * Returning true tells HalFormDisplay to close the suspension form.
  *
- * The 409 body can carry a debt blocker, a group-ownership blocker, or both at once
- * (independent conditions on the backend). Both dialogs are rendered unconditionally
- * by the caller (gated on their own null state), so setting both warning states here
- * opens both dialogs simultaneously. Returning true tells HalFormDisplay to close the action dialog.
- *
- * Unknown errors (non-409, or 409 with unexpected body) return undefined so that
- * HalFormDisplay falls back to its default error-toast handling.
+ * Unknown errors return undefined so that HalFormDisplay falls back to its default error handling.
  */
 export const useSuspendMemberAction = (): UseSuspendMemberActionResult => {
-    const [suspensionWarning, setSuspensionWarning] = useState<AffectedGroup[] | null>(null);
-    const [negativeBalanceWarning, setNegativeBalanceWarning] = useState<NegativeBalanceWarning | null>(null);
+    const [warning, setWarning] = useState<SuspensionBlockedWarning | null>(null);
+    const [request, setRequest] = useState<SubmittedRequest | null>(null);
+    const [resolvedGroupIds, setResolvedGroupIds] = useState<ReadonlySet<string>>(new Set());
+    const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
+    const {addToast} = useToast();
 
-    const onSubmitError = (error: unknown): true | undefined => {
+    const onSubmitError = (error: unknown, submitted?: SubmittedRequest): true | undefined => {
         const blocked = parseSuspensionBlockedWarning409(error);
         if (!blocked) return undefined;
 
-        if (blocked.debt) {
-            setNegativeBalanceWarning(blocked.debt);
-        }
-        if (blocked.groups) {
-            setSuspensionWarning(blocked.groups);
-        }
+        setWarning(blocked);
+        setResolvedGroupIds(new Set());
+        setRequest(submitted ?? null);
         return true;
     };
 
+    const finishSuspension = () => {
+        if (!request) return;
+        mutate(request, {
+            onSuccess: () => {
+                setWarning(null);
+                addToast(savedMessage({title: labels.templates.suspendMember}), 'success');
+            },
+            onError: (error: unknown) => {
+                if (!onSubmitError(error, request)) addToast(describeError(error), 'error');
+            },
+        });
+    };
+
     return {
-        suspensionWarning,
-        negativeBalanceWarning,
-        clearSuspensionWarning: () => setSuspensionWarning(null),
-        clearNegativeBalanceWarning: () => setNegativeBalanceWarning(null),
+        warning,
+        resolvedGroupIds,
+        isFinishing: isPending,
+        clearWarning: () => setWarning(null),
+        markGroupResolved: (groupId) => setResolvedGroupIds(prev => new Set(prev).add(groupId)),
+        finishSuspension,
         onSubmitError,
     };
 };

@@ -1160,6 +1160,11 @@ export const labels = {
         groupTypeTrainingGroup: 'Tréninková skupina',
         groupTypeLegalGuardianGroup: 'Skupina zákonných zástupců',
         groupTypeFreeGroup: 'Volná skupina',
+        resolved: 'Vyřešeno',
+        finishSuspension: 'Ukončit členství',
+        loadingGroup: 'Načítám skupinu…',
+        groupLoadFailed: 'Skupinu se nepodařilo načíst.',
+        contactTrainingGroupAdmin: 'Nástupce může určit pouze správce tréninkových skupin. Obraťte se na něj.',
     },
 
     negativeBalanceWarning: {

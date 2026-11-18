@@ -2509,7 +2509,8 @@ class MemberControllerApiTest {
         void shouldReturn409WhenMemberIsLastGroupOwner() throws Exception {
             UUID memberId = UUID.randomUUID();
             List<OwnedGroup> groups = List.of(
-                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE",
+                            java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
@@ -2526,7 +2527,33 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.groups.affectedGroups").isArray())
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value("FREE"))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupLink").value(
+                            "http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
                     .andExpect(jsonPath("$.debt").doesNotExist());
+        }
+
+        @org.junit.jupiter.params.ParameterizedTest(name = "{0} group link is exposed in 409 body")
+        @org.junit.jupiter.params.provider.CsvSource({
+                "TRAINING, http://localhost/api/training-groups/dddddddd-dddd-dddd-dddd-dddddddddddd",
+                "LEGAL_GUARDIAN, http://localhost/api/legal-guardian-groups/dddddddd-dddd-dddd-dddd-dddddddddddd"
+        })
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeGroupLinkForEveryGroupType(String groupType, String link) throws Exception {
+            UUID memberId = UUID.randomUUID();
+            List<OwnedGroup> groups = List.of(
+                    new OwnedGroup("dddddddd-dddd-dddd-dddd-dddddddddddd", "Žáci", groupType, java.net.URI.create(link)));
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
+                    .thenThrow(new SuspensionBlockedException(groups, null));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value(groupType))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupLink").value(link));
         }
 
         @Test
@@ -2562,7 +2589,8 @@ class MemberControllerApiTest {
         void shouldReturn409WithBothBlockersWhenBothApply() throws Exception {
             UUID memberId = UUID.randomUUID();
             List<OwnedGroup> groups = List.of(
-                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE",
+                            java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
             );
             var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
                     new MemberId(memberId),

@@ -1,113 +1,247 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import React from 'react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SuspensionWarningDialog} from './SuspensionWarningDialog';
-import {vi} from 'vitest';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
+import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {labels} from '../../localization';
+import type {AffectedGroup, SuspensionBlockedWarning} from './suspensionUtils';
 
-describe('SuspensionWarningDialog (task 6.7)', () => {
-    const baseProps = {
-        isOpen: true,
-        onClose: vi.fn(),
-        affectedGroups: [
-            {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
-        ],
-    };
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
+    useNavigate: () => mockNavigate,
+}));
 
+vi.mock('../../hooks/useAuthorizedFetch', () => ({
+    useAuthorizedQuery: vi.fn(),
+    useAuthorizedMutation: vi.fn(() => ({mutate: vi.fn(), isPending: false, error: null})),
+}));
+
+vi.mock('../../hooks/useHalFormData', () => ({
+    useHalFormData: (_t: unknown, resourceData: Record<string, unknown>) => ({
+        formData: resourceData ?? {},
+        isLoadingTargetData: false,
+        targetFetchError: null,
+        refetchTargetData: vi.fn(),
+    }),
+}));
+
+vi.mock('../../components/UI/Modal.tsx', () => ({
+    Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title?: string}) =>
+        isOpen ? <div role="dialog" aria-label={title}>{children}</div> : null,
+}));
+
+const trainingGroup: AffectedGroup = {groupId: 'g-3', groupName: 'U10 Závoďáci', groupType: 'TRAINING', groupLink: 'http://localhost/api/training-groups/g-3'};
+const otherTrainingGroup: AffectedGroup = {groupId: 'g-4', groupName: 'U12 Závoďáci', groupType: 'TRAINING', groupLink: 'http://localhost/api/training-groups/g-4'};
+const freeGroup: AffectedGroup = {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE', groupLink: 'http://localhost/api/groups/g-1'};
+const legalGroup: AffectedGroup = {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN', groupLink: 'http://localhost/api/legal-guardian-groups/g-2'};
+const debt = {balance: {amount: -250, currency: 'CZK'}, accountLink: '/api/members/abc-123/account'};
+
+const groupResource = (templates: Record<string, unknown>) => ({
+    _links: {self: {href: 'http://localhost/api/training-groups/g-3'}},
+    _templates: templates,
+});
+const addTrainer = mockHalFormsTemplate({method: 'POST', target: '/api/training-groups/g-3/trainers', title: 'Přidat trenéra', properties: []});
+const deleteTrainingGroup = mockHalFormsTemplate({method: 'DELETE', target: '/api/training-groups/g-3', properties: []});
+
+const mockGroupQueries = (byUrl: Record<string, {data?: unknown; error?: unknown; isLoading?: boolean}>) => {
+    vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) =>
+        ({data: undefined, error: null, isLoading: false, ...(url ? byUrl[url] : {})})) as unknown as typeof useAuthorizedQuery);
+};
+
+const defaultProps = () => ({
+    warning: {groups: [trainingGroup], debt: null} as SuspensionBlockedWarning | null,
+    resolvedGroupIds: new Set<string>() as ReadonlySet<string>,
+    isFinishing: false,
+    onClose: vi.fn(),
+    onGroupResolved: vi.fn(),
+    onFinish: vi.fn(),
+});
+
+const renderDialog = (overrides: Partial<ReturnType<typeof defaultProps>> = {}) => {
+    const props = {...defaultProps(), ...overrides};
+    render(
+        <QueryClientProvider client={new QueryClient()}>
+            <MemoryRouter>
+                <SuspensionWarningDialog {...props}/>
+            </MemoryRouter>
+        </QueryClientProvider>
+    );
+    return props;
+};
+
+describe('SuspensionWarningDialog', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockGroupQueries({[trainingGroup.groupLink]: {data: groupResource({addTrainer})}});
     });
 
-    it('renders dialog title when open', () => {
-        render(<SuspensionWarningDialog {...baseProps}/>);
-        expect(screen.getByText('Varování: Správce skupin')).toBeInTheDocument();
+    it('renders nothing without a warning', () => {
+        renderDialog({warning: null});
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('renders description text', () => {
-        render(<SuspensionWarningDialog {...baseProps}/>);
+    it('renders title, description and group names', () => {
+        renderDialog({warning: {groups: [trainingGroup, freeGroup], debt: null}});
+        expect(screen.getByRole('dialog', {name: labels.suspensionWarning.title})).toBeInTheDocument();
         expect(screen.getByText(/posledním správcem/i)).toBeInTheDocument();
-    });
-
-    it('renders affected group names', () => {
-        render(<SuspensionWarningDialog {...baseProps}/>);
+        expect(screen.getByText('U10 Závoďáci')).toBeInTheDocument();
         expect(screen.getByText('Trail Runners')).toBeInTheDocument();
     });
 
-    it('shows "Určit nástupce" and "Rozpustit skupinu" for FreeGroup', () => {
-        render(<SuspensionWarningDialog {...baseProps}/>);
-        expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
-    });
-
-    it('shows "Určit nástupce" and "Rozpustit skupinu" for Skupina zástupců', () => {
-        const props = {
-            ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'}],
-        };
-        render(<SuspensionWarningDialog {...props}/>);
-        expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
-    });
-
-    it('shows only "Určit nástupce" for TrainingGroup (no dissolve option)', () => {
-        const props = {
-            ...baseProps,
-            affectedGroups: [{groupId: 'g-3', groupName: 'U10 Závoďáci', groupType: 'TRAINING'}],
-        };
-        render(<SuspensionWarningDialog {...props}/>);
-        expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /rozpustit skupinu/i})).not.toBeInTheDocument();
-    });
-
-    it('shows human-readable group type label for FreeGroup', () => {
-        render(<SuspensionWarningDialog {...baseProps}/>);
-        expect(screen.getByText('Volná skupina')).toBeInTheDocument();
-    });
-
-    it('shows human-readable group type label for TrainingGroup', () => {
-        const props = {
-            ...baseProps,
-            affectedGroups: [{groupId: 'g-3', groupName: 'U10', groupType: 'TRAINING'}],
-        };
-        render(<SuspensionWarningDialog {...props}/>);
+    it('shows human-readable group type labels', () => {
+        renderDialog({warning: {groups: [trainingGroup, freeGroup, legalGroup], debt: null}});
         expect(screen.getByText('Tréninková skupina')).toBeInTheDocument();
-    });
-
-    it('shows human-readable group type label for Skupina zástupců', () => {
-        const props = {
-            ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Novákovi', groupType: 'LEGAL_GUARDIAN'}],
-        };
-        render(<SuspensionWarningDialog {...props}/>);
+        expect(screen.getByText('Volná skupina')).toBeInTheDocument();
         expect(screen.getByText('Skupina zákonných zástupců')).toBeInTheDocument();
     });
 
-    it('renders multiple affected groups', () => {
-        const props = {
-            ...baseProps,
-            affectedGroups: [
-                {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
-                {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'},
-                {groupId: 'g-3', groupName: 'U10', groupType: 'TRAINING'},
-            ],
-        };
-        render(<SuspensionWarningDialog {...props}/>);
-        expect(screen.getByText('Trail Runners')).toBeInTheDocument();
-        expect(screen.getByText('Rodina Novákových')).toBeInTheDocument();
-        expect(screen.getByText('U10')).toBeInTheDocument();
+    it('requests the group resource from its groupLink', () => {
+        renderDialog();
+        expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(trainingGroup.groupLink, expect.anything());
     });
 
-    it('calls onClose when close button is clicked', () => {
-        const onClose = vi.fn();
-        render(<SuspensionWarningDialog {...baseProps} onClose={onClose}/>);
-        fireEvent.click(screen.getByRole('button', {name: /zrušit/i}));
-        expect(onClose).toHaveBeenCalledTimes(1);
+    describe('training group row', () => {
+        it('offers "Určit nástupce" when the group offers addTrainer', () => {
+            renderDialog();
+            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
+        });
+
+        it('does not offer "Určit nástupce" without addTrainer', () => {
+            mockGroupQueries({[trainingGroup.groupLink]: {data: groupResource({})}});
+            renderDialog();
+            expect(screen.queryByRole('button', {name: /určit nástupce/i})).not.toBeInTheDocument();
+        });
+
+        it('never offers "Rozpustit skupinu", even when deleteTrainingGroup is offered', () => {
+            mockGroupQueries({[trainingGroup.groupLink]: {data: groupResource({addTrainer, deleteTrainingGroup})}});
+            renderDialog();
+            expect(screen.queryByRole('button', {name: /rozpustit skupinu/i})).not.toBeInTheDocument();
+        });
+
+        it('shows the training-groups-administrator contact text on 403', () => {
+            mockGroupQueries({[trainingGroup.groupLink]: {error: new ApiError(403)}});
+            renderDialog();
+            expect(screen.getByText(/správce tréninkových skupin/i)).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /určit nástupce/i})).not.toBeInTheDocument();
+        });
+
+        it('shows a load error for other failures', () => {
+            mockGroupQueries({[trainingGroup.groupLink]: {error: new ApiError(500)}});
+            renderDialog();
+            expect(screen.getByText(labels.suspensionWarning.groupLoadFailed)).toBeInTheDocument();
+        });
+
+        it('opens the addTrainer form from "Určit nástupce"', () => {
+            renderDialog();
+            fireEvent.click(screen.getByRole('button', {name: /určit nástupce/i}));
+            expect(screen.getByRole('dialog', {name: 'Přidat trenéra'})).toBeInTheDocument();
+        });
+
+        it('shows the resolved marker and hides the actions for a resolved row', () => {
+            renderDialog({resolvedGroupIds: new Set([trainingGroup.groupId])});
+            expect(screen.getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /určit nástupce/i})).not.toBeInTheDocument();
+        });
     });
 
-    it('renders nothing when isOpen is false', () => {
-        render(<SuspensionWarningDialog {...baseProps} isOpen={false}/>);
-        expect(screen.queryByText('Varování: Správce skupin')).not.toBeInTheDocument();
+    describe('other group types keep their current actions', () => {
+        it('shows both actions for a free group', () => {
+            renderDialog({warning: {groups: [freeGroup], debt: null}});
+            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
+        });
+
+        it('shows both actions for a legal guardian group', () => {
+            renderDialog({warning: {groups: [legalGroup], debt: null}});
+            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
+        });
     });
 
-    // Buttons render but have no onClick handler yet.
-    it.todo('"Určit nástupce" starts designating a successor for the group');
-    it.todo('"Rozpustit skupinu" dissolves the group');
+    describe('"Ukončit členství"', () => {
+        it('is absent while a group is unresolved', () => {
+            renderDialog();
+            expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
+        });
+
+        it('is shown when all groups are resolved and resubmits on click', () => {
+            const props = renderDialog({resolvedGroupIds: new Set([trainingGroup.groupId])});
+            fireEvent.click(screen.getByRole('button', {name: labels.suspensionWarning.finishSuspension}));
+            expect(props.onFinish).toHaveBeenCalledTimes(1);
+        });
+
+        it('stays absent while only some of several groups are resolved', () => {
+            mockGroupQueries({
+                [trainingGroup.groupLink]: {data: groupResource({addTrainer})},
+                [otherTrainingGroup.groupLink]: {data: groupResource({addTrainer})},
+            });
+            renderDialog({
+                warning: {groups: [trainingGroup, otherTrainingGroup], debt: null},
+                resolvedGroupIds: new Set([trainingGroup.groupId]),
+            });
+            expect(screen.getAllByText(new RegExp(labels.suspensionWarning.resolved))).toHaveLength(1);
+            expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
+        });
+
+        it('appears once every one of several groups is resolved', () => {
+            mockGroupQueries({
+                [trainingGroup.groupLink]: {data: groupResource({addTrainer})},
+                [otherTrainingGroup.groupLink]: {data: groupResource({addTrainer})},
+            });
+            renderDialog({
+                warning: {groups: [trainingGroup, otherTrainingGroup], debt: null},
+                resolvedGroupIds: new Set([trainingGroup.groupId, otherTrainingGroup.groupId]),
+            });
+            expect(screen.getByRole('button', {name: labels.suspensionWarning.finishSuspension})).toBeInTheDocument();
+        });
+    });
+
+    describe('negative balance in the same dialog', () => {
+        it('shows the balance and the account link next to the groups in one dialog', () => {
+            renderDialog({warning: {groups: [trainingGroup], debt}});
+            expect(screen.getAllByRole('dialog')).toHaveLength(1);
+            expect(screen.getByText(labels.negativeBalanceWarning.currentBalance, {exact: false})).toBeInTheDocument();
+            expect(screen.getByText(/250/)).toBeInTheDocument();
+            expect(screen.getByText('U10 Závoďáci')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: labels.negativeBalanceWarning.openAccount})).toBeInTheDocument();
+        });
+
+        it('debt-only warning shows the balance and the account link without groups', () => {
+            renderDialog({warning: {groups: null, debt}});
+            expect(screen.getByRole('dialog', {name: labels.negativeBalanceWarning.title})).toBeInTheDocument();
+            expect(screen.getByText(/250/)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: labels.negativeBalanceWarning.openAccount})).toBeInTheDocument();
+            expect(screen.queryByText(/posledním správcem/i)).not.toBeInTheDocument();
+        });
+
+        it('navigates to the account and closes the dialog on "Otevřít účet"', () => {
+            const props = renderDialog({warning: {groups: null, debt}});
+            fireEvent.click(screen.getByRole('button', {name: labels.negativeBalanceWarning.openAccount}));
+            expect(props.onClose).toHaveBeenCalled();
+            expect(mockNavigate).toHaveBeenCalledWith('/members/abc-123/account');
+        });
+
+        it('has no "Ukončit členství" while debt is reported, even with all groups resolved, and says to settle the balance', () => {
+            renderDialog({warning: {groups: [trainingGroup], debt}, resolvedGroupIds: new Set([trainingGroup.groupId])});
+            expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
+            expect(screen.getByText(labels.negativeBalanceWarning.description)).toBeInTheDocument();
+        });
+
+        it('keeps group actions available while debt is reported', () => {
+            renderDialog({warning: {groups: [trainingGroup], debt}});
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
+        });
+    });
+
+    it('closes through the cancel button', () => {
+        const props = renderDialog();
+        fireEvent.click(screen.getByRole('button', {name: labels.buttons.cancel}));
+        expect(props.onClose).toHaveBeenCalled();
+    });
 });

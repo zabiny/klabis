@@ -34,6 +34,7 @@ class MembersExceptionHandler {
                             .groupId(UUID.fromString(info.groupId()))
                             .groupName(info.groupName())
                             .groupType(AffectedGroupGroupType.fromValue(info.groupType()))
+                            .groupLink(info.groupLink())
                             .build())
                     .toList();
             groups = LastOwnerWarningBuilder.builder()

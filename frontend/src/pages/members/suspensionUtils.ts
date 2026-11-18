@@ -1,5 +1,7 @@
 import {ApiError} from "../../api/apiError.ts";
-import {type AffectedGroup} from "./SuspensionWarningDialog.tsx";
+import type {components} from "../../api/klabisApi";
+
+export type AffectedGroup = components["schemas"]["AffectedGroup"];
 
 export interface NegativeBalanceWarning {
     balance: { amount: number; currency: string };

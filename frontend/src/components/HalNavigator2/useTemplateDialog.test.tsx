@@ -464,6 +464,24 @@ describe('useTemplateDialog', () => {
             expect(onSubmitError).toHaveBeenCalledTimes(1);
         });
 
+        it('onSubmitError receives the submitted request', async () => {
+            fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+                if (init?.method === 'OPTIONS') return createMockResponse(null, 200);
+                return createMockResponse({}, 500);
+            });
+            const onSubmitError = vi.fn(() => true);
+            const user = await open({
+                action: actionFor({publishEvent: template()}, 'publishEvent'),
+                options: {onSubmitError},
+            });
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(onSubmitError).toHaveBeenCalled());
+            expect(onSubmitError).toHaveBeenCalledWith(
+                expect.anything(),
+                expect.objectContaining({url: expect.any(String), data: expect.any(Object)}),
+            );
+        });
+
         it('onSubmitError returning nothing keeps the dialog open', async () => {
             fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
                 if (init?.method === 'OPTIONS') return createMockResponse(null, 200);

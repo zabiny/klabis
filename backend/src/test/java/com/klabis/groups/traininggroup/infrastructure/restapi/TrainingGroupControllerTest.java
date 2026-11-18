@@ -275,6 +275,35 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 403 for an administrator with only MEMBERS:MANAGE who is not in the group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn403ForMembersManageOnly() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should offer addTrainer template to an administrator with MEMBERS:MANAGE and GROUPS:TRAINING")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE, Authority.GROUPS_TRAINING})
+        void shouldOfferAddTrainerToMembersManageWithTrainingAuthority() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addTrainer").exists());
+        }
+
+        @Test
         @DisplayName("should return 401 when unauthenticated")
         void shouldReturn401WhenUnauthenticated() throws Exception {
             mockMvc.perform(

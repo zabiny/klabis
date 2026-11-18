@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -56,7 +57,8 @@ class LegalGuardianGroupSuspensionBlockersAdapterTest {
         when(repository.findAll(any(LegalGuardianGroupFilter.class))).thenReturn(List.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER)).containsExactly(
-                new OwnedGroup(group.getId().uuid().toString(), group.getName(), LegalGuardianGroup.TYPE_DISCRIMINATOR));
+                new OwnedGroup(group.getId().uuid().toString(), group.getName(), LegalGuardianGroup.TYPE_DISCRIMINATOR,
+                        URI.create("/api/legal-guardian-groups/" + group.getId().uuid())));
     }
 
     @Test

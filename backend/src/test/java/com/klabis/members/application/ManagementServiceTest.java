@@ -272,8 +272,8 @@ class ManagementServiceTest {
             void shouldThrowWhenMemberIsLastGroupOwner() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberOwnedGroupsPort.findGroupsBlockingSuspension(new MemberId(testMemberId))).thenReturn(List.of(
-                        new OwnedGroup("group-id-1", "Trail Runners", "FREE"),
-                        new OwnedGroup("group-id-2", "Juniors", "TRAINING")));
+                        new OwnedGroup("group-id-1", "Trail Runners", "FREE", java.net.URI.create("/api/groups/group-id-1")),
+                        new OwnedGroup("group-id-2", "Juniors", "TRAINING", java.net.URI.create("/api/groups/group-id-2"))));
 
                 var command = MemberSuspendMembershipBuilder.builder()
                         .suspendedBy(new UserId(adminUserId))
@@ -399,7 +399,7 @@ class ManagementServiceTest {
             void shouldReportBothBlockersWhenBothConditionsApply() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberOwnedGroupsPort.findGroupsBlockingSuspension(new MemberId(testMemberId))).thenReturn(List.of(
-                        new OwnedGroup("group-id-1", "Trail Runners", "FREE")));
+                        new OwnedGroup("group-id-1", "Trail Runners", "FREE", java.net.URI.create("/api/groups/group-id-1"))));
                 var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
                         new MemberId(testMemberId),
                         new MonetaryAmount(new BigDecimal("-250"), "CZK"),

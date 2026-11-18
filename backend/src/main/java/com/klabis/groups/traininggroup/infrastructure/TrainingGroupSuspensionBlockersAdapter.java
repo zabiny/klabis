@@ -5,11 +5,15 @@ import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.OwnedGroup;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupsApi;
 import com.klabis.members.application.MemberOwnedGroupsPort;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @SecondaryAdapter
 @Component
@@ -30,6 +34,7 @@ class TrainingGroupSuspensionBlockersAdapter implements MemberOwnedGroupsPort {
     }
 
     private static OwnedGroup toOwnedGroup(TrainingGroup group) {
-        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), TrainingGroup.TYPE_DISCRIMINATOR);
+        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), TrainingGroup.TYPE_DISCRIMINATOR,
+                linkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(group.getId().uuid(), null)).toUri());
     }
 }

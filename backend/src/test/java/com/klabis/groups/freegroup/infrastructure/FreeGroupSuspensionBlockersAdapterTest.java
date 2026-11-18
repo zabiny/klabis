@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +45,8 @@ class FreeGroupSuspensionBlockersAdapterTest {
         when(repository.findAll(any(FreeGroupFilter.class))).thenReturn(List.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER))
-                .containsExactly(new OwnedGroup(group.getId().uuid().toString(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR));
+                .containsExactly(new OwnedGroup(group.getId().uuid().toString(), group.getName(), FreeGroup.TYPE_DISCRIMINATOR,
+                        URI.create("/api/groups/" + group.getId().uuid())));
     }
 
     @Test

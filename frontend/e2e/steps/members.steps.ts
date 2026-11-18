@@ -271,6 +271,34 @@ Then('the suspension is blocked because member {name} is the last owner of train
     await expect(warning.getByText(groupName)).toBeVisible();
 });
 
+When('{persona} suspends member {name} designating member {name} as successor of training group {name}', async ({page, actAs}, persona: Persona, lastName: string, successor: string, groupName: string) => {
+    await actAs(persona);
+    await openMemberDetail(page, lastName);
+    await click(page, 'Ukončit členství');
+    await select(page, 'Důvod', 'Odhlášení');
+    await submit(page);
+    const warning = page.getByRole('dialog', {name: 'Varování: Správce skupin'});
+    await action(warning.getByRole('listitem').filter({hasText: groupName}), 'Určit nástupce').click();
+    const member = page.getByLabel(/^Člen ?\*?$/);
+    await expect(member).toBeEnabled();
+    const label = await member.getByRole('option', {name: new RegExp(successor)}).textContent();
+    await member.selectOption({label: label!});
+    const added = page.waitForResponse((response) => response.url().includes('/trainers') && response.request().method() === 'POST');
+    await action(page.getByRole('dialog').last(), 'Odeslat').click();
+    expect((await added).ok()).toBe(true);
+    await expect(warning.getByText('Vyřešeno')).toBeVisible();
+    await submit(page, 'Ukončit členství');
+});
+
+Then('the suspension is blocked by one warning showing the balance {int} CZK and training group {name}', async ({page}, balance: number, groupName: string) => {
+    const warning = page.getByRole('dialog', {name: 'Varování: Správce skupin'});
+    await expect(warning.getByText(groupName)).toBeVisible();
+    await expect(warning.getByText(czechAmount(balance))).toBeVisible();
+    await expect(action(warning, 'Otevřít účet')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await expect(action(warning, 'Ukončit členství')).toHaveCount(0);
+});
+
 Then('the suspension is blocked because the balance is {int} CZK', async ({page}, balance: number) => {
     const warning = page.getByRole('dialog', {name: 'Záporný zůstatek'});
     await expect(warning.getByText(czechAmount(balance))).toBeVisible();

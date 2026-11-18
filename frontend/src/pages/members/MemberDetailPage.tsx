@@ -19,7 +19,6 @@ import {countryLabel} from "../../utils/countryName.ts";
 import {isCzNationality} from "./isCzNationality";
 import {labels, getEnumLabel} from "../../localization";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
-import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
 import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
@@ -86,16 +85,10 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
         submitLabel: labels.templates.sendMemberAccountActivation,
     });
 
-    const {
-        suspensionWarning,
-        negativeBalanceWarning,
-        clearSuspensionWarning,
-        clearNegativeBalanceWarning,
-        onSubmitError: onSuspendSubmitError,
-    } = useSuspendMemberAction();
+    const suspension = useSuspendMemberAction();
     const suspendDialog = useTemplateDialog({
         size: '2xl',
-        onSubmitError: onSuspendSubmitError,
+        onSubmitError: suspension.onSubmitError,
     });
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
@@ -453,14 +446,12 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                 onClose={() => setIsChangePasswordOpen(false)}
             />
             <SuspensionWarningDialog
-                isOpen={suspensionWarning !== null}
-                onClose={clearSuspensionWarning}
-                affectedGroups={suspensionWarning ?? []}
-            />
-            <NegativeBalanceSuspensionDialog
-                isOpen={negativeBalanceWarning !== null}
-                onClose={clearNegativeBalanceWarning}
-                warning={negativeBalanceWarning}
+                warning={suspension.warning}
+                resolvedGroupIds={suspension.resolvedGroupIds}
+                isFinishing={suspension.isFinishing}
+                onClose={suspension.clearWarning}
+                onGroupResolved={suspension.markGroupResolved}
+                onFinish={suspension.finishSuspension}
             />
             {accountActivationDialog.dialog}
             {suspendDialog.dialog}

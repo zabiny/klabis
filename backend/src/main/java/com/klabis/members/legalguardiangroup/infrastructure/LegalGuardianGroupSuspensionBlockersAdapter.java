@@ -3,6 +3,7 @@ package com.klabis.members.legalguardiangroup.infrastructure;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.OwnedGroup;
+import com.klabis.members.infrastructure.restapi.LegalGuardianGroupsApi;
 import com.klabis.members.application.MemberOwnedGroupsPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
@@ -11,6 +12,9 @@ import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @SecondaryAdapter
 @Component
@@ -32,6 +36,7 @@ class LegalGuardianGroupSuspensionBlockersAdapter implements MemberOwnedGroupsPo
     }
 
     private static OwnedGroup toOwnedGroup(LegalGuardianGroup group) {
-        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), LegalGuardianGroup.TYPE_DISCRIMINATOR);
+        return new OwnedGroup(group.getId().uuid().toString(), group.getName(), LegalGuardianGroup.TYPE_DISCRIMINATOR,
+                linkTo(methodOn(LegalGuardianGroupsApi.class).getLegalGuardianGroup(group.getId().uuid())).toUri());
     }
 }

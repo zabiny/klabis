@@ -87,6 +87,21 @@ Feature: Members
       Then the suspension is blocked because member "Trener" is the last owner of training group "Dorost"
       And member "Trener" is still active
 
+    Scenario: Admin designates a successor trainer and finishes the suspension
+      Given member "Trener" is registered
+      And member "Trener" is the only trainer of training group "Dorost"
+      And member "Nastupce" is registered
+      When Jan suspends member "Trener" designating member "Nastupce" as successor of training group "Dorost"
+      Then member "Trener" is suspended
+
+    Scenario: Suspension blocked by both a negative balance and group ownership
+      Given member "Trener" is registered
+      And member "Trener" is the only trainer of training group "Dorost"
+      And the account of member "Trener" is overdrawn by 150 CZK
+      When Jan suspends member "Trener"
+      Then the suspension is blocked by one warning showing the balance -150 CZK and training group "Dorost"
+      And member "Trener" is still active
+
     Scenario: Suspension blocked when member has a negative financial account balance
       Given member "Dluznik" is registered
       And the account of member "Dluznik" is overdrawn by 150 CZK
