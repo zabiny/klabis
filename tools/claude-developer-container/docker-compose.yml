@@ -1,0 +1,32 @@
+name: klabis-claude-dev
+
+services:
+  claude-dev:
+    build:
+      context: .
+      args:
+        WITH_JAVA: ${WITH_JAVA:-true}
+        WITH_E2E: ${WITH_E2E:-true}
+    image: klabis-claude-dev:latest
+    container_name: klabis-claude-dev
+    hostname: ${RC_SESSION_NAME:-klabis}-container
+    init: true
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    environment:
+      KLABIS_DIR: ${KLABIS_DIR:?set KLABIS_DIR in .env}
+      GIT_AUTHOR_NAME: ${GIT_AUTHOR_NAME:-David Polach}
+      GIT_AUTHOR_EMAIL: ${GIT_AUTHOR_EMAIL:-d.polach@dpolach.com}
+      RC_SESSION_NAME: ${RC_SESSION_NAME:-klabis}
+      GITLAB_ZBM_TOKEN: ${GITLAB_ZBM_TOKEN:-}
+    volumes:
+      # Same absolute path as on the host, so git worktree metadata and Claude project paths stay valid there
+      - ${KLABIS_DIR}:${KLABIS_DIR}
+      - claude-home:/home/dev
+    mem_limit: ${MEM_LIMIT:-4g}
+    memswap_limit: ${MEMSWAP_LIMIT:-6g}
+    cpus: ${CPUS:-3}
+
+volumes:
+  claude-home:
