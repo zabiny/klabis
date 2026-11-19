@@ -317,7 +317,7 @@ The system SHALL automatically maintain event-linked calendar items so that they
 
 The system SHALL provide each authenticated user with a personal calendar feed in iCalendar format containing the events on their personal schedule — that is, every event in which the user either has an active registration or holds the event-coordinator role. The same union of memberships drives the "Můj rozvrh" filter in the in-app calendar; the feed and the in-app filter SHALL stay consistent in scope.
 
-The feed is reachable through a stable URL that the user adds to their external calendar application (Google Calendar, Apple Calendar, Outlook). External calendars subscribed to this URL update automatically as the user registers, unregisters, gains or loses the coordinator role, or events get cancelled.
+The feed is managed from the calendar page: a "Kalendářový feed" action in the calendar header, available to every authenticated user, opens a dialog where the user creates or regenerates the token, sees the subscribe URL and gets subscription help. The feed is reachable through a stable URL that the user adds to their external calendar application (Google Calendar, Apple Calendar, Outlook). External calendars subscribed to this URL update automatically as the user registers, unregisters, gains or loses the coordinator role, or events get cancelled.
 
 The feed URL SHALL be authenticated by a personal access token unique to the user, embedded in the URL as a query parameter, since calendar applications cannot present OAuth2 credentials.
 
@@ -325,8 +325,8 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 
 #### Scenario: User generates the calendar feed token for the first time
 
-- **GIVEN** an authenticated member visits their profile and has not generated a calendar token yet
-- **WHEN** the member triggers the "Vytvořit kalendářový feed" action
+- **GIVEN** an authenticated user opens the calendar page and has not generated a calendar token yet
+- **WHEN** the user opens the "Kalendářový feed" dialog from the calendar header and triggers the "Vytvořit kalendářový feed" action
 - **THEN** the system generates a new token, stores it cryptographically hashed, and displays the full subscribe URL once
 - **AND** the URL includes the raw token as a query parameter
 
@@ -380,7 +380,7 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 #### Scenario: User regenerates the calendar token after suspecting a leak
 
 - **GIVEN** a user has a feed token and worries that the URL was leaked
-- **WHEN** the user triggers the "Vygenerovat nový token" action with confirmation
+- **WHEN** the user triggers the "Vygenerovat nový token" action in the "Kalendářový feed" dialog and confirms it in the dialog
 - **THEN** the system replaces the stored hash with a new token
 - **AND** the previous URL stops returning the feed
 - **AND** the user must update their calendar subscription with the new URL
@@ -407,6 +407,23 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 #### Scenario: User profile shows when the token was last set
 
 - **GIVEN** a user has a feed token
-- **WHEN** the user opens the calendar feed section of their profile
-- **THEN** the profile displays a label indicating when the token was last generated (so the user can recognise if regeneration is needed after a leak)
+- **WHEN** the user opens the "Kalendářový feed" dialog on the calendar page
+- **THEN** the dialog displays a label indicating when the token was last generated (so the user can recognise if regeneration is needed after a leak)
 
+#### Scenario: Calendar feed is not offered on the member profile
+
+- **GIVEN** an authenticated member who has a calendar feed token
+- **WHEN** the member opens their own profile
+- **THEN** the profile does not contain a calendar feed section
+
+#### Scenario: Calendar feed is available to a user without a member profile
+
+- **GIVEN** an authenticated user who is not linked to a club member
+- **WHEN** the user opens the calendar page
+- **THEN** the "Kalendářový feed" action is offered in the calendar header
+
+#### Scenario: Full feed URL is not shown again after the dialog is closed
+
+- **GIVEN** a user has just generated a feed token and the dialog shows the full subscribe URL
+- **WHEN** the user closes the dialog and opens it again
+- **THEN** the dialog shows only the masked subscribe URL with the time the token was last set
