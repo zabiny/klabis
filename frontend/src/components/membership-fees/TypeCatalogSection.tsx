@@ -29,7 +29,7 @@ export const TypeCatalogSection = (): ReactElement => {
                     tableId="membership-fee-types"
                     defaultOrderBy="name"
                     onRowClick={navigateToResource}
-                    emptyMessage="Žádné tiery členských příspěvků."
+                    emptyMessage="Žádné typy členských příspěvků."
                 >
                     <TableCell<FeeTypeSummary>
                         sortable

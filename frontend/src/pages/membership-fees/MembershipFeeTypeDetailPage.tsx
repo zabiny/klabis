@@ -44,7 +44,7 @@ const FeeTypeDetailContent = ({resourceData}: {resourceData: FeeTypeDetail}): Re
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
                             <div>
-                                <label className="block text-xs font-bold text-text-secondary mb-1">Název tieru</label>
+                                <label className="block text-xs font-bold text-text-secondary mb-1">Název typu příspěvku</label>
                                 <div className="h-[38px] flex items-center px-3 border border-border-subtle rounded-md text-sm text-text-primary">
                                     {resourceData.name}
                                 </div>

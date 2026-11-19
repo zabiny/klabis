@@ -264,7 +264,7 @@ describe('MembershipFeeTypeDetailPage', () => {
     it('renders save button inside basic info card when editFeeType template exists (after clicking edit)', async () => {
         const resourceData = buildFeeTypeDetail({
             _templates: {
-                editFeeType: mockHalFormsTemplate({title: 'Upravit tier', method: 'PATCH'}),
+                editFeeType: mockHalFormsTemplate({title: 'Upravit typ členského příspěvku', method: 'PATCH'}),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -280,11 +280,11 @@ describe('MembershipFeeTypeDetailPage', () => {
     it('renders delete type button when deleteFeeType template exists', () => {
         const resourceData = buildFeeTypeDetail({
             _templates: {
-                deleteFeeType: mockHalFormsTemplate({title: 'Smazat tier', method: 'DELETE'}),
+                deleteFeeType: mockHalFormsTemplate({title: 'Smazat typ členského příspěvku', method: 'DELETE'}),
             },
         });
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /smazat tier/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /smazat typ členského příspěvku/i})).toBeInTheDocument();
     });
 
     it('renders add rule footer button when addRule template exists', () => {
@@ -541,12 +541,12 @@ describe('MembershipFeeTypeDetailPage', () => {
             const user = userEvent.setup();
             renderPage(createMockPageData(buildFeeTypeDetail({
                 _templates: {
-                    deleteFeeType: mockHalFormsTemplate({title: 'Smazat tier', method: 'DELETE', target: undefined, properties: []}),
+                    deleteFeeType: mockHalFormsTemplate({title: 'Smazat typ členského příspěvku', method: 'DELETE', target: undefined, properties: []}),
                 },
             })));
 
-            await user.click(screen.getByRole('button', {name: /smazat tier/i}));
-            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Smazat tier');
+            await user.click(screen.getByRole('button', {name: /smazat typ členského příspěvku/i}));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Smazat typ členského příspěvku');
             await user.click(screen.getByRole('button', {name: /odeslat/i}));
 
             await waitFor(() => expect(writeCalls()).toHaveLength(1));

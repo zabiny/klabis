@@ -106,9 +106,9 @@ describe('MembershipFeesAdminPage', () => {
         expect(screen.getByRole('heading', {level: 1, name: /členské příspěvky/i})).toBeInTheDocument();
     });
 
-    it('renders TypeCatalogSection heading "Katalog tierů"', () => {
+    it('renders TypeCatalogSection heading "Katalog typů členského příspěvku"', () => {
         renderPage(createMockPageData(typeCatalogResource));
-        expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: /katalog typů členského příspěvku/i})).toBeInTheDocument();
     });
 
     describe('when activeCampaign link is present', () => {
@@ -136,7 +136,7 @@ describe('MembershipFeesAdminPage', () => {
 
         it('still renders TypeCatalogSection', () => {
             renderPage(createMockPageData(typeCatalogResourceWithoutActiveCampaign));
-            expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: /katalog typů členského příspěvku/i})).toBeInTheDocument();
         });
 
         it('renders PastCampaignsSection heading', () => {
@@ -156,7 +156,7 @@ describe('MembershipFeesAdminPage', () => {
     it('renders all three section headings when all links are present', () => {
         renderPage(createMockPageData(typeCatalogResourceWithActiveCampaign));
         expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: /katalog typů členského příspěvku/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
     });
 

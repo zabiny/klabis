@@ -153,7 +153,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            expect(screen.queryByRole('button', {name: /Změnit tier/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Změnit typ členského příspěvku/i})).not.toBeInTheDocument();
         });
     });
 
@@ -181,7 +181,7 @@ describe('MemberFeeSection', () => {
 
             renderSection();
 
-            expect(screen.queryByRole('button', {name: /Zvolit tier/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Zvolit typ členského příspěvku/i})).not.toBeInTheDocument();
         });
     });
 
@@ -299,7 +299,7 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             fireEvent.click(screen.getByRole('radio', {name: /Základ/}));
-            fireEvent.click(screen.getByRole('button', {name: /Zvolit tier/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Zvolit typ členského příspěvku/i}));
 
             expect(mutate).toHaveBeenCalledWith({
                 url: '/api/members/member-1/fee-choice/2026',
@@ -316,7 +316,7 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             fireEvent.click(screen.getByRole('radio', {name: /Plný/}));
-            fireEvent.click(screen.getByRole('button', {name: /Změnit tier/i}));
+            fireEvent.click(screen.getByRole('button', {name: /Změnit typ členského příspěvku/i}));
 
             expect(mutate).toHaveBeenCalledWith({
                 url: '/api/members/member-1/fee-choice/2026',
@@ -368,7 +368,7 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             expect(screen.getAllByRole('radio').every(r => r.getAttribute('aria-checked') === 'false')).toBe(true);
-            expect(screen.getByRole('button', {name: /Zvolit tier/i})).toBeDisabled();
+            expect(screen.getByRole('button', {name: /Zvolit typ členského příspěvku/i})).toBeDisabled();
         });
 
         it('shows an error and keeps choose disabled when the options link is missing', () => {
@@ -378,7 +378,7 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             expect(screen.getByText(/Nabídku typů příspěvku se nepodařilo načíst/i)).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /Zvolit tier/i})).toBeDisabled();
+            expect(screen.getByRole('button', {name: /Zvolit typ členského příspěvku/i})).toBeDisabled();
         });
 
         it('shows an error and keeps choose disabled when loading the options fails', () => {
@@ -391,7 +391,7 @@ describe('MemberFeeSection', () => {
             renderSection();
 
             expect(screen.getByRole('alert')).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /Zvolit tier/i})).toBeDisabled();
+            expect(screen.getByRole('button', {name: /Zvolit typ členského příspěvku/i})).toBeDisabled();
         });
 
         it('shows a locked card without radio options after the deadline', () => {

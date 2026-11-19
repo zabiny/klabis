@@ -27,9 +27,9 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 4. Terminology: "typ členského příspěvku" in UI texts
 
-- [ ] 4.1 Replace "tier"/"úroveň"/"Tier poplatku"/"Tiery" in `frontend/src/localization/labels.ts` (catalog title, create/edit/delete actions, choose/change, current type, field labels, error type labels, empty messages) and in components with inline Czech texts (e.g. `TierCatalogSection`); update `labels.test.ts`; verify vitest passes
-- [ ] 4.2 Replace Czech messages in backend (exception handler/problem details, validation messages) that mention tier/level; verify the related backend tests pass
-- [ ] 4.3 Verify no user-visible leftovers: `grep -rniE "tier|úrove" frontend/src/localization frontend/src/components frontend/src/pages backend/src/main` shows only code identifiers outside UI texts (none expected after the rename change)
+- [x] 4.1 Replace "tier"/"úroveň"/"Tier poplatku"/"Tiery" in `frontend/src/localization/labels.ts` (catalog title, create/edit/delete actions, choose/change, current type, field labels, error type labels, empty messages) and in components with inline Czech texts (e.g. `TierCatalogSection`); update `labels.test.ts`; verify vitest passes
+- [x] 4.2 Replace Czech messages in backend (exception handler/problem details, validation messages) that mention tier/level; verify the related backend tests pass
+- [x] 4.3 Verify no user-visible leftovers: `grep -rniE "tier|úrove" frontend/src/localization frontend/src/components frontend/src/pages backend/src/main` shows only code identifiers outside UI texts (none expected after the rename change)
 
 ## 5. E2E and final verification
 
