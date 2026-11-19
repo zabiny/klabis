@@ -29,14 +29,14 @@ import {
 
 const {Given, When, Then} = createBdd(test);
 
-const startCampaign = async (page: Page, feeState: FeeScenarioState, admin: ApiClient, levels: string[], deadline: string) => {
+const startCampaign = async (page: Page, feeState: FeeScenarioState, admin: ApiClient, types: string[], deadline: string) => {
     feeState.year ??= await nextFreeCampaignYear(admin);
     await openFeesPage(page);
     await click(page, 'Vypsat kampaň');
     await fill(page, 'Rok', String(feeState.year));
     await fill(page, 'Uzávěrka hlasování', deadline);
-    for (const level of levels) {
-        await pick(page, 'Tiery', level);
+    for (const type of types) {
+        await pick(page, 'Typy členského příspěvku', type);
     }
     await submit(page);
 };
@@ -48,25 +48,25 @@ Given('no fee selection campaign is active', async ({apiAs, feeState}) => {
     await reserveCampaignYear(apiAs('admin'), feeState);
 });
 
-Given('an active fee selection campaign offers level {name}', async ({apiAs, feeState}, name: string) => {
+Given('an active fee selection campaign offers type {name}', async ({apiAs, feeState}, name: string) => {
     await publishCampaign(apiAs('admin'), feeState, [{name}]);
 });
 
-Given('an active fee selection campaign offers levels {name} and {name}', async ({apiAs, feeState}, first: string, second: string) => {
+Given('an active fee selection campaign offers types {name} and {name}', async ({apiAs, feeState}, first: string, second: string) => {
     await publishCampaign(apiAs('admin'), feeState, [{name: first}, {name: second}]);
 });
 
-Given('an active fee selection campaign offers level {name} with yearly fee {int} CZK',
+Given('an active fee selection campaign offers type {name} with yearly fee {int} CZK',
     async ({apiAs, feeState}, name: string, yearlyFee: number) => {
         await publishCampaign(apiAs('admin'), feeState, [{name, yearlyFee}]);
     });
 
-Given('an active fee selection campaign offers level {name} with the voting deadline {day}',
+Given('an active fee selection campaign offers type {name} with the voting deadline {day}',
     async ({apiAs, feeState}, name: string, deadline: string) => {
         await publishCampaign(apiAs('admin'), feeState, [{name}], deadline);
     });
 
-Given('a closed fee selection campaign that offered level {name}', async ({apiAs, feeState}, name: string) => {
+Given('a closed fee selection campaign that offered type {name}', async ({apiAs, feeState}, name: string) => {
     const admin = apiAs('admin');
     await publishCampaign(admin, feeState, [{name}]);
     await closeActiveCampaign(admin, feeState);
@@ -82,13 +82,13 @@ Given('{persona} is viewing the closed campaign', async ({page, actAs, feeState}
     await openClosedCampaign(page, feeState);
 });
 
-When('{persona} starts a fee selection campaign offering level {name} with the voting deadline {day}',
+When('{persona} starts a fee selection campaign offering type {name} with the voting deadline {day}',
     async ({page, actAs, apiAs, feeState}, persona: Persona, name: string, deadline: string) => {
         await actAs(persona);
         await startCampaign(page, feeState, apiAs('admin'), [name], deadline);
     });
 
-When('{persona} starts a fee selection campaign offering levels {name} and {name} with the voting deadline {day}',
+When('{persona} starts a fee selection campaign offering types {name} and {name} with the voting deadline {day}',
     async ({page, actAs, apiAs, feeState}, persona: Persona, first: string, second: string, deadline: string) => {
         await actAs(persona);
         await startCampaign(page, feeState, apiAs('admin'), [first, second], deadline);
@@ -185,7 +185,7 @@ Then('the active campaign has the voting deadline {day}', async ({page}, deadlin
     await expect(displayedDate(section(page, ACTIVE_CAMPAIGN), deadline)).toBeVisible();
 });
 
-Then('the active campaign offers level {name}', async ({page}, name: string) => {
+Then('the active campaign offers type {name}', async ({page}, name: string) => {
     await openFeesPage(page);
     await expect(section(page, LEVELS).getByRole('link', {name, exact: true})).toBeVisible();
 });
@@ -209,7 +209,7 @@ Then('{persona} can open the closed campaign', async ({page, feeState, currentRo
     await openListedClosedCampaign(page, feeState);
 });
 
-Then('{persona} can open the published level {name}', async ({page, currentRole}, persona: Persona, name: string) => {
+Then('{persona} can open the published type {name}', async ({page, currentRole}, persona: Persona, name: string) => {
     expectActing(currentRole, persona);
     await openListedLevel(page, name);
 });

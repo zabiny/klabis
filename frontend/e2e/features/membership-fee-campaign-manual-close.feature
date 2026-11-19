@@ -8,24 +8,24 @@ Feature: Membership fee campaign manual close
   Rule: Only a membership administrator can close a campaign, and only while it is active
 
     Scenario: Administrator closes an active campaign
-      Given an active fee selection campaign offers level "Close"
+      Given an active fee selection campaign offers type "Close"
       When Jan opens the active campaign
       Then Jan is offered to close the campaign
 
     Scenario: Campaign is closed immediately
-      Given an active fee selection campaign offers level "Plus" with yearly fee 1200 CZK
-      And Eva has chosen level "Plus"
+      Given an active fee selection campaign offers type "Plus" with yearly fee 1200 CZK
+      And Eva has chosen type "Plus"
       When Jan closes the active campaign
       Then the membership fees page shows no active campaign
       And the membership fees page lists the closed campaign among the past campaigns
       And Eva's account shows the yearly membership fee of 1200 CZK for the campaign year
 
     Scenario: Close action is not available on an already closed campaign
-      Given a closed fee selection campaign that offered level "Processed"
+      Given a closed fee selection campaign that offered type "Processed"
       When Jan opens the closed campaign
       Then Jan is not offered to close the campaign
 
     Scenario: Close action requires MEMBERS:MANAGE authority
-      Given an active fee selection campaign offers level "Authority"
+      Given an active fee selection campaign offers type "Authority"
       When Eva opens the active campaign
       Then Eva is not offered to close the campaign

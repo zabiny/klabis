@@ -33,7 +33,7 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 5. E2E and final verification
 
-- [ ] 5.1 Update E2E features and steps (`membership-fee-choice`, `membership-fee-catalog`, `membership-fee-campaigns`, `users`) for the section, prices, history price column and new wording (use `gherkin-bdd` skill); run `npm run test:e2e` for the membership-fee scenarios and verify they pass
+- [x] 5.1 Update E2E features and steps (`membership-fee-choice`, `membership-fee-catalog`, `membership-fee-campaigns`, `users`) for the section, prices, history price column and new wording (use `gherkin-bdd` skill); run `npm run test:e2e` for the membership-fee scenarios and verify they pass
 - [ ] 5.2 Run the full backend and frontend suites (`SKIP_OPTIMIZATIONS` + `--rerun-tasks` for the final backend run) and `npm run build`; verify all green apart from the known pre-existing failures
 - [ ] 5.3 Manual check on http://localhost:3000 as `ZBM9500` (member), a guardian, and `ZBM9000` (admin): section visible only for the first two during an active campaign, hidden otherwise, history shows prices
 - [ ] 5.4 Add the label `BackendCompleted` to GitHub issue #439 (`gh issue edit 439 --add-label BackendCompleted`; if `gh` is blocked by the hook, give the user the command)

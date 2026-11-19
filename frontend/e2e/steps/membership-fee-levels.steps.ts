@@ -10,31 +10,31 @@ import {click, fill, select, submit} from '../support/ui';
 
 const {Given, When, Then} = createBdd(test);
 
-Given('{persona} has chosen level {name}', async ({apiAs, feeState}, persona: Persona, name: string) => {
-    await chooseLevel(apiAs(personas[persona]), feeState.year!, name);
+Given('{persona} has chosen type {name}', async ({apiAs}, persona: Persona, name: string) => {
+    await chooseLevel(apiAs(personas[persona]), name);
 });
 
-Given('{persona} has not chosen a fee level', async ({apiAs, feeState}, persona: Persona) => {
-    await withdrawChoice(apiAs(personas[persona]), feeState.year!);
+Given('{persona} has not chosen a fee type', async ({apiAs}, persona: Persona) => {
+    await withdrawChoice(apiAs(personas[persona]));
 });
 
-Given('{persona} has assigned {persona} to level {name}', async ({apiAs, feeState}, administrator: Persona, member: Persona, name: string) => {
+Given('{persona} has assigned {persona} to type {name}', async ({apiAs, feeState}, administrator: Persona, member: Persona, name: string) => {
     await assignLevel(apiAs(personas[administrator]), await memberIdentity(apiAs(personas[member])), feeState, name);
 });
 
-Given('{persona} had level {name} in the previous fee selection campaign', async ({apiAs, feeState}, persona: Persona, name: string) => {
+Given('{persona} had type {name} in the previous fee selection campaign', async ({apiAs, feeState}, persona: Persona, name: string) => {
     const admin = apiAs('admin');
     await publishCampaign(admin, feeState, [{name}]);
-    await chooseLevel(apiAs(personas[persona]), feeState.year!, name);
+    await chooseLevel(apiAs(personas[persona]), name);
     await closeActiveCampaign(admin, feeState);
 });
 
-Given('{persona} is blocked for missing the fee level choice', async ({apiAs, feeState}, persona: Persona) => {
-    await withdrawChoice(apiAs(personas[persona]), feeState.year!);
+Given('{persona} is blocked for missing the fee type choice', async ({apiAs, feeState}, persona: Persona) => {
+    await withdrawChoice(apiAs(personas[persona]));
     await closeActiveCampaign(apiAs('admin'), feeState);
 });
 
-When('{persona} changes the yearly fee of the published level {name} to {int} CZK',
+When('{persona} changes the yearly fee of the published type {name} to {int} CZK',
     async ({page, actAs, feeState}, persona: Persona, name: string, yearlyFee: number) => {
         await actAs(persona);
         await openPublishedLevel(page, feeState, name);
@@ -43,7 +43,7 @@ When('{persona} changes the yearly fee of the published level {name} to {int} CZ
         await submit(page, 'Uložit změny');
     });
 
-When('{persona} assigns {persona} to level {name}',
+When('{persona} assigns {persona} to type {name}',
     async ({page, actAs, apiAs, feeState}, administrator: Persona, member: Persona, name: string) => {
         const {firstName, lastName, registrationNumber} = await memberIdentity(apiAs(personas[member]));
         await actAs(administrator);
@@ -54,25 +54,25 @@ When('{persona} assigns {persona} to level {name}',
         await submit(page);
     });
 
-Then('the published level {name} has yearly fee {int} CZK', async ({page, feeState}, name: string, yearlyFee: number) => {
+Then('the published type {name} has yearly fee {int} CZK', async ({page, feeState}, name: string, yearlyFee: number) => {
     await openPublishedLevel(page, feeState, name);
     await expect(levelDetail(page).getByText(`${yearlyFee} CZK`, {exact: true})).toBeVisible();
 });
 
-Then('the published level {name} has a {contribution} rule for races of ranking {name}',
+Then('the published type {name} has a {contribution} rule for races of ranking {name}',
     async ({page, feeState}, name: string, contribution: Contribution, ranking: string) => {
         await openPublishedLevel(page, feeState, name);
         await expect(ruleRow(page, contribution, ranking)).toBeVisible();
     });
 
-Then('the published level {name} lists {persona} as a member',
+Then('the published type {name} lists {persona} as a member',
     async ({page, apiAs, feeState}, name: string, member: Persona) => {
         const {registrationNumber} = await memberIdentity(apiAs(personas[member]));
         await openPublishedLevel(page, feeState, name);
         await expect(memberRow(page, registrationNumber)).toBeVisible();
     });
 
-Then('the published level {name} does not list {persona} as a member',
+Then('the published type {name} does not list {persona} as a member',
     async ({page, apiAs, feeState}, name: string, member: Persona) => {
         const {registrationNumber} = await memberIdentity(apiAs(personas[member]));
         await openPublishedLevel(page, feeState, name);

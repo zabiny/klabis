@@ -52,6 +52,11 @@ const ensureLevel = async (admin: ApiClient, root: Linked, name: string, yearlyF
 export const ensureCatalogLevel = async (admin: ApiClient, name: string, yearlyFeeAmount?: number) =>
     ensureLevel(admin, await feeRoot(admin), name, yearlyFeeAmount);
 
+export const changeCatalogYearlyFee = async (admin: ApiClient, typeName: string, yearlyFeeAmount: number) => {
+    const feeType = await admin.get(`/api/membership-fee-types/${await ensureCatalogLevel(admin, typeName)}`);
+    await admin.patch(admin.templateTarget(feeType, 'updateMembershipFeeType'), {yearlyFeeAmount});
+};
+
 export const addCatalogRule = async (admin: ApiClient, levelName: string, contribution: Contribution, ranking: string) => {
     const feeType = await admin.get(`/api/membership-fee-types/${await ensureCatalogLevel(admin, levelName)}`);
     const rules = await admin.follow(feeType, 'rules') as Linked;
@@ -66,12 +71,12 @@ export const addCatalogRule = async (admin: ApiClient, levelName: string, contri
 };
 
 export const publishCampaign = async (
-    admin: ApiClient, feeState: FeeScenarioState, levels: CampaignLevel[], votingDeadline = DEFAULT_VOTING_DEADLINE,
+    admin: ApiClient, feeState: FeeScenarioState, types: CampaignLevel[], votingDeadline = DEFAULT_VOTING_DEADLINE,
 ) => {
     const root = await reserveCampaignYear(admin, feeState);
     const levelIds = [];
-    for (const level of levels) {
-        levelIds.push(await ensureLevel(admin, root, level.name, level.yearlyFee));
+    for (const type of types) {
+        levelIds.push(await ensureLevel(admin, root, type.name, type.yearlyFee));
     }
     const campaign = await admin.create(admin.templateTarget(root, 'publishYear'), {year: feeState.year, votingDeadline, typeIds: levelIds});
     feeState.campaignPath = campaign.replace(/^\/api/, '');
@@ -83,25 +88,31 @@ const publishedLevels = async (admin: ApiClient, feeState: FeeScenarioState) => 
     return embeddedList(await admin.follow(campaign, 'levels')) as Linked[];
 };
 
-const feeSummary = async (member: ApiClient, year: number) =>
-    member.get(`${(await member.root())._links!.profile.href}/fee-summary/${year}`) as Promise<Linked>;
+const feeSummary = async (member: ApiClient) =>
+    member.get(`${(await member.root())._links!.profile.href}/fee-summary`) as Promise<Linked>;
 
-export const chooseLevel = async (member: ApiClient, year: number, levelName: string) => {
-    const summary = await feeSummary(member, year);
-    const option = templateOptions(summary, 'chooseFeeType', 'membershipFeeGroupId').find((candidate) => candidate.prompt === levelName)!;
-    await member.post(member.templateTarget(summary, 'chooseFeeType'), {membershipFeeGroupId: option.value});
+const offeredTypes = async (member: ApiClient, summary: Linked) => {
+    const property = (summary._templates!.chooseFeeType as any).properties // eslint-disable-line @typescript-eslint/no-explicit-any
+        .find((candidate: {name: string}) => candidate.name === 'membershipFeeGroupId');
+    return embeddedList(await member.get(property.options.link.href)) as Linked[];
 };
 
-export const withdrawChoice = async (member: ApiClient, year: number) => {
-    const summary = await feeSummary(member, year);
+export const chooseLevel = async (member: ApiClient, typeName: string) => {
+    const summary = await feeSummary(member);
+    const offered = (await offeredTypes(member, summary)).find((candidate) => candidate.name === typeName)!;
+    await member.post(member.templateTarget(summary, 'chooseFeeType'), {membershipFeeGroupId: offered.id});
+};
+
+export const withdrawChoice = async (member: ApiClient) => {
+    const summary = await feeSummary(member);
     if (summary._templates?.removeChoice) {
         await member.delete(member.templateTarget(summary, 'removeChoice'));
     }
 };
 
 export const assignLevel = async (admin: ApiClient, member: Pick<MemberIdentity, 'id'>, feeState: FeeScenarioState, levelName: string) => {
-    const level = (await publishedLevels(admin, feeState)).find((candidate) => candidate.name === levelName)!;
-    await admin.post(admin.templateTarget(level, 'assignMember'), {memberId: member.id, year: feeState.year});
+    const type = (await publishedLevels(admin, feeState)).find((candidate) => candidate.name === levelName)!;
+    await admin.post(admin.templateTarget(type, 'assignMember'), {memberId: member.id, year: feeState.year});
 };
 
 export const firstPublishedLevelName = async (admin: ApiClient, feeState: FeeScenarioState) =>

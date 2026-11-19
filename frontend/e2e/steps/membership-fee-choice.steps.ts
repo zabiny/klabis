@@ -1,39 +1,33 @@
 import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
-import {test, type ApiClient, type FeeScenarioState} from '../support/fixtures';
-import {memberIdentity} from '../support/halApi';
-import {expectActing, personas, type Persona} from '../support/personas';
-import type {Role} from '../support/roles';
+import {test} from '../support/fixtures';
+import {expectActing, type Persona} from '../support/personas';
 import {openFeeHistoryFromDetail} from '../support/membershipFeesPages';
 import {openOwnProfile} from './members.steps';
 import {openFeeHistoryOfMember} from './membership-fee-history.steps';
-import {action, czechAmount, heading, openAddress, openFromMenu, submitWith} from '../support/ui';
+import {czechAmount, heading, openFromMenu, submitWith} from '../support/ui';
 
 const {When, Then} = createBdd(test);
 
 const FEE_SECTION = 'ČLENSKÝ PŘÍSPĚVEK';
-const LOCKED = 'Volba je uzamčena.';
-const CHOOSE_PROMPT = 'Probíhá volba tieru příspěvku. Zvolte si svůj tier.';
-const CHOICE_ACTION = /^(Zvolit tier|Změnit tier)$/;
+const CHOOSE_PROMPT = 'Probíhá volba typu členského příspěvku. Zvolte si svůj typ.';
+const CURRENT_TYPE = 'Aktuální typ členského příspěvku';
+const CHOICE_ACTION = /^(Zvolit|Změnit) typ členského příspěvku$/;
 
 const feeSection = (page: Page) => heading(page, FEE_SECTION).locator('xpath=..');
 
-// The profile is linked from the home page only; the member's own level is shown on the fee page opened from it.
+const currentType = (page: Page) =>
+    feeSection(page).locator('div').filter({has: page.getByText(CURRENT_TYPE, {exact: true})}).last();
+
+// The member's own fee page is reached through the profile, which is linked from the home page only.
 const openProfile = async (page: Page) => {
     await openOwnProfile(page);
     await openFeeHistoryFromDetail(page);
 };
 
-// The form is not linked from the profile once voting is closed, so its address is opened.
-const openChoiceForm = async (page: Page, apiAs: (role: Role) => ApiClient, persona: Persona, feeState: FeeScenarioState) => {
-    const {id} = await memberIdentity(apiAs(personas[persona]));
-    await openAddress(page, `/members/${id}/fee-choice/${feeState.year}`);
-    await expect(page.getByRole('heading', {name: new RegExp(`pro rok ${feeState.year}$`), level: 1})).toBeVisible();
-};
-
 const submitChoice = async (page: Page, name: string) => {
-    await page.getByRole('radio', {name}).click();
-    expect((await submitWith(page, page.getByRole('button', {name: CHOICE_ACTION}))).ok()).toBe(true);
+    await feeSection(page).getByRole('radio', {name}).click();
+    expect((await submitWith(page, feeSection(page).getByRole('button', {name: CHOICE_ACTION}))).ok()).toBe(true);
 };
 
 const yearlyFeeRow = (page: Page, year: number) =>
@@ -48,83 +42,62 @@ const openAccount = async (page: Page) => {
     await expect(page.getByRole('table').locator('tbody tr').first()).toBeVisible();
 };
 
-// Choosing and changing the level is the same action on the profile; the scenarios name it by its business meaning.
-for (const phrase of ['chooses level', 'changes the fee level choice to']) {
+// Choosing and changing the type is the same action in the section; the scenarios name it by its business meaning.
+for (const phrase of ['chooses type', 'changes the fee type choice to']) {
     When(`{persona} ${phrase} {name}`, async ({page, actAs}, persona: Persona, name: string) => {
         await actAs(persona);
         await openProfile(page);
-        await feeSection(page).getByRole('link', {name: CHOICE_ACTION}).click();
         await submitChoice(page, name);
     });
 }
 
-When('{persona} chooses level {name} for member {string}',
+When('{persona} chooses type {name} for member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
         await openFeeHistoryOfMember(page, actAs, persona, fullName);
-        await feeSection(page).getByRole('link', {name: CHOICE_ACTION}).click();
         await submitChoice(page, name);
     });
 
-When('{persona} withdraws the fee level choice', async ({page, actAs, apiAs, feeState}, persona: Persona) => {
+When('{persona} withdraws the fee type choice', async ({page, actAs}, persona: Persona) => {
     await actAs(persona);
-    await openChoiceForm(page, apiAs, persona, feeState);
-    expect((await submitWith(page, action(page, 'Zrušit volbu'))).ok()).toBe(true);
+    await openProfile(page);
+    expect((await submitWith(page, feeSection(page).getByRole('button', {name: 'Zrušit volbu'}))).ok()).toBe(true);
 });
 
-When('{persona} views the profile', async ({page, actAs}, persona: Persona) => {
+When('{persona} opens the fee page', async ({page, actAs}, persona: Persona) => {
     await actAs(persona);
     await openProfile(page);
 });
 
-When('{persona} opens the fee level choice form', async ({page, actAs, apiAs, feeState}, persona: Persona) => {
-    await actAs(persona);
-    await openChoiceForm(page, apiAs, persona, feeState);
-});
-
-Then('{persona} can choose level {name}', async ({page, actAs, apiAs, feeState}, persona: Persona, name: string) => {
-    await actAs(persona);
-    await openChoiceForm(page, apiAs, persona, feeState);
-    await expect(page.getByRole('radio', {name})).toBeVisible();
-});
-
-Then('{persona}\'s profile shows fee level {name}', async ({page, actAs}, persona: Persona, name: string) => {
+Then('{persona} can choose type {name}', async ({page, actAs}, persona: Persona, name: string) => {
     await actAs(persona);
     await openProfile(page);
-    await expect(feeSection(page).getByText(name, {exact: true})).toBeVisible();
+    await expect(feeSection(page).getByRole('radio', {name})).toBeVisible();
 });
 
-Then('{persona}\'s profile shows fee level {name} as locked', async ({page, actAs}, persona: Persona, name: string) => {
-    await actAs(persona);
-    await openProfile(page);
-    await expect(feeSection(page).getByText(name, {exact: true})).toBeVisible();
-    await expect(feeSection(page).getByText(LOCKED)).toBeVisible();
-});
-
-Then('{persona}\'s profile prompts to choose a fee level', async ({page, actAs}, persona: Persona) => {
-    await actAs(persona);
-    await openProfile(page);
-    await expect(feeSection(page).getByText(CHOOSE_PROMPT)).toBeVisible();
-});
-
-Then('{persona} is not offered to change the fee level choice', async ({page, actAs}, persona: Persona) => {
-    await actAs(persona);
-    await openProfile(page);
-    await expect(feeSection(page).getByRole('link', {name: CHOICE_ACTION})).toHaveCount(0);
-});
-
-Then('level {name} is pre-selected', async ({page}, name: string) => {
-    await expect(page.getByRole('radio', {name})).toHaveAttribute('aria-checked', 'true');
-});
-
-Then('the choice form shows level {name} as locked', async ({page}, name: string) => {
-    await expect(page.getByText(LOCKED)).toBeVisible();
-    await expect(page.getByText(name, {exact: true})).toBeVisible();
-});
-
-Then('{persona} is not offered to withdraw the fee level choice', async ({page, currentRole}, persona: Persona) => {
+Then('{persona}\'s fee section offers type {name} for {int} CZK', async ({page, currentRole}, persona: Persona, name: string, amount: number) => {
     expectActing(currentRole, persona);
-    await expect(page.getByRole('heading', {name: /^Výběr tieru členského příspěvku/, level: 1})).toBeVisible();
-    await expect(action(page, 'Zrušit volbu')).toHaveCount(0);
+    await expect(feeSection(page).getByRole('radio', {name: new RegExp(`${name}\\s*${amount} Kč`)})).toBeVisible();
+});
+
+Then('{persona}\'s fee section shows fee type {name}', async ({page, currentRole}, persona: Persona, name: string) => {
+    expectActing(currentRole, persona);
+    await expect(currentType(page).getByText(name, {exact: true})).toBeVisible();
+});
+
+Then('{persona}\'s fee section prompts to choose a fee type', async ({page, currentRole}, persona: Persona) => {
+    expectActing(currentRole, persona);
+    await expect(feeSection(page).getByText(CHOOSE_PROMPT)).toBeVisible();
+    await expect(feeSection(page).getByText(CURRENT_TYPE)).toHaveCount(0);
+});
+
+Then('{persona} does not see the fee section', async ({page, currentRole}, persona: Persona) => {
+    expectActing(currentRole, persona);
+    await expect(heading(page, 'Historie příspěvků')).toBeVisible();
+    await expect(heading(page, FEE_SECTION)).toHaveCount(0);
+});
+
+Then('type {name} is pre-selected', async ({page}, name: string) => {
+    await expect(feeSection(page).getByRole('radio', {name})).toHaveAttribute('aria-checked', 'true');
 });
 
 Then('{persona}\'s account shows the yearly membership fee of {int} CZK for the campaign year',
@@ -140,14 +113,8 @@ Then('{persona}\'s account shows no yearly membership fee for the campaign year'
     await expect(yearlyFeeRow(page, feeState.year!)).toHaveCount(0);
 });
 
-Then('{persona} sees fee level {name} on the fee page of member {string}',
+Then('{persona} sees fee type {name} in the fee section of member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
         await openFeeHistoryOfMember(page, actAs, persona, fullName);
-        await expect(feeSection(page).getByText(name, {exact: true})).toBeVisible();
-    });
-
-Then('{persona} is not offered to choose or change the fee level',
-    async ({page, currentRole}, persona: Persona) => {
-        expectActing(currentRole, persona);
-        await expect(feeSection(page).getByRole('link', {name: CHOICE_ACTION})).toHaveCount(0);
+        await expect(currentType(page).getByText(name, {exact: true})).toBeVisible();
     });

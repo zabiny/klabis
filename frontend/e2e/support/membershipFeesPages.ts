@@ -3,7 +3,7 @@ import type {FeeScenarioState} from './fixtures';
 import type {Contribution} from './parameters';
 import {heading, menuEntry, openAddress, openFromMenu, section} from './ui';
 
-export const CATALOG = 'Katalog tierů';
+export const CATALOG = 'Katalog typů členského příspěvku';
 export const ACTIVE_CAMPAIGN = 'Aktivní kampaň';
 export const PAST_CAMPAIGNS = 'Minulé kampaně';
 export const LEVELS = 'Skupiny';
@@ -76,9 +76,7 @@ export const openFeeHistoryFromDetail = async (page: Page) => {
     await feeHistoryButton(page).click();
     await expect(page.getByRole('heading', {name: FEE_HISTORY, level: 1})).toBeVisible();
     await expect(heading(page, 'Historie příspěvků')).toBeVisible();
-    const feeSection = heading(page, 'ČLENSKÝ PŘÍSPĚVEK').locator('xpath=..');
-    await expect(feeSection.getByText('Načítání...')).toHaveCount(0);
-    await expect(feeSection.locator('p').first()).toBeVisible();
+    await expect(page.getByText('Načítání...')).toHaveCount(0);
 };
 
 export const historyEntry = (page: Page, levelName: string, year: number) =>
