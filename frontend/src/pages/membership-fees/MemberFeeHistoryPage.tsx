@@ -6,7 +6,7 @@ import {toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath.ts';
 import {getEnumLabel, labels} from '../../localization';
 import type {GetFeeHistoryResource} from '../../api';
-import {MemberFeeSection} from './MemberFeeSection.tsx';
+import {MemberFeeSection} from '../../components/membership-fees/MemberFeeSection';
 
 const l = labels.memberFee;
 

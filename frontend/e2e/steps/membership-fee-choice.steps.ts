@@ -16,8 +16,13 @@ const CHOICE_ACTION = /^(Zvolit|Změnit) typ členského příspěvku$/;
 
 const feeSection = (page: Page) => heading(page, FEE_SECTION).locator('xpath=..');
 
-const currentType = (page: Page) =>
+const lockedType = (page: Page) =>
     feeSection(page).locator('div').filter({has: page.getByText(CURRENT_TYPE, {exact: true})}).last();
+
+// An open choice shows the chosen type pre-selected in the form; once locked it is shown as the current type.
+const currentType = (page: Page, name: string) =>
+    lockedType(page).getByText(name, {exact: true})
+        .or(feeSection(page).getByRole('radio', {name: new RegExp(`^${name}\\b`), checked: true}));
 
 // The member's own fee page is reached through the profile, which is linked from the home page only.
 const openProfile = async (page: Page) => {
@@ -81,7 +86,7 @@ Then('{persona}\'s fee section offers type {name} for {int} CZK', async ({page, 
 
 Then('{persona}\'s fee section shows fee type {name}', async ({page, currentRole}, persona: Persona, name: string) => {
     expectActing(currentRole, persona);
-    await expect(currentType(page).getByText(name, {exact: true})).toBeVisible();
+    await expect(currentType(page, name)).toBeVisible();
 });
 
 Then('{persona}\'s fee section prompts to choose a fee type', async ({page, currentRole}, persona: Persona) => {
@@ -116,5 +121,5 @@ Then('{persona}\'s account shows no yearly membership fee for the campaign year'
 Then('{persona} sees fee type {name} in the fee section of member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
         await openFeeHistoryOfMember(page, actAs, persona, fullName);
-        await expect(currentType(page).getByText(name, {exact: true})).toBeVisible();
+        await expect(currentType(page, name)).toBeVisible();
     });

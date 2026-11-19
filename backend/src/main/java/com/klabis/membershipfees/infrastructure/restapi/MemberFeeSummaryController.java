@@ -84,13 +84,16 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
                 .ifPresent(link -> dtoModel.add(link.withRel("member")));
 
         campaignManagementPort.findActiveCampaign().ifPresent(campaign -> {
-            // Same authorization as the chooseFeeType affordance: only who may choose gets the section.
-            if (klabisLinkTo(methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, campaign.getYear(), null)).isEmpty()) {
+            if (!canChooseFeeType(memberId, campaign.getYear())) {
                 return;
             }
             klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId))
                     .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
         });
+    }
+
+    private boolean canChooseFeeType(UUID memberId, int year) {
+        return klabisLinkTo(methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, year, null)).isPresent();
     }
 }
 
