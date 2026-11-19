@@ -11,7 +11,9 @@ import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberViewAccess;
 import com.klabis.common.users.UserId;
+import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
+import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
@@ -50,6 +52,11 @@ class MemberFeeSummaryControllerTest {
     private static final int YEAR = 2026;
     private static final Money FEE = Money.of(new BigDecimal("500.00"), Currency.getInstance("CZK"));
 
+    private static FeeSelectionCampaign activeCampaign(int year) {
+        return FeeSelectionCampaign.reconstruct(
+                new FeeSelectionCampaignId(UUID.randomUUID()), year, LocalDate.of(year, 3, 31), null, List.of());
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -63,12 +70,39 @@ class MemberFeeSummaryControllerTest {
     private ManagementPort memberManagementPort;
 
     @Nested
-    @DisplayName("GET /api/members/{memberId}/fee-summary/{year}")
+    @DisplayName("GET /api/members/{memberId}/fee-summary")
     class GetFeeSummaryTests {
 
         @BeforeEach
         void stubGroups() {
             when(publicationManagementPort.listGroupsForYear(anyInt())).thenReturn(List.of());
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(YEAR)));
+        }
+
+        @Test
+        @DisplayName("should expose the active campaign year in the response")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldExposeCampaignYear() throws Exception {
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(
+                    new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, true, Optional.empty()));
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.year").value(YEAR));
+        }
+
+        @Test
+        @DisplayName("should return 404 when no campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldReturn404WithoutActiveCampaign() throws Exception {
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
@@ -80,7 +114,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.currentGroup.id").value(GROUP_UUID.toString()))
@@ -99,7 +133,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.currentGroup").doesNotExist())
@@ -116,31 +150,30 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.chooseFeeType").exists());
         }
 
         @Test
-        @DisplayName("should include inline group options on chooseFeeType affordance membershipFeeGroupId property")
+        @DisplayName("should expose membershipFeeGroupId as MembershipFeeGroupChoice with options.link to published groups")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
-        void shouldIncludeInlineGroupOptionsOnChooseLevelAffordance() throws Exception {
+        void shouldExposeGroupOptionsLinkOnChooseFeeTypeAffordance() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true, Optional.empty());
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
-            MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    new MembershipFeeTypeId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
-                    LocalDate.of(YEAR, 3, 31));
-            when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
-
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
-                            .value("Základní"));
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].type")
+                            .value("MembershipFeeGroupChoice"))
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.link.href")
+                            .value(org.hamcrest.Matchers.contains("http://localhost/api/fee-selection-campaigns/" + YEAR + "/groups")))
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.inline")
+                            .doesNotExist());
         }
 
         @Test
@@ -152,7 +185,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.removeChoice.method").value("DELETE"))
@@ -169,7 +202,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
@@ -184,7 +217,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.chooseFeeType").doesNotExist());
@@ -198,7 +231,7 @@ class MemberFeeSummaryControllerTest {
                     new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, false, Optional.empty()));
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -211,7 +244,7 @@ class MemberFeeSummaryControllerTest {
                     new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, false, Optional.empty()));
 
             mockMvc.perform(
-                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                            get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
         }
@@ -228,9 +261,11 @@ class MemberFeeSummaryControllerTest {
             List<MemberFeeHistoryPort.LevelAssignment> history = List.of(
                     new MemberFeeHistoryPort.LevelAssignment(
                             2025, new MembershipFeeGroupId(GROUP_UUID), "Základ",
+                            Money.ofCzk(new java.math.BigDecimal("500.00")),
                             LocalDate.of(2024, 11, 15), AssignmentSource.MEMBER_CHOICE),
                     new MemberFeeHistoryPort.LevelAssignment(
                             2024, new MembershipFeeGroupId(UUID.randomUUID()), "Základní",
+                            Money.ofCzk(new java.math.BigDecimal("400.00")),
                             LocalDate.of(2023, 11, 10), AssignmentSource.ADMIN_ASSIGNMENT)
             );
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(history);
@@ -242,6 +277,8 @@ class MemberFeeSummaryControllerTest {
                     .andExpect(jsonPath("$.assignments").isArray())
                     .andExpect(jsonPath("$.assignments[0].year").value(2025))
                     .andExpect(jsonPath("$.assignments[0].groupName").value("Základ"))
+                    .andExpect(jsonPath("$.assignments[0].yearlyFee").value(500.00))
+                    .andExpect(jsonPath("$.assignments[1].yearlyFee").value(400.00))
                     .andExpect(jsonPath("$.assignments[0].joinedAt").value("2024-11-15"))
                     .andExpect(jsonPath("$.assignments[0].source").value("MEMBER_CHOICE"))
                     .andExpect(jsonPath("$.assignments[1].year").value(2024))
@@ -277,33 +314,58 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should point feeSummary to the campaign year for the owner")
+        @DisplayName("should offer yearless feeSummary link to the owner while a campaign is active")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
-        void shouldPointFeeSummaryToCampaignYear() throws Exception {
+        void shouldOfferFeeSummaryToOwnerWithActiveCampaign() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2027);
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(2027)));
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.feeSummary.href").value(
-                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/2027")));
+                            org.hamcrest.Matchers.endsWith("/api/members/" + MEMBER_UUID + "/fee-summary")));
         }
 
         @Test
-        @DisplayName("should point feeSummary to the current year when no campaign is active")
+        @DisplayName("should not offer feeSummary link when no campaign is active")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
-        void shouldPointFeeSummaryToCurrentYear() throws Exception {
+        void shouldNotOfferFeeSummaryWithoutActiveCampaign() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.feeSummary.href").value(
-                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/2026")));
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should not offer feeSummary link to another member holding no choice right")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldNotOfferFeeSummaryToOtherMember() throws Exception {
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(YEAR)));
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should not offer feeSummary link to an administrator without the choice right")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldNotOfferFeeSummaryToAdministrator() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(YEAR)));
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
         }
 
         @Test
@@ -317,31 +379,30 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should return another member's history for MEMBERS:MANAGE holder with feeSummary link")
+        @DisplayName("should return another member's history for MEMBERS:MANAGE holder")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void shouldReturnHistoryToManagerWithFeeSummaryLink() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of(
                     new MemberFeeHistoryPort.LevelAssignment(
                             2025, new MembershipFeeGroupId(GROUP_UUID), "Základ",
+                            Money.ofCzk(new java.math.BigDecimal("500.00")),
                             LocalDate.of(2024, 11, 15), AssignmentSource.MEMBER_CHOICE)));
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.assignments[0].year").value(2025))
-                    .andExpect(jsonPath("$._links.member.href").exists())
-                    .andExpect(jsonPath("$._links.feeSummary.href").exists());
+                    .andExpect(jsonPath("$._links.member.href").exists());
         }
 
         @Test
-        @DisplayName("should return history to a guardian holding MEMBERS:EDIT_PROFILE over the member with feeSummary link")
+        @DisplayName("should offer feeSummary link to a guardian holding MEMBERS:EDIT_PROFILE over the member")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
                 authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
         void shouldReturnHistoryToGuardianOfTheMember() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+            when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(YEAR)));
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
@@ -356,7 +417,6 @@ class MemberFeeSummaryControllerTest {
                 authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
         void shouldReturnHistoryToNonMemberGuardian() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
-            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)

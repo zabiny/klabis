@@ -13,20 +13,20 @@ const {Given, When, Then} = createBdd(test);
 
 const OWN_CHOICE = 'Vlastní volba';
 
-Given('{persona} has assigned member {string} to level {name}',
-    async ({apiAs, feeState}, administrator: Persona, fullName: string, level: string) => {
+Given('{persona} has assigned member {string} to type {name}',
+    async ({apiAs, feeState}, administrator: Persona, fullName: string, feeType: string) => {
         const {firstName, lastName} = splitName(fullName);
         const admin = apiAs(personas[administrator]);
-        await assignLevel(admin, {id: await findMemberIdByName(admin, firstName, lastName)}, feeState, level);
+        await assignLevel(admin, {id: await findMemberIdByName(admin, firstName, lastName)}, feeState, feeType);
     });
 
-When('{persona} opens the fee level history from the profile', async ({page, actAs}, persona: Persona) => {
+When('{persona} opens the fee type history from the profile', async ({page, actAs}, persona: Persona) => {
     await actAs(persona);
     await openOwnProfile(page);
     await openFeeHistoryFromDetail(page);
 });
 
-When('{persona} opens the fee level history of {persona}', async ({page, actAs, apiAs}, actor: Persona, member: Persona) => {
+When('{persona} opens the fee type history of {persona}', async ({page, actAs, apiAs}, actor: Persona, member: Persona) => {
     const {firstName, lastName} = await memberIdentity(apiAs(personas[member]));
     await openDetailAs(page, actAs, actor, lastName, firstName);
     await openFeeHistoryFromDetail(page);
@@ -40,7 +40,7 @@ export const openFeeHistoryOfMember = async (
     await openFeeHistoryFromDetail(page);
 };
 
-When('{persona} opens the fee level history of member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
+When('{persona} opens the fee type history of member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
     await openFeeHistoryOfMember(page, actAs, persona, fullName);
 });
 
@@ -49,15 +49,19 @@ When('{persona} opens the detail of club member {string}', async ({page, actAs},
     await openDetailAs(page, actAs, persona, lastName, firstName);
 });
 
-Then('the history shows level {name} for the campaign year', async ({page, feeState}, level: string) => {
-    await expect(historyEntry(page, level, feeState.year!)).toBeVisible();
+Then('the history shows type {name} for the campaign year', async ({page, feeState}, feeType: string) => {
+    await expect(historyEntry(page, feeType, feeState.year!)).toBeVisible();
 });
 
-Then('the history shows level {name} for the campaign year as the member\'s own choice', async ({page, feeState}, level: string) => {
-    await expect(historyEntry(page, level, feeState.year!).getByText(OWN_CHOICE, {exact: true})).toBeVisible();
+Then('the history shows type {name} for the campaign year as the member\'s own choice', async ({page, feeState}, feeType: string) => {
+    await expect(historyEntry(page, feeType, feeState.year!).getByText(OWN_CHOICE, {exact: true})).toBeVisible();
 });
 
-Then('{persona} is not offered the fee level history of member {string}', async ({page, currentRole}, persona: Persona, fullName: string) => {
+Then('the history shows the price {int} CZK for the campaign year', async ({page, feeState}, amount: number) => {
+    await expect(page.getByRole('row').filter({hasText: String(feeState.year)}).getByText(`${amount} Kč`)).toBeVisible();
+});
+
+Then('{persona} is not offered the fee type history of member {string}', async ({page, currentRole}, persona: Persona, fullName: string) => {
     expectActing(currentRole, persona);
     await expect(heading(page, fullName)).toBeVisible();
     await expect(feeHistoryButton(page)).toHaveCount(0);

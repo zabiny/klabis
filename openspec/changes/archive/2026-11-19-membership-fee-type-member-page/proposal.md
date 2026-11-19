@@ -13,7 +13,7 @@ Club feedback (issue #439): the word "tier" is not club vocabulary, and the memb
   - The section is visible and editable only to the member and to a legal guardian with the right to choose for their minor. An administrator without that right does not see it.
 - **History table** gains the price the member pays for the chosen type in that year (snapshot of the published type).
 - **BREAKING (UI only):** the separate fee choice page `/members/:memberId/fee-choice/:year` is removed; old links stop working.
-- Backend: the fee page offers the section (`feeSummary` link) only to those who may choose, while a campaign is active; history entries carry the yearly price.
+- Backend: the fee page offers the section (`feeSummary` link) only to those who may choose, while a campaign is active; `fee-summary` loses its `{year}` (the active campaign decides, 404 without one); the `chooseFeeType` template points its options at the published-groups endpoint (renamed `/levels` → `/groups`) which carries the prices; history entries carry the yearly price.
 - Not in scope: detailed display of the current type outside the history table (deferred); renaming `MembershipFeeGroup`.
 
 **Depends on** change `rename-fee-tier-to-fee-type`, which must be implemented first (names `MembershipFeeType`, `chooseFeeType`, `/api/membership-fee-types`).

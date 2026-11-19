@@ -22,6 +22,7 @@ import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -77,6 +78,8 @@ class MemberFeeHistoryAccessIntegrationTest {
     private AuthorizationSnapshotLoader snapshotLoader;
     @Autowired
     private LegalGuardianGroupPort legalGuardianGroupPort;
+    @Autowired
+    private FeeSelectionCampaignManagementPort campaignManagementPort;
 
     private static final RequestPostProcessor CURRENT_USER = request -> request;
 
@@ -99,6 +102,11 @@ class MemberFeeHistoryAccessIntegrationTest {
                 typeId, "Závodní", PAST_YEAR, YEARLY_FEE, List.of(), LocalDate.of(PAST_YEAR - 1, 12, 31));
         group.addMember(member.getId(), LocalDate.of(PAST_YEAR - 1, 11, 20), AssignmentSource.ADMIN_ASSIGNMENT);
         group = groupRepository.save(group);
+
+        if (campaignManagementPort.findActiveCampaign().isEmpty()) {
+            campaignManagementPort.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
+                    CURRENT_YEAR, LocalDate.now().plusDays(30), List.of(typeId)));
+        }
     }
 
     private Member registerMinor(List<LegalGuardianPort.GuardianInput> guardians) {
@@ -140,7 +148,7 @@ class MemberFeeHistoryAccessIntegrationTest {
     }
 
     private ResultActions getSummary(Member target, RequestPostProcessor user) throws Exception {
-        return mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", target.getId().uuid(), CURRENT_YEAR)
+        return mockMvc.perform(get("/api/members/{id}/fee-summary", target.getId().uuid())
                 .with(user).accept(MediaTypes.HAL_FORMS_JSON_VALUE));
     }
 
@@ -207,7 +215,7 @@ class MemberFeeHistoryAccessIntegrationTest {
                 .andExpect(jsonPath("$.assignments[0].groupName").value("Závodní"))
                 .andExpect(jsonPath("$.assignments[0].source").value("ADMIN_ASSIGNMENT"))
                 .andExpect(jsonPath("$._links.member.href").exists())
-                .andExpect(jsonPath("$._links.feeSummary.href").exists());
+                .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
     }
 
     @Test

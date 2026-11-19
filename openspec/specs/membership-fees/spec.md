@@ -6,57 +6,57 @@ Allows membership administrators to maintain a catalog of fee levels, run fee se
 
 ## Requirements
 
-### Requirement: Membership Fee Level Catalog
+### Requirement: Membership Fee Type Catalog
 
-The system SHALL allow a membership administrator to maintain a catalog of membership fee levels. Each level defines a human-readable name, a yearly membership fee amount in CZK, and a set of membership payment rules. A level is created with its name and yearly fee; its membership payment rules are added afterwards on the level's detail page. The catalog is a working template that is reused when publishing levels for a calendar year; editing the catalog SHALL NOT affect any level already published for a year.
+The system SHALL allow a membership administrator to maintain a catalog of membership fee types. Each type defines a human-readable name, a yearly membership fee amount in CZK, and a set of membership payment rules. A type is created with its name and yearly fee; its membership payment rules are added afterwards on the type's detail page. The catalog is a working template that is reused when publishing types for a calendar year; editing the catalog SHALL NOT affect any type already published for a year.
 
 #### Scenario: Administrator creates a fee level
 
-- **WHEN** a membership administrator creates a fee level with a name and a yearly membership fee amount
-- **THEN** the level is added to the catalog and is available for publishing
-- **AND** the level has no membership payment rules until the administrator adds them on the level's detail page
+- **WHEN** a membership administrator creates a fee type with a name and a yearly membership fee amount
+- **THEN** the type is added to the catalog and is available for publishing
+- **AND** the type has no membership payment rules until the administrator adds them on the type's detail page
 
 #### Scenario: Administrator edits a catalog level
 
-- **WHEN** a membership administrator edits the name, yearly fee, or rules of a catalog level
-- **THEN** the catalog level reflects the changes
-- **AND** levels already published for a calendar year remain unchanged
+- **WHEN** a membership administrator edits the name, yearly fee, or rules of a catalog type
+- **THEN** the catalog type reflects the changes
+- **AND** types already published for a calendar year remain unchanged
 
 #### Scenario: Non-administrator cannot manage the catalog
 
-- **WHEN** a member without membership administration permission attempts to create or edit a catalog level
+- **WHEN** a member without membership administration permission attempts to create or edit a catalog type
 - **THEN** the system rejects the request as unauthorized
 
 ### Requirement: Membership Payment Rules by Event Type and Ranking
 
-A membership fee level SHALL define membership payment rules that determine how much a member with that level contributes towards an event entry. Each rule applies to a combination of event type and event ranking. A rule expresses the member's contribution either as a percentage of the event's base entry price or as a fixed amount in CZK.
+A membership fee type SHALL define membership payment rules that determine how much a member with that type contributes towards an event entry. Each rule applies to a combination of event type and event ranking. A rule expresses the member's contribution either as a percentage of the event's base entry price or as a fixed amount in CZK.
 
 #### Scenario: Administrator defines a percentage rule
 
 - **WHEN** a membership administrator adds a rule for a given event type and ranking expressed as a percentage
-- **THEN** the rule is stored on the level as a percentage of the base entry price
+- **THEN** the rule is stored on the type as a percentage of the base entry price
 
 #### Scenario: Administrator defines a fixed amount rule
 
 - **WHEN** a membership administrator adds a rule for a given event type and ranking expressed as a fixed amount in CZK
-- **THEN** the rule is stored on the level as a fixed amount
+- **THEN** the rule is stored on the type as a fixed amount
 
 #### Scenario: Rule combination is unique within a level
 
-- **WHEN** a membership administrator adds a rule for an event type and ranking combination that already has a rule on the same level
+- **WHEN** a membership administrator adds a rule for an event type and ranking combination that already has a rule on the same type
 - **THEN** the system rejects the request as a duplicate rule
-- **AND** the administrator sees a Czech message saying that the level already has a rule for that event type and ranking, naming the event type by its name and the ranking by its label
+- **AND** the administrator sees a Czech message saying that the type already has a rule for that event type and ranking, naming the event type by its name and the ranking by its label
 - **AND** the message contains no internal identifier of the event type
 
 ### Requirement: Starting a Fee Selection Campaign
 
-The system SHALL allow a membership administrator to start a fee selection campaign for a specific calendar year by selecting a set of fee levels and setting a voting deadline. The deadline SHALL be a future date. A new campaign MAY only be started when no other campaign is currently active. Starting a campaign SHALL create, for each selected level, a frozen-on-demand snapshot independent of the catalog.
+The system SHALL allow a membership administrator to start a fee selection campaign for a specific calendar year by selecting a set of fee types and setting a voting deadline. The deadline SHALL be a future date. A new campaign MAY only be started when no other campaign is currently active. Starting a campaign SHALL create, for each selected type, a frozen-on-demand snapshot independent of the catalog.
 
 #### Scenario: Administrator starts a fee selection campaign
 
-- **WHEN** a membership administrator starts a campaign for a calendar year with a voting deadline in the future and a set of catalog levels
-- **THEN** each selected level becomes a published level for that year holding a complete snapshot of its yearly fee and rules
-- **AND** members can choose among the published levels for that year
+- **WHEN** a membership administrator starts a campaign for a calendar year with a voting deadline in the future and a set of catalog types
+- **THEN** each selected type becomes a published type for that year holding a complete snapshot of its yearly fee and rules
+- **AND** members can choose among the published types for that year
 
 #### Scenario: Voting deadline must be in the future
 
@@ -74,7 +74,7 @@ The system SHALL allow a membership administrator to start a fee selection campa
 #### Scenario: Voting deadline applies to the whole campaign
 
 - **WHEN** a membership administrator sets the voting deadline while starting a campaign
-- **THEN** the single deadline governs the choice window for every level published in that campaign
+- **THEN** the single deadline governs the choice window for every type published in that campaign
 
 ### Requirement: Changing the Voting Deadline of an Active Campaign
 
@@ -100,105 +100,33 @@ The system SHALL allow a membership administrator to change the voting deadline 
 - **WHEN** a membership administrator attempts to change the voting deadline of a campaign that is already closed
 - **THEN** the system rejects the request
 
-### Requirement: Member Chooses a Fee Level for the Upcoming Year
-
-The system SHALL allow each member, and the legal guardian of a minor member on the minor's behalf, to choose, before the voting deadline, one published fee level for the upcoming calendar year. The choice SHALL be an explicit action by the member or the guardian. Until the voting deadline the member or the guardian MAY change the choice any number of times or withdraw the current level, including a level assigned by an administrator. A membership administrator who is neither the member nor their guardian cannot choose or withdraw a level. After the voting deadline, or once the campaign is closed, the choice is locked and neither the member nor the guardian can change or withdraw it.
-
-#### Scenario: Member chooses a level
-
-- **WHEN** a member selects one of the published levels for the upcoming year before the voting deadline
-- **THEN** the member becomes assigned to that level for that year
-
-#### Scenario: Member changes the choice before the deadline
-
-- **WHEN** a member who already chose a level selects a different published level before the voting deadline
-- **THEN** the member's assignment moves to the newly selected level
-
-#### Scenario: Member cannot change the choice after the deadline
-
-- **WHEN** a member attempts to change their chosen level after the voting deadline
-- **THEN** the system rejects the request as the voting is closed
-
-#### Scenario: Previous year's level is offered as a default
-
-- **WHEN** a member opens the choice form for the upcoming year and chose a level in the previous year that is also published for the upcoming year
-- **THEN** the form pre-fills the previous year's level as a non-binding default
-- **AND** the choice is recorded only after the member explicitly confirms it
-
-#### Scenario: Member withdraws the choice before the deadline
-
-- **WHEN** a member who chose a level for the upcoming year withdraws the choice on the choice form before the voting deadline
-- **THEN** the member is no longer assigned to any level for that year
-- **AND** the profile prompts the member to choose a level again
-- **AND** if the member does not choose a level before the voting deadline, the sanction for a missing choice applies
-
-#### Scenario: Member withdraws a level assigned by an administrator
-
-- **GIVEN** a membership administrator assigned a level to a member for the upcoming year
-- **WHEN** the member withdraws that level on the choice form before the voting deadline
-- **THEN** the member is no longer assigned to any level for that year
-
-#### Scenario: Member cannot withdraw the choice after the deadline
-
-- **WHEN** a member with an assigned level opens the choice form after the voting deadline or after the campaign has been closed
-- **THEN** the form shows the level as locked
-- **AND** the option to withdraw the choice is not offered
-
-#### Scenario: Legal guardian chooses a level for their minor
-
-- **GIVEN** voting is open and the minor has not chosen a level
-- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page and selects one of the published levels
-- **THEN** the minor becomes assigned to that level for that year
-
-#### Scenario: Non-member legal guardian chooses a level for their minor
-
-- **GIVEN** voting is open and the legal guardian is not a club member
-- **WHEN** the guardian selects a published level for the minor on the minor's "Členské příspěvky" page
-- **THEN** the minor becomes assigned to that level for that year
-
-#### Scenario: Legal guardian withdraws or changes the minor's choice before the deadline
-
-- **GIVEN** voting is open and the minor has a level for the upcoming year
-- **WHEN** the minor's legal guardian changes the level or withdraws it
-- **THEN** the minor's assignment moves to the new level or the minor is no longer assigned to any level
-
-#### Scenario: Administrator cannot choose a level for a member
-
-- **WHEN** a membership administrator who is not the member's legal guardian opens the member's "Členské příspěvky" page while voting is open
-- **THEN** the page offers no control for choosing, changing or withdrawing the level
-
-#### Scenario: Legal guardian cannot choose for a member who is not their minor
-
-- **WHEN** a legal guardian attempts to choose a level for a member who is not their minor
-- **THEN** the system rejects the request as forbidden
-
 ### Requirement: Emergency Assignment by Administrator
 
-The system SHALL allow a membership administrator to assign or change a member's fee level for a year, including after the voting deadline. This emergency assignment overrides the locked state of a member's choice.
+The system SHALL allow a membership administrator to assign or change a member's fee type for a year, including after the voting deadline. This emergency assignment overrides the locked state of a member's choice.
 
 #### Scenario: Administrator assigns a level after the deadline
 
-- **WHEN** a membership administrator assigns a published level to a member after the voting deadline
-- **THEN** the member becomes assigned to that level for that year
+- **WHEN** a membership administrator assigns a published type to a member after the voting deadline
+- **THEN** the member becomes assigned to that type for that year
 
 #### Scenario: Administrator changes a member's level after the deadline
 
-- **WHEN** a membership administrator changes a member's already assigned level after the voting deadline
-- **THEN** the member's assignment moves to the newly selected level
+- **WHEN** a membership administrator changes a member's already assigned type after the voting deadline
+- **THEN** the member's assignment moves to the newly selected type
 
 ### Requirement: Sanction for a Missing Choice
 
-When a member has not chosen a fee level by the voting deadline, the system SHALL prevent that member from registering for new events and SHALL deregister that member from all events whose registrations are still open. The sanction takes effect the day after the voting deadline.
+When a member has not chosen a fee type by the voting deadline, the system SHALL prevent that member from registering for new events and SHALL deregister that member from all events whose registrations are still open. The sanction takes effect the day after the voting deadline.
 
 #### Scenario: Member who missed the choice is blocked and deregistered
 
-- **WHEN** the voting deadline has passed and a member did not choose a level
+- **WHEN** the voting deadline has passed and a member did not choose a type
 - **THEN** the member is prevented from registering for new events
 - **AND** the member is deregistered from all events that still have open registrations
 
 #### Scenario: Member who chose a level is not sanctioned
 
-- **WHEN** the voting deadline has passed and a member did choose a level before it
+- **WHEN** the voting deadline has passed and a member did choose a type before it
 - **THEN** the member is not blocked and remains registered for their events
 
 ### Requirement: Lifting the Sanction by Emergency Assignment
@@ -207,37 +135,37 @@ When a membership administrator performs an emergency assignment for a member wh
 
 #### Scenario: Emergency assignment unblocks future registrations
 
-- **WHEN** a membership administrator assigns a level to a member who was blocked for a missing choice
+- **WHEN** a membership administrator assigns a type to a member who was blocked for a missing choice
 - **THEN** the member is allowed to register for events again
 
 #### Scenario: Deregistered registrations are not restored automatically
 
-- **WHEN** a membership administrator assigns a level to a member who was deregistered for a missing choice
+- **WHEN** a membership administrator assigns a type to a member who was deregistered for a missing choice
 - **THEN** the previously cancelled registrations remain cancelled
 - **AND** restoring them requires a manual re-registration
 
-### Requirement: Editing a Published Level Until First Surcharge
+### Requirement: Editing a Published Type Until First Surcharge
 
-The system SHALL allow a membership administrator to edit the yearly fee and membership payment rules of a published level only until the first surcharge has been calculated on the basis of that published level. Once the first surcharge has been calculated, the published level's snapshot is frozen and SHALL NOT be edited; corrections require publishing a new level.
+The system SHALL allow a membership administrator to edit the yearly fee and membership payment rules of a published type only until the first surcharge has been calculated on the basis of that published type. Once the first surcharge has been calculated, the published type's snapshot is frozen and SHALL NOT be edited; corrections require publishing a new type.
 
 #### Scenario: Administrator edits a published level before any surcharge
 
-- **WHEN** a membership administrator edits the rules of a published level for which no surcharge has yet been calculated
-- **THEN** the published level's snapshot reflects the changes
+- **WHEN** a membership administrator edits the rules of a published type for which no surcharge has yet been calculated
+- **THEN** the published type's snapshot reflects the changes
 
 #### Scenario: Editing is rejected after the first surcharge
 
-- **WHEN** a membership administrator attempts to edit a published level for which at least one surcharge has already been calculated
+- **WHEN** a membership administrator attempts to edit a published type for which at least one surcharge has already been calculated
 - **THEN** the system rejects the request because the snapshot is frozen
 
 ### Requirement: Generating the Yearly Membership Fee
 
-The system SHALL post the yearly membership fee to each member's financial account based on the level the member is assigned to for the year. The yearly fee SHALL be posted the day after the voting deadline. The yearly fee for a given member and year SHALL be posted at most once.
+The system SHALL post the yearly membership fee to each member's financial account based on the type the member is assigned to for the year. The yearly fee SHALL be posted the day after the voting deadline. The yearly fee for a given member and year SHALL be posted at most once.
 
 #### Scenario: Yearly fee is posted the day after the deadline
 
 - **WHEN** the day after the voting deadline arrives
-- **THEN** each member assigned to a published level for that year has the level's yearly fee posted to their financial account
+- **THEN** each member assigned to a published type for that year has the type's yearly fee posted to their financial account
 
 #### Scenario: Yearly fee is not posted twice
 
@@ -246,121 +174,17 @@ The system SHALL post the yearly membership fee to each member's financial accou
 
 #### Scenario: Member without an assigned level receives no yearly fee
 
-- **WHEN** the yearly fee generation runs and a member has no assigned level for that year
+- **WHEN** the yearly fee generation runs and a member has no assigned type for that year
 - **THEN** no yearly fee is posted for that member
-
-### Requirement: Member Sees Their Current Fee Level
-
-The system SHALL allow a member, a membership administrator and a legal guardian of the member to see the member's currently assigned fee level for the relevant year. The member's detail SHALL offer a "Členské příspěvky" button, and the page it opens SHALL display the member's current level. The choice controls are offered only to the member and their legal guardian. The relevant year is the year of the active campaign; when no campaign is active, it is the latest campaign year that is not in the past; otherwise it is the current calendar year.
-
-#### Scenario: Member sees the assigned level on the profile
-
-- **WHEN** a member opens their profile and clicks "Členské příspěvky"
-- **THEN** the page shows the member's currently assigned fee level
-
-#### Scenario: Member with no assigned level sees a prompt to choose
-
-- **WHEN** a member who has not chosen a level for the upcoming year opens the "Členské příspěvky" page while voting is open
-- **THEN** the page prompts the member to choose a level
-
-#### Scenario: Member still sees the chosen level after the campaign is closed
-
-- **GIVEN** a member chose a level in a campaign for the upcoming year
-- **WHEN** that campaign has been closed and the member opens the "Členské příspěvky" page
-- **THEN** the page still shows the chosen level for the campaign year
-- **AND** the page indicates that the choice is locked
-
-#### Scenario: Legal guardian sees the current level of their minor
-
-- **GIVEN** voting is open and the minor has chosen a level
-- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page
-- **THEN** the page shows the minor's currently assigned fee level
-- **AND** the page offers to change or withdraw it
-
-#### Scenario: Legal guardian is prompted to choose for a minor without a level
-
-- **GIVEN** voting is open and the minor has not chosen a level
-- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page
-- **THEN** the page prompts the guardian to choose a level
-
-### Requirement: Audit Trail of Level Assignments
-
-The system SHALL keep a record of the level each member was assigned in each year, for accounting purposes. The "Členské příspěvky" page SHALL show a member's fee level history, with one entry per year in which the member had a level. Each entry shows the year, the level name and how the level was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page, and the button leading to it is shown only to them and only for an active member. Years without an assignment are not listed.
-
-#### Scenario: Member opens their fee level history from the profile
-
-- **WHEN** a member opens their profile and clicks "Členské příspěvky"
-- **THEN** the system shows the "Členské příspěvky" page with the member's fee level history
-- **AND** the history lists every year in which the member had an assigned level, newest year first
-
-#### Scenario: History entry shows year, level and how it was assigned
-
-- **WHEN** a member opens the "Členské příspěvky" page for a year in which they chose a level themselves
-- **THEN** the entry for that year shows the year and the level name
-- **AND** the entry shows that the level was the member's own choice
-
-#### Scenario: Level assigned by an administrator is marked as such
-
-- **WHEN** a membership administrator assigned a member's level for a year, and the "Členské příspěvky" page is opened for that member
-- **THEN** the entry for that year shows that the level was assigned by an administrator
-
-#### Scenario: Past assignments remain available
-
-- **GIVEN** a member was assigned a level in a fee selection campaign that is now closed
-- **WHEN** a membership administrator opens that member's detail and clicks "Členské příspěvky"
-- **THEN** the history shows the level the member was assigned in that year
-
-#### Scenario: Administrator sees only the history of another member
-
-- **WHEN** a membership administrator opens the "Členské příspěvky" page of another member
-- **THEN** the page shows the member's fee level history
-- **AND** the page shows the member's current level section without the controls for choosing a level
-
-#### Scenario: Legal guardian sees the fee level history of their minor
-
-- **GIVEN** a minor was assigned a fee level in a past year
-- **WHEN** the minor's legal guardian opens the minor's detail and clicks "Členské příspěvky"
-- **THEN** the history shows the level the minor was assigned in that year
-
-#### Scenario: Legal guardian cannot open the fee page of a member who is not their minor
-
-- **WHEN** a legal guardian without membership administration permission opens the detail of a member they are not guardian of
-- **THEN** the "Členské příspěvky" button is not displayed
-
-#### Scenario: Year without an assignment is not listed
-
-- **GIVEN** a member had no fee level in some year, for example because they missed the choice
-- **WHEN** the member's "Členské příspěvky" page is opened
-- **THEN** that year does not appear in the history
-
-#### Scenario: Fee page of an inactive member is not offered
-
-- **WHEN** a membership administrator opens the detail of an inactive member
-- **THEN** the "Členské příspěvky" button is not displayed
-
-#### Scenario: Member without any assignment sees an empty history
-
-- **WHEN** a member who has never had a fee level assigned opens their "Členské příspěvky" page
-- **THEN** the history says that the member has no fee level history yet
-
-#### Scenario: Member cannot open another member's fee page
-
-- **WHEN** a member without membership administration permission opens another member's detail
-- **THEN** the "Členské příspěvky" button is not displayed
-
-#### Scenario: Returning from the fee page
-
-- **WHEN** a user on a member's "Členské příspěvky" page clicks the back link
-- **THEN** the system shows the detail of that member again
 
 ### Requirement: Single Administrative Page for Membership Fees
 
-The system SHALL provide a single administrative page where a membership administrator can, in one place, see the currently active fee selection campaign, manage the fee tier catalog, and review past fee selection campaigns. This page SHALL be the membership administrator's entry point for all membership fee administration.
+The system SHALL provide a single administrative page where a membership administrator can, in one place, see the currently active fee selection campaign, manage the fee type catalog, and review past fee selection campaigns. This page SHALL be the membership administrator's entry point for all membership fee administration.
 
 #### Scenario: Administrator opens the membership fees page
 
 - **WHEN** a membership administrator opens the membership fees page
-- **THEN** the page shows the tier catalog
+- **THEN** the page shows the type catalog
 - **AND** the page shows the active campaign when one exists
 - **AND** the page shows the list of past campaigns
 
@@ -406,3 +230,214 @@ The membership fees page SHALL list past (closed) fee selection campaigns, each 
 
 - **WHEN** a membership administrator opens a past campaign's detail from the membership fees page and then navigates back
 - **THEN** the administrator returns to the membership fees page
+
+### Requirement: Member Chooses a Fee Type for the Upcoming Year
+
+The system SHALL allow each member, and the legal guardian of a minor member on the minor's behalf, to choose, change or withdraw one published membership fee type for the upcoming year in the "Členský příspěvek" section until the voting deadline. After the deadline or once the campaign is closed the choice is locked. A membership administrator who is neither the member nor their guardian cannot choose or withdraw a type.
+
+#### Scenario: Member chooses a type
+
+- **WHEN** a member selects one of the offered membership fee types in the "Členský příspěvek" section before the voting deadline
+- **THEN** the member becomes assigned to that type for that year
+- **AND** the member does not leave the "Členské příspěvky" page to make the choice
+
+#### Scenario: Offered types show their yearly price
+
+- **WHEN** a member opens the "Členské příspěvky" page while voting is open
+- **THEN** every membership fee type offered in the "Členský příspěvek" section shows its name and its yearly price
+
+#### Scenario: Member changes the choice before the deadline
+
+- **WHEN** a member who already chose a type selects a different offered type before the voting deadline
+- **THEN** the member's assignment moves to the newly selected type
+
+#### Scenario: Member cannot change the choice after the deadline
+
+- **WHEN** a member attempts to change their chosen type after the voting deadline
+- **THEN** the system rejects the request as the voting is closed
+
+#### Scenario: Previous year's type is offered as a default
+
+- **WHEN** a member opens the "Členský příspěvek" section for the upcoming year and chose a type in the previous year that is also published for the upcoming year
+- **THEN** the section pre-selects the previous year's type as a non-binding default
+- **AND** the choice is recorded only after the member explicitly confirms it
+
+#### Scenario: Member withdraws the choice before the deadline
+
+- **WHEN** a member who chose a type for the upcoming year withdraws the choice in the "Členský příspěvek" section before the voting deadline
+- **THEN** the member is no longer assigned to any type for that year
+- **AND** the section prompts the member to choose a type again
+- **AND** if the member does not choose a type before the voting deadline, the sanction for a missing choice applies
+
+#### Scenario: Member withdraws a type assigned by an administrator
+
+- **GIVEN** a membership administrator assigned a type to a member for the upcoming year
+- **WHEN** the member withdraws that type in the "Členský příspěvek" section before the voting deadline
+- **THEN** the member is no longer assigned to any type for that year
+
+#### Scenario: Member cannot withdraw the choice after the deadline
+
+- **WHEN** a member with an assigned type opens the "Členské příspěvky" page after the voting deadline while the campaign is still active
+- **THEN** the section shows the type as locked
+- **AND** the option to change or withdraw the choice is not offered
+
+#### Scenario: Legal guardian chooses a type for their minor
+
+- **GIVEN** voting is open and the minor has not chosen a type
+- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page and selects one of the offered types in the "Členský příspěvek" section
+- **THEN** the minor becomes assigned to that type for that year
+
+#### Scenario: Non-member legal guardian chooses a type for their minor
+
+- **GIVEN** voting is open and the legal guardian is not a club member
+- **WHEN** the guardian selects an offered type for the minor on the minor's "Členské příspěvky" page
+- **THEN** the minor becomes assigned to that type for that year
+
+#### Scenario: Legal guardian withdraws or changes the minor's choice before the deadline
+
+- **GIVEN** voting is open and the minor has a type for the upcoming year
+- **WHEN** the minor's legal guardian changes the type or withdraws it
+- **THEN** the minor's assignment moves to the new type or the minor is no longer assigned to any type
+
+#### Scenario: Administrator cannot choose a type for a member
+
+- **WHEN** a membership administrator who is not the member's legal guardian opens the member's "Členské příspěvky" page while voting is open
+- **THEN** the page does not show the "Členský příspěvek" section
+
+#### Scenario: Legal guardian cannot choose for a member who is not their minor
+
+- **WHEN** a legal guardian attempts to choose a type for a member who is not their minor
+- **THEN** the system rejects the request as forbidden
+
+### Requirement: Fee Type Section on the Member's Fees Page
+
+The "Členské příspěvky" page of a member SHALL show a "Členský příspěvek" section above the history only while a fee selection campaign is active, and only to the member and to a legal guardian who may choose for them. The section shows the chosen type or a prompt to choose one and holds the controls for choosing, changing and withdrawing it. Outside an active campaign the chosen type is visible only in the history.
+
+#### Scenario: Member sees the section with the assigned type during an active campaign
+
+- **GIVEN** a fee selection campaign is active and voting is open
+- **WHEN** a member who chose a type opens their profile and clicks "Členské příspěvky"
+- **THEN** the page shows the "Členský příspěvek" section above the history with the member's chosen type
+- **AND** the section offers to change or withdraw it
+
+#### Scenario: Member with no chosen type sees a prompt to choose
+
+- **GIVEN** a fee selection campaign is active and voting is open
+- **WHEN** a member who has not chosen a type opens the "Členské příspěvky" page
+- **THEN** the section prompts the member to choose one of the offered types
+
+#### Scenario: Section is locked after the voting deadline
+
+- **GIVEN** the voting deadline has passed and the campaign has not been closed yet
+- **WHEN** a member who chose a type opens the "Členské příspěvky" page
+- **THEN** the section shows the chosen type and indicates that the choice is locked
+
+#### Scenario: Member who missed the deadline is told the voting is closed
+
+- **GIVEN** the voting deadline has passed and the campaign has not been closed yet
+- **WHEN** a member who did not choose a type opens the "Členské příspěvky" page
+- **THEN** the section says that the voting is closed and no type was chosen
+
+#### Scenario: Section is hidden when no campaign is active
+
+- **WHEN** a member opens the "Členské příspěvky" page while no fee selection campaign is active
+- **THEN** the page does not show the "Členský příspěvek" section
+- **AND** the member's chosen type for past years is visible only in the history table
+
+#### Scenario: Section is hidden after the campaign is closed
+
+- **GIVEN** a member chose a type in a campaign that has since been closed
+- **WHEN** the member opens the "Členské příspěvky" page
+- **THEN** the page does not show the "Členský příspěvek" section
+- **AND** the history shows the chosen type for the campaign year
+
+#### Scenario: Legal guardian sees the section for their minor
+
+- **GIVEN** a fee selection campaign is active and voting is open
+- **WHEN** the minor's legal guardian opens the minor's "Členské příspěvky" page
+- **THEN** the page shows the "Členský příspěvek" section with the minor's chosen type, or a prompt to choose one
+- **AND** the section offers to choose, change or withdraw it
+
+#### Scenario: Administrator without the right to choose does not see the section
+
+- **GIVEN** a fee selection campaign is active
+- **WHEN** a membership administrator who is neither the member nor their legal guardian opens the member's "Členské příspěvky" page
+- **THEN** the page does not show the "Členský příspěvek" section
+- **AND** the page shows the member's fee type history
+
+### Requirement: Audit Trail of Fee Type Assignments
+
+The system SHALL keep a record of the membership fee type each member was assigned in each year, and the "Členské příspěvky" page SHALL show it as a history with one entry per year, newest first. Each entry shows the year, the type name, the yearly price of the type as published for that year, and how the type was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page.
+
+#### Scenario: Member opens their fee type history from the profile
+
+- **WHEN** a member opens their profile and clicks "Členské příspěvky"
+- **THEN** the system shows the "Členské příspěvky" page with the member's fee type history
+- **AND** the history lists every year in which the member had an assigned type, newest year first
+
+#### Scenario: History entry shows year, type, price and how it was assigned
+
+- **WHEN** a member opens the "Členské příspěvky" page for a year in which they chose a type themselves
+- **THEN** the entry for that year shows the year and the type name
+- **AND** the entry shows the yearly price the member pays for that type in that year
+- **AND** the entry shows that the type was the member's own choice
+
+#### Scenario: Price in the history is not changed by later catalog edits
+
+- **GIVEN** a member was assigned a type in a past year
+- **WHEN** a membership administrator later changes the yearly fee of that type in the catalog
+- **THEN** the history entry for the past year still shows the price that was published for that year
+
+#### Scenario: Type assigned by an administrator is marked as such
+
+- **WHEN** a membership administrator assigned a member's type for a year, and the "Členské příspěvky" page is opened for that member
+- **THEN** the entry for that year shows that the type was assigned by an administrator
+
+#### Scenario: Past assignments remain available
+
+- **GIVEN** a member was assigned a type in a fee selection campaign that is now closed
+- **WHEN** a membership administrator opens that member's detail and clicks "Členské příspěvky"
+- **THEN** the history shows the type and price the member was assigned in that year
+
+#### Scenario: Administrator sees only the history of another member
+
+- **WHEN** a membership administrator opens the "Členské příspěvky" page of another member
+- **THEN** the page shows the member's fee type history
+- **AND** the page does not show the "Členský příspěvek" section
+
+#### Scenario: Legal guardian sees the fee type history of their minor
+
+- **GIVEN** a minor was assigned a fee type in a past year
+- **WHEN** the minor's legal guardian opens the minor's detail and clicks "Členské příspěvky"
+- **THEN** the history shows the type and price the minor was assigned in that year
+
+#### Scenario: Legal guardian cannot open the fee page of a member who is not their minor
+
+- **WHEN** a legal guardian without membership administration permission opens the detail of a member they are not guardian of
+- **THEN** the "Členské příspěvky" button is not displayed
+
+#### Scenario: Year without an assignment is not listed
+
+- **GIVEN** a member had no fee type in some year, for example because they missed the choice
+- **WHEN** the member's "Členské příspěvky" page is opened
+- **THEN** that year does not appear in the history
+
+#### Scenario: Fee page of an inactive member is not offered
+
+- **WHEN** a membership administrator opens the detail of an inactive member
+- **THEN** the "Členské příspěvky" button is not displayed
+
+#### Scenario: Member without any assignment sees an empty history
+
+- **WHEN** a member who has never had a fee type assigned opens their "Členské příspěvky" page
+- **THEN** the history says that the member has no fee type history yet
+
+#### Scenario: Member cannot open another member's fee page
+
+- **WHEN** a member without membership administration permission opens another member's detail
+- **THEN** the "Členské příspěvky" button is not displayed
+
+#### Scenario: Returning from the fee page
+
+- **WHEN** a user on a member's "Členské příspěvky" page clicks the back link
+- **THEN** the system shows the detail of that member again

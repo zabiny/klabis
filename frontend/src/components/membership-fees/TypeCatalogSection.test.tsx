@@ -59,9 +59,9 @@ describe('TypeCatalogSection', () => {
         vi.clearAllMocks();
     });
 
-    it('renders section heading "Katalog tierů"', () => {
+    it('renders section heading "Katalog typů členského příspěvku"', () => {
         renderSection(createMockPageData(null));
-        expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: /katalog typů členského příspěvku/i})).toBeInTheDocument();
     });
 
     it('renders table column headers for name and yearly fee amount', () => {
@@ -70,15 +70,15 @@ describe('TypeCatalogSection', () => {
         expect(screen.getByText('Roční poplatek')).toBeInTheDocument();
     });
 
-    it('renders "Přidat tier" create button when createFeeType template is present', () => {
+    it('renders "Přidat typ členského příspěvku" create button when createFeeType template is present', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/membership-fee-types'}},
             _templates: {
-                createFeeType: mockHalFormsTemplate({title: 'Přidat tier', method: 'POST'}),
+                createFeeType: mockHalFormsTemplate({title: 'Přidat typ členského příspěvku', method: 'POST'}),
             },
         };
         renderSection(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /přidat tier/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /přidat typ členského příspěvku/i})).toBeInTheDocument();
     });
 
     it('does not render create button when createFeeType template is absent', () => {
@@ -86,7 +86,7 @@ describe('TypeCatalogSection', () => {
             _links: {self: {href: '/api/membership-fee-types'}},
         };
         renderSection(createMockPageData(resourceData));
-        expect(screen.queryByRole('button', {name: /přidat tier/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /přidat typ členského příspěvku/i})).not.toBeInTheDocument();
     });
 
     it('renders type name when embedded types are available', () => {

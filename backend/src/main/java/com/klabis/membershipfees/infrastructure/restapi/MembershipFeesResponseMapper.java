@@ -62,6 +62,7 @@ final class MembershipFeesResponseMapper {
                                 .year(a.year())
                                 .groupId(a.groupId().value())
                                 .groupName(a.groupName())
+                                .yearlyFee(a.yearlyFee().amount())
                                 .joinedAt(a.joinedAt())
                                 .source(MemberInGroupResponseSource.valueOf(a.source().name()))
                                 .build())
@@ -69,7 +70,7 @@ final class MembershipFeesResponseMapper {
                 .build();
     }
 
-    static MemberFeeSummaryResponse toResponse(MemberFeeHistoryPort.CurrentLevelInfo info) {
+    static MemberFeeSummaryResponse toResponse(MemberFeeHistoryPort.CurrentLevelInfo info, int year) {
         CurrentGroupResponse currentGroup = info.groupId() != null
                 ? CurrentGroupResponseBuilder.builder()
                         .id(info.groupId().value())
@@ -81,6 +82,7 @@ final class MembershipFeesResponseMapper {
                 .map(MembershipFeeGroupId::value)
                 .orElse(null);
         return MemberFeeSummaryResponseBuilder.builder()
+                .year(year)
                 .currentGroup(currentGroup)
                 .votingOpen(info.votingOpen())
                 .recommendedGroupId(recommendedGroupId)

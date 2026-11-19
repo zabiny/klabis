@@ -4,8 +4,8 @@ Feature: Event registrations
   can cancel the registration of any member. Eva is a club member, Jan a registration manager.
 
   Background:
-    Given an active fee selection campaign offers level "Basic"
-    And Jan has assigned Eva to level "Basic"
+    Given an active fee selection campaign offers type "Basic"
+    And Jan has assigned Eva to type "Basic"
 
   Rule: A member can register for an active event with open registrations
 

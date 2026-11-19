@@ -5,8 +5,8 @@ import {personas, type Persona} from './personas';
 
 export type Contribution = {ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT'; value: number; display: string};
 
-// Entities are never cleaned up and catalog levels are found by name, so every name is unique per run and scenario;
-// otherwise a scenario would silently reuse a level another scenario created with a different yearly fee.
+// Entities are never cleaned up and catalog types are found by name, so every name is unique per run and scenario;
+// otherwise a scenario would silently reuse a type another scenario created with a different yearly fee.
 export const scenarioPrefix = () => `E2E-${process.env.E2E_RUN_ID}-${test.info().testId.slice(-8)}-`;
 
 defineParameterType({

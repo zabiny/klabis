@@ -208,7 +208,7 @@ describe('labels.errorTypes membership fees', () => {
 
     it('names the event type and ranking of a duplicate payment rule', () => {
         expect(text('/errors/duplicate-payment-rule', {eventTypeName: 'Závod', rankingLabel: 'Morava'}))
-            .toBe('Pravidlo pro typ akce „Závod“ a žebříček „Morava“ již v této úrovni existuje.');
+            .toBe('Pravidlo pro typ akce „Závod“ a žebříček „Morava“ již v tomto typu členského příspěvku existuje.');
     });
 
     it.each([
@@ -217,7 +217,7 @@ describe('labels.errorTypes membership fees', () => {
         [{rankingLabel: 'Morava'}],
     ])('uses the wording without names for a duplicate payment rule with params %j', (params) => {
         expect(text('/errors/duplicate-payment-rule', params))
-            .toBe('Pravidlo pro tuto kombinaci typu akce a žebříčku již v této úrovni existuje.');
+            .toBe('Pravidlo pro tuto kombinaci typu akce a žebříčku již v tomto typu členského příspěvku existuje.');
     });
 
     it('names the event type and ranking of a missing payment rule', () => {
@@ -254,9 +254,9 @@ describe('labels.errorTypes membership fees', () => {
         ['/errors/active-campaign-exists', 'Již existuje aktivní kampaň volby členského příspěvku. Nejprve ji uzavřete.'],
         ['/errors/campaign-closed', 'Kampaň je již uzavřena, změnu nelze provést.'],
         ['/errors/campaign-already-processed', 'Kampaň již byla zpracována, akci nelze zopakovat.'],
-        ['/errors/snapshot-frozen', 'Úroveň je součástí vyhlášené kampaně a již ji nelze měnit.'],
+        ['/errors/snapshot-frozen', 'Typ členského příspěvku je součástí vyhlášené kampaně a již ji nelze měnit.'],
         ['/errors/voting-closed', 'Hlasování v této kampani již skončilo.'],
-        ['/errors/membership-fee-type-not-found', 'Úroveň členského příspěvku nebyla nalezena.'],
+        ['/errors/membership-fee-type-not-found', 'Typ členského příspěvku nebyl nalezen.'],
         ['/errors/membership-fee-group-not-found', 'Skupina členských příspěvků nebyla nalezena.'],
     ] as const)('has Czech text for %s', (type, expected) => {
         expect(text(type)).toBe(expected);

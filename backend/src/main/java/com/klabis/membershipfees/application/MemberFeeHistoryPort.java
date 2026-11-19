@@ -27,6 +27,7 @@ public interface MemberFeeHistoryPort {
             int year,
             MembershipFeeGroupId groupId,
             String groupName,
+            Money yearlyFee,
             LocalDate joinedAt,
             AssignmentSource source
     ) {}

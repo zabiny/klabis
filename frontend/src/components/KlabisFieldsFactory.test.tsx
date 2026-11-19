@@ -94,6 +94,24 @@ function createMockConf(overrides: Partial<HalFormsInputProps> & { prop: HalForm
 
 describe('KlabisFieldsFactory', () => {
 
+    describe('MembershipFeeGroupChoice field type', () => {
+        it('renders the fee group choice field for MembershipFeeGroupChoice type', () => {
+            const mockConf = createMockConf({
+                prop: {
+                    name: 'membershipFeeGroupId',
+                    type: 'MembershipFeeGroupChoice',
+                    options: {link: {href: '/api/fee-selection-campaigns/2026/groups'}},
+                },
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeGroupChoice', mockConf);
+
+            expect(result).not.toBeNull();
+            const ct = result?.type as {displayName?: string; name?: string};
+            expect(ct.displayName || ct.name).toBe('HalFormsMembershipFeeGroupChoice');
+        });
+    });
+
     describe('MemberId field type', () => {
 
         it('should render HalFormsMemberId for MemberId type', () => {

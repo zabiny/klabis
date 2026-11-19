@@ -91,7 +91,7 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
                 .filter(m -> m.memberId().equals(memberId))
                 .findFirst()
                 .map(m -> new LevelAssignment(group.getYear(), group.getId(), group.getName(),
-                        m.joinedAt(), m.source()));
+                        group.getYearlyFeeSnapshot(), m.joinedAt(), m.source()));
     }
 
 }

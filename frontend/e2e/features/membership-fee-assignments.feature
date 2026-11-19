@@ -4,45 +4,45 @@
 # "The day after the voting deadline" is a clock-driven trigger; the scenarios stand in for it with the campaign ending,
 # which runs the same fee posting and sanctions.
 Feature: Membership fee assignments
-  A membership administrator can assign a member's level even after the voting deadline. When the campaign ends,
-  every member assigned to a level is charged its yearly fee, and the assignments stay available for accounting.
+  A membership administrator can assign a member's type even after the voting deadline. When the campaign ends,
+  every member assigned to a type is charged its yearly fee, and the assignments stay available for accounting.
   Jan is a membership administrator, Eva a club member.
 
-  Rule: An administrator can assign or change a member's level after the deadline
+  Rule: An administrator can assign or change a member's type after the deadline
 
-    Scenario: Administrator assigns a level after the deadline
-      Given an active fee selection campaign offers levels "Basic" and "Plus"
+    Scenario: Administrator assigns a type after the deadline
+      Given an active fee selection campaign offers types "Basic" and "Plus"
       And the fee selection campaign is closed
-      When Jan assigns Eva to level "Plus"
-      Then the published level "Plus" lists Eva as a member
+      When Jan assigns Eva to type "Plus"
+      Then the published type "Plus" lists Eva as a member
 
-    Scenario: Administrator changes a member's level after the deadline
-      Given an active fee selection campaign offers levels "Basic" and "Plus"
-      And Jan has assigned Eva to level "Basic"
+    Scenario: Administrator changes a member's type after the deadline
+      Given an active fee selection campaign offers types "Basic" and "Plus"
+      And Jan has assigned Eva to type "Basic"
       And the fee selection campaign is closed
-      When Jan assigns Eva to level "Plus"
-      Then the published level "Plus" lists Eva as a member
-      And the published level "Basic" does not list Eva as a member
+      When Jan assigns Eva to type "Plus"
+      Then the published type "Plus" lists Eva as a member
+      And the published type "Basic" does not list Eva as a member
 
-  Rule: Level assignments of past years are kept for accounting
+  Rule: Type assignments of past years are kept for accounting
 
     Scenario: Past assignments remain available
-      Given an active fee selection campaign offers level "Basic"
-      And Jan has assigned Eva to level "Basic"
+      Given an active fee selection campaign offers type "Basic"
+      And Jan has assigned Eva to type "Basic"
       And the fee selection campaign is closed
-      When Jan opens the fee level history of Eva
-      Then the history shows level "Basic" for the campaign year
+      When Jan opens the fee type history of Eva
+      Then the history shows type "Basic" for the campaign year
 
-  Rule: When the campaign ends, each member is charged the yearly fee of the assigned level
+  Rule: When the campaign ends, each member is charged the yearly fee of the assigned type
 
     Scenario: Yearly fee is posted the day after the deadline
-      Given an active fee selection campaign offers level "Plus" with yearly fee 2000 CZK
-      And Eva has chosen level "Plus"
+      Given an active fee selection campaign offers type "Plus" with yearly fee 2000 CZK
+      And Eva has chosen type "Plus"
       When the fee selection campaign ends
       Then Eva's account shows the yearly membership fee of 2000 CZK for the campaign year
 
-    Scenario: Member without an assigned level receives no yearly fee
-      Given an active fee selection campaign offers level "Basic"
-      And Eva has not chosen a fee level
+    Scenario: Member without an assigned type receives no yearly fee
+      Given an active fee selection campaign offers type "Basic"
+      And Eva has not chosen a fee type
       When the fee selection campaign ends
       Then Eva's account shows no yearly membership fee for the campaign year
