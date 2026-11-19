@@ -44,6 +44,12 @@ const MemberFeeHistoryContent = ({resourceData}: {resourceData: GetFeeHistoryRes
                     <TableCell column="year">{l.historyYear}</TableCell>
                     <TableCell column="groupName">{l.historyLevel}</TableCell>
                     <TableCell
+                        column="yearlyFee"
+                        dataRender={({value}) => `${value} ${labels.finance.currency}`}
+                    >
+                        {l.historyFee}
+                    </TableCell>
+                    <TableCell
                         column="source"
                         dataRender={({value}) => getEnumLabel('feeMemberSource', String(value))}
                     >

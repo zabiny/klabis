@@ -220,6 +220,42 @@ class MemberFeeHistoryServiceTest {
         }
 
         @Test
+        @DisplayName("should return yearlyFee from the published group's snapshot")
+        void shouldReturnYearlyFeeFromSnapshot() {
+            MembershipFeeGroup group = buildGroupWithMember(
+                    GROUP_ID, 2025, MEMBER_ID, LocalDate.of(2025, 11, 1), AssignmentSource.MEMBER_CHOICE);
+            org.mockito.Mockito.when(groupRepository.findByMember(MEMBER_ID)).thenReturn(List.of(group));
+
+            List<MemberFeeHistoryPort.LevelAssignment> history = service.getLevelHistory(MEMBER_ID);
+
+            assertThat(history.get(0).yearlyFee()).isEqualTo(Money.ofCzk(new BigDecimal("500.00")));
+        }
+
+        @Test
+        @DisplayName("should keep a past year's price when a later year's group of the same type has a different fee")
+        void shouldKeepPastPriceWhenLaterGroupOfSameTypeChanged() {
+            MembershipFeeGroup past = buildGroupWithMember(
+                    new MembershipFeeGroupId(UUID.randomUUID()), 2025, MEMBER_ID,
+                    LocalDate.of(2025, 11, 1), AssignmentSource.MEMBER_CHOICE);
+            MembershipFeeGroup later = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(UUID.randomUUID()), LEVEL_ID,
+                    "Základ", 2026, GROUP_DEADLINE,
+                    Money.ofCzk(new BigDecimal("900.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(),
+                    Set.of(new FeeGroupMembership(MEMBER_ID, TODAY, AssignmentSource.MEMBER_CHOICE, null)),
+                    null);
+            org.mockito.Mockito.when(groupRepository.findByMember(MEMBER_ID)).thenReturn(List.of(past, later));
+
+            List<MemberFeeHistoryPort.LevelAssignment> history = service.getLevelHistory(MEMBER_ID);
+
+            assertThat(history).extracting(MemberFeeHistoryPort.LevelAssignment::year, MemberFeeHistoryPort.LevelAssignment::yearlyFee)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(2026, Money.ofCzk(new BigDecimal("900.00"))),
+                            org.assertj.core.groups.Tuple.tuple(2025, Money.ofCzk(new BigDecimal("500.00"))));
+        }
+
+        @Test
         @DisplayName("should return empty list when member has no assignments")
         void shouldReturnEmptyWhenNoAssignments() {
             org.mockito.Mockito.when(groupRepository.findByMember(MEMBER_ID))

@@ -1588,6 +1588,9 @@ components:
           format: uuid
         groupName:
           type: string
+        yearlyFee:
+          type: number
+          description: Yearly fee of the published group (snapshot), so it does not change with later catalog edits.
         joinedAt:
           type: string
           format: date

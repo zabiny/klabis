@@ -1232,6 +1232,7 @@ export const labels = {
         historyTitle: 'Historie příspěvků',
         historyYear: 'Rok',
         historyLevel: 'Úroveň',
+        historyFee: 'Cena',
         historySource: 'Způsob přiřazení',
         noHistory: 'Zatím nemáte žádnou historii členských příspěvků.',
         backToMember: '← Zpět na detail člena',

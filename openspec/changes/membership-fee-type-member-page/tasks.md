@@ -4,11 +4,11 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 1. History shows the price per year (vertical slice)
 
-- [ ] 1.1 Write failing tests (history service returns `yearlyFee` from the published snapshot; `@WebMvcTest` on `fee-history` asserts `assignments[].yearlyFee`); verify they fail for the right reason
-- [ ] 1.2 Add `yearlyFee` to `FeeAssignmentResponse` in `docs/openapi/spec/membershipfees.yaml` (use `klabis-api-spec` skill), run `./gradlew openapiBundle` and `npm run openapi`; verify the generated types contain the field
-- [ ] 1.3 Add `yearlyFee` to the history read model and mapper; verify the backend tests from 1.1 pass
-- [ ] 1.4 Write failing frontend test, then add the "Cena" column to the history table in `MemberFeeHistoryPage` with label in `labels.memberFee`; verify the vitest file passes and `npm run build` succeeds
-- [ ] 1.5 Add a test that a later catalog edit does not change the price of a past year's entry; verify it passes
+- [x] 1.1 Write failing tests (history service returns `yearlyFee` from the published snapshot; `@WebMvcTest` on `fee-history` asserts `assignments[].yearlyFee`); verify they fail for the right reason
+- [x] 1.2 Add `yearlyFee` to `FeeAssignmentResponse` in `docs/openapi/spec/membershipfees.yaml` (use `klabis-api-spec` skill), run `./gradlew openapiBundle` and `npm run openapi`; verify the generated types contain the field
+- [x] 1.3 Add `yearlyFee` to the history read model and mapper; verify the backend tests from 1.1 pass
+- [x] 1.4 Write failing frontend test, then add the "Cena" column to the history table in `MemberFeeHistoryPage` with label in `labels.memberFee`; verify the vitest file passes and `npm run build` succeeds
+- [x] 1.5 Add a test that a later catalog edit does not change the price of a past year's entry; verify it passes
 
 ## 2. Section only for those who may choose, only during an active campaign (vertical slice)
 

@@ -62,6 +62,7 @@ final class MembershipFeesResponseMapper {
                                 .year(a.year())
                                 .groupId(a.groupId().value())
                                 .groupName(a.groupName())
+                                .yearlyFee(a.yearlyFee().amount())
                                 .joinedAt(a.joinedAt())
                                 .source(MemberInGroupResponseSource.valueOf(a.source().name()))
                                 .build())

@@ -228,9 +228,11 @@ class MemberFeeSummaryControllerTest {
             List<MemberFeeHistoryPort.LevelAssignment> history = List.of(
                     new MemberFeeHistoryPort.LevelAssignment(
                             2025, new MembershipFeeGroupId(GROUP_UUID), "Základ",
+                            Money.ofCzk(new java.math.BigDecimal("500.00")),
                             LocalDate.of(2024, 11, 15), AssignmentSource.MEMBER_CHOICE),
                     new MemberFeeHistoryPort.LevelAssignment(
                             2024, new MembershipFeeGroupId(UUID.randomUUID()), "Základní",
+                            Money.ofCzk(new java.math.BigDecimal("400.00")),
                             LocalDate.of(2023, 11, 10), AssignmentSource.ADMIN_ASSIGNMENT)
             );
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(history);
@@ -242,6 +244,8 @@ class MemberFeeSummaryControllerTest {
                     .andExpect(jsonPath("$.assignments").isArray())
                     .andExpect(jsonPath("$.assignments[0].year").value(2025))
                     .andExpect(jsonPath("$.assignments[0].groupName").value("Základ"))
+                    .andExpect(jsonPath("$.assignments[0].yearlyFee").value(500.00))
+                    .andExpect(jsonPath("$.assignments[1].yearlyFee").value(400.00))
                     .andExpect(jsonPath("$.assignments[0].joinedAt").value("2024-11-15"))
                     .andExpect(jsonPath("$.assignments[0].source").value("MEMBER_CHOICE"))
                     .andExpect(jsonPath("$.assignments[1].year").value(2024))
@@ -323,6 +327,7 @@ class MemberFeeSummaryControllerTest {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of(
                     new MemberFeeHistoryPort.LevelAssignment(
                             2025, new MembershipFeeGroupId(GROUP_UUID), "Základ",
+                            Money.ofCzk(new java.math.BigDecimal("500.00")),
                             LocalDate.of(2024, 11, 15), AssignmentSource.MEMBER_CHOICE)));
             when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
 
