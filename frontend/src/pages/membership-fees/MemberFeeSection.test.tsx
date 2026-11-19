@@ -15,7 +15,7 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
-const renderSection = (feeSummaryHref = '/api/members/member-1/fee-summary/2026') => {
+const renderSection = (feeSummaryHref = '/api/members/member-1/fee-summary') => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
@@ -70,7 +70,7 @@ describe('MemberFeeSection', () => {
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -78,13 +78,14 @@ describe('MemberFeeSection', () => {
             expect(screen.getByText(/Probíhá volba/i)).toBeInTheDocument();
         });
 
-        it('renders link to fee choice page including year derived from self link', () => {
+        it('renders link to fee choice page including year from summary', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
+                year: 2027,
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -94,13 +95,14 @@ describe('MemberFeeSection', () => {
             expect(link).toHaveAttribute('href', '/members/member-1/fee-choice/2027');
         });
 
-        it('uses year from self link, not current calendar year', () => {
+        it('uses year from summary, not current calendar year', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2099'}},
+                year: 2099,
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -117,7 +119,7 @@ describe('MemberFeeSection', () => {
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -125,13 +127,14 @@ describe('MemberFeeSection', () => {
             expect(screen.getByText('Základ')).toBeInTheDocument();
         });
 
-        it('shows "Změnit tier" link with year derived from self link', () => {
+        it('shows "Změnit tier" link with year from summary', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
+                year: 2027,
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -147,7 +150,7 @@ describe('MemberFeeSection', () => {
                 votingOpen: true,
                 recommendedGroupId: null,
                 _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -162,7 +165,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -175,7 +178,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -188,7 +191,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -203,7 +206,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -216,7 +219,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -231,7 +234,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -245,7 +248,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();
@@ -256,13 +259,21 @@ describe('MemberFeeSection', () => {
         });
     });
 
+    describe('fetching', () => {
+        it('fetches the summary via the supplied link href', () => {
+            mockFeeSummary(null);
+            renderSection('/api/members/member-1/fee-summary');
+            expect(useAuthorizedQuery).toHaveBeenCalledWith('/api/members/member-1/fee-summary');
+        });
+    });
+
     describe('viewer of another member summary (administrator or guardian)', () => {
         it('shows current level and status when summary carries only a self link', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
                 recommendedGroupId: null,
-                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _links: {self: {href: '/api/members/member-1/fee-summary'}},
             });
 
             renderSection();

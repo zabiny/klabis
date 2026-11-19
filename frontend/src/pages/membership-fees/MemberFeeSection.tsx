@@ -2,7 +2,6 @@ import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {Section} from '../members/MemberSection';
 import {labels} from '../../localization';
-import {toHref} from '../../api/hateoas.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import type {GetFeeSummaryResource} from '../../api';
 
@@ -28,8 +27,7 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
 };
 
 function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactElement {
-    const campaignYear = (summary._links?.self ? toHref(summary._links.self) : '').split('/').pop();
-    const feeChoicePath = `/members/${memberId}/fee-choice/${campaignYear}`;
+    const feeChoicePath = `/members/${memberId}/fee-choice/${summary.year}`;
     const canChoose = Boolean(summary._templates?.chooseFeeType);
 
     return (

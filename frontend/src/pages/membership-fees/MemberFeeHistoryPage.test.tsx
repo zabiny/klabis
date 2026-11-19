@@ -57,7 +57,7 @@ describe('MemberFeeHistoryPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {currentGroup: null, votingOpen: false, _links: {self: {href: `/api/members/${memberId}/fee-summary/2026`}}},
+            data: {currentGroup: null, votingOpen: false, _links: {self: {href: `/api/members/${memberId}/fee-summary`}}},
             isLoading: false,
             error: null,
             status: 'success',
@@ -106,11 +106,11 @@ describe('MemberFeeHistoryPage', () => {
             _links: {
                 self: {href: `/api/members/${memberId}/fee-history`},
                 member: {href: `/api/members/${memberId}`},
-                feeSummary: {href: `/api/members/${memberId}/fee-summary/2026`},
+                feeSummary: {href: `/api/members/${memberId}/fee-summary`},
             },
         }));
         expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
-        expect(useAuthorizedQuery).toHaveBeenCalledWith(`/api/members/${memberId}/fee-summary/2026`);
+        expect(useAuthorizedQuery).toHaveBeenCalledWith(`/api/members/${memberId}/fee-summary`);
     });
 
     it('does not show current level section without the feeSummary link', () => {

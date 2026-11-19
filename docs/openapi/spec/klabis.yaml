@@ -141,8 +141,8 @@ paths:
   # here, not in members.yaml. See membershipfees.yaml header comment.
   /api/members/{memberId}/fee-choice/{year}:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-choice~1{year}'
-  /api/members/{memberId}/fee-summary/{year}:
-    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
+  /api/members/{memberId}/fee-summary:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary'
   /api/members/{memberId}/fee-history:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
   /api/legal-guardians/{userId}:

@@ -84,7 +84,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
     const year = yearParam ? parseInt(yearParam, 10) : currentYear;
     const navigate = useNavigate();
 
-    const feeSummaryUrl = `/api/members/${memberId}/fee-summary/${year}`;
+    const feeSummaryUrl = `/api/members/${memberId}/fee-summary`;
 
     const {data: summary, isLoading, error} = useAuthorizedQuery<FeeSummaryData>(feeSummaryUrl);
 

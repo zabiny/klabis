@@ -8,6 +8,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
@@ -16,8 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Clock;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,19 +32,23 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
+    private final FeeSelectionCampaignManagementPort campaignManagementPort;
 
-    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort) {
+    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort,
+                               FeeSelectionCampaignManagementPort campaignManagementPort) {
         this.memberFeeHistoryPort = memberFeeHistoryPort;
+        this.campaignManagementPort = campaignManagementPort;
     }
 
     @Override
-    public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(
-            UUID memberId,
-            Integer year) {
+    public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(UUID memberId) {
+        int year = campaignManagementPort.findActiveCampaign()
+                .orElseThrow(FeeSelectionCampaignNotFoundException::new)
+                .getYear();
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
                 new MemberId(memberId), year);
-        MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info);
+        MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info, year);
 
         HalResponseContext.setDomain(new FeeSummaryView(memberId, year, info));
         return ResponseEntity.ok(response);
@@ -69,11 +72,9 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
 class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberFeeHistoryResponse, UUID> {
 
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
-    private final Clock clock;
 
-    MemberFeeHistoryDetailsPostprocessor(FeeSelectionCampaignManagementPort campaignManagementPort, Clock clock) {
+    MemberFeeHistoryDetailsPostprocessor(FeeSelectionCampaignManagementPort campaignManagementPort) {
         this.campaignManagementPort = campaignManagementPort;
-        this.clock = clock;
     }
 
     @Override
@@ -84,9 +85,14 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("member")));
 
-        int year = campaignManagementPort.relevantFeeYear(LocalDate.now(clock));
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
-                .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
+        campaignManagementPort.findActiveCampaign().ifPresent(campaign -> {
+            // Same authorization as the chooseFeeType affordance: only who may choose gets the section.
+            if (klabisLinkTo(methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, campaign.getYear(), null)).isEmpty()) {
+                return;
+            }
+            klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId))
+                    .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
+        });
     }
 }
 
@@ -106,7 +112,7 @@ class MemberFeeSummaryDetailsPostprocessor
         int year = view.year();
         MemberFeeHistoryPort.CurrentLevelInfo info = view.info();
 
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {

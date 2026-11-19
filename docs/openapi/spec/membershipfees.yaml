@@ -1014,21 +1014,20 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/members/{memberId}/fee-summary/{year}:
+  /api/members/{memberId}/fee-summary:
     get:
       operationId: getFeeSummary
       tags: [MemberFeeSummary]
-      summary: Get member's current fee level summary for a year
+      summary: Get member's fee type summary for the active campaign
       description: |
-        Returns the member's current fee group (if assigned), the recommended level, and whether
-        voting is currently open for the year.
+        Returns the member's current fee group (if assigned), the recommended type, and whether
+        voting is currently open, for the year of the active campaign. Answers 404 when no campaign is active.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
-        - $ref: '#/components/parameters/FeeSummaryYearParam'
       responses:
         '200':
           description: Fee level summary retrieved successfully
@@ -1093,7 +1092,7 @@ paths:
               description: The member whose fee history this is
             feeSummary:
               operation: getFeeSummary
-              description: Current fee level summary, present for the member, an administrator and a legal guardian of the member
+              description: Fee type summary of the active campaign; present only while a campaign is active and the caller may choose the fee type (the member or a legal guardian)
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1226,15 +1225,6 @@ components:
       schema:
         type: string
         format: uuid
-
-    FeeSummaryYearParam:
-      name: year
-      in: path
-      description: Calendar year
-      required: true
-      schema:
-        type: integer
-        format: int32
 
   schemas:
 
@@ -1544,8 +1534,12 @@ components:
 
     MemberFeeSummaryResponse:
       type: object
-      description: A member's current fee level summary for a year.
+      description: A member's fee type summary for the active campaign year.
       properties:
+        year:
+          type: integer
+          format: int32
+          description: Year of the active campaign this summary refers to
         currentGroup:
           $ref: '#/components/schemas/CurrentGroupResponse'
         votingOpen:

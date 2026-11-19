@@ -12,10 +12,10 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 2. Section only for those who may choose, only during an active campaign (vertical slice)
 
-- [ ] 2.1 Write failing `@WebMvcTest` cases for `fee-history`: `feeSummary` link present for member and guardian while a campaign is active; absent for an administrator without the choice right, for another member, and when no campaign is active; `fee-summary` answers for the active campaign's year without a `{year}` path variable and returns 404 when no campaign is active
-- [ ] 2.2 Change `MemberFeeHistoryDetailsPostprocessor` to add the `feeSummary` link per D1 (active campaign + caller may choose); drop `{year}` from `getFeeSummary` in the OpenAPI spec and controller (year from the active campaign, `year` in the response, 404 otherwise), regenerate bundle and frontend types; verify 2.1 passes
-- [ ] 2.3 Write failing frontend tests for `MemberFeeSection` / `MemberFeeHistoryPage`: section rendered only when the `feeSummary` link is present, fetches via the link; locked state after deadline; "voting closed, nothing chosen" message; hidden otherwise
-- [ ] 2.4 Update `MemberFeeSection` to gate on the link and drop hand-built URLs; verify the vitest files pass
+- [x] 2.1 Write failing `@WebMvcTest` cases for `fee-history`: `feeSummary` link present for member and guardian while a campaign is active; absent for an administrator without the choice right, for another member, and when no campaign is active; `fee-summary` answers for the active campaign's year without a `{year}` path variable and returns 404 when no campaign is active
+- [x] 2.2 Change `MemberFeeHistoryDetailsPostprocessor` to add the `feeSummary` link per D1 (active campaign + caller may choose); drop `{year}` from `getFeeSummary` in the OpenAPI spec and controller (year from the active campaign, `year` in the response, 404 otherwise), regenerate bundle and frontend types; verify 2.1 passes
+- [x] 2.3 Write failing frontend tests for `MemberFeeSection` / `MemberFeeHistoryPage`: section rendered only when the `feeSummary` link is present, fetches via the link; locked state after deadline; "voting closed, nothing chosen" message; hidden otherwise
+- [x] 2.4 Update `MemberFeeSection` to gate on the link and drop hand-built URLs; verify the vitest files pass
 
 ## 3. Choose the type directly in the section, with prices (vertical slice)
 

@@ -240,7 +240,7 @@ describe('MemberFeeChoicePage', () => {
 
             renderPage('minor-42', '2026');
 
-            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/members/minor-42/fee-summary/2026');
+            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/members/minor-42/fee-summary');
         });
     });
 

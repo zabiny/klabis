@@ -140,7 +140,7 @@ class MemberFeeChoiceGuardianAccessIntegrationTest {
     }
 
     private ResultActions getSummary(Member target, RequestPostProcessor user) throws Exception {
-        return mockMvc.perform(get("/api/members/{id}/fee-summary/{year}", target.getId().uuid(), YEAR).with(user)
+        return mockMvc.perform(get("/api/members/{id}/fee-summary", target.getId().uuid()).with(user)
                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
     }
 
