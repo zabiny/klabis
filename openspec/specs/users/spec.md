@@ -3,7 +3,9 @@
 ## Purpose
 
 Covers user account management, authentication, authorization, and permission management. Defines how users log in, how permissions are granted and revoked, password setup and activation workflows, and OIDC integration for the frontend application.
+
 ## Requirements
+
 ### Requirement: User Authentication
 
 The system SHALL authenticate users via OAuth2 using a login name and a cryptographically hashed password. The user name of a club member is their registration number; the user name of a non-member legal guardian is their login number from the EXT series (EXT0001, EXT0002, …), which has the same format as a registration number. A user MAY additionally have an alternative user name; a guardian who becomes a club member keeps their EXT login number as the alternative user name. A user can log in with the user name or the alternative user name and is always presented by the user name. Authorities are loaded from the UserPermissions aggregate.
@@ -522,9 +524,9 @@ When a user who is not signed in opens a page of the application, the system SHA
 #### Scenario: Member opens a shared link while still signed in at the login service
 
 - **GIVEN** a member who signed in earlier in this browser but whose application session has ended
-- **WHEN** the member opens a shared link to the membership fee tiers page
+- **WHEN** the member opens a shared link to the membership fee types page
 - **THEN** the member is signed in again without the login page being shown
-- **AND** the membership fee tiers page is shown
+- **AND** the membership fee types page is shown
 
 #### Scenario: Requested search and filter settings are kept
 
