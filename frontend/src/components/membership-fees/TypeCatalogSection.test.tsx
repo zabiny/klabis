@@ -6,7 +6,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {makePageData} from '../../__mocks__/pageData';
-import {TierCatalogSection} from './TierCatalogSection';
+import {TypeCatalogSection} from './TypeCatalogSection';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
@@ -38,7 +38,7 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
     makePageData({
         resourceData,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-types'}),
         ...overrides,
     });
 
@@ -48,13 +48,13 @@ const renderSection = (pageData: ReturnType<typeof createMockPageData>) => {
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/administration/membership-fees']}>
-                <TierCatalogSection/>
+                <TypeCatalogSection/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-describe('TierCatalogSection', () => {
+describe('TypeCatalogSection', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -70,34 +70,34 @@ describe('TierCatalogSection', () => {
         expect(screen.getByText('Roční poplatek')).toBeInTheDocument();
     });
 
-    it('renders "Přidat tier" create button when createTier template is present', () => {
+    it('renders "Přidat tier" create button when createFeeType template is present', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-tiers'}},
+            _links: {self: {href: '/api/membership-fee-types'}},
             _templates: {
-                createTier: mockHalFormsTemplate({title: 'Přidat tier', method: 'POST'}),
+                createFeeType: mockHalFormsTemplate({title: 'Přidat tier', method: 'POST'}),
             },
         };
         renderSection(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /přidat tier/i})).toBeInTheDocument();
     });
 
-    it('does not render create button when createTier template is absent', () => {
+    it('does not render create button when createFeeType template is absent', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-tiers'}},
+            _links: {self: {href: '/api/membership-fee-types'}},
         };
         renderSection(createMockPageData(resourceData));
         expect(screen.queryByRole('button', {name: /přidat tier/i})).not.toBeInTheDocument();
     });
 
-    it('renders tier name when embedded tiers are available', () => {
+    it('renders type name when embedded types are available', () => {
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-tiers'}},
+            _links: {self: {href: '/api/membership-fee-types'}},
             _embedded: {
-                membershipFeeTierSummaryResponseList: [{
-                    id: 'tier-1',
+                membershipFeeTypeSummaryResponseList: [{
+                    id: 'type-1',
                     name: 'Základní členství',
                     yearlyFeeAmount: 500,
-                    _links: {self: {href: '/api/membership-fee-tiers/tier-1'}},
+                    _links: {self: {href: '/api/membership-fee-types/type-1'}},
                 }],
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
@@ -110,16 +110,16 @@ describe('TierCatalogSection', () => {
         expect(screen.getByText('Základní členství')).toBeInTheDocument();
     });
 
-    it('navigates to tier detail when a table row is clicked', () => {
+    it('navigates to type detail when a table row is clicked', () => {
         const navigateToResource = vi.fn();
         const resourceData: HalResponse = {
-            _links: {self: {href: '/api/membership-fee-tiers'}},
+            _links: {self: {href: '/api/membership-fee-types'}},
             _embedded: {
-                membershipFeeTierSummaryResponseList: [{
-                    id: 'tier-1',
+                membershipFeeTypeSummaryResponseList: [{
+                    id: 'type-1',
                     name: 'Základní členství',
                     yearlyFeeAmount: 500,
-                    _links: {self: {href: '/api/membership-fee-tiers/tier-1'}},
+                    _links: {self: {href: '/api/membership-fee-types/type-1'}},
                 }],
             },
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
@@ -131,7 +131,7 @@ describe('TierCatalogSection', () => {
         renderSection(createMockPageData(resourceData, {
             navigateToResource,
             refetch: async () => {},
-            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
+            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-types'}),
         }));
         screen.getByText('Základní členství').closest('tr')!.click();
         expect(navigateToResource).toHaveBeenCalled();

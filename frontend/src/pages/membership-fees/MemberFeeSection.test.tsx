@@ -69,7 +69,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -83,7 +83,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -99,7 +99,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: null,
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2099'}},
             });
 
@@ -116,7 +116,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -130,7 +130,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -146,7 +146,7 @@ describe('MemberFeeSection', () => {
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
                 recommendedGroupId: null,
-                _templates: {chooseTier: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
+                _templates: {chooseFeeType: {method: 'POST', target: '/api/members/member-1/fee-choice/2026'}},
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -225,7 +225,7 @@ describe('MemberFeeSection', () => {
         });
     });
 
-    describe('votingOpen is true, chooseTier template absent', () => {
+    describe('votingOpen is true, chooseFeeType template absent', () => {
         it('hides choose link and prompt when there is no choice', () => {
             mockFeeSummary({
                 currentGroup: null,

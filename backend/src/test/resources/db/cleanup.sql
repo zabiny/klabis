@@ -66,7 +66,7 @@ DELETE FROM membershipfees.fee_selection_campaign_level;
 DELETE FROM membershipfees.fee_selection_campaign;
 DELETE FROM membershipfees.yearly_fee_charge_marker;
 DELETE FROM membershipfees.membership_payment_rule;
-DELETE FROM membershipfees.membership_fee_tier;
+DELETE FROM membershipfees.membership_fee_type;
 
 -- Members table
 DELETE FROM members.members;

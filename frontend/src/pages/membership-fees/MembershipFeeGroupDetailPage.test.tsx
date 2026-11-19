@@ -110,7 +110,7 @@ describe('MembershipFeeGroupDetailPage', () => {
 
     it('back link leads to the membership fees page', () => {
         renderPage(createMockPageData(buildGroupDetail()));
-        expect(screen.getByRole('link', {name: /zpět na seznam/i})).toHaveAttribute('href', '/membership-fee-tiers');
+        expect(screen.getByRole('link', {name: /zpět na seznam/i})).toHaveAttribute('href', '/membership-fee-types');
     });
 
     it('renders group name as heading', () => {

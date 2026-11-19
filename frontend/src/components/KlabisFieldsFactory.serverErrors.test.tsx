@@ -11,8 +11,8 @@ vi.mock('../hooks/useEventTypes', () => ({
     useEventTypes: () => ({eventTypes: [], isLoading: false, getById: vi.fn()}),
 }));
 
-vi.mock('../hooks/useMembershipFeeTierOptions', () => ({
-    useMembershipFeeTierOptions: () => [],
+vi.mock('../hooks/useMembershipFeeTypeOptions', () => ({
+    useMembershipFeeTypeOptions: () => [],
 }));
 
 const template: HalFormsTemplate = {

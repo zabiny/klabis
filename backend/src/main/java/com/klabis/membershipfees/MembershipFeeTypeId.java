@@ -6,11 +6,11 @@ import org.jmolecules.ddd.types.Identifier;
 import java.util.UUID;
 
 @ValueObject
-public record MembershipFeeTierId(UUID value) implements Identifier {
+public record MembershipFeeTypeId(UUID value) implements Identifier {
 
-    public MembershipFeeTierId {
+    public MembershipFeeTypeId {
         if (value == null) {
-            throw new IllegalArgumentException("MembershipFeeTierId value is required");
+            throw new IllegalArgumentException("MembershipFeeTypeId value is required");
         }
     }
 

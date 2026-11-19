@@ -7,10 +7,10 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeOptionsPort;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
@@ -36,74 +36,74 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@ExposesResourceFor(MembershipFeeTier.class)
-class MembershipFeeTierController implements MembershipFeeTiersApi {
+@ExposesResourceFor(MembershipFeeType.class)
+class MembershipFeeTypeController implements MembershipFeeTypesApi {
 
-    private final MembershipFeeTierManagementPort managementPort;
+    private final MembershipFeeTypeManagementPort managementPort;
     private final ConversionService conversionService;
     // toSummaryResponse is a plain interface method (not the Converter.convert override), so it
     // isn't reachable via ConversionService.convert(source, TargetClass) — that only dispatches
     // to the registered Converter<S,T> pair. Inject the generated Converter bean directly for it.
-    private final MembershipFeeTierResponseConverter tierResponseConverter;
+    private final MembershipFeeTypeResponseConverter typeResponseConverter;
 
-    MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
+    MembershipFeeTypeController(MembershipFeeTypeManagementPort managementPort,
                                 ConversionService conversionService,
-                                MembershipFeeTierResponseConverter tierResponseConverter) {
+                                MembershipFeeTypeResponseConverter typeResponseConverter) {
         this.managementPort = managementPort;
         this.conversionService = conversionService;
-        this.tierResponseConverter = tierResponseConverter;
+        this.typeResponseConverter = typeResponseConverter;
     }
 
     @Override
-    public ResponseEntity<Void> createTier(CreateMembershipFeeTierRequest request) {
-        MembershipFeeTierManagementPort.CreateTierCommand command = MembershipFeesRequestMapper.toCommand(request);
-        MembershipFeeTierId id = managementPort.createTier(command);
+    public ResponseEntity<Void> createFeeType(CreateMembershipFeeTypeRequest request) {
+        MembershipFeeTypeManagementPort.CreateTypeCommand command = MembershipFeesRequestMapper.toCommand(request);
+        MembershipFeeTypeId id = managementPort.createFeeType(command);
         return ResponseEntity.created(
-                linkTo(methodOn(MembershipFeeTiersApi.class).getTier(id.value())).toUri()
+                linkTo(methodOn(MembershipFeeTypesApi.class).getFeeType(id.value())).toUri()
         ).build();
     }
 
     @Override
-    public ResponseEntity<List<MembershipFeeTierSummaryResponse>> listTiers() {
-        List<MembershipFeeTier> tiers = managementPort.listTiers();
-        List<MembershipFeeTierSummaryResponse> items = tiers.stream()
-                .map(tierResponseConverter::toSummaryResponse)
+    public ResponseEntity<List<MembershipFeeTypeSummaryResponse>> listFeeTypes() {
+        List<MembershipFeeType> types = managementPort.listFeeTypes();
+        List<MembershipFeeTypeSummaryResponse> items = types.stream()
+                .map(typeResponseConverter::toSummaryResponse)
                 .toList();
 
-        HalResponseContext.setDomainList(tiers);
+        HalResponseContext.setDomainList(types);
         return ResponseEntity.ok(items);
     }
 
     @Override
-    public ResponseEntity<MembershipFeeTierResponse> getTier(
+    public ResponseEntity<MembershipFeeTypeResponse> getFeeType(
             UUID id) {
-        MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
-        HalResponseContext.setDomain(tier);
-        return ResponseEntity.ok(conversionService.convert(tier, MembershipFeeTierResponse.class));
+        MembershipFeeType type = managementPort.getFeeType(new MembershipFeeTypeId(id));
+        HalResponseContext.setDomain(type);
+        return ResponseEntity.ok(conversionService.convert(type, MembershipFeeTypeResponse.class));
     }
 
     @Override
-    public ResponseEntity<Void> editTier(
+    public ResponseEntity<Void> editFeeType(
             UUID id,
-            EditMembershipFeeTierRequest request) {
-        MembershipFeeTierManagementPort.EditTierCommand command = MembershipFeesRequestMapper.toCommand(request);
-        managementPort.editTier(new MembershipFeeTierId(id), command);
+            EditMembershipFeeTypeRequest request) {
+        MembershipFeeTypeManagementPort.EditTypeCommand command = MembershipFeesRequestMapper.toCommand(request);
+        managementPort.editFeeType(new MembershipFeeTypeId(id), command);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<List<PaymentRuleResponse>> listRules(
             UUID id) {
-        MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
-        List<PaymentRuleDomain> domains = tier.getRules().stream()
-                .map(rule -> new PaymentRuleDomain(new MembershipFeeTierId(id), rule))
+        MembershipFeeType type = managementPort.getFeeType(new MembershipFeeTypeId(id));
+        List<PaymentRuleDomain> domains = type.getRules().stream()
+                .map(rule -> new PaymentRuleDomain(new MembershipFeeTypeId(id), rule))
                 .toList();
         List<PaymentRuleResponse> items = domains.stream()
                 .map(d -> MembershipFeesResponseMapper.toResponse(d.rule()))
                 .toList();
 
         HalResponseContext.setDomainList(domains);
-        HalResponseContext.setContext(new TierRulesListing(tier.getId()));
+        HalResponseContext.setContext(new TypeRulesListing(type.getId()));
         return ResponseEntity.ok(items);
     }
 
@@ -112,31 +112,31 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             UUID id,
             UUID eventTypeId,
             String ranking) {
-        MembershipFeeTier tier = managementPort.getTier(new MembershipFeeTierId(id));
-        MembershipPaymentRule rule = tier.getRules().stream()
+        MembershipFeeType type = managementPort.getFeeType(new MembershipFeeTypeId(id));
+        MembershipPaymentRule rule = type.getRules().stream()
                 .filter(r -> r.eventTypeId().value().equals(eventTypeId) && r.rankingShortName().equals(ranking))
                 .findFirst()
                 .orElseThrow(() -> new PaymentRuleNotFoundException(EventTypeReference.of(eventTypeId), ranking));
-        HalResponseContext.setDomain(new PaymentRuleDomain(new MembershipFeeTierId(id), rule));
+        HalResponseContext.setDomain(new PaymentRuleDomain(new MembershipFeeTypeId(id), rule));
         return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(rule));
     }
 
-    record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
+    record PaymentRuleDomain(MembershipFeeTypeId typeId, MembershipPaymentRule rule) {
     }
 
-    record TierRulesListing(MembershipFeeTierId tierId) {
+    record TypeRulesListing(MembershipFeeTypeId typeId) {
     }
 
     @Override
     public ResponseEntity<Void> addRule(
             UUID id,
             AddPaymentRuleRequest request) {
-        MembershipFeeTierManagementPort.AddRuleCommand command = new MembershipFeeTierManagementPort.AddRuleCommand(
+        MembershipFeeTypeManagementPort.AddRuleCommand command = new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipFeesRequestMapper.toDomain(request));
-        managementPort.addRule(new MembershipFeeTierId(id), command);
+        managementPort.addRule(new MembershipFeeTypeId(id), command);
         MembershipPaymentRule rule = command.rule();
         return ResponseEntity.created(
-                linkTo(methodOn(MembershipFeeTiersApi.class)
+                linkTo(methodOn(MembershipFeeTypesApi.class)
                         .getRule(id, rule.eventTypeId().value(), rule.rankingShortName())).toUri()
         ).build();
     }
@@ -147,12 +147,12 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             UUID eventTypeId,
             String ranking,
             EditPaymentRuleRequest request) {
-        MembershipFeeTierManagementPort.EditRuleCommand command = new MembershipFeeTierManagementPort.EditRuleCommand(
+        MembershipFeeTypeManagementPort.EditRuleCommand command = new MembershipFeeTypeManagementPort.EditRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking,
                 MembershipFeesRequestMapper.toRuleValue(request, eventTypeId, ranking)
         );
-        managementPort.editRule(new MembershipFeeTierId(id), command);
+        managementPort.editRule(new MembershipFeeTypeId(id), command);
         return ResponseEntity.noContent().build();
     }
 
@@ -161,67 +161,67 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
             UUID id,
             UUID eventTypeId,
             String ranking) {
-        MembershipFeeTierManagementPort.RemoveRuleCommand command = new MembershipFeeTierManagementPort.RemoveRuleCommand(
+        MembershipFeeTypeManagementPort.RemoveRuleCommand command = new MembershipFeeTypeManagementPort.RemoveRuleCommand(
                 EventTypeReference.of(eventTypeId),
                 ranking
         );
-        managementPort.removeRule(new MembershipFeeTierId(id), command);
+        managementPort.removeRule(new MembershipFeeTypeId(id), command);
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<Void> deleteTier(
+    public ResponseEntity<Void> deleteFeeType(
             UUID id) {
-        managementPort.deleteTier(new MembershipFeeTierId(id));
+        managementPort.deleteFeeType(new MembershipFeeTypeId(id));
         return ResponseEntity.noContent().build();
     }
 }
 
 @MvcComponent
-class MembershipFeeTierSummaryPostprocessor
-        extends ModelWithDomainPostprocessor<MembershipFeeTierSummaryResponse, MembershipFeeTier> {
+class MembershipFeeTypeSummaryPostprocessor
+        extends ModelWithDomainPostprocessor<MembershipFeeTypeSummaryResponse, MembershipFeeType> {
 
     @Override
-    public void process(EntityModel<MembershipFeeTierSummaryResponse> dtoModel, MembershipFeeTier tier) {
-        UUID id = tier.getId().value();
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(id))
+    public void process(EntityModel<MembershipFeeTypeSummaryResponse> dtoModel, MembershipFeeType type) {
+        UUID id = type.getId().value();
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).getFeeType(id))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).editTier(id, null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).deleteTier(id))))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTypesApi.class).editFeeType(id, null)))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTypesApi.class).deleteFeeType(id))))
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listRules(id))
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).listRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
     }
 }
 
 @MvcComponent
-class MembershipFeeTierDetailsPostprocessor
-        extends ModelWithDomainPostprocessor<MembershipFeeTierResponse, MembershipFeeTier> {
+class MembershipFeeTypeDetailsPostprocessor
+        extends ModelWithDomainPostprocessor<MembershipFeeTypeResponse, MembershipFeeType> {
 
     @Override
-    public void process(EntityModel<MembershipFeeTierResponse> dtoModel, MembershipFeeTier tier) {
-        UUID id = tier.getId().value();
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(id))
+    public void process(EntityModel<MembershipFeeTypeResponse> dtoModel, MembershipFeeType type) {
+        UUID id = type.getId().value();
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).getFeeType(id))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).editTier(id, null)))
-                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).deleteTier(id))))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTypesApi.class).editFeeType(id, null)))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTypesApi.class).deleteFeeType(id))))
                 .ifPresent(dtoModel::add);
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listTiers())
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).listFeeTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listRules(id))
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).listRules(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("rules")));
     }
 }
 
 @MvcComponent
-class MembershipFeeTierListPostprocessor
-        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>>> {
+class MembershipFeeTypeListPostprocessor
+        implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTypeSummaryResponse>>> {
 
     private final AuthorizationEvaluator authorizationEvaluator;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
     private final PublishYearAffordance publishYearAffordance;
 
-    MembershipFeeTierListPostprocessor(AuthorizationEvaluator authorizationEvaluator,
+    MembershipFeeTypeListPostprocessor(AuthorizationEvaluator authorizationEvaluator,
                                        FeeSelectionCampaignManagementPort campaignManagementPort,
                                        PublishYearAffordance publishYearAffordance) {
         this.authorizationEvaluator = authorizationEvaluator;
@@ -230,8 +230,8 @@ class MembershipFeeTierListPostprocessor
     }
 
     @Override
-    public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> process(
-            org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model) {
+    public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTypeSummaryResponse>> process(
+            org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTypeSummaryResponse>> model) {
         boolean manager = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
         // getPublication/listPublications are readable by any authenticated caller; the campaign
         // lookup and the publishYear template are management concerns, so both are skipped for
@@ -245,7 +245,7 @@ class MembershipFeeTierListPostprocessor
 
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(publishYear)
-                .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
+                .andAffordances(klabisAfford(methodOn(MembershipFeeTypesApi.class).createFeeType(null))));
 
         if (manager) {
             activeCampaign.ifPresent(campaign ->
@@ -271,49 +271,49 @@ class PaymentRuleDetailsPostprocessor
 
     @Override
     public void process(EntityModel<PaymentRuleResponse> dtoModel, Object source) {
-        if (!(source instanceof MembershipFeeTierController.PaymentRuleDomain domain)) {
+        if (!(source instanceof MembershipFeeTypeController.PaymentRuleDomain domain)) {
             return;
         }
-        UUID tierId = domain.tierId().value();
+        UUID typeId = domain.typeId().value();
         UUID eventTypeId = domain.rule().eventTypeId().value();
         String ranking = domain.rule().rankingShortName();
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getRule(tierId, eventTypeId, ranking))
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).getRule(typeId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAffordWithOptions(
-                                methodOn(MembershipFeeTiersApi.class).editRule(tierId,
+                                methodOn(MembershipFeeTypesApi.class).editRule(typeId,
                                         eventTypeId,
                                         ranking,
                                         null),
                                 Map.of("ruleType", HalFormsOptionsDef.values(RULE_TYPE_OPTIONS))))
                         .andAffordances(klabisAfford(
-                                methodOn(MembershipFeeTiersApi.class).removeRule(tierId, eventTypeId, ranking))))
+                                methodOn(MembershipFeeTypesApi.class).removeRule(typeId, eventTypeId, ranking))))
                 .ifPresent(dtoModel::add);
         dtoModel.add(Link.of("/api/event-types/" + eventTypeId, "eventType"));
     }
 }
 
-// The tier id comes from HalResponseContext, since CollectionModel<EntityModel<PaymentRuleResponse>>
-// carries no reference back to the tier when the list is empty. PaymentRuleResponse is shared with
-// the fee group rules snapshot, which must not get tier rule management affordances, so the
-// context entry published by the tier endpoint is what scopes this postprocessor.
+// The type id comes from HalResponseContext, since CollectionModel<EntityModel<PaymentRuleResponse>>
+// carries no reference back to the type when the list is empty. PaymentRuleResponse is shared with
+// the fee group rules snapshot, which must not get type rule management affordances, so the
+// context entry published by the type endpoint is what scopes this postprocessor.
 @MvcComponent
-class MembershipFeeTierListRulesPostprocessor
+class MembershipFeeTypeListRulesPostprocessor
         implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>>> {
 
-    private final MembershipFeeTierOptionsPort optionsPort;
+    private final MembershipFeeTypeOptionsPort optionsPort;
 
-    MembershipFeeTierListRulesPostprocessor(MembershipFeeTierOptionsPort optionsPort) {
+    MembershipFeeTypeListRulesPostprocessor(MembershipFeeTypeOptionsPort optionsPort) {
         this.optionsPort = optionsPort;
     }
 
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>> model) {
-        Optional<UUID> tierId = currentTierId();
-        if (tierId.isPresent()) {
+        Optional<UUID> typeId = currentTypeId();
+        if (typeId.isPresent()) {
             model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, link -> (Link) link
                     .andAffordances(klabisAffordWithOptions(
-                            methodOn(MembershipFeeTiersApi.class).addRule(tierId.get(), null),
+                            methodOn(MembershipFeeTypesApi.class).addRule(typeId.get(), null),
                             Map.of("ruleType", HalFormsOptionsDef.values(List.of("PERCENTAGE", "FIXED_AMOUNT")),
                                     "rankingShortName", new HalFormsOptionsDef.Inline(optionsPort.listRankingOptions()),
                                     "eventTypeId", new HalFormsOptionsDef.Inline(optionsPort.listEventTypeOptions())))));
@@ -321,9 +321,9 @@ class MembershipFeeTierListRulesPostprocessor
         return model;
     }
 
-    private static Optional<UUID> currentTierId() {
-        return HalResponseContext.findContext(MembershipFeeTierController.TierRulesListing.class)
-                .map(listing -> listing.tierId().value());
+    private static Optional<UUID> currentTypeId() {
+        return HalResponseContext.findContext(MembershipFeeTypeController.TypeRulesListing.class)
+                .map(listing -> listing.typeId().value());
     }
 }
 
@@ -338,12 +338,12 @@ class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<En
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        // listTiers is readable by any authenticated caller, but the navigation entry is an
+        // listFeeTypes is readable by any authenticated caller, but the navigation entry is an
         // administration screen, so it is offered to managers only.
         if (!authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
             return model;
         }
-        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listTiers())
+        klabisLinkTo(methodOn(MembershipFeeTypesApi.class).listFeeTypes())
                 .ifPresent(link -> model.add(link.withRel("membership-fees")));
         return model;
     }

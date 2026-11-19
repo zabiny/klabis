@@ -16,7 +16,7 @@ import {needsNormalization, toSubmitValue} from './multiValueSubmit.ts'
  * option list (inline or remote link) that has no dedicated per-row custom widget — e.g.
  * event type `disciplineIds`. Replaces a plain checkbox group for option lists that can be
  * long/unbounded; `HalFormsCheckboxGroup` stays the right choice for short, always-visible
- * enumerations (e.g. `MembershipFeeTierMultiSelect`, which renders it directly regardless of
+ * enumerations (e.g. `MembershipFeeTypeMultiSelect`, which renders it directly regardless of
  * this factory's dispatch).
  */
 export const HalFormsMultiSelect = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {

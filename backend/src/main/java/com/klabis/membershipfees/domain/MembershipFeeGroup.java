@@ -5,7 +5,7 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.Nullable;
@@ -19,7 +19,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
 
     @Identity
     private final MembershipFeeGroupId id;
-    private final MembershipFeeTierId sourceLevelId;
+    private final MembershipFeeTypeId sourceTypeId;
     private final String name;
     private final int year;
     private final LocalDate votingDeadline;
@@ -28,20 +28,20 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
     private final List<MembershipPaymentRule> rulesSnapshot;
     private final Set<FeeGroupMembership> memberships;
 
-    private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeTierId sourceLevelId,
+    private MembershipFeeGroup(MembershipFeeGroupId id, MembershipFeeTypeId sourceTypeId,
                                 String name, int year, LocalDate votingDeadline,
                                 Money yearlyFeeSnapshot,
                                 PublishedLevelStatus status,
                                 List<MembershipPaymentRule> rulesSnapshot,
                                 Set<FeeGroupMembership> memberships) {
         Assert.notNull(id, "MembershipFeeGroupId is required");
-        Assert.notNull(sourceLevelId, "SourceLevelId is required");
+        Assert.notNull(sourceTypeId, "SourceTypeId is required");
         Assert.hasText(name, "Name is required");
         Assert.notNull(votingDeadline, "VotingDeadline is required");
         Assert.notNull(yearlyFeeSnapshot, "YearlyFeeSnapshot is required");
         Assert.notNull(status, "Status is required");
         this.id = id;
-        this.sourceLevelId = sourceLevelId;
+        this.sourceTypeId = sourceTypeId;
         this.name = name;
         this.year = year;
         this.votingDeadline = votingDeadline;
@@ -51,20 +51,20 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         this.memberships = new HashSet<>(memberships);
     }
 
-    public static MembershipFeeGroup createSnapshot(MembershipFeeTierId sourceLevelId,
+    public static MembershipFeeGroup createSnapshot(MembershipFeeTypeId sourceTypeId,
                                                     String name, int year, Money yearlyFeeSnapshot,
                                                     List<MembershipPaymentRule> rulesSnapshot,
                                                     LocalDate votingDeadline) {
         return new MembershipFeeGroup(
                 new MembershipFeeGroupId(UUID.randomUUID()),
-                sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot,
+                sourceTypeId, name, year, votingDeadline, yearlyFeeSnapshot,
                 PublishedLevelStatus.EDITABLE,
                 rulesSnapshot != null ? rulesSnapshot : List.of(),
                 Set.of());
     }
 
     public static MembershipFeeGroup reconstruct(MembershipFeeGroupId id,
-                                                  MembershipFeeTierId sourceLevelId,
+                                                  MembershipFeeTypeId sourceTypeId,
                                                   String name, int year,
                                                   LocalDate votingDeadline,
                                                   Money yearlyFeeSnapshot,
@@ -73,7 +73,7 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
                                                   Set<FeeGroupMembership> memberships,
                                                   AuditMetadata auditMetadata) {
         MembershipFeeGroup group = new MembershipFeeGroup(
-                id, sourceLevelId, name, year, votingDeadline, yearlyFeeSnapshot, status, rulesSnapshot, memberships);
+                id, sourceTypeId, name, year, votingDeadline, yearlyFeeSnapshot, status, rulesSnapshot, memberships);
         if (auditMetadata != null) {
             group.updateAuditMetadata(auditMetadata);
         }
@@ -85,8 +85,8 @@ public class MembershipFeeGroup extends KlabisAggregateRoot<MembershipFeeGroup, 
         return id;
     }
 
-    public MembershipFeeTierId getSourceLevelId() {
-        return sourceLevelId;
+    public MembershipFeeTypeId getSourceTypeId() {
+        return sourceTypeId;
     }
 
     public String getName() {

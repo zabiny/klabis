@@ -47,7 +47,7 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
 const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
     makePageData({
         resourceData,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
+        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-types'}),
         ...overrides,
     });
 
@@ -56,7 +56,7 @@ const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/membership-fee-tiers']}>
+            <MemoryRouter initialEntries={['/membership-fee-types']}>
                 <MembershipFeesAdminPage/>
             </MemoryRouter>
         </QueryClientProvider>
@@ -69,28 +69,28 @@ const publishYearTemplate = {
     properties: [{name: 'year', type: 'number', required: true}],
 };
 
-const tierCatalogResource: HalResponse = {
+const typeCatalogResource: HalResponse = {
     _links: {
-        self: {href: '/api/membership-fee-tiers'},
+        self: {href: '/api/membership-fee-types'},
     },
 };
 
-const tierCatalogResourceWithPublishYear: HalResponse = {
-    _links: {self: {href: '/api/membership-fee-tiers'}},
+const typeCatalogResourceWithPublishYear: HalResponse = {
+    _links: {self: {href: '/api/membership-fee-types'}},
     _templates: {publishYear: publishYearTemplate},
 };
 
-const tierCatalogResourceWithActiveCampaign: HalResponse = {
+const typeCatalogResourceWithActiveCampaign: HalResponse = {
     _links: {
-        self: {href: '/api/membership-fee-tiers'},
+        self: {href: '/api/membership-fee-types'},
         activeCampaign: {href: '/api/fee-selection-campaigns/campaign-1'},
         pastCampaigns: {href: '/api/fee-selection-campaigns?status=closed'},
     },
 };
 
-const tierCatalogResourceWithoutActiveCampaign: HalResponse = {
+const typeCatalogResourceWithoutActiveCampaign: HalResponse = {
     _links: {
-        self: {href: '/api/membership-fee-tiers'},
+        self: {href: '/api/membership-fee-types'},
         pastCampaigns: {href: '/api/fee-selection-campaigns?status=closed'},
     },
 };
@@ -102,59 +102,59 @@ describe('MembershipFeesAdminPage', () => {
     });
 
     it('renders page heading "Členské příspěvky"', () => {
-        renderPage(createMockPageData(tierCatalogResource));
+        renderPage(createMockPageData(typeCatalogResource));
         expect(screen.getByRole('heading', {level: 1, name: /členské příspěvky/i})).toBeInTheDocument();
     });
 
-    it('renders TierCatalogSection heading "Katalog tierů"', () => {
-        renderPage(createMockPageData(tierCatalogResource));
+    it('renders TypeCatalogSection heading "Katalog tierů"', () => {
+        renderPage(createMockPageData(typeCatalogResource));
         expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
     });
 
     describe('when activeCampaign link is present', () => {
         it('renders active campaign section heading', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithActiveCampaign));
             expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
         });
 
         it('renders CampaignDetail component', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithActiveCampaign));
             expect(screen.getByTestId('campaign-detail')).toBeInTheDocument();
         });
     });
 
     describe('when activeCampaign link is absent', () => {
         it('does not render active campaign section heading', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithoutActiveCampaign));
             expect(screen.queryByRole('heading', {name: /aktivní kampaň/i})).not.toBeInTheDocument();
         });
 
         it('does not render CampaignDetail component', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithoutActiveCampaign));
             expect(screen.queryByTestId('campaign-detail')).not.toBeInTheDocument();
         });
 
-        it('still renders TierCatalogSection', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
+        it('still renders TypeCatalogSection', () => {
+            renderPage(createMockPageData(typeCatalogResourceWithoutActiveCampaign));
             expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
         });
 
         it('renders PastCampaignsSection heading', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithoutActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithoutActiveCampaign));
             expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
         });
     });
 
     describe('when both activeCampaign and pastCampaigns links are present', () => {
         it('renders both active campaign section and PastCampaignsSection', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
+            renderPage(createMockPageData(typeCatalogResourceWithActiveCampaign));
             expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
             expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
         });
     });
 
     it('renders all three section headings when all links are present', () => {
-        renderPage(createMockPageData(tierCatalogResourceWithActiveCampaign));
+        renderPage(createMockPageData(typeCatalogResourceWithActiveCampaign));
         expect(screen.getByRole('heading', {name: /aktivní kampaň/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /katalog tierů/i})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: /minulé kampaně/i})).toBeInTheDocument();
@@ -162,19 +162,19 @@ describe('MembershipFeesAdminPage', () => {
 
     describe('when publishYear template is present and no activeCampaign', () => {
         it('renders publishYear button', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            renderPage(createMockPageData(typeCatalogResourceWithPublishYear));
             expect(screen.getByRole('button', {name: /vypsat kampaň/i})).toBeInTheDocument();
         });
 
         it('does not stretch the publishYear button to full width', () => {
-            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            renderPage(createMockPageData(typeCatalogResourceWithPublishYear));
             const wrapper = screen.getByRole('button', {name: /vypsat kampaň/i}).parentElement;
             expect(wrapper).toHaveClass('flex');
         });
 
         it('opens modal when publishYear button is clicked', async () => {
             const user = userEvent.setup();
-            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            renderPage(createMockPageData(typeCatalogResourceWithPublishYear));
             await user.click(screen.getByRole('button', {name: /vypsat kampaň/i}));
             expect(await screen.findByRole('dialog')).toBeInTheDocument();
         });
@@ -182,7 +182,7 @@ describe('MembershipFeesAdminPage', () => {
 
     describe('when publishYear template is absent', () => {
         it('does not render publishYear button', () => {
-            renderPage(createMockPageData(tierCatalogResource));
+            renderPage(createMockPageData(typeCatalogResource));
             expect(screen.queryByRole('button', {name: /vypsat kampaň/i})).not.toBeInTheDocument();
         });
     });
@@ -191,7 +191,7 @@ describe('MembershipFeesAdminPage', () => {
         it('does not render publishYear button when activeCampaign link exists', () => {
             const resourceWithBoth: HalResponse = {
                 _links: {
-                    self: {href: '/api/membership-fee-tiers'},
+                    self: {href: '/api/membership-fee-types'},
                     activeCampaign: {href: '/api/fee-selection-campaigns/campaign-1'},
                 },
                 _templates: {publishYear: publishYearTemplate},

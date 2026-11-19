@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 @Table(schema = "membershipfees", value = "membership_fee_group")
 class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
 
-    @Column("source_level_id")
-    private UUID sourceLevelId;
+    @Column("source_type_id")
+    private UUID sourceTypeId;
 
     @Column("name")
     private String name;
@@ -52,7 +52,7 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
     static MembershipFeeGroupMemento from(MembershipFeeGroup group) {
         MembershipFeeGroupMemento memento = new MembershipFeeGroupMemento();
         memento.id = group.getId().value();
-        memento.sourceLevelId = group.getSourceLevelId().value();
+        memento.sourceTypeId = group.getSourceTypeId().value();
         memento.name = group.getName();
         memento.year = group.getYear();
         memento.yearlyFeeSnapshotAmount = group.getYearlyFeeSnapshot().amount();
@@ -80,7 +80,7 @@ class MembershipFeeGroupMemento extends AbstractMembershipFeeMemento {
         Money yearlyFee = Money.of(yearlyFeeSnapshotAmount, Currency.getInstance(yearlyFeeSnapshotCurrency));
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(id),
-                new MembershipFeeTierId(sourceLevelId),
+                new MembershipFeeTypeId(sourceTypeId),
                 name, year, votingDeadline, yearlyFee,
                 PublishedLevelStatus.valueOf(status),
                 snapshots, membershipSet, toAuditMetadata());

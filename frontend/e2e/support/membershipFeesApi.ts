@@ -8,7 +8,7 @@ export type CampaignLevel = {name: string; yearlyFee?: number};
 const DEFAULT_YEARLY_FEE = 1500;
 const DEFAULT_VOTING_DEADLINE = localIsoDate(30);
 
-// The fee root is the whole tier catalog, so it is fetched once per helper and passed on.
+// The fee root is the whole fee type catalog, so it is fetched once per helper and passed on.
 const feeRoot = async (admin: ApiClient): Promise<Linked> =>
     admin.follow(await admin.root(), 'membership-fees');
 
@@ -44,17 +44,17 @@ export const reserveCampaignYear = async (admin: ApiClient, feeState: FeeScenari
 };
 
 const ensureLevel = async (admin: ApiClient, root: Linked, name: string, yearlyFeeAmount = DEFAULT_YEARLY_FEE) => {
-    const existing = embeddedList(root).find((tier) => tier.name === name);
+    const existing = embeddedList(root).find((feeType) => feeType.name === name);
     if (existing) return existing.id as string;
-    return (await admin.create(admin.templateTarget(root, 'createTier'), {name, yearlyFeeAmount})).split('/').pop()!;
+    return (await admin.create(admin.templateTarget(root, 'createFeeType'), {name, yearlyFeeAmount})).split('/').pop()!;
 };
 
 export const ensureCatalogLevel = async (admin: ApiClient, name: string, yearlyFeeAmount?: number) =>
     ensureLevel(admin, await feeRoot(admin), name, yearlyFeeAmount);
 
 export const addCatalogRule = async (admin: ApiClient, levelName: string, contribution: Contribution, ranking: string) => {
-    const tier = await admin.get(`/api/membership-fee-tiers/${await ensureCatalogLevel(admin, levelName)}`);
-    const rules = await admin.follow(tier, 'rules') as Linked;
+    const feeType = await admin.get(`/api/membership-fee-types/${await ensureCatalogLevel(admin, levelName)}`);
+    const rules = await admin.follow(feeType, 'rules') as Linked;
     await admin.post(admin.templateTarget(rules, 'addRule'), {
         eventTypeId: templateOptions(rules, 'addRule', 'eventTypeId')[0].value,
         rankingShortName: ranking,
@@ -73,7 +73,7 @@ export const publishCampaign = async (
     for (const level of levels) {
         levelIds.push(await ensureLevel(admin, root, level.name, level.yearlyFee));
     }
-    const campaign = await admin.create(admin.templateTarget(root, 'publishYear'), {year: feeState.year, votingDeadline, levelIds});
+    const campaign = await admin.create(admin.templateTarget(root, 'publishYear'), {year: feeState.year, votingDeadline, typeIds: levelIds});
     feeState.campaignPath = campaign.replace(/^\/api/, '');
 };
 
@@ -88,8 +88,8 @@ const feeSummary = async (member: ApiClient, year: number) =>
 
 export const chooseLevel = async (member: ApiClient, year: number, levelName: string) => {
     const summary = await feeSummary(member, year);
-    const option = templateOptions(summary, 'chooseTier', 'membershipFeeGroupId').find((candidate) => candidate.prompt === levelName)!;
-    await member.post(member.templateTarget(summary, 'chooseTier'), {membershipFeeGroupId: option.value});
+    const option = templateOptions(summary, 'chooseFeeType', 'membershipFeeGroupId').find((candidate) => candidate.prompt === levelName)!;
+    await member.post(member.templateTarget(summary, 'chooseFeeType'), {membershipFeeGroupId: option.value});
 };
 
 export const withdrawChoice = async (member: ApiClient, year: number) => {

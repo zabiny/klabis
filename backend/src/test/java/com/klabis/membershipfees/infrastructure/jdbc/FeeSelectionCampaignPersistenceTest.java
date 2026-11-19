@@ -3,7 +3,7 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 import com.klabis.CleanupTestData;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
@@ -45,17 +45,17 @@ class FeeSelectionCampaignPersistenceTest {
     private MembershipFeeGroupRepository groupRepository;
 
     @Autowired
-    private MembershipFeeTierRepository levelRepository;
+    private MembershipFeeTypeRepository levelRepository;
 
-    private MembershipFeeTier savedLevel(String name) {
-        return levelRepository.save(MembershipFeeTier.create(name, YEARLY_FEE));
+    private MembershipFeeType savedLevel(String name) {
+        return levelRepository.save(MembershipFeeType.create(name, YEARLY_FEE));
     }
 
-    private FeeSelectionCampaign publishAndSaveGroups(int year, List<MembershipFeeTier> levels) {
+    private FeeSelectionCampaign publishAndSaveGroups(int year, List<MembershipFeeType> levels) {
         return publishAndSaveGroups(year, DEADLINE, levels);
     }
 
-    private FeeSelectionCampaign publishAndSaveGroups(int year, LocalDate deadline, List<MembershipFeeTier> levels) {
+    private FeeSelectionCampaign publishAndSaveGroups(int year, LocalDate deadline, List<MembershipFeeType> levels) {
         var result = FeeSelectionCampaign.publish(year, deadline, levels);
         for (MembershipFeeGroup group : result.groups()) {
             groupRepository.save(group);
@@ -70,7 +70,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should save and retrieve publication with year and deadline")
         void shouldSaveAndRetrieveBasicFields() {
-            MembershipFeeTier level = savedLevel("Dospělý");
+            MembershipFeeType level = savedLevel("Dospělý");
             FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level));
 
             FeeSelectionCampaign saved = publicationRepository.save(publication);
@@ -87,8 +87,8 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should persist publishedGroupIds correctly")
         void shouldPersistGroupIds() {
-            MembershipFeeTier level1 = savedLevel("Dospělý");
-            MembershipFeeTier level2 = savedLevel("Mládež");
+            MembershipFeeType level1 = savedLevel("Dospělý");
+            MembershipFeeType level2 = savedLevel("Mládež");
             FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level1, level2));
 
             FeeSelectionCampaign saved = publicationRepository.save(publication);
@@ -100,7 +100,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should persist deadlineProcessedAt after markProcessed()")
         void shouldPersistDeadlineProcessedAt() {
-            MembershipFeeTier level = savedLevel("Dospělý");
+            MembershipFeeType level = savedLevel("Dospělý");
             FeeSelectionCampaign publication = publishAndSaveGroups(2026, List.of(level));
             FeeSelectionCampaign saved = publicationRepository.save(publication);
             Instant processedAt = Instant.parse("2026-04-01T10:00:00Z");
@@ -129,7 +129,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should return active campaign when deadline is in the future and not processed")
         void shouldReturnActiveCampaignBeforeDeadline() {
-            MembershipFeeTier level = savedLevel("DospělýActive");
+            MembershipFeeType level = savedLevel("DospělýActive");
             LocalDate futureDeadline = LocalDate.now().plusDays(30);
             publicationRepository.save(publishAndSaveGroups(2028, futureDeadline, List.of(level)));
 
@@ -142,7 +142,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should return empty when campaign is manually closed (processed) even if deadline is in future")
         void shouldReturnEmptyWhenManuallyClosedWithFutureDeadline() {
-            MembershipFeeTier level = savedLevel("DospělýClosed");
+            MembershipFeeType level = savedLevel("DospělýClosed");
             LocalDate futureDeadline = LocalDate.now().plusDays(30);
             FeeSelectionCampaign campaign = publishAndSaveGroups(2029, futureDeadline, List.of(level));
             campaign.markProcessed(Instant.now());
@@ -161,7 +161,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should find publication by year")
         void shouldFindByYear() {
-            MembershipFeeTier level = savedLevel("Dospělý");
+            MembershipFeeType level = savedLevel("Dospělý");
             FeeSelectionCampaign publication = publishAndSaveGroups(2027, List.of(level));
             publicationRepository.save(publication);
 
@@ -185,12 +185,12 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should save and retrieve group with snapshot fields")
         void shouldSaveAndRetrieveGroupSnapshot() {
-            MembershipFeeTier level = savedLevel("Závodník");
-            MembershipFeeTierId sourceLevelId = level.getId();
+            MembershipFeeType level = savedLevel("Závodník");
+            MembershipFeeTypeId sourceTypeId = level.getId();
             MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "A", new MembershipPaymentRule.RuleValue.Percentage(50));
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    sourceLevelId, "Závodník", 2026, YEARLY_FEE, List.of(rule), DEADLINE);
+                    sourceTypeId, "Závodník", 2026, YEARLY_FEE, List.of(rule), DEADLINE);
 
             MembershipFeeGroup saved = groupRepository.save(group);
             Optional<MembershipFeeGroup> found = groupRepository.findById(saved.getId());
@@ -198,7 +198,7 @@ class FeeSelectionCampaignPersistenceTest {
             assertThat(found).isPresent();
             MembershipFeeGroup retrieved = found.get();
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
-            assertThat(retrieved.getSourceLevelId()).isEqualTo(sourceLevelId);
+            assertThat(retrieved.getSourceTypeId()).isEqualTo(sourceTypeId);
             assertThat(retrieved.getName()).isEqualTo("Závodník");
             assertThat(retrieved.getYear()).isEqualTo(2026);
             assertThat(retrieved.getYearlyFeeSnapshot()).isEqualTo(YEARLY_FEE);
@@ -208,7 +208,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should persist rule snapshot correctly")
         void shouldPersistRuleSnapshot() {
-            MembershipFeeTier level = savedLevel("Závodník2");
+            MembershipFeeType level = savedLevel("Závodník2");
             MembershipPaymentRule rule = new MembershipPaymentRule(
                     EVENT_TYPE, "LOB", new MembershipPaymentRule.RuleValue.FixedAmount(
                     Money.ofCzk(new BigDecimal("200.00"))));
@@ -228,7 +228,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should persist FROZEN status after freeze()")
         void shouldPersistFrozenStatus() {
-            MembershipFeeTier level = savedLevel("DospělýFreeze");
+            MembershipFeeType level = savedLevel("DospělýFreeze");
             MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
                     level.getId(), "DospělýFreeze", 2026, YEARLY_FEE, List.of(), DEADLINE);
             MembershipFeeGroup saved = groupRepository.save(group);
@@ -243,9 +243,9 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should find groups by year")
         void shouldFindGroupsByYear() {
-            MembershipFeeTier level1 = savedLevel("Dospělý2026A");
-            MembershipFeeTier level2 = savedLevel("Mládež2026A");
-            MembershipFeeTier level3 = savedLevel("JinýRok2025A");
+            MembershipFeeType level1 = savedLevel("Dospělý2026A");
+            MembershipFeeType level2 = savedLevel("Mládež2026A");
+            MembershipFeeType level3 = savedLevel("JinýRok2025A");
             groupRepository.save(MembershipFeeGroup.createSnapshot(level1.getId(), "Dospělý", 2026, YEARLY_FEE, List.of(), DEADLINE));
             groupRepository.save(MembershipFeeGroup.createSnapshot(level2.getId(), "Mládež", 2026, YEARLY_FEE, List.of(), DEADLINE));
             groupRepository.save(MembershipFeeGroup.createSnapshot(level3.getId(), "Jiný rok", 2025, YEARLY_FEE, List.of(), DEADLINE));
@@ -263,7 +263,7 @@ class FeeSelectionCampaignPersistenceTest {
         @Test
         @DisplayName("should persist rules of the source level into published groups")
         void shouldPersistRulesSnapshot() {
-            MembershipFeeTier level = MembershipFeeTier.create("Rules level", YEARLY_FEE);
+            MembershipFeeType level = MembershipFeeType.create("Rules level", YEARLY_FEE);
             level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE, "A", 50));
             level = levelRepository.save(level);
             assertThat(levelRepository.findById(level.getId()).orElseThrow().getRules()).hasSize(1);

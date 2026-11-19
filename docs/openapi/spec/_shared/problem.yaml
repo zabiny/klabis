@@ -69,7 +69,7 @@ components:
         - /errors/campaign-already-processed     # 409, no parameters
         - /errors/snapshot-frozen                # 400, no parameters
         - /errors/voting-closed                  # 400, no parameters
-        - /errors/membership-fee-tier-not-found  # 404, no parameters
+        - /errors/membership-fee-type-not-found  # 404, no parameters
         - /errors/membership-fee-group-not-found # 404, no parameters
         - /errors/fee-selection-campaign-not-found  # 404, parameter year (integer) only when the campaign was looked up by year
         # members

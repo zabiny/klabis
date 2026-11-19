@@ -27,7 +27,7 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(),
 }));
 vi.mock('../../hooks/useEventTypes', () => ({useEventTypes: () => ({eventTypes: [], isLoading: false})}));
-vi.mock('../../hooks/useMembershipFeeTierOptions', () => ({useMembershipFeeTierOptions: () => []}));
+vi.mock('../../hooks/useMembershipFeeTypeOptions', () => ({useMembershipFeeTypeOptions: () => []}));
 
 const prop = (p: Record<string, unknown>) => p as unknown as HalFormsTemplate['properties'][number];
 

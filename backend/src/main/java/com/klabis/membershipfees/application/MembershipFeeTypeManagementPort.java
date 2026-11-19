@@ -1,9 +1,9 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.EventTypeReference;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
+import com.klabis.membershipfees.domain.MembershipFeeType;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.util.Assert;
@@ -11,16 +11,16 @@ import org.springframework.util.Assert;
 import java.util.List;
 
 @PrimaryPort
-public interface MembershipFeeTierManagementPort {
+public interface MembershipFeeTypeManagementPort {
 
-    record CreateTierCommand(String name, Money yearlyFee) {
-        public CreateTierCommand {
+    record CreateTypeCommand(String name, Money yearlyFee) {
+        public CreateTypeCommand {
             Assert.hasText(name, "Name is required");
             Assert.notNull(yearlyFee, "YearlyFee is required");
         }
     }
 
-    record EditTierCommand(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
+    record EditTypeCommand(String name, Money yearlyFee, List<MembershipPaymentRule> rules) {
     }
 
     record AddRuleCommand(MembershipPaymentRule rule) {
@@ -44,19 +44,19 @@ public interface MembershipFeeTierManagementPort {
         }
     }
 
-    MembershipFeeTierId createTier(CreateTierCommand command);
+    MembershipFeeTypeId createFeeType(CreateTypeCommand command);
 
-    void editTier(MembershipFeeTierId id, EditTierCommand command);
+    void editFeeType(MembershipFeeTypeId id, EditTypeCommand command);
 
-    void addRule(MembershipFeeTierId tierId, AddRuleCommand command);
+    void addRule(MembershipFeeTypeId typeId, AddRuleCommand command);
 
-    void editRule(MembershipFeeTierId tierId, EditRuleCommand command);
+    void editRule(MembershipFeeTypeId typeId, EditRuleCommand command);
 
-    void removeRule(MembershipFeeTierId tierId, RemoveRuleCommand command);
+    void removeRule(MembershipFeeTypeId typeId, RemoveRuleCommand command);
 
-    MembershipFeeTier getTier(MembershipFeeTierId id);
+    MembershipFeeType getFeeType(MembershipFeeTypeId id);
 
-    List<MembershipFeeTier> listTiers();
+    List<MembershipFeeType> listFeeTypes();
 
-    void deleteTier(MembershipFeeTierId id);
+    void deleteFeeType(MembershipFeeTypeId id);
 }

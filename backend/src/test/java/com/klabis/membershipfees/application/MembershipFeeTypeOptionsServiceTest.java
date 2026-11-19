@@ -14,19 +14,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("MembershipFeeTierOptionsService")
-class MembershipFeeTierOptionsServiceTest {
+@DisplayName("MembershipFeeTypeOptionsService")
+class MembershipFeeTypeOptionsServiceTest {
 
     @Mock
     private RankingOptionsPort rankingOptionsPort;
     @Mock
     private EventTypeOptionsPort eventTypeOptionsPort;
 
-    private MembershipFeeTierOptionsService testedSubject;
+    private MembershipFeeTypeOptionsService testedSubject;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new MembershipFeeTierOptionsService(rankingOptionsPort, eventTypeOptionsPort);
+        testedSubject = new MembershipFeeTypeOptionsService(rankingOptionsPort, eventTypeOptionsPort);
     }
 
     @Test

@@ -12,7 +12,7 @@ import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
 import {LegalGuardianInputField} from "./legal-guardians/LegalGuardianInputField";
 import {useEventTypes} from "../hooks/useEventTypes";
-import {useMembershipFeeTierOptions} from "../hooks/useMembershipFeeTierOptions";
+import {useMembershipFeeTypeOptions} from "../hooks/useMembershipFeeTypeOptions";
 
 interface SubField {
     key: string;
@@ -156,10 +156,10 @@ const PaymentRuleFormFields = (conf: HalFormsInputProps): ReactElement => {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-const MembershipFeeTierMultiSelectField = (conf: HalFormsInputProps): ReactElement => {
-    const tierOptions = useMembershipFeeTierOptions();
-    const propWithTierOptions = {...conf.prop, options: {inline: tierOptions}};
-    return <HalFormsCheckboxGroup {...conf} prop={propWithTierOptions}/>;
+const MembershipFeeTypeMultiSelectField = (conf: HalFormsInputProps): ReactElement => {
+    const typeOptions = useMembershipFeeTypeOptions();
+    const propWithTypeOptions = {...conf.prop, options: {inline: typeOptions}};
+    return <HalFormsCheckboxGroup {...conf} prop={propWithTypeOptions}/>;
 };
 
 const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFormsInputProps => {
@@ -215,8 +215,8 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
                 {key: "shortName", attr: "shortName", prompt: "Zkratka"},
                 {key: "name", attr: "name", prompt: "Název"},
             ]);
-        case "MembershipFeeTierMultiSelect":
-            return <MembershipFeeTierMultiSelectField {...conf}/>;
+        case "MembershipFeeTypeMultiSelect":
+            return <MembershipFeeTypeMultiSelectField {...conf}/>;
         case "LegalGuardianInputRequest":
             if (isMultipleProperty(conf.prop)) return null;
             return <LegalGuardianInputField {...conf}/>;

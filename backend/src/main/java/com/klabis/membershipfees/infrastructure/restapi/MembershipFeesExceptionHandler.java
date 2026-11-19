@@ -3,7 +3,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.exceptions.CommonErrorTypes;
 import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.common.ui.HalFormsInlineOption;
-import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeOptionsPort;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
 import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.PaymentRuleNotFoundException;
@@ -33,9 +33,9 @@ class MembershipFeesExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(MembershipFeesExceptionHandler.class);
 
-    private final MembershipFeeTierOptionsPort optionsPort;
+    private final MembershipFeeTypeOptionsPort optionsPort;
 
-    MembershipFeesExceptionHandler(MembershipFeeTierOptionsPort optionsPort) {
+    MembershipFeesExceptionHandler(MembershipFeeTypeOptionsPort optionsPort) {
         this.optionsPort = optionsPort;
     }
 

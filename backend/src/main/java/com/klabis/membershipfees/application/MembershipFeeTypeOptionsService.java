@@ -6,12 +6,12 @@ import org.jmolecules.ddd.annotation.Service;
 import java.util.List;
 
 @Service
-class MembershipFeeTierOptionsService implements MembershipFeeTierOptionsPort {
+class MembershipFeeTypeOptionsService implements MembershipFeeTypeOptionsPort {
 
     private final RankingOptionsPort rankingOptionsPort;
     private final EventTypeOptionsPort eventTypeOptionsPort;
 
-    MembershipFeeTierOptionsService(RankingOptionsPort rankingOptionsPort, EventTypeOptionsPort eventTypeOptionsPort) {
+    MembershipFeeTypeOptionsService(RankingOptionsPort rankingOptionsPort, EventTypeOptionsPort eventTypeOptionsPort) {
         this.rankingOptionsPort = rankingOptionsPort;
         this.eventTypeOptionsPort = eventTypeOptionsPort;
     }

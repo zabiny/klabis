@@ -31,7 +31,7 @@ import java.util.UUID;
 /**
  * The ORIS member {@link SynchronizationAdapter}:
  * pull-only, creating the local side but never writing outward — a Klabis member's
- * membership-fee tier, roles, licences and guardian are Klabis-owned and stay
+ * membership-fee type, roles, licences and guardian are Klabis-owned and stay
  * invisible to synchronisation because {@link MemberProjection} omits them by
  * construction, not because this adapter special-cases them.
  * <p>

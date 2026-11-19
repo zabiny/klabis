@@ -184,8 +184,8 @@ describe('useRootNavigation — section assignment', () => {
         expect(items.find(i => i.rel === 'membership-fees')?.label).toBe('Členské příspěvky');
     });
 
-    it('does NOT include membership-fee-tiers as separate menu entry when absent from root links', async () => {
-        // Backend no longer contributes membership-fee-tiers as a root link after the merge.
+    it('does NOT include membership-fee-types as separate menu entry when absent from root links', async () => {
+        // Backend no longer contributes membership-fee-types as a root link after the merge.
         mockFetchWithResponse(buildHalResponse(['events', 'membership-fees']));
 
         const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
@@ -193,7 +193,7 @@ describe('useRootNavigation — section assignment', () => {
         await waitFor(() => expect(result.current.data).toBeDefined());
 
         const items = result.current.data!;
-        expect(items.find(i => i.rel === 'membership-fee-tiers')).toBeUndefined();
+        expect(items.find(i => i.rel === 'membership-fee-types')).toBeUndefined();
     });
 
     it('does NOT include fee-selection-campaigns as separate menu entry when absent from root links', async () => {

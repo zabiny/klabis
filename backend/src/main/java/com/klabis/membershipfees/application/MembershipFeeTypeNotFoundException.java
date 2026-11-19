@@ -1,0 +1,12 @@
+package com.klabis.membershipfees.application;
+
+import com.klabis.common.exceptions.ResourceNotFoundException;
+import com.klabis.common.exceptions.UserFacingError;
+import com.klabis.membershipfees.MembershipFeeTypeId;
+
+public class MembershipFeeTypeNotFoundException extends ResourceNotFoundException implements UserFacingError {
+
+    public MembershipFeeTypeNotFoundException(MembershipFeeTypeId id) {
+        super("MembershipFeeType not found: " + id.value());
+    }
+}

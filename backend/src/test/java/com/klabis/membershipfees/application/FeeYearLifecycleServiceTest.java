@@ -8,7 +8,7 @@ import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,10 +51,10 @@ class FeeYearLifecycleServiceTest {
     private static final MemberId MEMBER_WITH_CHOICE = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     private static final MemberId ADMIN_ID = new MemberId(UUID.fromString("a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0"));
-    private static final MembershipFeeTierId LEVEL_ID_A =
-            new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-    private static final MembershipFeeTierId LEVEL_ID_B =
-            new MembershipFeeTierId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final MembershipFeeTypeId LEVEL_ID_A =
+            new MembershipFeeTypeId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MembershipFeeTypeId LEVEL_ID_B =
+            new MembershipFeeTypeId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final int FEE_YEAR = 2026;
     private static final BigDecimal FEE_AMOUNT = new BigDecimal("1200.00");
     private static final LocalDate CHOICE_TODAY = LocalDate.of(FEE_YEAR, 3, 15);
@@ -90,7 +90,7 @@ class FeeYearLifecycleServiceTest {
                 campaignRepository, allMembersPort, groupRepository, eventPublisher, chargePort, markerRepository, clock);
     }
 
-    private MembershipFeeGroup buildGroup(MembershipFeeTierId levelId, String name, LocalDate votingDeadline,
+    private MembershipFeeGroup buildGroup(MembershipFeeTypeId levelId, String name, LocalDate votingDeadline,
                                           PublishedLevelStatus status, Set<FeeGroupMembership> memberships) {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(UUID.randomUUID()),
@@ -99,15 +99,15 @@ class FeeYearLifecycleServiceTest {
                 status, List.of(), memberships, null);
     }
 
-    private MembershipFeeGroup buildFrozenGroup(MembershipFeeTierId levelId) {
+    private MembershipFeeGroup buildFrozenGroup(MembershipFeeTypeId levelId) {
         return buildGroup(levelId, "Frozen Group", DEADLINE, PublishedLevelStatus.FROZEN, Set.of());
     }
 
-    private MembershipFeeGroup buildEditableGroup(MembershipFeeTierId levelId) {
+    private MembershipFeeGroup buildEditableGroup(MembershipFeeTypeId levelId) {
         return buildGroup(levelId, "Editable Group", DEADLINE, PublishedLevelStatus.EDITABLE, Set.of());
     }
 
-    private MembershipFeeGroup buildChoiceGroup(MembershipFeeTierId levelId) {
+    private MembershipFeeGroup buildChoiceGroup(MembershipFeeTypeId levelId) {
         return buildGroup(levelId, "Test Group", CHOICE_GROUP_DEADLINE, PublishedLevelStatus.EDITABLE, Set.of());
     }
 

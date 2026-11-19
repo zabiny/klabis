@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.jdbc;
 
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
@@ -57,7 +57,7 @@ class MembershipFeeGroupRepositoryAdapter implements MembershipFeeGroupRepositor
     }
 
     @Override
-    public boolean existsByYearAndSourceLevelId(int year, MembershipFeeTierId sourceLevelId) {
-        return jdbcRepository.existsByYearAndSourceLevelId(year, sourceLevelId.value());
+    public boolean existsByYearAndSourceTypeId(int year, MembershipFeeTypeId sourceTypeId) {
+        return jdbcRepository.existsByYearAndSourceTypeId(year, sourceTypeId.value());
     }
 }

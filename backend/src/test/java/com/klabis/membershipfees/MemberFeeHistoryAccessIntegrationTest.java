@@ -22,7 +22,7 @@ import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipFeeGroupRepository;
@@ -70,7 +70,7 @@ class MemberFeeHistoryAccessIntegrationTest {
     @Autowired
     private RegistrationPort registrationPort;
     @Autowired
-    private MembershipFeeTierManagementPort tierManagementPort;
+    private MembershipFeeTypeManagementPort typeManagementPort;
     @Autowired
     private MembershipFeeGroupRepository groupRepository;
     @Autowired
@@ -93,10 +93,10 @@ class MemberFeeHistoryAccessIntegrationTest {
                 BirthNumber.of("900101/1234"),
                 null, null, List.of(), null));
 
-        var tierId = tierManagementPort.createTier(
-                new MembershipFeeTierManagementPort.CreateTierCommand("Závodní", YEARLY_FEE));
+        var typeId = typeManagementPort.createFeeType(
+                new MembershipFeeTypeManagementPort.CreateTypeCommand("Závodní", YEARLY_FEE));
         group = MembershipFeeGroup.createSnapshot(
-                tierId, "Závodní", PAST_YEAR, YEARLY_FEE, List.of(), LocalDate.of(PAST_YEAR - 1, 12, 31));
+                typeId, "Závodní", PAST_YEAR, YEARLY_FEE, List.of(), LocalDate.of(PAST_YEAR - 1, 12, 31));
         group.addMember(member.getId(), LocalDate.of(PAST_YEAR - 1, 11, 20), AssignmentSource.ADMIN_ASSIGNMENT);
         group = groupRepository.save(group);
     }

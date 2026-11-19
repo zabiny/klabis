@@ -7,10 +7,10 @@ import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.*;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
-import com.klabis.membershipfees.domain.MembershipFeeTier;
+import com.klabis.membershipfees.domain.MembershipFeeType;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,26 +34,26 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@DisplayName("MembershipFeeTierController API tests")
+@DisplayName("MembershipFeeTypeController API tests")
 @MembershipFeesWebMvcTest
-class MembershipFeeTierControllerTest {
+class MembershipFeeTypeControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final UUID LEVEL_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    private static final MembershipFeeTierId LEVEL_ID = new MembershipFeeTierId(LEVEL_UUID);
+    private static final MembershipFeeTypeId LEVEL_ID = new MembershipFeeTypeId(LEVEL_UUID);
     private static final UUID CAMPAIGN_UUID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private MembershipFeeTierManagementPort managementPort;
+    private MembershipFeeTypeManagementPort managementPort;
 
     @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
 
     @Autowired
-    private MembershipFeeTierOptionsPort optionsPort;
+    private MembershipFeeTypeOptionsPort optionsPort;
 
     @BeforeEach
     void setupMocks() {
@@ -71,24 +71,24 @@ class MembershipFeeTierControllerTest {
                 List.of(new MembershipFeeGroupId(UUID.randomUUID())));
     }
 
-    private MembershipFeeTier buildLevel(UUID id, String name) {
-        return MembershipFeeTier.reconstruct(
-                new MembershipFeeTierId(id), name,
+    private MembershipFeeType buildLevel(UUID id, String name) {
+        return MembershipFeeType.reconstruct(
+                new MembershipFeeTypeId(id), name,
                 Money.ofCzk(new BigDecimal("1200.00")), List.of(), null);
     }
 
     @Nested
-    @DisplayName("POST /api/membership-fee-tiers")
+    @DisplayName("POST /api/membership-fee-types")
     class CreateLevelTests {
 
         @Test
         @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
-            when(managementPort.createTier(any())).thenReturn(LEVEL_ID);
+            when(managementPort.createFeeType(any())).thenReturn(LEVEL_ID);
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers")
+                            post("/api/membership-fee-types")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -101,11 +101,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 201 with Location header when user has MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldCreateLevelAndReturn201() throws Exception {
-            when(managementPort.createTier(any()))
+            when(managementPort.createFeeType(any()))
                     .thenReturn(LEVEL_ID);
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers")
+                            post("/api/membership-fee-types")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -113,7 +113,7 @@ class MembershipFeeTierControllerTest {
                                             """))
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
-                            org.hamcrest.Matchers.endsWith("/api/membership-fee-tiers/" + LEVEL_UUID)));
+                            org.hamcrest.Matchers.endsWith("/api/membership-fee-types/" + LEVEL_UUID)));
         }
 
         @Test
@@ -121,7 +121,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenNameIsBlank() throws Exception {
             mockMvc.perform(
-                            post("/api/membership-fee-tiers")
+                            post("/api/membership-fee-types")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -135,7 +135,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturnCzechFieldErrorRegardlessOfAcceptLanguage() throws Exception {
             mockMvc.perform(
-                            post("/api/membership-fee-tiers")
+                            post("/api/membership-fee-types")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .header("Accept-Language", "en")
@@ -148,13 +148,13 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("should map name and yearlyFee to CreateTierCommand without rules")
+        @DisplayName("should map name and yearlyFee to CreateTypeCommand without rules")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldMapRequestToCommandWithoutRules() throws Exception {
-            when(managementPort.createTier(any())).thenReturn(LEVEL_ID);
+            when(managementPort.createFeeType(any())).thenReturn(LEVEL_ID);
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers")
+                            post("/api/membership-fee-types")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -162,9 +162,9 @@ class MembershipFeeTierControllerTest {
                                             """))
                     .andExpect(status().isCreated());
 
-            var captor = forClass(MembershipFeeTierManagementPort.CreateTierCommand.class);
-            verify(managementPort).createTier(captor.capture());
-            MembershipFeeTierManagementPort.CreateTierCommand command = captor.getValue();
+            var captor = forClass(MembershipFeeTypeManagementPort.CreateTypeCommand.class);
+            verify(managementPort).createFeeType(captor.capture());
+            MembershipFeeTypeManagementPort.CreateTypeCommand command = captor.getValue();
 
             assertThat(command.name()).isEqualTo("Závodní");
             assertThat(command.yearlyFee()).isNotNull();
@@ -172,97 +172,97 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/membership-fee-tiers")
+    @DisplayName("GET /api/membership-fee-types")
     class ListLevelsTests {
 
         @Test
         @DisplayName("should return 200 with list of levels")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnListOfLevels() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(
+            when(managementPort.listFeeTypes()).thenReturn(List.of(
                     buildLevel(LEVEL_UUID, "Dospělý"),
                     buildLevel(UUID.randomUUID(), "Mládež")
             ));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList").isArray())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList.length()").value(2));
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList").isArray())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList.length()").value(2));
         }
 
         @Test
-        @DisplayName("each tier item in the collection should have a self link")
+        @DisplayName("each type item in the collection should have a self link")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void eachTierItemShouldHaveSelfLink() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(
+        void eachTypeItemShouldHaveSelfLink() throws Exception {
+            when(managementPort.listFeeTypes()).thenReturn(List.of(
                     buildLevel(LEVEL_UUID, "Dospělý"),
                     buildLevel(UUID.randomUUID(), "Mládež")
             ));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.self.href")
-                            .value(org.hamcrest.Matchers.endsWith("/api/membership-fee-tiers/" + LEVEL_UUID)))
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[1]._links.self.href").exists());
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/membership-fee-types/" + LEVEL_UUID)))
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[1]._links.self.href").exists());
         }
 
         @Test
-        @DisplayName("each tier item should have a rules link pointing to its rules collection")
+        @DisplayName("each type item should have a rules link pointing to its rules collection")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void eachTierItemShouldHaveRulesLink() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+        void eachTypeItemShouldHaveRulesLink() throws Exception {
+            when(managementPort.listFeeTypes()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.rules.href")
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._links.rules.href")
                             .value(org.hamcrest.Matchers.endsWith(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
+                                    "/api/membership-fee-types/" + LEVEL_UUID + "/rules")));
         }
 
         @Test
-        @DisplayName("tier item should include edit/delete affordances for MEMBERS:MANAGE user")
+        @DisplayName("type item should include edit/delete affordances for MEMBERS:MANAGE user")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void tierItemShouldIncludeEditDeleteAffordancesForAdmin() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+        void typeItemShouldIncludeEditDeleteAffordancesForAdmin() throws Exception {
+            when(managementPort.listFeeTypes()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.editTier").exists())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.deleteTier").exists());
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._templates.editFeeType").exists())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._templates.deleteFeeType").exists());
         }
 
         @Test
-        @DisplayName("tier item should not include edit/delete affordances for non-admin user")
+        @DisplayName("type item should not include edit/delete affordances for non-admin user")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void tierItemShouldNotIncludeEditDeleteAffordancesForNonAdmin() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+        void typeItemShouldNotIncludeEditDeleteAffordancesForNonAdmin() throws Exception {
+            when(managementPort.listFeeTypes()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.self.href").exists())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.editTier").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.deleteTier").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._templates.editFeeType").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTypeSummaryResponseList[0]._templates.deleteFeeType").doesNotExist());
         }
 
         @Test
         @DisplayName("should return 200 with empty list when no levels exist")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnEmptyList() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
         }
@@ -271,28 +271,28 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should include create affordance for MEMBERS:MANAGE user")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeCreateAffordance() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.createTier").exists());
+                    .andExpect(jsonPath("$._templates.createFeeType").exists());
         }
 
         @Test
-        @DisplayName("should offer publishYear template with tier options when no campaign is active")
+        @DisplayName("should offer publishYear template with type options when no campaign is active")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldOfferPublishYearWithTierOptionsWhenNoCampaignActive() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Standard")));
+        void shouldOfferPublishYearWithTypeOptionsWhenNoCampaignActive() throws Exception {
+            when(managementPort.listFeeTypes()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Standard")));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='levelIds')].options.inline[0].value")
+                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='typeIds')].options.inline[0].value")
                             .value(LEVEL_UUID.toString()))
-                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='levelIds')].options.inline[0].prompt")
+                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='typeIds')].options.inline[0].prompt")
                             .value("Standard"));
         }
 
@@ -300,26 +300,26 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should not offer publishYear template while a campaign is active")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldNotOfferPublishYearWhenCampaignActive() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
             when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.publishYear").doesNotExist())
-                    .andExpect(jsonPath("$._templates.createTier").exists());
+                    .andExpect(jsonPath("$._templates.createFeeType").exists());
         }
 
         @Test
         @DisplayName("should include activeCampaign and pastCampaigns links for MEMBERS:MANAGE user when active campaign exists")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeActiveCampaignAndPastCampaignLinksForAdminWhenCampaignActive() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
             when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.activeCampaign.href")
@@ -332,11 +332,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should not include activeCampaign or pastCampaigns links for non-admin user")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldNotIncludeCampaignLinksForNonAdmin() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
             when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.activeCampaign").doesNotExist())
@@ -347,11 +347,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should omit activeCampaign link but include pastCampaigns link when no active campaign exists")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldOmitActiveCampaignLinkWhenNoCampaignActive() throws Exception {
-            when(managementPort.listTiers()).thenReturn(List.of());
+            when(managementPort.listFeeTypes()).thenReturn(List.of());
             when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers")
+                            get("/api/membership-fee-types")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.activeCampaign").doesNotExist())
@@ -361,18 +361,18 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/membership-fee-tiers/{id}")
+    @DisplayName("GET /api/membership-fee-types/{id}")
     class GetLevelTests {
 
         @Test
         @DisplayName("should return 200 with level details")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnLevelDetails() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
+            when(managementPort.getFeeType(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Dospělý"))
@@ -384,11 +384,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 404 when level not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenNotFound() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
-                    .thenThrow(new MembershipFeeTierNotFoundException(LEVEL_ID));
+            when(managementPort.getFeeType(LEVEL_ID))
+                    .thenThrow(new MembershipFeeTypeNotFoundException(LEVEL_ID));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound());
         }
@@ -397,11 +397,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should include self link and edit/delete affordances for MEMBERS:MANAGE user")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeAffordancesForAdmin() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
+            when(managementPort.getFeeType(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
@@ -409,25 +409,25 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("rules link in tier detail should point to the rules collection endpoint")
+        @DisplayName("rules link in type detail should point to the rules collection endpoint")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void rulesLinkShouldPointToRulesCollectionEndpoint() throws Exception {
-            when(managementPort.getTier(LEVEL_ID))
+            when(managementPort.getFeeType(LEVEL_ID))
                     .thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.rules.href")
                             .value(org.hamcrest.Matchers.endsWith(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
+                                    "/api/membership-fee-types/" + LEVEL_UUID + "/rules")));
         }
 
     }
 
     @Nested
-    @DisplayName("PATCH /api/membership-fee-tiers/{id}")
+    @DisplayName("PATCH /api/membership-fee-types/{id}")
     class EditLevelTests {
 
         @Test
@@ -435,7 +435,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            patch("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -448,10 +448,10 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 204 when edit is successful")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn204OnSuccess() throws Exception {
-            doNothing().when(managementPort).editTier(eq(LEVEL_ID), any());
+            doNothing().when(managementPort).editFeeType(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            patch("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -465,10 +465,10 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldDeserializeRulesInEditCommand() throws Exception {
             var eventTypeUuid = UUID.fromString("e2be588c-91ad-43e4-8d14-efa7de02782d");
-            doNothing().when(managementPort).editTier(eq(LEVEL_ID), any());
+            doNothing().when(managementPort).editFeeType(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            patch("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -476,9 +476,9 @@ class MembershipFeeTierControllerTest {
                                             """.formatted(eventTypeUuid)))
                     .andExpect(status().isNoContent());
 
-            var captor = forClass(MembershipFeeTierManagementPort.EditTierCommand.class);
-            verify(managementPort).editTier(eq(LEVEL_ID), captor.capture());
-            MembershipFeeTierManagementPort.EditTierCommand command = captor.getValue();
+            var captor = forClass(MembershipFeeTypeManagementPort.EditTypeCommand.class);
+            verify(managementPort).editFeeType(eq(LEVEL_ID), captor.capture());
+            MembershipFeeTypeManagementPort.EditTypeCommand command = captor.getValue();
 
             assertThat(command.rules()).hasSize(1);
             MembershipPaymentRule rule = command.rules().get(0);
@@ -488,22 +488,22 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/membership-fee-tiers/{id}/rules")
+    @DisplayName("GET /api/membership-fee-types/{id}/rules")
     class ListRulesTests {
 
         @Test
-        @DisplayName("should return 200 with empty collection when tier has no rules")
+        @DisplayName("should return 200 with empty collection when type has no rules")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnEmptyCollectionWhenNoRules() throws Exception {
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href")
                             .value(org.hamcrest.Matchers.endsWith(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
+                                    "/api/membership-fee-types/" + LEVEL_UUID + "/rules")));
         }
 
         @Test
@@ -511,17 +511,17 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldSerializeEventTypeIdAsPlainUuidString() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
                             "A", 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].eventTypeId").value(eventTypeUuid.toString()))
@@ -533,17 +533,17 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void editRuleTemplateShouldIncludeRuleTypeOptions() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
                             "A", 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule").exists())
@@ -558,17 +558,17 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void ruleItemShouldIncludeEventTypeLink() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
                             "A", 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._links.eventType.href")
@@ -580,17 +580,17 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeAffordancesOnRuleItems() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(eventTypeUuid),
                             "A", 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._links.self.href").exists())
@@ -602,7 +602,7 @@ class MembershipFeeTierControllerTest {
         @DisplayName("addRule template should include ranking property with inline options from ORIS")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
             when(optionsPort.listRankingOptions()).thenReturn(List.of(
                     new HalFormsInlineOption("A", "Elita"),
                     new HalFormsInlineOption("B", "Výkonnostní"),
@@ -610,7 +610,7 @@ class MembershipFeeTierControllerTest {
             ));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addRule").exists())
@@ -628,11 +628,11 @@ class MembershipFeeTierControllerTest {
         @DisplayName("addRule template should include empty ranking options when ORIS is unavailable")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
             when(optionsPort.listRankingOptions()).thenReturn(List.of());
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addRule").exists());
@@ -643,14 +643,14 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeEventTypeOptionsInAddRuleTemplate() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
             when(optionsPort.listEventTypeOptions()).thenReturn(List.of(
                     new HalFormsInlineOption(eventTypeUuid.toString(), "Závod"),
                     new HalFormsInlineOption(UUID.randomUUID().toString(), "Trénink")
             ));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addRule").exists())
@@ -666,10 +666,10 @@ class MembershipFeeTierControllerTest {
         @DisplayName("addRule template should include ruleType property with PERCENTAGE and FIXED_AMOUNT options")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeRuleTypeOptionsInAddRuleTemplate() throws Exception {
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            get("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addRule").exists())
@@ -682,7 +682,7 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    @DisplayName("GET /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}")
     class GetRuleTests {
 
         private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
@@ -692,17 +692,17 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 200 with rule details")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnRuleDetails() throws Exception {
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID),
                             RANKING, 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            get("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
@@ -716,17 +716,17 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should include self link with editRule affordance for MEMBERS:MANAGE user")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeEditRuleAffordance() throws Exception {
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(MembershipPaymentRule.percentage(
                             com.klabis.membershipfees.domain.EventTypeReference.of(EVENT_TYPE_UUID),
                             RANKING, 50)),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            get("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
@@ -738,15 +738,15 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 404 when rule not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn404WhenRuleNotFound() throws Exception {
-            var tier = MembershipFeeTier.reconstruct(
+            var type = MembershipFeeType.reconstruct(
                     LEVEL_ID, "Závodní",
                     com.klabis.finance.domain.Money.ofCzk(new BigDecimal("1200.00")),
                     List.of(),
                     null);
-            when(managementPort.getTier(LEVEL_ID)).thenReturn(tier);
+            when(managementPort.getFeeType(LEVEL_ID)).thenReturn(type);
 
             mockMvc.perform(
-                            get("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            get("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound());
@@ -754,7 +754,7 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("POST /api/membership-fee-tiers/{id}/rules")
+    @DisplayName("POST /api/membership-fee-types/{id}/rules")
     class AddRuleTests {
 
         private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
@@ -764,7 +764,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            post("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -780,7 +780,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            post("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -789,7 +789,7 @@ class MembershipFeeTierControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             org.hamcrest.Matchers.endsWith(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/A")));
+                                    "/api/membership-fee-types/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/A")));
         }
 
         @Test
@@ -799,7 +799,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            post("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -808,7 +808,7 @@ class MembershipFeeTierControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             org.hamcrest.Matchers.endsWith(
-                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/B")));
+                                    "/api/membership-fee-types/" + LEVEL_UUID + "/rules/" + EVENT_TYPE_UUID + "/B")));
         }
 
         @Test
@@ -820,7 +820,7 @@ class MembershipFeeTierControllerTest {
                     .when(managementPort).addRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            post("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -836,7 +836,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).addRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            post("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
+                            post("/api/membership-fee-types/{id}/rules", LEVEL_UUID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
@@ -844,9 +844,9 @@ class MembershipFeeTierControllerTest {
                                             """.formatted(EVENT_TYPE_UUID)))
                     .andExpect(status().isCreated());
 
-            var captor = forClass(MembershipFeeTierManagementPort.AddRuleCommand.class);
+            var captor = forClass(MembershipFeeTypeManagementPort.AddRuleCommand.class);
             verify(managementPort).addRule(eq(LEVEL_ID), captor.capture());
-            MembershipFeeTierManagementPort.AddRuleCommand command = captor.getValue();
+            MembershipFeeTypeManagementPort.AddRuleCommand command = captor.getValue();
 
             assertThat(command.rule().rankingShortName()).isEqualTo("B");
             assertThat(command.rule().value()).isInstanceOf(MembershipPaymentRule.RuleValue.FixedAmount.class);
@@ -854,7 +854,7 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("PATCH /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    @DisplayName("PATCH /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}")
     class EditRuleTests {
 
         private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
@@ -867,7 +867,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            patch("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -884,7 +884,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            patch("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -901,7 +901,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).editRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            patch("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, "B")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -910,9 +910,9 @@ class MembershipFeeTierControllerTest {
                                             """))
                     .andExpect(status().isNoContent());
 
-            var captor = forClass(MembershipFeeTierManagementPort.EditRuleCommand.class);
+            var captor = forClass(MembershipFeeTypeManagementPort.EditRuleCommand.class);
             verify(managementPort).editRule(eq(LEVEL_ID), captor.capture());
-            MembershipFeeTierManagementPort.EditRuleCommand command = captor.getValue();
+            MembershipFeeTypeManagementPort.EditRuleCommand command = captor.getValue();
 
             assertThat(command.eventTypeId().value()).isEqualTo(EVENT_TYPE_UUID);
             assertThat(command.rankingShortName()).isEqualTo("B");
@@ -924,7 +924,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            patch("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -943,7 +943,7 @@ class MembershipFeeTierControllerTest {
                     .when(managementPort).editRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            patch("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            patch("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -955,7 +955,7 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}")
+    @DisplayName("DELETE /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}")
     class DeleteRuleTests {
 
         private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
@@ -968,7 +968,7 @@ class MembershipFeeTierControllerTest {
             doNothing().when(managementPort).removeRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            delete("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNoContent());
@@ -979,7 +979,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            delete("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
@@ -994,7 +994,7 @@ class MembershipFeeTierControllerTest {
                     .when(managementPort).removeRule(eq(LEVEL_ID), any());
 
             mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
+                            delete("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
                                     LEVEL_UUID, EVENT_TYPE_UUID, RANKING)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound());
@@ -1002,7 +1002,7 @@ class MembershipFeeTierControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/membership-fee-tiers/{id}")
+    @DisplayName("DELETE /api/membership-fee-types/{id}")
     class DeleteLevelTests {
 
         @Test
@@ -1010,7 +1010,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            delete("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -1019,10 +1019,10 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 204 when delete is successful")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn204OnDelete() throws Exception {
-            doNothing().when(managementPort).deleteTier(LEVEL_ID);
+            doNothing().when(managementPort).deleteFeeType(LEVEL_ID);
 
             mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}", LEVEL_UUID)
+                            delete("/api/membership-fee-types/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNoContent());
         }

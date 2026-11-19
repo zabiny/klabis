@@ -5,8 +5,8 @@ import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.infrastructure.bootstrap.EventTypeDataBootstrap;
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.MembershipFeeTypeId;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.slf4j.Logger;
@@ -21,22 +21,22 @@ import java.util.List;
 @Component
 @Profile("example-data & !oris")
 @Order(5)
-public class MembershipFeeTiersDataBootstrap implements BootstrapDataInitializer {
+public class MembershipFeeTypesDataBootstrap implements BootstrapDataInitializer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MembershipFeeTiersDataBootstrap.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MembershipFeeTypesDataBootstrap.class);
 
-    private final MembershipFeeTierManagementPort tierManagement;
+    private final MembershipFeeTypeManagementPort typeManagement;
     private final EventTypeManagementPort eventTypeManagement;
 
-    MembershipFeeTiersDataBootstrap(MembershipFeeTierManagementPort tierManagement,
+    MembershipFeeTypesDataBootstrap(MembershipFeeTypeManagementPort typeManagement,
                                     EventTypeManagementPort eventTypeManagement) {
-        this.tierManagement = tierManagement;
+        this.typeManagement = typeManagement;
         this.eventTypeManagement = eventTypeManagement;
     }
 
     @Override
     public boolean requiresBootstrap() {
-        return tierManagement.listTiers().isEmpty();
+        return typeManagement.listFeeTypes().isEmpty();
     }
 
     @Override
@@ -46,30 +46,30 @@ public class MembershipFeeTiersDataBootstrap implements BootstrapDataInitializer
         EventTypeReference trainingType = findEventTypeByName(allTypes, EventTypeDataBootstrap.TRAINING_TYPE_NAME);
 
         if (raceType == null || trainingType == null) {
-            LOG.warn("Bootstrap event types not found — skipping membership fee tiers bootstrap");
+            LOG.warn("Bootstrap event types not found — skipping membership fee types bootstrap");
             return;
         }
 
-        MembershipFeeTierId zakladId = tierManagement.createTier(
-                new MembershipFeeTierManagementPort.CreateTierCommand("Základ", Money.ofCzk(BigDecimal.valueOf(1000))));
-        tierManagement.addRule(zakladId, new MembershipFeeTierManagementPort.AddRuleCommand(
+        MembershipFeeTypeId zakladId = typeManagement.createFeeType(
+                new MembershipFeeTypeManagementPort.CreateTypeCommand("Základ", Money.ofCzk(BigDecimal.valueOf(1000))));
+        typeManagement.addRule(zakladId, new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipPaymentRule.fixedAmount(trainingType, "Others", Money.ofCzk(BigDecimal.valueOf(100)))));
 
-        MembershipFeeTierId jenOblzId = tierManagement.createTier(
-                new MembershipFeeTierManagementPort.CreateTierCommand("Jen Oblz", Money.ofCzk(BigDecimal.valueOf(3500))));
-        tierManagement.addRule(jenOblzId, new MembershipFeeTierManagementPort.AddRuleCommand(
+        MembershipFeeTypeId jenOblzId = typeManagement.createFeeType(
+                new MembershipFeeTypeManagementPort.CreateTypeCommand("Jen Oblz", Money.ofCzk(BigDecimal.valueOf(3500))));
+        typeManagement.addRule(jenOblzId, new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipPaymentRule.percentage(raceType, "Oblastni zebricek", 0)));
 
-        MembershipFeeTierId allInclusiveId = tierManagement.createTier(
-                new MembershipFeeTierManagementPort.CreateTierCommand("All inclusive", Money.ofCzk(BigDecimal.valueOf(5500))));
-        tierManagement.addRule(allInclusiveId, new MembershipFeeTierManagementPort.AddRuleCommand(
+        MembershipFeeTypeId allInclusiveId = typeManagement.createFeeType(
+                new MembershipFeeTypeManagementPort.CreateTypeCommand("All inclusive", Money.ofCzk(BigDecimal.valueOf(5500))));
+        typeManagement.addRule(allInclusiveId, new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipPaymentRule.percentage(raceType, "Oblastni zebricek", 0)));
-        tierManagement.addRule(allInclusiveId, new MembershipFeeTierManagementPort.AddRuleCommand(
+        typeManagement.addRule(allInclusiveId, new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipPaymentRule.percentage(raceType, "Zebricek B", 0)));
-        tierManagement.addRule(allInclusiveId, new MembershipFeeTierManagementPort.AddRuleCommand(
+        typeManagement.addRule(allInclusiveId, new MembershipFeeTypeManagementPort.AddRuleCommand(
                 MembershipPaymentRule.percentage(raceType, "Zebricek A", 0)));
 
-        LOG.info("Created 3 bootstrap membership fee tiers (Základ, Jen Oblz, All inclusive)");
+        LOG.info("Created 3 bootstrap membership fee types (Základ, Jen Oblz, All inclusive)");
     }
 
     private static EventTypeReference findEventTypeByName(List<EventType> types, String name) {
