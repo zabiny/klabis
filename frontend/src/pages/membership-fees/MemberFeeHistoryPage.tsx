@@ -1,5 +1,5 @@
 import {type ReactElement} from 'react';
-import {Link, useParams} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import {KlabisTable, TableCell} from '../../components/KlabisTable';
 import {HalPageGate} from '../HalPageGate.tsx';
 import {toHref} from '../../api/hateoas.ts';
@@ -13,8 +13,6 @@ const l = labels.memberFee;
 type FeeAssignment = NonNullable<GetFeeHistoryResource['assignments']>[number];
 
 const MemberFeeHistoryContent = ({resourceData}: {resourceData: GetFeeHistoryResource}): ReactElement => {
-    const {memberId = ''} = useParams();
-
     const memberLink = resourceData._links?.member;
     const feeSummaryLink = resourceData._links?.feeSummary;
     const assignments = resourceData.assignments ?? [];
@@ -32,7 +30,7 @@ const MemberFeeHistoryContent = ({resourceData}: {resourceData: GetFeeHistoryRes
             <h1 className="text-3xl font-bold text-text-primary">{l.pageTitle}</h1>
 
             {feeSummaryLink && (
-                <MemberFeeSection feeSummaryHref={toHref(feeSummaryLink)} memberId={memberId}/>
+                <MemberFeeSection feeSummaryHref={toHref(feeSummaryLink)}/>
             )}
 
             <div className="flex flex-col gap-3">

@@ -19,11 +19,11 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 3. Choose the type directly in the section, with prices (vertical slice)
 
-- [ ] 3.1 Write failing tests: `chooseFeeType` template exposes `membershipFeeGroupId` with `options.link` to the published-groups endpoint of the campaign year (no inline options) and type `MembershipFeeGroupChoice`, only while voting is open; verify they fail
-- [ ] 3.2 Rename `/api/fee-selection-campaigns/{year}/levels` to `/groups` in the OpenAPI spec; set `x-hal-input-type: MembershipFeeGroupChoice` on the property; replace inline options with `HalFormsOptionsDef.Remote` in the summary postprocessor; regenerate bundle and frontend types; verify 3.1 passes
-- [ ] 3.3 Write failing frontend tests: section shows each type from the options link with name and yearly price, pre-selects the recommended type, choose / change / withdraw submit the HAL template targets and refresh the page data, locked card after deadline
-- [ ] 3.4 Add the `MembershipFeeGroupChoice` field (fetches `options.link.href`, shows name and `yearlyFeeAmount`); move the radio-card selection, withdraw action and locked card from `MemberFeeChoicePage` into `MemberFeeSection`; verify the vitest files pass
-- [ ] 3.5 Delete `MemberFeeChoicePage` (+ test) and the `/members/:memberId/fee-choice[/:year]` routes in `App.tsx`; verify `npm run build` and no remaining references (`grep MemberFeeChoicePage`)
+- [x] 3.1 Write failing tests: `chooseFeeType` template exposes `membershipFeeGroupId` with `options.link` to the published-groups endpoint of the campaign year (no inline options) and type `MembershipFeeGroupChoice`, only while voting is open; verify they fail
+- [x] 3.2 Rename `/api/fee-selection-campaigns/{year}/levels` to `/groups` in the OpenAPI spec; set `x-hal-input-type: MembershipFeeGroupChoice` on the property; replace inline options with `HalFormsOptionsDef.Remote` in the summary postprocessor; regenerate bundle and frontend types; verify 3.1 passes
+- [x] 3.3 Write failing frontend tests: section shows each type from the options link with name and yearly price, pre-selects the recommended type, choose / change / withdraw submit the HAL template targets and refresh the page data, locked card after deadline
+- [x] 3.4 Add the `MembershipFeeGroupChoice` field (fetches `options.link.href`, shows name and `yearlyFeeAmount`); move the radio-card selection, withdraw action and locked card from `MemberFeeChoicePage` into `MemberFeeSection`; verify the vitest files pass
+- [x] 3.5 Delete `MemberFeeChoicePage` (+ test) and the `/members/:memberId/fee-choice[/:year]` routes in `App.tsx`; verify `npm run build` and no remaining references (`grep MemberFeeChoicePage`)
 
 ## 4. Terminology: "typ členského příspěvku" in UI texts
 

@@ -157,24 +157,23 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should include inline group options on chooseFeeType affordance membershipFeeGroupId property")
+        @DisplayName("should expose membershipFeeGroupId as MembershipFeeGroupChoice with options.link to published groups")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
-        void shouldIncludeInlineGroupOptionsOnChooseLevelAffordance() throws Exception {
+        void shouldExposeGroupOptionsLinkOnChooseFeeTypeAffordance() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true, Optional.empty());
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
-
-            MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
-                    new MembershipFeeTypeId(LEVEL_UUID), "Základní", YEAR, FEE, List.of(),
-                    LocalDate.of(YEAR, 3, 31));
-            when(publicationManagementPort.listGroupsForYear(YEAR)).thenReturn(List.of(group));
 
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-summary", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
-                            .value("Základní"));
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].type")
+                            .value("MembershipFeeGroupChoice"))
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.link.href")
+                            .value(org.hamcrest.Matchers.contains("http://localhost/api/fee-selection-campaigns/" + YEAR + "/groups")))
+                    .andExpect(jsonPath("$._templates.chooseFeeType.properties[?(@.name=='membershipFeeGroupId')].options.inline")
+                            .doesNotExist());
         }
 
         @Test

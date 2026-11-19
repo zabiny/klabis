@@ -128,8 +128,8 @@ paths:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1deadline'
   /api/fee-selection-campaigns/{id}/close:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1close'
-  /api/fee-selection-campaigns/{year}/levels:
-    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1levels'
+  /api/fee-selection-campaigns/{year}/groups:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1groups'
   /api/membership-fee-groups/{id}:
     $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}'
   /api/membership-fee-groups/{id}/rules:

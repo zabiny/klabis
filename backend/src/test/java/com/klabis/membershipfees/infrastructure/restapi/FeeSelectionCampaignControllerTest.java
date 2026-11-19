@@ -311,7 +311,7 @@ class FeeSelectionCampaignControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/fee-selection-campaigns/{year}/levels")
+    @DisplayName("GET /api/fee-selection-campaigns/{year}/groups")
     class ListGroupsForYearTests {
 
         @Test
@@ -322,7 +322,7 @@ class FeeSelectionCampaignControllerTest {
                     .thenReturn(List.of(buildGroup(GROUP_UUID, 2026)));
 
             mockMvc.perform(
-                            get("/api/fee-selection-campaigns/{year}/levels", 2026)
+                            get("/api/fee-selection-campaigns/{year}/groups", 2026)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.membershipFeeGroupResponseList").isArray())

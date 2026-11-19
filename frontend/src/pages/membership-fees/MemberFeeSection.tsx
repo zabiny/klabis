@@ -1,18 +1,19 @@
-import {type ReactElement} from 'react';
-import {Link} from 'react-router-dom';
+import {type ReactElement, useState} from 'react';
 import {Section} from '../members/MemberSection';
-import {labels} from '../../localization';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {Alert, Button} from '../../components/UI';
+import {describeError, labels} from '../../localization';
+import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {halResource} from '../../api/halResource';
 import type {GetFeeSummaryResource} from '../../api';
+import {MembershipFeeGroupRadioCards, useMembershipFeeGroupOptions} from '../../components/HalNavigator2/halforms/fields';
 
 const l = labels.memberFee;
 
 interface MemberFeeSectionProps {
     feeSummaryHref: string;
-    memberId: string;
 }
 
-export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionProps): ReactElement => {
+export const MemberFeeSection = ({feeSummaryHref}: MemberFeeSectionProps): ReactElement => {
     const {data: summary, isLoading} = useAuthorizedQuery<GetFeeSummaryResource>(feeSummaryHref);
 
     return (
@@ -21,22 +22,59 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
                 <p className="text-sm text-text-tertiary">{labels.ui.loading}</p>
             )}
 
-            {!isLoading && summary && renderSummary(summary, memberId)}
+            {!isLoading && summary && <FeeSummary summary={summary}/>}
         </Section>
     );
 };
 
-function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactElement {
-    const feeChoicePath = `/members/${memberId}/fee-choice/${summary.year}`;
-    const canChoose = Boolean(summary._templates?.chooseFeeType);
+const CurrentChoiceCard = ({name, yearlyFee}: {name?: string; yearlyFee?: number}): ReactElement => (
+    <div className="p-4 rounded-lg border border-border-subtle bg-bg-subtle">
+        <p className="text-sm font-medium mb-1 text-text-secondary">{l.currentTier}</p>
+        <p className="text-lg font-semibold text-text-primary">{name}</p>
+        {yearlyFee !== undefined && (
+            <p className="text-sm mt-1 text-text-secondary">
+                {yearlyFee} {labels.finance.currency} / rok
+            </p>
+        )}
+    </div>
+);
+
+const FeeSummary = ({summary}: {summary: GetFeeSummaryResource}): ReactElement => {
+    const actions = halResource(summary);
+    const chooseAction = actions.template('chooseFeeType');
+    const removeAction = actions.template('removeChoice');
+    const optionsHref = chooseAction?.template.properties?.find(p => p.name === 'membershipFeeGroupId')?.options?.link?.href;
+
+    const {mutate: submitChoice, isPending: isChoosing, error: chooseError} = useAuthorizedMutation({method: 'POST'});
+    const {mutate: cancelChoice, isPending: isCancelling, error: cancelError} = useAuthorizedMutation({method: 'DELETE'});
+    const {groups, isLoading: optionsLoading, error: optionsError, unavailable} = useMembershipFeeGroupOptions(optionsHref);
+    const [chosenGroupId, setChosenGroupId] = useState<string>('');
+
+    const isOffered = (id: string | null | undefined): id is string => !!id && groups.some(g => g.id === id);
+    const selectedGroupId = [chosenGroupId, summary.recommendedGroupId].find(isOffered) ?? '';
+    const canChoose = Boolean(summary.votingOpen && chooseAction);
+    const mutationError = chooseError ?? cancelError;
+
+    const handleChoose = () => {
+        if (!chooseAction?.href) return;
+        submitChoice(
+            {url: chooseAction.href, data: {membershipFeeGroupId: selectedGroupId}},
+            {onSuccess: () => setChosenGroupId('')},
+        );
+    };
+
+    const handleCancel = () => {
+        if (!removeAction?.href) return;
+        cancelChoice({url: removeAction.href}, {onSuccess: () => setChosenGroupId('')});
+    };
 
     return (
-        <div className="flex flex-col gap-3">
-            {summary.votingOpen && canChoose && !summary.currentGroup && (
+        <div className="flex flex-col gap-3 max-w-lg">
+            {canChoose && !summary.currentGroup && (
                 <p className="text-sm text-text-secondary">{l.votingOpenNoChoice}</p>
             )}
 
-            {summary.votingOpen && canChoose && summary.currentGroup && (
+            {canChoose && summary.currentGroup && (
                 <p className="text-sm text-text-secondary">{l.votingOpenChoiceExists}</p>
             )}
 
@@ -49,30 +87,48 @@ function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactE
             )}
 
             {summary.currentGroup && (
-                <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium text-text-primary">{summary.currentGroup.name}</p>
-                    <p className="text-sm text-text-secondary">{summary.currentGroup.yearlyFee} {labels.finance.currency}</p>
-                </div>
+                <CurrentChoiceCard name={summary.currentGroup.name} yearlyFee={summary.currentGroup.yearlyFee}/>
             )}
 
-            {summary.votingOpen && canChoose && !summary.currentGroup && (
-                <Link
-                    to={feeChoicePath}
-                    className="text-sm text-primary hover:text-primary-light underline self-start"
-                >
-                    {l.chooseTier}
-                </Link>
-            )}
+            {canChoose && (
+                <>
+                    {optionsLoading && <p className="text-sm text-text-tertiary">{labels.ui.loading}</p>}
+                    {(unavailable || optionsError) && (
+                        <Alert severity="error">{optionsError ? describeError(optionsError) : l.optionsUnavailable}</Alert>
+                    )}
 
-            {summary.votingOpen && canChoose && summary.currentGroup && (
-                <Link
-                    to={feeChoicePath}
-                    className="text-sm text-primary hover:text-primary-light underline self-start"
-                >
-                    {l.changeTier}
-                </Link>
-            )}
+                    <MembershipFeeGroupRadioCards
+                        groups={groups}
+                        value={selectedGroupId}
+                        onChange={setChosenGroupId}
+                        ariaLabel={l.choiceTier}
+                    />
 
+                    {mutationError && <Alert severity="error">{describeError(mutationError)}</Alert>}
+
+                    <div className="flex gap-3">
+                        <Button
+                            variant="primary"
+                            onClick={handleChoose}
+                            disabled={!selectedGroupId || isChoosing}
+                            loading={isChoosing}
+                        >
+                            {summary.currentGroup ? l.changeTier : l.chooseTier}
+                        </Button>
+
+                        {removeAction && summary.currentGroup && (
+                            <Button
+                                variant="secondary"
+                                onClick={handleCancel}
+                                disabled={isCancelling}
+                                loading={isCancelling}
+                            >
+                                {l.cancelChoice}
+                            </Button>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
-}
+};

@@ -33,7 +33,6 @@ import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdm
 import {MembershipFeeTypeDetailPage} from "./pages/membership-fees/MembershipFeeTypeDetailPage.tsx";
 import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
-import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
 import {MemberFeeHistoryPage} from "./pages/membership-fees/MemberFeeHistoryPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
@@ -104,8 +103,6 @@ function App() {
                                 <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
                                 <Route path="/members" element={<MembersPage/>}/>
                                 <Route path="/members/:id" element={<MemberDetailPage/>}/>
-                                <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
-                                <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
                                 <Route path="/members/:memberId/fee-history" element={<MemberFeeHistoryPage/>}/>
                                 <Route path="/events" element={<EventsPage/>}/>
                                 <Route path="/events/:id" element={<EventDetailPage/>}/>

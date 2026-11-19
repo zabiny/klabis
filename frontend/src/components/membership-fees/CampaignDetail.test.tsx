@@ -42,7 +42,7 @@ const buildCampaignDetail = (overrides?: Partial<HalResponse>): HalResponse => (
     votingDeadline: '2025-03-31',
     _links: {
         self: {href: '/api/fee-selection-campaigns/campaign-1'},
-        levels: {href: '/api/fee-selection-campaigns/campaign-1/levels'},
+        levels: {href: '/api/fee-selection-campaigns/campaign-1/groups'},
     },
     ...overrides,
 });
@@ -73,7 +73,7 @@ describe('CampaignDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        ({writeCalls} = stubFetch(url => url.endsWith('/levels')
+        ({writeCalls} = stubFetch(url => url.endsWith('/groups')
             ? {_embedded: {membershipFeeGroupResponseList: mockGroups}}
             : {}));
     });

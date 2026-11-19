@@ -6,7 +6,7 @@ import {
 } from "./HalNavigator2/halforms";
 import {isMultipleProperty} from "./HalNavigator2/halforms/utils";
 import {type ReactElement} from "react";
-import {HalFormsCheckboxGroup, HalFormsCountry, HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
+import {HalFormsCheckboxGroup, HalFormsCountry, HalFormsInput, HalFormsMemberId, HalFormsMembershipFeeGroupChoice, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
@@ -215,6 +215,8 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
                 {key: "shortName", attr: "shortName", prompt: "Zkratka"},
                 {key: "name", attr: "name", prompt: "Název"},
             ]);
+        case "MembershipFeeGroupChoice":
+            return <HalFormsMembershipFeeGroupChoice {...conf}/>;
         case "MembershipFeeTypeMultiSelect":
             return <MembershipFeeTypeMultiSelectField {...conf}/>;
         case "LegalGuardianInputRequest":

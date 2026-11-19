@@ -1,7 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -17,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -100,12 +98,6 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
 class MemberFeeSummaryDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MemberFeeSummaryResponse, MemberFeeSummaryController.FeeSummaryView> {
 
-    private final FeeSelectionCampaignManagementPort publicationManagementPort;
-
-    MemberFeeSummaryDetailsPostprocessor(FeeSelectionCampaignManagementPort publicationManagementPort) {
-        this.publicationManagementPort = publicationManagementPort;
-    }
-
     @Override
     public void process(EntityModel<MemberFeeSummaryResponse> dtoModel, MemberFeeSummaryController.FeeSummaryView view) {
         UUID memberId = view.memberId();
@@ -116,12 +108,9 @@ class MemberFeeSummaryDetailsPostprocessor
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
-                        List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
-                                .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
-                                .toList();
                         self = self.andAffordances(klabisAffordWithOptions(
                                 methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, year, null),
-                                Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
+                                Map.of("membershipFeeGroupId", HalFormsOptionsDef.remote(methodOn(FeeSelectionCampaignsApi.class).listGroupsForYear(year)))));
                         if (info.groupId() != null) {
                             self = self.andAffordances(klabisAfford(
                                     methodOn(MemberFeeChoiceApi.class).removeChoice(memberId, year)));

@@ -1222,6 +1222,7 @@ export const labels = {
         changeTier: 'Změnit tier',
         cancelChoice: 'Zrušit volbu',
         noChoiceMade: 'Výběr ještě nebyl proveden',
+        optionsUnavailable: 'Nabídku typů příspěvku se nepodařilo načíst.',
         feeTier: 'Tier členského příspěvku',
         annualFee: 'Roční poplatek',
         noChoiceWarning: 'Lhůta pro výběr příspěvku uplynula bez provedené volby.',

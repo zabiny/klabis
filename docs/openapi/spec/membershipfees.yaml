@@ -672,7 +672,7 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/fee-selection-campaigns/{year}/levels:
+  /api/fee-selection-campaigns/{year}/groups:
     get:
       operationId: listGroupsForYear
       tags: [FeeSelectionCampaigns]
@@ -1531,6 +1531,7 @@ components:
         membershipFeeGroupId:
           type: string
           format: uuid
+          x-hal-input-type: MembershipFeeGroupChoice
 
     MemberFeeSummaryResponse:
       type: object
