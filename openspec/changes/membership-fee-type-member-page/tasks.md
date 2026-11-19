@@ -12,17 +12,17 @@ Prerequisite: change `rename-fee-tier-to-fee-type` is implemented and merged (po
 
 ## 2. Section only for those who may choose, only during an active campaign (vertical slice)
 
-- [ ] 2.1 Write failing `@WebMvcTest` cases for `fee-history`: `feeSummary` link present for member and guardian while a campaign is active; absent for an administrator without the choice right, for another member, and when no campaign is active; link year equals the active campaign's year
-- [ ] 2.2 Change `MemberFeeHistoryDetailsPostprocessor` to add the `feeSummary` link per D1 (active campaign + caller may choose); verify 2.1 passes
+- [ ] 2.1 Write failing `@WebMvcTest` cases for `fee-history`: `feeSummary` link present for member and guardian while a campaign is active; absent for an administrator without the choice right, for another member, and when no campaign is active; `fee-summary` answers for the active campaign's year without a `{year}` path variable and returns 404 when no campaign is active
+- [ ] 2.2 Change `MemberFeeHistoryDetailsPostprocessor` to add the `feeSummary` link per D1 (active campaign + caller may choose); drop `{year}` from `getFeeSummary` in the OpenAPI spec and controller (year from the active campaign, `year` in the response, 404 otherwise), regenerate bundle and frontend types; verify 2.1 passes
 - [ ] 2.3 Write failing frontend tests for `MemberFeeSection` / `MemberFeeHistoryPage`: section rendered only when the `feeSummary` link is present, fetches via the link; locked state after deadline; "voting closed, nothing chosen" message; hidden otherwise
 - [ ] 2.4 Update `MemberFeeSection` to gate on the link and drop hand-built URLs; verify the vitest files pass
 
 ## 3. Choose the type directly in the section, with prices (vertical slice)
 
-- [ ] 3.1 Write failing tests: summary exposes `offeredGroups` (id, name, yearlyFee) only while voting is open, built from the same published groups as the `chooseFeeType` options; verify they fail
-- [ ] 3.2 Add `offeredGroups` to `MemberFeeSummaryResponse` in the OpenAPI spec, regenerate bundle and frontend types, implement in the summary controller/postprocessor; verify 3.1 passes
-- [ ] 3.3 Write failing frontend tests: section shows each type with name and yearly price, pre-selects the recommended type, choose / change / withdraw submit the HAL template targets and refresh the page data, locked card after deadline
-- [ ] 3.4 Move the radio-card selection, withdraw action and locked card from `MemberFeeChoicePage` into `MemberFeeSection`; verify the vitest files pass
+- [ ] 3.1 Write failing tests: `chooseFeeType` template exposes `membershipFeeGroupId` with `options.link` to the published-groups endpoint of the campaign year (no inline options) and type `MembershipFeeGroupChoice`, only while voting is open; verify they fail
+- [ ] 3.2 Rename `/api/fee-selection-campaigns/{year}/levels` to `/groups` in the OpenAPI spec; set `x-hal-input-type: MembershipFeeGroupChoice` on the property; replace inline options with `HalFormsOptionsDef.Remote` in the summary postprocessor; regenerate bundle and frontend types; verify 3.1 passes
+- [ ] 3.3 Write failing frontend tests: section shows each type from the options link with name and yearly price, pre-selects the recommended type, choose / change / withdraw submit the HAL template targets and refresh the page data, locked card after deadline
+- [ ] 3.4 Add the `MembershipFeeGroupChoice` field (fetches `options.link.href`, shows name and `yearlyFeeAmount`); move the radio-card selection, withdraw action and locked card from `MemberFeeChoicePage` into `MemberFeeSection`; verify the vitest files pass
 - [ ] 3.5 Delete `MemberFeeChoicePage` (+ test) and the `/members/:memberId/fee-choice[/:year]` routes in `App.tsx`; verify `npm run build` and no remaining references (`grep MemberFeeChoicePage`)
 
 ## 4. Terminology: "typ členského příspěvku" in UI texts
