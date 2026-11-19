@@ -8,7 +8,7 @@ import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.domain.AssignmentSource;
@@ -65,7 +65,7 @@ class MembershipFeeGroupControllerTest {
     private MembershipFeeGroup buildFrozenGroup() {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeTierId(UUID.randomUUID()),
+                new MembershipFeeTypeId(UUID.randomUUID()),
                 "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
@@ -77,7 +77,7 @@ class MembershipFeeGroupControllerTest {
         FeeGroupMembership membership = new FeeGroupMembership(memberId, LocalDate.of(2026, 1, 15), AssignmentSource.MEMBER_CHOICE, null);
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeTierId(UUID.randomUUID()),
+                new MembershipFeeTypeId(UUID.randomUUID()),
                 "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.FROZEN,
@@ -87,7 +87,7 @@ class MembershipFeeGroupControllerTest {
     private MembershipFeeGroup buildEditableGroup() {
         return MembershipFeeGroup.reconstruct(
                 new MembershipFeeGroupId(GROUP_UUID),
-                new MembershipFeeTierId(UUID.randomUUID()),
+                new MembershipFeeTypeId(UUID.randomUUID()),
                 "Dospělý", 2026, VOTING_DEADLINE,
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
@@ -99,13 +99,13 @@ class MembershipFeeGroupControllerTest {
     class ListGroupRulesTests {
 
         @Test
-        @DisplayName("should return the rules snapshot as a HAL collection without tier rule management templates")
+        @DisplayName("should return the rules snapshot as a HAL collection without type rule management templates")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturnRulesSnapshotAsHalCollection() throws Exception {
             UUID eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
             MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
                     new MembershipFeeGroupId(GROUP_UUID),
-                    new MembershipFeeTierId(UUID.randomUUID()),
+                    new MembershipFeeTypeId(UUID.randomUUID()),
                     "Dospělý", 2026, VOTING_DEADLINE,
                     Money.ofCzk(new BigDecimal("1200.00")),
                     PublishedLevelStatus.EDITABLE,

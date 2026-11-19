@@ -1,4 +1,4 @@
-# Membership fees module — the API surface of MembershipFeeTierController,
+# Membership fees module — the API surface of MembershipFeeTypeController,
 # FeeSelectionCampaignController, MembershipFeeGroupController, MemberFeeChoiceController and
 # MemberFeeSummaryController (membershipfees module).
 #
@@ -14,7 +14,7 @@
 #
 # MemberFeeChoice and MemberFeeSummary operations: getChoice, getFeeSummary and getFeeHistory
 # admit the member themselves, MEMBERS:MANAGE, and MEMBERS:EDIT_PROFILE held over the member
-# (a legal guardian — OR semantics with ownership). chooseTier and removeChoice admit only the
+# (a legal guardian — OR semantics with ownership). chooseFeeType and removeChoice admit only the
 # member themselves and MEMBERS:EDIT_PROFILE held over the member (a legal guardian): MEMBERS:MANAGE
 # is deliberately not an alternative, so administrators cannot choose on a member's behalf.
 # MEMBERS:EDIT_PROFILE is SPECIFIC-grant only, so no holder has it globally.
@@ -39,27 +39,27 @@ servers:
 
 paths:
 
-  /api/membership-fee-tiers:
+  /api/membership-fee-types:
     get:
-      operationId: listTiers
-      tags: [MembershipFeeTiers]
-      summary: List all membership fee tiers
-      description: Returns all membership fee tiers in the catalog.
+      operationId: listFeeTypes
+      tags: [MembershipFeeTypes]
+      summary: List all membership fee types
+      description: Returns all membership fee types in the catalog.
       security:
         - KlabisAuth: [MEMBERS]
       # No x-klabis-authority: readable by any authenticated caller. The activeCampaign/
-      # pastCampaigns links and the createTier/publishYear affordances are only added for callers
+      # pastCampaigns links and the createFeeType/publishYear affordances are only added for callers
       # with MEMBERS:MANAGE, but that is decided inline in the controller (isAdmin()) rather than
       # gating the whole operation.
       responses:
         '200':
-          description: List of membership fee tiers retrieved successfully
+          description: List of membership fee types retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
+                  $ref: '#/components/schemas/MembershipFeeTypeSummaryResponse'
           x-hal-links:
             self:
               description: This collection
@@ -70,8 +70,8 @@ paths:
               operation: listPublications
               description: Present only for callers with MEMBERS:MANAGE
           x-hal-templates:
-            createTier:
-              operation: createTier
+            createFeeType:
+              operation: createFeeType
               description: Present only for callers with MEMBERS:MANAGE
             publishYear:
               operation: publishYear
@@ -90,10 +90,10 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
-      operationId: createTier
-      tags: [MembershipFeeTiers]
-      summary: Create a membership fee tier
-      description: Creates a new membership fee tier in the catalog.
+      operationId: createFeeType
+      tags: [MembershipFeeTypes]
+      summary: Create a membership fee type
+      description: Creates a new membership fee type in the catalog.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -103,13 +103,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMembershipFeeTierRequest'
+              $ref: '#/components/schemas/CreateMembershipFeeTypeRequest'
       responses:
         '201':
-          description: Membership fee tier created
+          description: Membership fee type created
           headers:
             Location:
-              description: URI of the created tier
+              description: URI of the created type
               schema:
                 type: string
                 format: uri
@@ -128,40 +128,40 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/membership-fee-tiers/{id}:
+  /api/membership-fee-types/{id}:
     get:
-      operationId: getTier
-      tags: [MembershipFeeTiers]
-      summary: Get membership fee tier details
-      description: Returns a single membership fee tier by ID.
+      operationId: getFeeType
+      tags: [MembershipFeeTypes]
+      summary: Get membership fee type details
+      description: Returns a single membership fee type by ID.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority: readable by any authenticated caller. editTier/deleteTier
+      # No x-klabis-authority: readable by any authenticated caller. editFeeType/deleteFeeType
       # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check.
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
       responses:
         '200':
-          description: Membership fee tier found
+          description: Membership fee type found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MembershipFeeTierResponse'
+                $ref: '#/components/schemas/MembershipFeeTypeResponse'
           x-hal-links:
             self:
-              description: This tier
+              description: This type
             collection:
-              operation: listTiers
-              description: Back to the tier list
+              operation: listFeeTypes
+              description: Back to the type list
             rules:
               operation: listRules
-              description: Payment rules for this tier
+              description: Payment rules for this type
           x-hal-templates:
-            editTier:
-              operation: editTier
+            editFeeType:
+              operation: editFeeType
               description: Present only for callers with MEMBERS:MANAGE
-            deleteTier:
-              operation: deleteTier
+            deleteFeeType:
+              operation: deleteFeeType
               description: Present only for callers with MEMBERS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
@@ -177,27 +177,27 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     patch:
-      operationId: editTier
-      tags: [MembershipFeeTiers]
-      summary: Edit a membership fee tier
+      operationId: editFeeType
+      tags: [MembershipFeeTypes]
+      summary: Edit a membership fee type
       description: |
-        Partial update of a tier's name, yearly fee and/or payment rules. Fields omitted from the
+        Partial update of a type's name, yearly fee and/or payment rules. Fields omitted from the
         request are left unchanged.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
       requestBody:
         required: true
         x-codegen-request-body-name: request
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EditMembershipFeeTierRequest'
+              $ref: '#/components/schemas/EditMembershipFeeTypeRequest'
       responses:
         '204':
-          description: Membership fee tier updated
+          description: Membership fee type updated
           content:
             application/prs.hal-forms+json: {}
         '400':
@@ -214,18 +214,18 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     delete:
-      operationId: deleteTier
-      tags: [MembershipFeeTiers]
-      summary: Delete a membership fee tier
-      description: Deletes a membership fee tier from the catalog.
+      operationId: deleteFeeType
+      tags: [MembershipFeeTypes]
+      summary: Delete a membership fee type
+      description: Deletes a membership fee type from the catalog.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
       responses:
         '204':
-          description: Membership fee tier deleted
+          description: Membership fee type deleted
           content:
             application/prs.hal-forms+json: {}
         '400':
@@ -241,18 +241,18 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/membership-fee-tiers/{id}/rules:
+  /api/membership-fee-types/{id}/rules:
     get:
       operationId: listRules
-      tags: [MembershipFeeTiers]
-      summary: List payment rules for a membership fee tier
-      description: Returns all payment rules defined on a tier.
+      tags: [MembershipFeeTypes]
+      summary: List payment rules for a membership fee type
+      description: Returns all payment rules defined on a type.
       security:
         - KlabisAuth: [MEMBERS]
       # No x-klabis-authority: readable by any authenticated caller. addRule affordance still
       # requires MEMBERS:MANAGE via klabisAfford's own authorization check.
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
       responses:
         '200':
           description: List of payment rules retrieved successfully
@@ -298,8 +298,8 @@ paths:
 
     post:
       operationId: addRule
-      tags: [MembershipFeeTiers]
-      summary: Add a payment rule to a membership fee tier
+      tags: [MembershipFeeTypes]
+      summary: Add a payment rule to a membership fee type
       description: |
         Adds a new payment rule (percentage or fixed amount) for an event type/ranking combination.
         Returns Location header pointing to the created rule.
@@ -307,7 +307,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
       requestBody:
         required: true
         x-codegen-request-body-name: request
@@ -339,18 +339,18 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
+  /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}:
     get:
       operationId: getRule
-      tags: [MembershipFeeTiers]
-      summary: Get a payment rule detail from a membership fee tier
+      tags: [MembershipFeeTypes]
+      summary: Get a payment rule detail from a membership fee type
       description: Returns a single payment rule identified by event type and ranking.
       security:
         - KlabisAuth: [MEMBERS]
       # No x-klabis-authority: readable by any authenticated caller. editRule/removeRule
       # affordances still require MEMBERS:MANAGE via klabisAfford's own authorization check.
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
         - $ref: '#/components/parameters/RuleEventTypeIdParam'
         - $ref: '#/components/parameters/RuleRankingParam'
       responses:
@@ -387,14 +387,14 @@ paths:
 
     patch:
       operationId: editRule
-      tags: [MembershipFeeTiers]
-      summary: Edit a payment rule's value on a membership fee tier
+      tags: [MembershipFeeTypes]
+      summary: Edit a payment rule's value on a membership fee type
       description: Updates the rule type and value (percentage or fixed amount) of an existing rule.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
         - $ref: '#/components/parameters/RuleEventTypeIdParam'
         - $ref: '#/components/parameters/RuleRankingParam'
       requestBody:
@@ -424,14 +424,14 @@ paths:
 
     delete:
       operationId: removeRule
-      tags: [MembershipFeeTiers]
-      summary: Remove a payment rule from a membership fee tier
+      tags: [MembershipFeeTypes]
+      summary: Remove a payment rule from a membership fee type
       description: Removes a payment rule identified by event type and ranking.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/TierIdParam'
+        - $ref: '#/components/parameters/TypeIdParam'
         - $ref: '#/components/parameters/RuleEventTypeIdParam'
         - $ref: '#/components/parameters/RuleRankingParam'
       responses:
@@ -514,7 +514,7 @@ paths:
       summary: Publish fee levels for a calendar year
       description: |
         Opens a fee selection campaign for a calendar year, publishing a snapshot of the given
-        membership fee tiers as fee groups members can choose from.
+        membership fee types as fee groups members can choose from.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -672,7 +672,7 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/fee-selection-campaigns/{year}/levels:
+  /api/fee-selection-campaigns/{year}/groups:
     get:
       operationId: listGroupsForYear
       tags: [FeeSelectionCampaigns]
@@ -748,9 +748,9 @@ paths:
             rules:
               operation: listGroupRules
               description: Payment rules snapshot for this group
-            sourceLevel:
-              operation: getTier
-              description: The membership fee tier this group's snapshot was published from
+            sourceType:
+              operation: getFeeType
+              description: The membership fee type this group's snapshot was published from
           x-hal-templates:
             editSnapshot:
               operation: editSnapshot
@@ -890,7 +890,7 @@ paths:
       tags: [MemberFeeChoice]
       summary: Get member's current fee level choice for a year
       description: |
-        Returns the member's current fee group choice and the recommended tier for the year, if
+        Returns the member's current fee group choice and the recommended type for the year, if
         any.
       security:
         - KlabisAuth: [MEMBERS]
@@ -912,12 +912,12 @@ paths:
             currentGroup:
               operation: getFeeGroup
               description: Present when the member has a current fee group choice
-            recommendedLevel:
-              operation: getTier
-              description: Present when a recommended tier exists for this year
+            recommendedType:
+              operation: getFeeType
+              description: Present when a recommended type exists for this year
           x-hal-templates:
-            chooseTier:
-              operation: chooseTier
+            chooseFeeType:
+              operation: chooseFeeType
               description: Choose a fee level for this year
             removeChoice:
               operation: removeChoice
@@ -940,7 +940,7 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
     post:
-      operationId: chooseTier
+      operationId: chooseFeeType
       tags: [MemberFeeChoice]
       summary: Choose a fee level for a year
       description: Records the member's chosen fee group for the given year.
@@ -1014,21 +1014,20 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/members/{memberId}/fee-summary/{year}:
+  /api/members/{memberId}/fee-summary:
     get:
       operationId: getFeeSummary
       tags: [MemberFeeSummary]
-      summary: Get member's current fee level summary for a year
+      summary: Get member's fee type summary for the active campaign
       description: |
-        Returns the member's current fee group (if assigned), the recommended level, and whether
-        voting is currently open for the year.
+        Returns the member's current fee group (if assigned), the recommended type, and whether
+        voting is currently open, for the year of the active campaign. Answers 404 when no campaign is active.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
-        - $ref: '#/components/parameters/FeeSummaryYearParam'
       responses:
         '200':
           description: Fee level summary retrieved successfully
@@ -1043,8 +1042,8 @@ paths:
               operation: getFeeGroup
               description: Present when the member has a current fee group
           x-hal-templates:
-            chooseTier:
-              operation: chooseTier
+            chooseFeeType:
+              operation: chooseFeeType
               description: Present only while voting is open for this year
             removeChoice:
               operation: removeChoice
@@ -1093,7 +1092,7 @@ paths:
               description: The member whose fee history this is
             feeSummary:
               operation: getFeeSummary
-              description: Current fee level summary, present for the member, an administrator and a legal guardian of the member
+              description: Fee type summary of the active campaign; present only while a campaign is active and the caller may choose the fee type (the member or a legal guardian)
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1128,10 +1127,10 @@ components:
             SYNC: Synchronisation
 
   parameters:
-    TierIdParam:
+    TypeIdParam:
       name: id
       in: path
-      description: Membership fee tier UUID
+      description: Membership fee type UUID
       required: true
       schema:
         type: string
@@ -1227,20 +1226,11 @@ components:
         type: string
         format: uuid
 
-    FeeSummaryYearParam:
-      name: year
-      in: path
-      description: Calendar year
-      required: true
-      schema:
-        type: integer
-        format: int32
-
   schemas:
 
-    MembershipFeeTierSummaryResponse:
+    MembershipFeeTypeSummaryResponse:
       type: object
-      description: Membership fee tier summary for list views.
+      description: Membership fee type summary for list views.
       properties:
         id:
           type: string
@@ -1255,9 +1245,9 @@ components:
           type: integer
           format: int32
 
-    MembershipFeeTierResponse:
+    MembershipFeeTypeResponse:
       type: object
-      description: Complete membership fee tier information.
+      description: Complete membership fee type information.
       properties:
         id:
           type: string
@@ -1269,7 +1259,7 @@ components:
         yearlyFeeCurrency:
           type: string
 
-    CreateMembershipFeeTierRequest:
+    CreateMembershipFeeTypeRequest:
       type: object
       required: [name, yearlyFeeAmount]
       properties:
@@ -1283,11 +1273,11 @@ components:
           type: string
           description: Defaults to CZK when omitted.
 
-    EditMembershipFeeTierRequest:
+    EditMembershipFeeTypeRequest:
       type: object
       description: |
         Partial update. Fields omitted from the request are left unchanged. When rules is
-        provided, it replaces the tier's entire rule set.
+        provided, it replaces the type's entire rule set.
       properties:
         name:
           type: string
@@ -1414,7 +1404,7 @@ components:
 
     PublishYearRequest:
       type: object
-      required: [year, votingDeadline, levelIds]
+      required: [year, votingDeadline, typeIds]
       properties:
         year:
           type: integer
@@ -1423,7 +1413,7 @@ components:
         votingDeadline:
           type: string
           format: date
-        levelIds:
+        typeIds:
           type: array
           minItems: 1
           items:
@@ -1440,12 +1430,12 @@ components:
 
     MembershipFeeGroupResponse:
       type: object
-      description: A published fee group — a snapshot taken from a tier for one campaign year.
+      description: A published fee group — a snapshot taken from a type for one campaign year.
       properties:
         id:
           type: string
           format: uuid
-        sourceLevelId:
+        sourceTypeId:
           type: string
           format: uuid
         name:
@@ -1530,7 +1520,7 @@ components:
         currentGroupId:
           type: string
           format: uuid
-        recommendedLevelId:
+        recommendedTypeId:
           type: string
           format: uuid
 
@@ -1541,19 +1531,24 @@ components:
         membershipFeeGroupId:
           type: string
           format: uuid
+          x-hal-input-type: MembershipFeeGroupChoice
 
     MemberFeeSummaryResponse:
       type: object
-      description: A member's current fee level summary for a year.
+      description: A member's fee type summary for the active campaign year.
       properties:
+        year:
+          type: integer
+          format: int32
+          description: Year of the active campaign this summary refers to
         currentGroup:
           $ref: '#/components/schemas/CurrentGroupResponse'
         votingOpen:
           type: boolean
         recommendedGroupId:
           description: >-
-            Published group of the summary year derived from the member's tier of the previous year;
-            matches the chooseTier options. Unlike MemberFeeChoiceResponse.recommendedLevelId, which is a catalog tier id.
+            Published group of the summary year derived from the member's type of the previous year;
+            matches the chooseFeeType options. Unlike MemberFeeChoiceResponse.recommendedTypeId, which is a catalog type id.
           type: string
           format: uuid
 
@@ -1588,6 +1583,9 @@ components:
           format: uuid
         groupName:
           type: string
+        yearlyFee:
+          type: number
+          description: Yearly fee of the published group (snapshot), so it does not change with later catalog edits.
         joinedAt:
           type: string
           format: date

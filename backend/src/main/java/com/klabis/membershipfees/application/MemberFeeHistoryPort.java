@@ -3,7 +3,7 @@ package com.klabis.membershipfees.application;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +27,7 @@ public interface MemberFeeHistoryPort {
             int year,
             MembershipFeeGroupId groupId,
             String groupName,
+            Money yearlyFee,
             LocalDate joinedAt,
             AssignmentSource source
     ) {}
@@ -37,5 +38,5 @@ public interface MemberFeeHistoryPort {
 
     Optional<MembershipFeeGroupId> getCurrentChoice(MemberId memberId, int year);
 
-    Optional<MembershipFeeTierId> getRecommendedLevelForYear(MemberId memberId, int year);
+    Optional<MembershipFeeTypeId> getRecommendedTypeForYear(MemberId memberId, int year);
 }

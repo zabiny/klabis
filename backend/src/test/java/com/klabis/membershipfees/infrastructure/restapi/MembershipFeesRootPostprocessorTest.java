@@ -44,7 +44,7 @@ class MembershipFeesRootPostprocessorTest {
             EntityModel<RootModel> result = new MembershipFeesRootPostprocessor(SecurityContextAuthorizationEvaluator.create()).process(EntityModel.of(new RootModel()));
 
             assertThat(result.getLink("membership-fees")).isPresent();
-            assertThat(result.getLink("membership-fees").get().getHref()).contains("/api/membership-fee-tiers");
+            assertThat(result.getLink("membership-fees").get().getHref()).contains("/api/membership-fee-types");
         }
 
         @Test

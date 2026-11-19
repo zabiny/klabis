@@ -221,9 +221,9 @@ describe('AuthProvider return path', () => {
         };
 
         it('navigates to the remembered page', async () => {
-            await renderCallback({returnTo: '/membership-fee-tiers'});
+            await renderCallback({returnTo: '/membership-fee-types'});
 
-            expect(navigate).toHaveBeenCalledWith('/membership-fee-tiers', {replace: true});
+            expect(navigate).toHaveBeenCalledWith('/membership-fee-types', {replace: true});
         });
 
         it.each([

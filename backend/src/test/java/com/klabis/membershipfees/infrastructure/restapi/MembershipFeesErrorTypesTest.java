@@ -5,16 +5,16 @@ import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.membershipfees.application.CampaignAlreadyProcessedException;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.FeeYearLifecyclePort;
 import com.klabis.membershipfees.application.MembershipFeeGroupNotFoundException;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
-import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeNotFoundException;
+import com.klabis.membershipfees.application.MembershipFeeTypeOptionsPort;
 import com.klabis.membershipfees.domain.ActiveCampaignExistsException;
 import com.klabis.membershipfees.domain.CampaignClosedException;
 import com.klabis.membershipfees.domain.DuplicatePaymentRuleException;
@@ -51,8 +51,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MembershipFeesErrorTypesTest {
 
     private static final String ADMIN_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-    private static final UUID TIER_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
-    private static final MembershipFeeTierId TIER_ID = new MembershipFeeTierId(TIER_UUID);
+    private static final UUID TYPE_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static final MembershipFeeTypeId TYPE_ID = new MembershipFeeTypeId(TYPE_UUID);
     private static final UUID CAMPAIGN_UUID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static final UUID GROUP_UUID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static final UUID EVENT_TYPE_UUID = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
@@ -63,9 +63,9 @@ class MembershipFeesErrorTypesTest {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private MembershipFeeTierManagementPort tierPort;
+    private MembershipFeeTypeManagementPort typePort;
     @Autowired
-    private MembershipFeeTierOptionsPort optionsPort;
+    private MembershipFeeTypeOptionsPort optionsPort;
     @Autowired
     private FeeSelectionCampaignManagementPort campaignPort;
     @Autowired
@@ -79,7 +79,7 @@ class MembershipFeesErrorTypesTest {
     }
 
     private ResultActions addRule(String body) throws Exception {
-        return mockMvc.perform(post("/api/membership-fee-tiers/{id}/rules", TIER_UUID)
+        return mockMvc.perform(post("/api/membership-fee-types/{id}/rules", TYPE_UUID)
                 .contentType("application/json")
                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 .content(body));
@@ -107,7 +107,7 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void namesEventTypeAndRanking() throws Exception {
             doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).addRule(any(), any());
+                    .when(typePort).addRule(any(), any());
 
             ResultActions result = addRule(ADD_PERCENT_RULE)
                     .andExpect(status().isConflict())
@@ -126,7 +126,7 @@ class MembershipFeesErrorTypesTest {
             when(optionsPort.listEventTypeOptions()).thenThrow(new IllegalStateException("events unavailable"));
             when(optionsPort.listRankingOptions()).thenThrow(new IllegalStateException("oris unavailable"));
             doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).addRule(any(), any());
+                    .when(typePort).addRule(any(), any());
 
             ResultActions result = addRule(ADD_PERCENT_RULE)
                     .andExpect(status().isConflict())
@@ -143,7 +143,7 @@ class MembershipFeesErrorTypesTest {
         void unknownRankingFallsBackToShortName() throws Exception {
             when(optionsPort.listRankingOptions()).thenReturn(List.of());
             doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).addRule(any(), any());
+                    .when(typePort).addRule(any(), any());
 
             addRule(ADD_PERCENT_RULE)
                     .andExpect(jsonPath("$.rankingLabel").value("A"));
@@ -155,7 +155,7 @@ class MembershipFeesErrorTypesTest {
         void keepsResolvedParameter() throws Exception {
             when(optionsPort.listRankingOptions()).thenThrow(new IllegalStateException("oris unavailable"));
             doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).addRule(any(), any());
+                    .when(typePort).addRule(any(), any());
 
             addRule(ADD_PERCENT_RULE)
                     .andExpect(jsonPath("$.eventTypeName").value("Závod jednotlivců"))
@@ -172,11 +172,11 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void namesEventTypeAndRanking() throws Exception {
             doThrow(new PaymentRuleNotFoundException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).removeRule(any(), any());
+                    .when(typePort).removeRule(any(), any());
 
             ResultActions result = mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
-                                    TIER_UUID, EVENT_TYPE_UUID, "A")
+                            delete("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
+                                    TYPE_UUID, EVENT_TYPE_UUID, "A")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.type").value("/errors/payment-rule-not-found"))
@@ -194,11 +194,11 @@ class MembershipFeesErrorTypesTest {
             when(optionsPort.listEventTypeOptions()).thenReturn(List.of());
             when(optionsPort.listRankingOptions()).thenThrow(new IllegalStateException("oris unavailable"));
             doThrow(new PaymentRuleNotFoundException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
-                    .when(tierPort).removeRule(any(), any());
+                    .when(typePort).removeRule(any(), any());
 
             ResultActions result = mockMvc.perform(
-                            delete("/api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}",
-                                    TIER_UUID, EVENT_TYPE_UUID, "A")
+                            delete("/api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}",
+                                    TYPE_UUID, EVENT_TYPE_UUID, "A")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(jsonPath("$.type").value("/errors/payment-rule-not-found"));
 
@@ -261,8 +261,8 @@ class MembershipFeesErrorTypesTest {
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("""
-                                    {"year": 2026, "votingDeadline": "2099-03-31", "levelIds": ["%s"]}
-                                    """.formatted(TIER_UUID)))
+                                    {"year": 2026, "votingDeadline": "2099-03-31", "typeIds": ["%s"]}
+                                    """.formatted(TYPE_UUID)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.type").value("/errors/active-campaign-exists"));
         }
@@ -334,14 +334,14 @@ class MembershipFeesErrorTypesTest {
 
         @Test
         @WithKlabisMockUser(memberId = ADMIN_ID)
-        @DisplayName("fee tier")
-        void tierNotFound() throws Exception {
-            when(tierPort.getTier(TIER_ID)).thenThrow(new MembershipFeeTierNotFoundException(TIER_ID));
+        @DisplayName("fee type")
+        void typeNotFound() throws Exception {
+            when(typePort.getFeeType(TYPE_ID)).thenThrow(new MembershipFeeTypeNotFoundException(TYPE_ID));
 
-            ResultActions result = mockMvc.perform(get("/api/membership-fee-tiers/{id}", TIER_UUID)
+            ResultActions result = mockMvc.perform(get("/api/membership-fee-types/{id}", TYPE_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.type").value("/errors/membership-fee-tier-not-found"));
+                    .andExpect(jsonPath("$.type").value("/errors/membership-fee-type-not-found"));
 
             assertThat(extensionProperties(result)).isEmpty();
         }

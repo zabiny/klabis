@@ -21,8 +21,8 @@ const memberId = '123e4567-e89b-12d3-a456-426614174000';
 
 const buildHistory = (overrides: Partial<GetFeeHistoryResource> = {}): GetFeeHistoryResource => ({
     assignments: [
-        {year: 2026, groupId: 'g2', groupName: 'Základní', joinedAt: '2026-01-10', source: 'MEMBER_CHOICE'},
-        {year: 2025, groupId: 'g1', groupName: 'Snížený', joinedAt: '2025-01-05', source: 'ADMIN_ASSIGNMENT'},
+        {year: 2026, groupId: 'g2', groupName: 'Základní', yearlyFee: 1200, joinedAt: '2026-01-10', source: 'MEMBER_CHOICE'},
+        {year: 2025, groupId: 'g1', groupName: 'Snížený', yearlyFee: 600, joinedAt: '2025-01-05', source: 'ADMIN_ASSIGNMENT'},
     ],
     _links: {
         self: {href: `/api/members/${memberId}/fee-history`},
@@ -57,7 +57,7 @@ describe('MemberFeeHistoryPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {currentGroup: null, votingOpen: false, _links: {self: {href: `/api/members/${memberId}/fee-summary/2026`}}},
+            data: {currentGroup: null, votingOpen: false, _links: {self: {href: `/api/members/${memberId}/fee-summary`}}},
             isLoading: false,
             error: null,
             status: 'success',
@@ -82,6 +82,15 @@ describe('MemberFeeHistoryPage', () => {
         expect(within(rows[1]).getByText('Přiřazeno adminem')).toBeInTheDocument();
     });
 
+    it('shows the published yearly fee in the Cena column', () => {
+        renderPage(buildHistory());
+
+        expect(screen.getByRole('columnheader', {name: 'Cena'})).toBeInTheDocument();
+        const rows = screen.getAllByRole('row').slice(1);
+        expect(within(rows[0]).getByText('1200 Kč')).toBeInTheDocument();
+        expect(within(rows[1]).getByText('600 Kč')).toBeInTheDocument();
+    });
+
     it('shows empty-state message when there are no assignments', () => {
         renderPage(buildHistory({assignments: []}));
         expect(screen.getByText(/žádnou historii/i)).toBeInTheDocument();
@@ -97,11 +106,11 @@ describe('MemberFeeHistoryPage', () => {
             _links: {
                 self: {href: `/api/members/${memberId}/fee-history`},
                 member: {href: `/api/members/${memberId}`},
-                feeSummary: {href: `/api/members/${memberId}/fee-summary/2026`},
+                feeSummary: {href: `/api/members/${memberId}/fee-summary`},
             },
         }));
         expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
-        expect(useAuthorizedQuery).toHaveBeenCalledWith(`/api/members/${memberId}/fee-summary/2026`);
+        expect(useAuthorizedQuery).toHaveBeenCalledWith(`/api/members/${memberId}/fee-summary`);
     });
 
     it('does not show current level section without the feeSummary link', () => {

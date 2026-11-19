@@ -1,13 +1,13 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignNotFoundException;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.EntityModel;
@@ -16,9 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,19 +30,23 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
+    private final FeeSelectionCampaignManagementPort campaignManagementPort;
 
-    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort) {
+    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort,
+                               FeeSelectionCampaignManagementPort campaignManagementPort) {
         this.memberFeeHistoryPort = memberFeeHistoryPort;
+        this.campaignManagementPort = campaignManagementPort;
     }
 
     @Override
-    public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(
-            UUID memberId,
-            Integer year) {
+    public ResponseEntity<MemberFeeSummaryResponse> getFeeSummary(UUID memberId) {
+        int year = campaignManagementPort.findActiveCampaign()
+                .orElseThrow(FeeSelectionCampaignNotFoundException::new)
+                .getYear();
 
         MemberFeeHistoryPort.CurrentLevelInfo info = memberFeeHistoryPort.getCurrentLevelInfo(
                 new MemberId(memberId), year);
-        MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info);
+        MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info, year);
 
         HalResponseContext.setDomain(new FeeSummaryView(memberId, year, info));
         return ResponseEntity.ok(response);
@@ -69,11 +70,9 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
 class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberFeeHistoryResponse, UUID> {
 
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
-    private final Clock clock;
 
-    MemberFeeHistoryDetailsPostprocessor(FeeSelectionCampaignManagementPort campaignManagementPort, Clock clock) {
+    MemberFeeHistoryDetailsPostprocessor(FeeSelectionCampaignManagementPort campaignManagementPort) {
         this.campaignManagementPort = campaignManagementPort;
-        this.clock = clock;
     }
 
     @Override
@@ -84,9 +83,17 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("member")));
 
-        int year = campaignManagementPort.relevantFeeYear(LocalDate.now(clock));
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
-                .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
+        campaignManagementPort.findActiveCampaign().ifPresent(campaign -> {
+            if (!canChooseFeeType(memberId, campaign.getYear())) {
+                return;
+            }
+            klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId))
+                    .ifPresent(link -> dtoModel.add(link.withRel("feeSummary")));
+        });
+    }
+
+    private boolean canChooseFeeType(UUID memberId, int year) {
+        return klabisLinkTo(methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, year, null)).isPresent();
     }
 }
 
@@ -94,28 +101,19 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
 class MemberFeeSummaryDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MemberFeeSummaryResponse, MemberFeeSummaryController.FeeSummaryView> {
 
-    private final FeeSelectionCampaignManagementPort publicationManagementPort;
-
-    MemberFeeSummaryDetailsPostprocessor(FeeSelectionCampaignManagementPort publicationManagementPort) {
-        this.publicationManagementPort = publicationManagementPort;
-    }
-
     @Override
     public void process(EntityModel<MemberFeeSummaryResponse> dtoModel, MemberFeeSummaryController.FeeSummaryView view) {
         UUID memberId = view.memberId();
         int year = view.year();
         MemberFeeHistoryPort.CurrentLevelInfo info = view.info();
 
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
-                        List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
-                                .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
-                                .toList();
                         self = self.andAffordances(klabisAffordWithOptions(
-                                methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null),
-                                Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
+                                methodOn(MemberFeeChoiceApi.class).chooseFeeType(memberId, year, null),
+                                Map.of("membershipFeeGroupId", HalFormsOptionsDef.remote(methodOn(FeeSelectionCampaignsApi.class).listGroupsForYear(year)))));
                         if (info.groupId() != null) {
                             self = self.andAffordances(klabisAfford(
                                     methodOn(MemberFeeChoiceApi.class).removeChoice(memberId, year)));

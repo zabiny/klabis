@@ -23,8 +23,8 @@ class FeeSelectionCampaignTest {
     private static final LocalDate DEADLINE = LocalDate.of(2026, 3, 31);
     private static final Money YEARLY_FEE = Money.ofCzk(new BigDecimal("1200.00"));
 
-    private MembershipFeeTier buildLevel(String name) {
-        return MembershipFeeTier.create(name, YEARLY_FEE);
+    private MembershipFeeType buildLevel(String name) {
+        return MembershipFeeType.create(name, YEARLY_FEE);
     }
 
     @Nested
@@ -34,7 +34,7 @@ class FeeSelectionCampaignTest {
         @Test
         @DisplayName("should create publication with year, deadline, and groups for each level")
         void shouldCreatePublicationWithYearAndDeadline() {
-            MembershipFeeTier level = buildLevel("Dospělý");
+            MembershipFeeType level = buildLevel("Dospělý");
 
             var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level));
 
@@ -47,7 +47,7 @@ class FeeSelectionCampaignTest {
         @Test
         @DisplayName("should copy the level's payment rules into each group snapshot")
         void shouldCopyRulesIntoGroupSnapshot() {
-            MembershipFeeTier level = buildLevel("Dospělý");
+            MembershipFeeType level = buildLevel("Dospělý");
             MembershipPaymentRule rule = MembershipPaymentRule.percentage(
                     EventTypeReference.of(UUID.randomUUID()), "A", 50);
             level.addRule(rule);
@@ -60,8 +60,8 @@ class FeeSelectionCampaignTest {
         @Test
         @DisplayName("should create one MembershipFeeGroup snapshot per level")
         void shouldCreateGroupSnapshotsForEachLevel() {
-            MembershipFeeTier level1 = buildLevel("Dospělý");
-            MembershipFeeTier level2 = buildLevel("Mládež");
+            MembershipFeeType level1 = buildLevel("Dospělý");
+            MembershipFeeType level2 = buildLevel("Mládež");
 
             var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level1, level2));
 
@@ -72,7 +72,7 @@ class FeeSelectionCampaignTest {
         @Test
         @DisplayName("should expose created groups via groups()")
         void shouldExposeCreatedGroups() {
-            MembershipFeeTier level = buildLevel("Závodník");
+            MembershipFeeType level = buildLevel("Závodník");
 
             var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level));
 

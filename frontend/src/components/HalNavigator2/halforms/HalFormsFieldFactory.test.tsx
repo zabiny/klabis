@@ -124,7 +124,7 @@ describe('halFormsFieldsFactory', () => {
         // D7: a multi property with options and no custom widget for its field type renders
         // the generic searchable multi-select (chips), not a checkbox group — the checkbox
         // group remains available for callers that render it directly (e.g.
-        // MembershipFeeTierMultiSelect), but the base factory no longer dispatches to it.
+        // MembershipFeeTypeMultiSelect), but the base factory no longer dispatches to it.
         it('renders the multi-select combobox when multi=true and options.inline has items', () => {
             const prop: HalFormsProperty = {
                 name: 'disciplineIds',

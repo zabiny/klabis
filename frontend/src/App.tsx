@@ -30,10 +30,9 @@ import {LegalGuardianGroupDetailPage} from "./pages/legal-guardian-groups/LegalG
 import {eventSettingsRoutes} from "./pages/event-settings/eventSettingsRoutes.tsx";
 import {SyncOverviewPage} from "./pages/sync/SyncOverviewPage.tsx";
 import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdminPage.tsx";
-import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
+import {MembershipFeeTypeDetailPage} from "./pages/membership-fees/MembershipFeeTypeDetailPage.tsx";
 import {FeeSelectionCampaignDetailPage} from "./pages/membership-fees/FeeSelectionCampaignDetailPage.tsx";
 import {MembershipFeeGroupDetailPage} from "./pages/membership-fees/MembershipFeeGroupDetailPage.tsx";
-import {MemberFeeChoicePage} from "./pages/membership-fees/MemberFeeChoicePage.tsx";
 import {MemberFeeHistoryPage} from "./pages/membership-fees/MemberFeeHistoryPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
@@ -104,8 +103,6 @@ function App() {
                                 <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
                                 <Route path="/members" element={<MembersPage/>}/>
                                 <Route path="/members/:id" element={<MemberDetailPage/>}/>
-                                <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
-                                <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
                                 <Route path="/members/:memberId/fee-history" element={<MemberFeeHistoryPage/>}/>
                                 <Route path="/events" element={<EventsPage/>}/>
                                 <Route path="/events/:id" element={<EventDetailPage/>}/>
@@ -120,8 +117,8 @@ function App() {
                                 {eventSettingsRoutes}
                                 <Route path="/sync/attempts" element={<SyncOverviewPage/>}/>
                                 <Route path="/notifications" element={<NotificationSettingsPage/>}/>
-                                <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
-                                <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
+                                <Route path="/membership-fee-types" element={<MembershipFeesAdminPage/>}/>
+                                <Route path="/membership-fee-types/:id" element={<MembershipFeeTypeDetailPage/>}/>
                                 <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
                                 <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                             </Route>

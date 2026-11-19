@@ -3,7 +3,7 @@ package com.klabis.membershipfees.application;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -35,10 +35,10 @@ class MemberFeePlacementTest {
 
     private static final MemberId MEMBER_ID = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final MemberId ADMIN_ID = new MemberId(UUID.fromString("a0a0a0a0-a0a0-a0a0-a0a0-a0a0a0a0a0a0"));
-    private static final MembershipFeeTierId LEVEL_ID_A =
-            new MembershipFeeTierId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-    private static final MembershipFeeTierId LEVEL_ID_B =
-            new MembershipFeeTierId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final MembershipFeeTypeId LEVEL_ID_A =
+            new MembershipFeeTypeId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final MembershipFeeTypeId LEVEL_ID_B =
+            new MembershipFeeTypeId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final int YEAR = 2026;
     private static final LocalDate TODAY = LocalDate.of(YEAR, 3, 15);
     private static final LocalDate OPEN_DEADLINE = LocalDate.of(YEAR, 3, 31);
@@ -54,7 +54,7 @@ class MemberFeePlacementTest {
         testedInstance = new MemberFeePlacement(groupRepository);
     }
 
-    private MembershipFeeGroup buildGroup(MembershipFeeTierId levelId, String name,
+    private MembershipFeeGroup buildGroup(MembershipFeeTypeId levelId, String name,
                                           LocalDate votingDeadline, PublishedLevelStatus status,
                                           Set<FeeGroupMembership> memberships) {
         return MembershipFeeGroup.reconstruct(

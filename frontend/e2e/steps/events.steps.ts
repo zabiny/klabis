@@ -25,14 +25,14 @@ Given('event {name} is open for registration', async ({apiAs}, name: string) => 
 });
 
 // Earlier campaign scenarios leave the member sanctioned, which blocks new registrations. An emergency assignment in the
-// active campaign lifts the block; the choice is withdrawn again so the scenario continues without a level.
+// active campaign lifts the block; the choice is withdrawn again so the scenario continues without a type.
 Given('{persona} is registered for the open event {name}', async ({apiAs, feeState}, persona: Persona, name: string) => {
     const admin = apiAs('admin');
     const member = apiAs(personas[persona]);
     await createOpenEvent(admin, name);
     await assignLevel(admin, await memberIdentity(member), feeState, await firstPublishedLevelName(admin, feeState));
     await registerForEvent(member, name);
-    await withdrawChoice(member, feeState.year!);
+    await withdrawChoice(member);
 });
 
 When('{persona} creates event {name} filling in only the required fields', async ({page, actAs}, persona: Persona, name: string) => {

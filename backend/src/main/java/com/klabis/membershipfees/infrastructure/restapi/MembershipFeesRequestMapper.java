@@ -1,9 +1,9 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.finance.domain.Money;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PaymentRuleValueMissingException;
@@ -21,18 +21,18 @@ final class MembershipFeesRequestMapper {
     private MembershipFeesRequestMapper() {
     }
 
-    static MembershipFeeTierManagementPort.CreateTierCommand toCommand(CreateMembershipFeeTierRequest request) {
+    static MembershipFeeTypeManagementPort.CreateTypeCommand toCommand(CreateMembershipFeeTypeRequest request) {
         Money yearlyFee = toMoney(request.yearlyFeeAmount(), request.yearlyFeeCurrency());
-        return new MembershipFeeTierManagementPort.CreateTierCommand(request.name(), yearlyFee);
+        return new MembershipFeeTypeManagementPort.CreateTypeCommand(request.name(), yearlyFee);
     }
 
-    static MembershipFeeTierManagementPort.EditTierCommand toCommand(EditMembershipFeeTierRequest request) {
+    static MembershipFeeTypeManagementPort.EditTypeCommand toCommand(EditMembershipFeeTypeRequest request) {
         Money yearlyFee = request.yearlyFeeAmount() != null
                 ? toMoney(request.yearlyFeeAmount(), request.yearlyFeeCurrency())
                 : null;
         List<MembershipPaymentRule> domainRules = request.rules() == null ? null
                 : request.rules().stream().map(MembershipFeesRequestMapper::toDomain).toList();
-        return new MembershipFeeTierManagementPort.EditTierCommand(request.name(), yearlyFee, domainRules);
+        return new MembershipFeeTypeManagementPort.EditTypeCommand(request.name(), yearlyFee, domainRules);
     }
 
     static MembershipPaymentRule toDomain(AddPaymentRuleRequest request) {
@@ -53,7 +53,7 @@ final class MembershipFeesRequestMapper {
 
     static FeeSelectionCampaignManagementPort.PublishYearCommand toCommand(PublishYearRequest request) {
         return new FeeSelectionCampaignManagementPort.PublishYearCommand(request.year(), request.votingDeadline(),
-                request.levelIds().stream().map(MembershipFeeTierId::new).toList());
+                request.typeIds().stream().map(MembershipFeeTypeId::new).toList());
     }
 
     static FeeSelectionCampaignManagementPort.ChangeDeadlineCommand toCommand(ChangeDeadlineRequest request) {

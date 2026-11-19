@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.members.MemberDto;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -46,12 +46,12 @@ final class MembershipFeesResponseMapper {
 
     static MemberFeeChoiceResponse toResponse(UUID memberId, int year,
                                               Optional<MembershipFeeGroupId> currentChoice,
-                                              Optional<MembershipFeeTierId> recommended) {
+                                              Optional<MembershipFeeTypeId> recommended) {
         return MemberFeeChoiceResponseBuilder.builder()
                 .memberId(memberId)
                 .year(year)
                 .currentGroupId(currentChoice.map(MembershipFeeGroupId::value).orElse(null))
-                .recommendedLevelId(recommended.map(MembershipFeeTierId::value).orElse(null))
+                .recommendedTypeId(recommended.map(MembershipFeeTypeId::value).orElse(null))
                 .build();
     }
 
@@ -62,6 +62,7 @@ final class MembershipFeesResponseMapper {
                                 .year(a.year())
                                 .groupId(a.groupId().value())
                                 .groupName(a.groupName())
+                                .yearlyFee(a.yearlyFee().amount())
                                 .joinedAt(a.joinedAt())
                                 .source(MemberInGroupResponseSource.valueOf(a.source().name()))
                                 .build())
@@ -69,7 +70,7 @@ final class MembershipFeesResponseMapper {
                 .build();
     }
 
-    static MemberFeeSummaryResponse toResponse(MemberFeeHistoryPort.CurrentLevelInfo info) {
+    static MemberFeeSummaryResponse toResponse(MemberFeeHistoryPort.CurrentLevelInfo info, int year) {
         CurrentGroupResponse currentGroup = info.groupId() != null
                 ? CurrentGroupResponseBuilder.builder()
                         .id(info.groupId().value())
@@ -81,6 +82,7 @@ final class MembershipFeesResponseMapper {
                 .map(MembershipFeeGroupId::value)
                 .orElse(null);
         return MemberFeeSummaryResponseBuilder.builder()
+                .year(year)
                 .currentGroup(currentGroup)
                 .votingOpen(info.votingOpen())
                 .recommendedGroupId(recommendedGroupId)

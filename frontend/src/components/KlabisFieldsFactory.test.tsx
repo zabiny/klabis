@@ -16,10 +16,10 @@ vi.mock('../hooks/useEventTypes', () => ({
     }),
 }));
 
-vi.mock('../hooks/useMembershipFeeTierOptions', () => ({
-    useMembershipFeeTierOptions: () => [
-        {value: 'uuid-tier-a', prompt: 'Základní'},
-        {value: 'uuid-tier-b', prompt: 'Premium'},
+vi.mock('../hooks/useMembershipFeeTypeOptions', () => ({
+    useMembershipFeeTypeOptions: () => [
+        {value: 'uuid-type-a', prompt: 'Základní'},
+        {value: 'uuid-type-b', prompt: 'Premium'},
     ],
 }));
 
@@ -93,6 +93,24 @@ function createMockConf(overrides: Partial<HalFormsInputProps> & { prop: HalForm
 }
 
 describe('KlabisFieldsFactory', () => {
+
+    describe('MembershipFeeGroupChoice field type', () => {
+        it('renders the fee group choice field for MembershipFeeGroupChoice type', () => {
+            const mockConf = createMockConf({
+                prop: {
+                    name: 'membershipFeeGroupId',
+                    type: 'MembershipFeeGroupChoice',
+                    options: {link: {href: '/api/fee-selection-campaigns/2026/groups'}},
+                },
+            });
+
+            const result = klabisFieldsFactory('MembershipFeeGroupChoice', mockConf);
+
+            expect(result).not.toBeNull();
+            const ct = result?.type as {displayName?: string; name?: string};
+            expect(ct.displayName || ct.name).toBe('HalFormsMembershipFeeGroupChoice');
+        });
+    });
 
     describe('MemberId field type', () => {
 
@@ -572,26 +590,26 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
-    describe('MembershipFeeTierMultiSelect field type', () => {
+    describe('MembershipFeeTypeMultiSelect field type', () => {
 
-        it('should render HalFormsCheckboxGroup for MembershipFeeTierMultiSelect type', () => {
+        it('should render HalFormsCheckboxGroup for MembershipFeeTypeMultiSelect type', () => {
             const mockConf = createMockConf({
-                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+                prop: {name: 'typeIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTypeMultiSelect'},
             });
 
-            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            const result = klabisFieldsFactory('MembershipFeeTypeMultiSelect', mockConf);
             expect(result).not.toBeNull();
 
             render(result!);
             expect(screen.getByTestId('hal-forms-checkboxgroup-mock')).toBeInTheDocument();
         });
 
-        it('should populate options from useMembershipFeeTierOptions', () => {
+        it('should populate options from useMembershipFeeTypeOptions', () => {
             const mockConf = createMockConf({
-                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+                prop: {name: 'typeIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTypeMultiSelect'},
             });
 
-            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            const result = klabisFieldsFactory('MembershipFeeTypeMultiSelect', mockConf);
             expect(result).not.toBeNull();
 
             render(result!);
@@ -602,13 +620,13 @@ describe('KlabisFieldsFactory', () => {
 
         it('should preserve original prop name and prompt', () => {
             const mockConf = createMockConf({
-                prop: {name: 'tierIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTierMultiSelect'},
+                prop: {name: 'typeIds', prompt: 'Výběr tarifů', type: 'MembershipFeeTypeMultiSelect'},
             });
 
-            const result = klabisFieldsFactory('MembershipFeeTierMultiSelect', mockConf);
+            const result = klabisFieldsFactory('MembershipFeeTypeMultiSelect', mockConf);
             render(result!);
 
-            expect(screen.getByTestId('checkboxgroup-name')).toHaveTextContent('tierIds');
+            expect(screen.getByTestId('checkboxgroup-name')).toHaveTextContent('typeIds');
             expect(screen.getByTestId('checkboxgroup-prompt')).toHaveTextContent('Výběr tarifů');
         });
     });

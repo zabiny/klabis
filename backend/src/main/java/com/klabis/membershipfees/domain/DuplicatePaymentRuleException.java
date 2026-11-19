@@ -10,7 +10,7 @@ public class DuplicatePaymentRuleException extends ConflictException implements 
 
     public DuplicatePaymentRuleException(EventTypeReference eventTypeId, String rankingShortName) {
         super("A rule for event type " + eventTypeId + " and ranking '" + rankingShortName
-                + "' already exists on this level");
+                + "' already exists on this fee type");
         this.eventTypeId = eventTypeId;
         this.rankingShortName = rankingShortName;
     }

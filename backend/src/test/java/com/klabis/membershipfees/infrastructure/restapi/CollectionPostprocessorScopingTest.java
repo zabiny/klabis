@@ -2,8 +2,8 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeManagementPort;
+import com.klabis.membershipfees.application.MembershipFeeTypeOptionsPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.ResolvableType;
@@ -25,18 +25,18 @@ class CollectionPostprocessorScopingTest {
 
     record OtherDto(String value) {}
 
-    private final MembershipFeeTierManagementPort tierPort = mock(MembershipFeeTierManagementPort.class);
+    private final MembershipFeeTypeManagementPort typePort = mock(MembershipFeeTypeManagementPort.class);
     private final FeeSelectionCampaignManagementPort campaignPort = mock(FeeSelectionCampaignManagementPort.class);
-    private final MembershipFeeTierOptionsPort optionsPort = mock(MembershipFeeTierOptionsPort.class);
+    private final MembershipFeeTypeOptionsPort optionsPort = mock(MembershipFeeTypeOptionsPort.class);
     private final AuthorizationEvaluator evaluator = mock(AuthorizationEvaluator.class);
 
-    private final PublishYearAffordance publishYearAffordance = new PublishYearAffordance(tierPort, campaignPort, evaluator);
+    private final PublishYearAffordance publishYearAffordance = new PublishYearAffordance(typePort, campaignPort, evaluator);
 
     private final RepresentationModelProcessorInvoker invoker = new RepresentationModelProcessorInvoker(
             List.<RepresentationModelProcessor<?>>of(
                     new FeeSelectionCampaignListPostprocessor(publishYearAffordance),
-                    new MembershipFeeTierListPostprocessor(evaluator, campaignPort, publishYearAffordance),
-                    new MembershipFeeTierListRulesPostprocessor(optionsPort)));
+                    new MembershipFeeTypeListPostprocessor(evaluator, campaignPort, publishYearAffordance),
+                    new MembershipFeeTypeListRulesPostprocessor(optionsPort)));
 
     private void assertUntouchedFor(Object element, ResolvableType elementType) {
         List<EntityModel<Object>> items = element == null
@@ -51,7 +51,7 @@ class CollectionPostprocessorScopingTest {
 
         assertThat(model.getRequiredLink(IanaLinkRelations.SELF).getAffordances()).isEmpty();
         assertThat(model.getLinks()).hasSize(1);
-        verifyNoInteractions(tierPort, campaignPort, optionsPort, evaluator);
+        verifyNoInteractions(typePort, campaignPort, optionsPort, evaluator);
     }
 
     @Test
@@ -89,6 +89,6 @@ class CollectionPostprocessorScopingTest {
         invoker.invokeProcessorsFor(model, ResolvableType.forClassWithGenerics(CollectionModel.class,
                 ResolvableType.forClassWithGenerics(EntityModel.class, FeeSelectionCampaignResponse.class)));
 
-        org.mockito.Mockito.verify(tierPort).listTiers();
+        org.mockito.Mockito.verify(typePort).listFeeTypes();
     }
 }

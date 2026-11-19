@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.membershipfees.FeeSelectionCampaignId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +38,7 @@ class FeeSelectionCampaignManagementServiceTest {
     @Mock
     private MembershipFeeGroupRepository groupRepository;
     @Mock
-    private MembershipFeeTierRepository tierRepository;
+    private MembershipFeeTypeRepository typeRepository;
 
     private FeeSelectionCampaignManagementService service;
 
@@ -46,11 +46,11 @@ class FeeSelectionCampaignManagementServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-03-01T00:00:00Z"), ZoneId.of("UTC"));
         service = new FeeSelectionCampaignManagementService(
-                publicationRepository, groupRepository, tierRepository, clock);
+                publicationRepository, groupRepository, typeRepository, clock);
     }
 
-    private MembershipFeeTier aTier() {
-        return MembershipFeeTier.create("Dospělý", ofCzk(new BigDecimal("1200.00")));
+    private MembershipFeeType aType() {
+        return MembershipFeeType.create("Dospělý", ofCzk(new BigDecimal("1200.00")));
     }
 
     private FeeSelectionCampaign anActiveCampaign() {
@@ -68,10 +68,10 @@ class FeeSelectionCampaignManagementServiceTest {
         @DisplayName("should throw DeadlineNotInFutureException when deadline is in the past")
         void shouldThrowWhenDeadlineInPast() {
             LocalDate pastDeadline = TODAY.minusDays(1);
-            MembershipFeeTierId tierId = new MembershipFeeTierId(UUID.randomUUID());
+            MembershipFeeTypeId typeId = new MembershipFeeTypeId(UUID.randomUUID());
 
             assertThatThrownBy(() -> service.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
-                    YEAR, pastDeadline, List.of(tierId))))
+                    YEAR, pastDeadline, List.of(typeId))))
                     .isInstanceOf(DeadlineNotInFutureException.class);
 
             verifyNoInteractions(publicationRepository);
@@ -80,10 +80,10 @@ class FeeSelectionCampaignManagementServiceTest {
         @Test
         @DisplayName("should throw DeadlineNotInFutureException when deadline is today")
         void shouldThrowWhenDeadlineIsToday() {
-            MembershipFeeTierId tierId = new MembershipFeeTierId(UUID.randomUUID());
+            MembershipFeeTypeId typeId = new MembershipFeeTypeId(UUID.randomUUID());
 
             assertThatThrownBy(() -> service.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
-                    YEAR, TODAY, List.of(tierId))))
+                    YEAR, TODAY, List.of(typeId))))
                     .isInstanceOf(DeadlineNotInFutureException.class);
 
             verifyNoInteractions(publicationRepository);
@@ -93,11 +93,11 @@ class FeeSelectionCampaignManagementServiceTest {
         @DisplayName("should throw ActiveCampaignExistsException when an active campaign already exists")
         void shouldThrowWhenActiveCampaignExists() {
             LocalDate futureDeadline = TODAY.plusDays(30);
-            MembershipFeeTierId tierId = new MembershipFeeTierId(UUID.randomUUID());
+            MembershipFeeTypeId typeId = new MembershipFeeTypeId(UUID.randomUUID());
             when(publicationRepository.findActive(TODAY)).thenReturn(Optional.of(anActiveCampaign()));
 
             assertThatThrownBy(() -> service.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
-                    YEAR, futureDeadline, List.of(tierId))))
+                    YEAR, futureDeadline, List.of(typeId))))
                     .isInstanceOf(ActiveCampaignExistsException.class);
 
             verify(publicationRepository, never()).save(any());
@@ -107,14 +107,14 @@ class FeeSelectionCampaignManagementServiceTest {
         @DisplayName("should publish successfully when deadline is in the future and no active campaign exists")
         void shouldPublishWhenValid() {
             LocalDate futureDeadline = TODAY.plusDays(30);
-            MembershipFeeTier tier = aTier();
+            MembershipFeeType type = aType();
             when(publicationRepository.findActive(TODAY)).thenReturn(Optional.empty());
-            when(tierRepository.findById(tier.getId())).thenReturn(Optional.of(tier));
+            when(typeRepository.findById(type.getId())).thenReturn(Optional.of(type));
             when(groupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(publicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.publishYear(new FeeSelectionCampaignManagementPort.PublishYearCommand(
-                    YEAR, futureDeadline, List.of(tier.getId())));
+                    YEAR, futureDeadline, List.of(type.getId())));
 
             verify(publicationRepository).save(any());
         }

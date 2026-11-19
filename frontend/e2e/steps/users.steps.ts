@@ -28,8 +28,8 @@ When('{persona} opens the bookmarked link to event {name}', async ({page, apiAs}
     await page.goto(await eventAppPath(apiAs('admin'), name));
 });
 
-When('the shared link to the membership fee tiers page is opened', async ({page}) => {
-    await page.goto('/membership-fee-tiers');
+When('the shared link to the membership fee types page is opened', async ({page}) => {
+    await page.goto('/membership-fee-types');
 });
 
 When('{persona} signs in on the login page', async ({page}, persona: Persona) => {
@@ -44,7 +44,7 @@ Then('the event detail of {name} is shown', async ({page}, name: string) => {
     await expect(heading(page, name)).toBeVisible();
 });
 
-Then('the membership fee tiers page is shown', async ({page}) => {
+Then('the membership fee types page is shown', async ({page}) => {
     await expect(heading(page, CATALOG)).toBeVisible();
 });
 

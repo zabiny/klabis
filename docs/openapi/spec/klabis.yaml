@@ -112,14 +112,14 @@ paths:
     $ref: './notifications.yaml#/paths/~1api~1notifications~1devices~1{deviceId}'
   /api/notifications/test:
     $ref: './notifications.yaml#/paths/~1api~1notifications~1test'
-  /api/membership-fee-tiers:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
-  /api/membership-fee-tiers/{id}:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}'
-  /api/membership-fee-tiers/{id}/rules:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules'
-  /api/membership-fee-tiers/{id}/rules/{eventTypeId}/{ranking}:
-    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers~1{id}~1rules~1{eventTypeId}~1{ranking}'
+  /api/membership-fee-types:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types'
+  /api/membership-fee-types/{id}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}'
+  /api/membership-fee-types/{id}/rules:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}~1rules'
+  /api/membership-fee-types/{id}/rules/{eventTypeId}/{ranking}:
+    $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-types~1{id}~1rules~1{eventTypeId}~1{ranking}'
   /api/fee-selection-campaigns:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns'
   /api/fee-selection-campaigns/{id}:
@@ -128,8 +128,8 @@ paths:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1deadline'
   /api/fee-selection-campaigns/{id}/close:
     $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{id}~1close'
-  /api/fee-selection-campaigns/{year}/levels:
-    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1levels'
+  /api/fee-selection-campaigns/{year}/groups:
+    $ref: './membershipfees.yaml#/paths/~1api~1fee-selection-campaigns~1{year}~1groups'
   /api/membership-fee-groups/{id}:
     $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-groups~1{id}'
   /api/membership-fee-groups/{id}/rules:
@@ -141,8 +141,8 @@ paths:
   # here, not in members.yaml. See membershipfees.yaml header comment.
   /api/members/{memberId}/fee-choice/{year}:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-choice~1{year}'
-  /api/members/{memberId}/fee-summary/{year}:
-    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
+  /api/members/{memberId}/fee-summary:
+    $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary'
   /api/members/{memberId}/fee-history:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
   /api/legal-guardians/{userId}:

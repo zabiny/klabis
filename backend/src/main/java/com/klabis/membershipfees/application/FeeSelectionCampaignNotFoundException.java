@@ -16,6 +16,11 @@ public class FeeSelectionCampaignNotFoundException extends ResourceNotFoundExcep
         this.year = null;
     }
 
+    public FeeSelectionCampaignNotFoundException() {
+        super("No active FeeSelectionCampaign");
+        this.year = null;
+    }
+
     public FeeSelectionCampaignNotFoundException(int year) {
         super("No FeeSelectionCampaign found for year: " + year);
         this.year = year;

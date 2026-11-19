@@ -1,0 +1,66 @@
+import {type ReactElement} from 'react';
+import {ArrowRight, Plus} from 'lucide-react';
+import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {HalEmbeddedTable} from '../HalNavigator2/HalEmbeddedTable.tsx';
+import {HalFormButton} from '../HalNavigator2/HalFormButton.tsx';
+import {TableCell} from '../KlabisTable';
+import type {components} from '../../api/klabisApi';
+import {labels} from '../../localization';
+
+type FeeTypeSummary = components['schemas']['EntityModelMembershipFeeTypeSummaryResponse'];
+
+export const TypeCatalogSection = (): ReactElement => {
+    const {navigateToResource} = useHalPageData();
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-text-primary">{labels.sections.membershipFeeTypesList}</h2>
+                <HalFormButton
+                    name="createFeeType"
+                    modal={true}
+                    icon={<Plus size={16} className="text-white"/>}
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
+                />
+            </div>
+
+            <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
+                <HalEmbeddedTable<FeeTypeSummary>
+                    tableId="membership-fee-types"
+                    defaultOrderBy="name"
+                    onRowClick={navigateToResource}
+                    emptyMessage="Žádné typy členských příspěvků."
+                >
+                    <TableCell<FeeTypeSummary>
+                        sortable
+                        column="name"
+                        dataRender={({item: feeType}) => {
+                            return (
+                                <span className="text-sm font-bold text-text-primary">{feeType.name}</span>
+                            );
+                        }}
+                    >
+                        {labels.fields.name}
+                    </TableCell>
+                    <TableCell sortable column="yearlyFeeAmount">
+                        {labels.fields.yearlyFeeAmount}
+                    </TableCell>
+                    <TableCell
+                        column="_links"
+                        dataRender={() => (
+                            <button
+                                type="button"
+                                className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-bg-subtle text-text-secondary hover:bg-bg-subtle"
+                                aria-label="Otevřít detail"
+                            >
+                                <ArrowRight size={16}/>
+                            </button>
+                        )}
+                    >
+                        {''}
+                    </TableCell>
+                </HalEmbeddedTable>
+            </div>
+        </div>
+    );
+};

@@ -2,7 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.membershipfees.MembershipFeeGroupId;
-import com.klabis.membershipfees.MembershipFeeTierId;
+import com.klabis.membershipfees.MembershipFeeTypeId;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
@@ -38,7 +38,7 @@ interface MembershipFeeGroupResponseConverter extends MoneyMapping, Converter<Me
         return id == null ? null : id.value();
     }
 
-    default UUID toUuid(MembershipFeeTierId id) {
+    default UUID toUuid(MembershipFeeTypeId id) {
         return id == null ? null : id.value();
     }
 
