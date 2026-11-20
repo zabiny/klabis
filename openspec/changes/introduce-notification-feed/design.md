@@ -46,7 +46,7 @@ sequenceDiagram
     FM->>FM: charge / deposit / reverse
     FM-->>L: MemberAccountBalanceChanged(memberId, previous, new) after commit
     L->>L: previous >= 0 and new < 0 ?
-    L->>S: notify(NegativeBalanceNotification(addressee = account owner, accountId, newBalance))
+    L->>S: notify(NegativeBalanceNotification(recipient = account owner, accountId, newBalance))
     S->>M: is addressee a minor? guardians
     S->>DB: save it + copyFor(guardian) per guardian
     DB-->>D: NotificationCreated(notificationId) per record, after commit
@@ -72,7 +72,7 @@ The service resolves recipients when the event happens and stores a `Notificatio
 
 ### D4: Routing rules in code, minors redirected by the service
 
-Each type's listener names the addressee (for `NEGATIVE_BALANCE` the account owner). When the addressee is a minor, the service adds a record for each legal guardian. All channel decisions use the **addressee's** settings:
+The addressee is not stored: each subtype derives it from its own source attributes (`addressee()`; for `NEGATIVE_BALANCE` the owner of `accountId`). When the addressee is a minor, the service adds a record for each legal guardian. All channel decisions use the **addressee's** settings:
 
 | Recipient | Feed | Push | E-mail |
 |-----------|------|------|--------|
@@ -80,7 +80,7 @@ Each type's listener names the addressee (for `NEGATIVE_BALANCE` the account own
 | Minor addressee | always | **never** | own e-mail if set, per minor's settings |
 | Each legal guardian of a minor addressee | always | per **minor's** settings | guardian's e-mail, per **minor's** settings |
 
-Future management types (event managers, trainers of a group) will name their addressees directly in their listener; the guardian redirection applies whenever an addressee is a minor.
+By default `addressee()` is the recipient, which fits future management types (event managers, trainers of a group): their recipients' own settings apply. The guardian redirection applies whenever an addressee is a minor.
 
 ### D5: Settings stored as overrides on top of per-type defaults
 
@@ -106,9 +106,9 @@ The spec makes a minor's own settings read-only. Endpoint authorization lets the
 
 ### D8: A notification subtype per notification type, stored in one table
 
-`Notification` is an abstract aggregate root with the attributes every notification has (id, recipient, addressee, type, created and read time). Each notification type has its own subtype carrying what that type needs to render its texts and its link, for example `NegativeBalanceNotification` with `accountId` (finance identifies an account by its owner's `MemberId`) and `newBalance` at the time of the change. A subtype maps to exactly one `NotificationType`. No title, text or link is stored: they are rendered when the notification is sent or shown (D11).
+`Notification` is an abstract aggregate root with the attributes every notification has (id, recipient, type, created and read time). The addressee is derived by the subtype from its source attributes (`addressee()`, D4), never stored. Each notification type has its own subtype carrying what that type needs to render its texts and its link, for example `NegativeBalanceNotification` with `accountId` (finance identifies an account by its owner's `MemberId`) and `newBalance` at the time of the change. A subtype maps to exactly one `NotificationType`. No title, text or link is stored: they are rendered when the notification is sent or shown (D11).
 
-Each subtype renders its own link (`targetPath()`): `NegativeBalanceNotification` points the account owner to their account and, for a guardian's copy (`recipient` ≠ `addressee`), to the child's detail page until [#451](https://github.com/zabiny/klabis/issues/451). The guardian copies are made by `copyFor(guardian)`, which keeps every attribute and changes only the recipient.
+Each subtype renders its own link (`targetPath()`): `NegativeBalanceNotification` points the account owner to their account and, for a guardian's copy (`recipient` ≠ `addressee()`), to the child's detail page until [#451](https://github.com/zabiny/klabis/issues/451). The guardian copies are made by `copyFor(guardian)`, which keeps every attribute and changes only the recipient.
 
 Persistence: one table `notifications` with the common columns, `type` as discriminator and `attributes` (JSON in a TEXT column) for the subtype's own attributes. The memento builds the right subtype by `type`.
 
@@ -139,7 +139,7 @@ Titles and texts depend on the channel, so they are rendered at the moment of se
 
 There is no shared e-mail layout and no fallback between channels; identical texts in two channels are duplicated on purpose.
 
-The template context holds the common attributes (`notificationId`, `type`, `createdAt`, `recipient` and `addressee` with their names, `forGuardian`, `link`) plus the subtype's own attributes (`newBalance`, `accountId`, …). Names are read from members at rendering time, so the current name is always shown. `link` is the subtype's `targetPath()`, made absolute for e-mail from the configured base URL.
+The template context holds the common attributes (`notificationId`, `type`, `createdAt`, `recipient` and the derived `addressee` with their names, `forGuardian`, `link`) plus the subtype's own attributes (`newBalance`, `accountId`, …). Names are read from members at rendering time, so the current name is always shown. `link` is the subtype's `targetPath()`, made absolute for e-mail from the configured base URL.
 
 - **Why:** a new channel (for example Discord) adds a template pair per type and a delivery listener, nothing in the stored data; texts can be fixed without migrating data.
 - **Trade-off:** changing a template also changes how older notifications read in the feed. Accepted.
@@ -153,12 +153,12 @@ classDiagram
         <<AggregateRoot, abstract>>
         NotificationId id
         UserId recipient
-        UserId addressee
         NotificationType type
         Instant createdAt
         Instant readAt
         markRead(now)
         isRead()
+        addressee() UserId
         isForGuardian()
         copyFor(recipient) Notification
         targetPath() String
@@ -167,6 +167,7 @@ classDiagram
     class NegativeBalanceNotification {
         MemberId accountId
         BigDecimal newBalance
+        addressee() UserId
         targetPath() String
         templateAttributes() Map
     }
@@ -220,8 +221,8 @@ classDiagram
 
 | Element | Module | Status | Description |
 |---------|--------|--------|-------------|
-| `Notification` | notifications | added | Abstract aggregate root: one notification for one recipient with addressee, type and read state. A guardian's copy has `recipient` ≠ `addressee`. No stored title, text or link (D8, D11). |
-| `NegativeBalanceNotification` | notifications | added | Subtype for `NEGATIVE_BALANCE`: `accountId`, `newBalance`; renders the link to the account (owner) or the child's detail (guardian). |
+| `Notification` | notifications | added | Abstract aggregate root: one notification for one recipient with type and read state; `addressee()` is derived by the subtype (default: the recipient). A guardian's copy has `recipient` ≠ `addressee()`. No stored title, text or link (D8, D11). |
+| `NegativeBalanceNotification` | notifications | added | Subtype for `NEGATIVE_BALANCE`: `accountId`, `newBalance`; addressee = owner of `accountId`; renders the link to the account (owner) or the child's detail (guardian). |
 | `NotificationId` | notifications | added | Identity of a notification. |
 | `NotificationCreated` | notifications (domain) | added | Registered on creation; consumed by the delivery listeners inside the module. |
 | `NotificationPreferences` | notifications | added | A user's changed channel settings; identity is the user's `UserId`. |
@@ -309,7 +310,7 @@ Existing device endpoints are unchanged. All endpoints resolve the feed through 
 | Notification | One message for one recipient, shown in their feed and possibly sent by push or e-mail. |
 | Feed ("Notifikace") | The list of a user's notifications in the app, opened from the bell. |
 | Recipient | The user whose feed holds the notification. |
-| Addressee | The user the notification is for and whose settings decide the channels. Equals the recipient, except for a guardian's copy of a minor's notification. |
+| Addressee | The user the notification is for and whose settings decide the channels. Derived by the subtype from its source (not stored); equals the recipient, except for a guardian's copy of a minor's notification. |
 | Notification subtype | The aggregate class for one notification type, carrying the attributes its templates and link need (first: `NegativeBalanceNotification`). |
 | Notification type | A kind of notification with its own templates, addressee rule and default channels (first: `NEGATIVE_BALANCE`). |
 | Channel | Where a notification is shown or sent: feed, push or e-mail. Users choose push and e-mail; the feed always receives everything. |
