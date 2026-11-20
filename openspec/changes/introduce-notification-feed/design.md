@@ -83,7 +83,7 @@ Future management types (event managers, trainers of a group) will name their ad
 
 ### D5: Settings stored as overrides on top of per-type defaults
 
-`NotificationPreferences` (one per user) stores only the channel values the user (or a guardian) changed. Unset values fall back to the type's default for adults or minors, evaluated at delivery time. Consequence: when a minor turns 18, values the guardians set explicitly stay; untouched values follow adult defaults, and push starts reaching the member's own devices instead of the guardians'. No reaction to `MinorAgedOutEvent` is needed.
+`NotificationPreferences` (one per user) stores only the channel values the user (or a guardian) changed. Unset values fall back to the type's default, evaluated at delivery time. Defaults are one set per type, the same for adults and minors (David, 2026-11-20); a separate minor default can be added to a type when one needs it. Consequence: when a minor turns 18, the values stay as they were, and push starts reaching the member's own devices instead of the guardians' (D4). No reaction to `MinorAgedOutEvent` is needed.
 
 ### D6: Guardianship as the ReBAC relationship authority `LEGAL_GUARDIAN_OF`
 
@@ -152,7 +152,7 @@ classDiagram
         <<AggregateRoot>>
         UserId id
         Map~NotificationType, ChannelSetting~ overrides
-        isEnabled(type, channel, minor) boolean
+        isEnabled(type, channel) boolean
         change(type, channel, enabled)
     }
     class ChannelSetting {
@@ -164,8 +164,8 @@ classDiagram
         <<Enumeration>>
         NEGATIVE_BALANCE
         label
-        defaultsForAdult
-        defaultsForMinor
+        defaultPush
+        defaultEmail
     }
     class NotificationChannel {
         <<Enumeration>>
@@ -203,7 +203,7 @@ classDiagram
 | `NotificationCreated` | notifications (domain) | added | Registered on creation; consumed by the delivery listeners inside the module. |
 | `NotificationPreferences` | notifications | added | A user's changed channel settings; identity is the user's `UserId`. |
 | `ChannelSetting` | notifications | added | Push and e-mail values set for one type; an unset value means "use the default". |
-| `NotificationType` | notifications | added | Known types with Czech label and defaults for adults and minors. First value `NEGATIVE_BALANCE` (label "Záporný zůstatek"; adult: push on, e-mail on; minor: push off, e-mail on). |
+| `NotificationType` | notifications | added | Known types with Czech label and default per channel. First value `NEGATIVE_BALANCE` (label "Záporný zůstatek"; push on, e-mail on). |
 | `NotificationChannel` | notifications | added | `PUSH`, `EMAIL`. The feed is not a channel; it always receives everything. |
 | `MemberAccountBalanceChanged` | finance (public) | added | Published by `MemberAccount` on every balance change. |
 | `MemberAccount` | finance | changed | Registers `MemberAccountBalanceChanged` in deposit, charge, registration charge and reversal. |

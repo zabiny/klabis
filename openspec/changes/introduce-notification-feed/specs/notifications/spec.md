@@ -144,7 +144,7 @@ The "Nastavení notifikací" tab SHALL show a table with one row per notificatio
 
 ### Requirement: Default Notification Settings
 
-Until a user changes a setting, each notification type SHALL use its default per channel, defined separately for adults and for minors. For the negative balance notification the defaults SHALL be: e-mail on, push on; for a minor e-mail on, push off.
+Until a user changes a setting, each notification type SHALL use its default per channel, the same for adults and minors. For the negative balance notification the defaults SHALL be: e-mail on, push on.
 
 #### Scenario: New adult member
 
@@ -156,7 +156,7 @@ Until a user changes a setting, each notification type SHALL use its default per
 
 - **GIVEN** a minor member whose settings were never changed
 - **WHEN** a legal guardian views the minor's notification settings
-- **THEN** e-mail is shown switched on and push switched off in the "Záporný zůstatek" row
+- **THEN** push and e-mail are shown switched on in the "Záporný zůstatek" row
 
 ### Requirement: Push Delivery Follows The Settings
 
