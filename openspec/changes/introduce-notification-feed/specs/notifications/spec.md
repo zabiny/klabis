@@ -200,7 +200,7 @@ When a notification is created and e-mail is switched on for its type, the syste
 
 ### Requirement: Notifications About A Minor Are Routed To Their Guardians
 
-A notification about a minor SHALL appear in the feed of the minor and of every legal guardian of the minor, including guardians who are not members. E-mail, when switched on in the minor's settings, SHALL go to every legal guardian and to the minor's own e-mail if the minor has one. Push, when switched on in the minor's settings, SHALL go only to the minor's devices.
+A notification about a minor SHALL appear in the feed of the minor and of every legal guardian of the minor, including guardians who are not members. E-mail, when switched on in the minor's settings, SHALL go to every legal guardian and to the minor's own e-mail if the minor has one. Push, when switched on in the minor's settings, SHALL go to the devices of every legal guardian and never to the minor's devices.
 
 #### Scenario: Minor with two guardians and push off
 
@@ -212,10 +212,10 @@ A notification about a minor SHALL appear in the feed of the minor and of every 
 
 #### Scenario: Minor with push on
 
-- **GIVEN** a minor whose settings have push switched on and who has a phone with notifications enabled
+- **GIVEN** a minor whose settings have push switched on, two legal guardians with notifications enabled on their phones, and a minor with notifications enabled on their own phone
 - **WHEN** a notification about the minor is created
-- **THEN** the minor's phone shows the notification
-- **AND** the guardians' devices show no push notification for it
+- **THEN** both guardians' phones show the notification
+- **AND** the minor's phone shows no push notification for it
 
 #### Scenario: Guardian's own settings do not apply to their child's notifications
 
@@ -227,7 +227,7 @@ A notification about a minor SHALL appear in the feed of the minor and of every 
 #### Scenario: Guardian sees which child the notification is about
 
 - **WHEN** a guardian opens a notification about their minor child in the feed
-- **THEN** the notification names the child
+- **THEN** the notification names the child, in the same wording the child sees
 - **AND** clicking it opens the child's detail page
 
 ### Requirement: Guardians Manage A Minor's Notification Settings
@@ -246,14 +246,19 @@ Each legal guardian SHALL see, on their own "Nastavení notifikací" tab, a sepa
 - **WHEN** a minor opens the "Nastavení notifikací" tab
 - **THEN** their notification settings are shown read-only
 - **AND** a note says that their legal guardians manage them
-- **AND** the minor can still enable and disable notifications on their devices
 
 #### Scenario: Member turns 18
 
-- **GIVEN** a minor whose guardians switched push on in their settings
+- **GIVEN** a minor whose guardians switched e-mail off in their settings
 - **WHEN** the member turns 18 and is no longer a minor
 - **THEN** the member can change their notification settings, starting from the values the guardians set
+- **AND** push notifications now reach the member's own devices instead of the former guardians'
 - **AND** the former guardians no longer see a section for the member
+
+#### Scenario: Unrelated user cannot change a member's settings
+
+- **WHEN** a member who is neither the minor nor one of their legal guardians tries to change the minor's notification settings
+- **THEN** the change is refused
 
 ### Requirement: Suspended Members Keep Receiving Notifications
 
