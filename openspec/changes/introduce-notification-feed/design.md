@@ -33,7 +33,7 @@ Current state:
 
 ### D1: Integration through domain events, the notification module depends on producers
 
-The producing module publishes a plain domain event about its own domain (here: "balance changed", with previous and new balance). A listener in `notifications` interprets it: decides whether a notification is due, its type, the user it is for (the addressee) and the aggregate that caused it (the source), then hands a notification request to the notification service. The service stores the feed records and publishes `NotificationCreated` for each; delivery listeners send push and e-mail (D7).
+The producing module publishes a plain domain event about its own domain (here: "balance changed", with previous and new balance). A listener in `notifications` interprets it: decides whether a notification is due and creates the notification subtype for it (for example `NegativeBalanceNotification` with the account and the new balance) addressed to the user it is for (the addressee), then hands it to the notification service. The service stores the feed records and publishes `NotificationCreated` for each; delivery listeners send push and e-mail (D7).
 
 ```mermaid
 sequenceDiagram
@@ -46,11 +46,12 @@ sequenceDiagram
     FM->>FM: charge / deposit / reverse
     FM-->>L: MemberAccountBalanceChanged(memberId, previous, new) after commit
     L->>L: previous >= 0 and new < 0 ?
-    L->>S: notify(NEGATIVE_BALANCE, addressee = account owner, source = MEMBER_ACCOUNT:id, {balance})
+    L->>S: notify(NegativeBalanceNotification(addressee = account owner, accountId, newBalance))
     S->>M: is addressee a minor? guardians
-    S->>DB: save Notification for addressee + one per guardian
+    S->>DB: save it + copyFor(guardian) per guardian
     DB-->>D: NotificationCreated(notificationId) per record, after commit
     D->>D: load notification + addressee's settings, decide channel per recipient
+    D->>D: render {channel}-title / {channel}-text templates (D11), send
 ```
 
 - **Why:** David's decision (step 2 discussion, point 8). The module has to know each type anyway (texts, links, defaults); the producer should not shape notifications.
@@ -98,14 +99,21 @@ The spec makes a minor's own settings read-only. Endpoint authorization lets the
 
 ### D7: Delivery in event listeners
 
-`Notification` registers `NotificationCreated(eventId, notificationId, occurredAt)` when created. Two listeners in the notifications module (`PushDeliveryListener`, `EmailDeliveryListener`, both `@ApplicationModuleListener`) load the notification, the addressee's settings and the recipient's contact, apply D4 and send. `PushNotifications` and `EmailService` already log and swallow delivery failures, so the publication completes and is never retried into duplicate deliveries. The event carries only the id, so no notification text or e-mail lands in the Modulith outbox.
+`Notification` registers `NotificationCreated(eventId, notificationId, occurredAt)` when created. Two listeners in the notifications module (`PushDeliveryListener`, `EmailDeliveryListener`, both `@ApplicationModuleListener`) load the notification, the addressee's settings and the recipient's contact, apply D4, render the channel's templates (D11) and send. `PushNotifications` and `EmailService` already log and swallow delivery failures, so the publication completes and is never retried into duplicate deliveries. The event carries only the id, so no notification text or e-mail lands in the Modulith outbox.
 
 - **Why:** storing the feed record and delivering are separate concerns; a slow or failing SMTP server never holds the transaction that writes the feed; new channels are new listeners.
 - **Alternative rejected:** inline delivery in the service after saving.
 
-### D8: Notification source as a typed reference
+### D8: A notification subtype per notification type, stored in one table
 
-`Notification.source` is a `NotificationSource(NotificationSourceType sourceType, String sourceId)`, after `SyncTarget` in the sync engine: the module can point back to the aggregate that triggered the notification (for `NEGATIVE_BALANCE` the member account, `MEMBER_ACCOUNT` + account id) without depending on that module's identifier type. `NotificationSourceType` starts with `MEMBER_ACCOUNT`; later steps add their values.
+`Notification` is an abstract aggregate root with the attributes every notification has (id, recipient, addressee, type, created and read time). Each notification type has its own subtype carrying what that type needs to render its texts and its link, for example `NegativeBalanceNotification` with `accountId` (finance identifies an account by its owner's `MemberId`) and `newBalance` at the time of the change. A subtype maps to exactly one `NotificationType`. No title, text or link is stored: they are rendered when the notification is sent or shown (D11).
+
+Each subtype renders its own link (`targetPath()`): `NegativeBalanceNotification` points the account owner to their account and, for a guardian's copy (`recipient` ≠ `addressee`), to the child's detail page until [#451](https://github.com/zabiny/klabis/issues/451). The guardian copies are made by `copyFor(guardian)`, which keeps every attribute and changes only the recipient.
+
+Persistence: one table `notifications` with the common columns, `type` as discriminator and `attributes` (JSON in a TEXT column) for the subtype's own attributes. The memento builds the right subtype by `type`.
+
+- **Why:** each type keeps its own typed attributes without a generic source reference; a new type adds a subtype, its templates and nothing in the schema.
+- **Alternatives rejected:** a generic `NotificationSource(type, id)` reference (loses typed attributes the templates need); a table per subtype (a table and a join for every new type).
 
 ### D9: Retention by a daily `@Scheduled` job
 
@@ -119,34 +127,48 @@ The spec makes a minor's own settings read-only. Endpoint authorization lets the
 
 The ports delegate to existing internals (`LegalGuardianGroupPort.guardiansOf`, `GuardianContactResolver`, member birth date).
 
+### D11: Title and text rendered from templates when sent or shown
+
+Titles and texts depend on the channel, so they are rendered at the moment of sending (push, e-mail) or showing (feed), with the existing `common.templating.TemplateRenderer` (Thymeleaf). Each type has a directory `templates/notifications/{type}/`, its name derived from `NotificationType` (`NEGATIVE_BALANCE` → `negative-balance`), with six files:
+
+| File | Used for |
+|------|----------|
+| `feed-title.txt`, `feed-text.txt` | the feed item |
+| `push-title.txt`, `push-text.txt` | the push notification |
+| `email-title.txt`, `email-text.html` | the e-mail subject and HTML body |
+
+There is no shared e-mail layout and no fallback between channels; identical texts in two channels are duplicated on purpose.
+
+The template context holds the common attributes (`notificationId`, `type`, `createdAt`, `recipient` and `addressee` with their names, `forGuardian`, `link`) plus the subtype's own attributes (`newBalance`, `accountId`, …). Names are read from members at rendering time, so the current name is always shown. `link` is the subtype's `targetPath()`, made absolute for e-mail from the configured base URL.
+
+- **Why:** a new channel (for example Discord) adds a template pair per type and a delivery listener, nothing in the stored data; texts can be fixed without migrating data.
+- **Trade-off:** changing a template also changes how older notifications read in the feed. Accepted.
+
+
 ## Domain Model
 
 ```mermaid
 classDiagram
     class Notification {
-        <<AggregateRoot>>
+        <<AggregateRoot, abstract>>
         NotificationId id
         UserId recipient
         UserId addressee
         NotificationType type
-        NotificationSource source
-        String title
-        String text
-        String targetPath
         Instant createdAt
         Instant readAt
         markRead(now)
         isRead()
         isForGuardian()
+        copyFor(recipient) Notification
+        targetPath() String
+        templateAttributes() Map
     }
-    class NotificationSource {
-        <<ValueObject>>
-        NotificationSourceType sourceType
-        String sourceId
-    }
-    class NotificationSourceType {
-        <<Enumeration>>
-        MEMBER_ACCOUNT
+    class NegativeBalanceNotification {
+        MemberId accountId
+        BigDecimal newBalance
+        targetPath() String
+        templateAttributes() Map
     }
     class NotificationPreferences {
         <<AggregateRoot>>
@@ -164,11 +186,13 @@ classDiagram
         <<Enumeration>>
         NEGATIVE_BALANCE
         label
+        templateDirectory
         defaultPush
         defaultEmail
     }
     class NotificationChannel {
         <<Enumeration>>
+        FEED
         PUSH
         EMAIL
     }
@@ -186,8 +210,7 @@ classDiagram
         BigDecimal newBalance
         Instant occurredAt
     }
-    Notification --> NotificationSource
-    NotificationSource --> NotificationSourceType
+    Notification <|-- NegativeBalanceNotification
     Notification --> NotificationType
     Notification ..> NotificationCreated : registers
     NotificationPreferences --> ChannelSetting
@@ -197,14 +220,14 @@ classDiagram
 
 | Element | Module | Status | Description |
 |---------|--------|--------|-------------|
-| `Notification` | notifications | added | One notification for one recipient: addressee, type, source, rendered title, text, target page and read state. A guardian's copy has `recipient` ≠ `addressee`. |
+| `Notification` | notifications | added | Abstract aggregate root: one notification for one recipient with addressee, type and read state. A guardian's copy has `recipient` ≠ `addressee`. No stored title, text or link (D8, D11). |
+| `NegativeBalanceNotification` | notifications | added | Subtype for `NEGATIVE_BALANCE`: `accountId`, `newBalance`; renders the link to the account (owner) or the child's detail (guardian). |
 | `NotificationId` | notifications | added | Identity of a notification. |
-| `NotificationSource`, `NotificationSourceType` | notifications | added | Typed reference to the aggregate that triggered the notification (D8). |
 | `NotificationCreated` | notifications (domain) | added | Registered on creation; consumed by the delivery listeners inside the module. |
 | `NotificationPreferences` | notifications | added | A user's changed channel settings; identity is the user's `UserId`. |
 | `ChannelSetting` | notifications | added | Push and e-mail values set for one type; an unset value means "use the default". |
-| `NotificationType` | notifications | added | Known types with Czech label and default per channel. First value `NEGATIVE_BALANCE` (label "Záporný zůstatek"; push on, e-mail on). |
-| `NotificationChannel` | notifications | added | `PUSH`, `EMAIL`. The feed is not a channel; it always receives everything. |
+| `NotificationType` | notifications | added | Known types with Czech label, template directory and default per channel. First value `NEGATIVE_BALANCE` (label "Záporný zůstatek", directory `negative-balance`; push on, e-mail on). |
+| `NotificationChannel` | notifications | added | `FEED`, `PUSH`, `EMAIL`: selects the templates. Settings apply only to `PUSH` and `EMAIL`; the feed always receives everything. |
 | `MemberAccountBalanceChanged` | finance (public) | added | Published by `MemberAccount` on every balance change. |
 | `MemberAccount` | finance | changed | Registers `MemberAccountBalanceChanged` in deposit, charge, registration charge and reversal. |
 | `Authority.LEGAL_GUARDIAN_OF` | common.users | added | Relationship authority "guardian of this member" (D6). |
@@ -253,7 +276,7 @@ Existing device endpoints are unchanged. All endpoints resolve the feed through 
 
 **Preferences request body:** `{ "preferences": [ { "type": "NEGATIVE_BALANCE", "push": false, "email": true } ] }`. Unknown types are rejected with 400.
 
-**`NotificationFeed`** (paged collection): `_embedded.notifications[]` of `{ id, type, title, text, createdAt, read, targetPath }`; each item has template `markNotificationRead` while unread. Collection links `self`, paging links, `notificationSettings`; template `markAllNotificationsRead` while any notification is unread.
+**`NotificationFeed`** (paged collection): `_embedded.notifications[]` of `{ id, type, title, text, createdAt, read, targetPath }`, with `title` and `text` rendered from the `feed-*` templates and `targetPath` from the subtype when the page is read; each item has template `markNotificationRead` while unread. Collection links `self`, paging links, `notificationSettings`; template `markAllNotificationsRead` while any notification is unread.
 
 **`UnreadNotificationCount`**: `{ "unreadCount": 3 }` with `self`.
 
@@ -270,16 +293,14 @@ Existing device endpoints are unchanged. All endpoints resolve the feed through 
 
 ## Texts
 
-One template per type, the same for the addressee and for guardians; it always names the addressee.
+`NEGATIVE_BALANCE` templates (`templates/notifications/negative-balance/`), the same for the addressee and for guardians; they always name the addressee:
 
-| | `NEGATIVE_BALANCE` |
-|---|---|
-| Title | Záporný zůstatek: {first} {last} |
-| Feed / e-mail text | Zůstatek na účtu {first} {last} je {balance} Kč. |
-| Push text | Zůstatek na účtu {first} {last} je záporný. |
-| Target | addressee: own financial account (`/finance`); guardian: the minor's detail page until [#451](https://github.com/zabiny/klabis/issues/451) |
-
-E-mail uses one generic notification template pair (`notification.html` / `notification.txt`) with title, text and an absolute link built from the configured base URL.
+| File | Content |
+|------|---------|
+| `feed-title.txt`, `push-title.txt`, `email-title.txt` | Záporný zůstatek: {addressee name} |
+| `feed-text.txt` | Zůstatek na účtu {addressee name} je {newBalance} Kč. |
+| `push-text.txt` | Zůstatek na účtu {addressee name} je záporný. (no amount) |
+| `email-text.html` | Zůstatek na účtu {addressee name} je {newBalance} Kč, with a link to {link} |
 
 ## Glossary
 
@@ -289,9 +310,10 @@ E-mail uses one generic notification template pair (`notification.html` / `notif
 | Feed ("Notifikace") | The list of a user's notifications in the app, opened from the bell. |
 | Recipient | The user whose feed holds the notification. |
 | Addressee | The user the notification is for and whose settings decide the channels. Equals the recipient, except for a guardian's copy of a minor's notification. |
-| Notification source | The aggregate that triggered the notification, as type + id. |
-| Notification type | A kind of notification with its own text template, addressee rule and default channels (first: `NEGATIVE_BALANCE`). |
-| Channel | A delivery path outside the app: push or e-mail. |
+| Notification subtype | The aggregate class for one notification type, carrying the attributes its templates and link need (first: `NegativeBalanceNotification`). |
+| Notification type | A kind of notification with its own templates, addressee rule and default channels (first: `NEGATIVE_BALANCE`). |
+| Channel | Where a notification is shown or sent: feed, push or e-mail. Users choose push and e-mail; the feed always receives everything. |
+| Template context | The values a template can use: common notification attributes plus the subtype's own. |
 | Notification preferences | A user's per-type channel choices; unset choices use the type's defaults. |
 | `legalGuardianOf` | Relationship authority `LEGAL_GUARDIAN_OF` a guardian holds over each of their minor children. |
 
@@ -306,5 +328,5 @@ E-mail uses one generic notification template pair (`notification.html` / `notif
 
 ## Migration Plan
 
-- DDL for `notifications` and `notification_preferences` tables goes into `V001__initial_schema.sql` (project rule, no production data to migrate).
+- DDL for `notifications` (common columns, `type`, `attributes` TEXT) and `notification_preferences` tables goes into `V001__initial_schema.sql` (project rule, no production data to migrate).
 - Deploy as one release; no feature flag. Rollback = previous image (tables are additive).

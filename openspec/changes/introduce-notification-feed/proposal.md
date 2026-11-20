@@ -17,7 +17,7 @@ Klabis can deliver web push and e-mail, but nothing tells members about things t
 ```mermaid
 flowchart LR
     F[Finance: balance changed<br/>previous + new balance] -->|domain event| L[Notifications: listener<br/>crossed below zero?]
-    L -->|NEGATIVE_BALANCE for account owner,<br/>source = member account| S[Notification service]
+    L -->|NegativeBalanceNotification for account owner<br/>accountId + newBalance| S[Notification service]
     S -->|minor? guardians?| M[Members]
     S --> FEED[(Feed: one record per recipient)]
     FEED -->|NotificationCreated| D[Delivery listeners]
@@ -40,7 +40,7 @@ flowchart LR
 
 ## Impact
 
-- **Backend, `notifications` module:** new aggregates for the notification and for per-user notification settings, a notification service with recipient routing that publishes `NotificationCreated`, delivery listeners for push and e-mail, listener for the finance event, e-mail templates, daily retention job (`@Scheduled`, moves to Quartz once `introduce-quartz-scheduler` lands; this change does not wait for it). Flyway migration for the new tables.
+- **Backend, `notifications` module:** an abstract notification aggregate with a subtype per notification type (stored in one table, type-specific attributes as JSON), per-user notification settings, title and text rendered per channel from Thymeleaf templates when sent or shown, a notification service with recipient routing that publishes `NotificationCreated`, delivery listeners for push and e-mail, listener for the finance event, e-mail templates, daily retention job (`@Scheduled`, moves to Quartz once `introduce-quartz-scheduler` lands; this change does not wait for it). Flyway migration for the new tables.
 - **Backend, `finance` module:** `MemberAccount` publishes a balance-changed domain event carrying the previous and new balance. Finance gains no dependency on notifications.
 - **Backend, `members` module:** public API gains the lookup of a member's legal guardians (with e-mails) and whether a member is a minor. `LegalGuardianGroupRelationshipSource` also grants the new relationship authority `LEGAL_GUARDIAN_OF` over each minor of the guardian's groups (`common.users.Authority`, target `MEMBER`, specific only).
 - **API:** `docs/openapi/spec/notifications.yaml` gains the feed, unread count, mark-read and one settings-update operation for a given member, allowed to the member themself or to their legal guardian.
