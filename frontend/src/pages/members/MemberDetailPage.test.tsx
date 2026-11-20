@@ -1178,7 +1178,7 @@ describe('MemberDetailPage', () => {
     describe('calendar feed', () => {
         it('does not show a calendar feed section on the profile', () => {
             renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByRole('heading', {name: /Kalendářový feed/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('heading', {name: /Zpřístupnit kalendář/i})).not.toBeInTheDocument();
         });
     });
 
