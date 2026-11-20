@@ -14,9 +14,9 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 
 #### Scenario: User generates the calendar feed token for the first time
 
-- **GIVEN** an authenticated user opens the calendar page and has not generated a calendar token yet
+- **GIVEN** an authenticated user opens the calendar page and has not created a calendar link yet
 - **WHEN** the user opens the "Zpřístupnit kalendář" dialog from the calendar header and triggers the "Vytvořit odkaz pro kalendář" action
-- **THEN** the system generates a new token, stores it cryptographically hashed, and displays the full subscribe URL once
+- **THEN** the system generates a new token, stores it cryptographically hashed, and displays the full calendar link once
 - **AND** the URL includes the raw token as a query parameter
 
 #### Scenario: User adds the feed URL to Google Calendar
@@ -68,7 +68,7 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 
 #### Scenario: User regenerates the calendar token after suspecting a leak
 
-- **GIVEN** a user has a feed token and worries that the URL was leaked
+- **GIVEN** a user has a calendar link and worries that it was leaked
 - **WHEN** the user triggers the "Vytvořit nový odkaz" action in the "Zpřístupnit kalendář" dialog and confirms it in the dialog
 - **THEN** the system replaces the stored hash with a new token
 - **AND** the previous URL stops returning the feed
@@ -95,9 +95,9 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 
 #### Scenario: User profile shows when the token was last set
 
-- **GIVEN** a user has a feed token
+- **GIVEN** a user has a calendar link
 - **WHEN** the user opens the "Zpřístupnit kalendář" dialog on the calendar page
-- **THEN** the dialog displays a label indicating when the token was last generated (so the user can recognise if regeneration is needed after a leak)
+- **THEN** the dialog displays a label indicating when the link was last created (so the user can recognise if a new link is needed after a leak)
 
 #### Scenario: Calendar feed is not offered on the member profile
 
@@ -113,9 +113,9 @@ The feed SHALL contain one entry per event on the user's schedule, with the even
 
 #### Scenario: Full feed URL is not shown again after the dialog is closed
 
-- **GIVEN** a user has just generated a feed token and the dialog shows the full subscribe URL
+- **GIVEN** a user has just created a calendar link and the dialog shows the full link
 - **WHEN** the user closes the dialog and opens it again
-- **THEN** the dialog shows only the masked subscribe URL with the time the token was last set
+- **THEN** the dialog shows only the masked link with the time the link was last created
 
 #### Scenario: Dialog texts use plain language
 
