@@ -12,10 +12,10 @@ Each task follows Red-Green-Refactor: write the failing test first, implement, r
 
 ## 2. Account owner sees own account through `FINANCE:VIEW` (design D2, D4, D5)
 
-- [ ] 2.1 Write integration tests first: a member without FINANCE_MANAGE reads their own account, transaction list and single transaction; a member without FINANCE_MANAGE is denied another member's account; a FINANCE_MANAGE user reads any account. Verify: tests fail only on the parts not implemented yet (the own-account cases must keep passing throughout).
-- [ ] 2.2 Add a finance-module `RelationshipSource` granting the current user `FINANCE:VIEW` over their own member id when `Members` finds a member for the user. Unit-test that a non-member user (EXT guardian, bootstrap admin) gets no grant. Verify: unit tests pass.
-- [ ] 2.3 In `docs/openapi/spec/finance.yaml`, change `getAccount`, `listTransactions` and `getTransaction` to `x-klabis-authority: [FINANCE_MANAGE, FINANCE_VIEW]` and remove `x-klabis-owner-visible`; update the file's header comment. Regenerate the OpenAPI bundle and the frontend types. Verify: bundle validation passes and the 2.1 tests pass.
-- [ ] 2.4 Make `AccountMemberDetailLinkProcessor` add the `account` link for FINANCE_MANAGE, or for `FINANCE:VIEW` over the displayed member when it is not the user's own profile. Test: the link is absent on the user's own profile and on an unrelated member's profile without FINANCE_MANAGE, and present for a finance manager. Verify: link processor tests pass.
+- [x] 2.1 Write integration tests first: a member without FINANCE_MANAGE reads their own account, transaction list and single transaction; a member without FINANCE_MANAGE is denied another member's account; a FINANCE_MANAGE user reads any account. Verify: tests fail only on the parts not implemented yet (the own-account cases must keep passing throughout).
+- [x] 2.2 Add a finance-module `RelationshipSource` granting the current user `FINANCE:VIEW` over their own member id when `Members` finds a member for the user. Unit-test that a non-member user (EXT guardian, bootstrap admin) gets no grant. Verify: unit tests pass.
+- [x] 2.3 In `docs/openapi/spec/finance.yaml`, change `getAccount`, `listTransactions` and `getTransaction` to `x-klabis-authority: [FINANCE_MANAGE, FINANCE_VIEW]` and remove `x-klabis-owner-visible`; update the file's header comment. Regenerate the OpenAPI bundle and the frontend types. Verify: bundle validation passes and the 2.1 tests pass.
+- [x] 2.4 Make `AccountMemberDetailLinkProcessor` add the `account` link for FINANCE_MANAGE, or for `FINANCE:VIEW` over the displayed member when it is not the user's own profile. Test: the link is absent on the user's own profile and on an unrelated member's profile without FINANCE_MANAGE, and present for a finance manager. Verify: link processor tests pass.
 
 ## 3. Legal guardian opens their child's account from the child's detail (spec: member-accounts, legal-guardians)
 

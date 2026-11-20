@@ -4,11 +4,12 @@
 # served by the finance module's controller — see klabis-api-spec skill: "decide by which controller
 # serves it, not by the URL prefix."
 #
-# The three GET operations were guarded by an imperative checkAccountAccess() check: caller must be
-# the account owner OR hold FINANCE:MANAGE. That maps to x-klabis-authority + x-klabis-owner-visible
-# (OR semantics) on each GET operation. The three POST operations are FINANCE:MANAGE only — never
-# owner-accessible — so they carry x-klabis-authority alone. They still share
-# AccountMemberIdParam and so inherit its @TargetId, which is inert without @OwnerVisible (FINANCE_MANAGE has no target type).
+# The three GET operations are readable by FINANCE:MANAGE or by a holder of FINANCE:VIEW over the
+# account owner: x-klabis-authority [FINANCE_MANAGE, FINANCE_VIEW] with the target taken from
+# AccountMemberIdParam (x-klabis-target-id). The owner holds FINANCE:VIEW over themself and legal
+# guardians over their minors, both granted as relationships, so no owner-visible rule is needed.
+# The three POST operations are FINANCE:MANAGE only and carry x-klabis-authority alone; they share
+# AccountMemberIdParam, whose target id is inert for an authority without a target type.
 
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
@@ -38,8 +39,7 @@ paths:
       description: Returns the current balance of a member's finance account.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: true
+      x-klabis-authority: [FINANCE_MANAGE, FINANCE_VIEW]
       x-spring-provide-args:
         - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -90,8 +90,7 @@ paths:
         filtering by occurred-date range and transaction type.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: true
+      x-klabis-authority: [FINANCE_MANAGE, FINANCE_VIEW]
       x-spring-paginated: true
       x-spring-provide-args:
         - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
@@ -268,8 +267,7 @@ paths:
       description: Returns a single transaction on a member's finance account.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: FINANCE_MANAGE
-      x-klabis-owner-visible: true
+      x-klabis-authority: [FINANCE_MANAGE, FINANCE_VIEW]
       x-spring-provide-args:
         - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -382,9 +380,8 @@ components:
       in: path
       description: Member UUID
       required: true
-      # Identifies the target member. Inert on its own: @TargetId is only consulted for a method
-      # marked @OwnerVisible or guarded by an authority held over specific targets, so the
-      # operations here that do neither are unaffected.
+      # Identifies the target member. Consulted for the GET operations, where FINANCE_VIEW is held over
+      # the account owner. Inert for the POST operations, guarded by FINANCE_MANAGE only.
       x-klabis-target-id: MEMBER
       schema:
         type: string
