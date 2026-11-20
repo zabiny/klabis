@@ -1093,6 +1093,7 @@ export const labels = {
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
         'GROUPS:TRAINING': {label: 'Správa tréninkových skupin', description: 'Umožňuje vytvářet a spravovat tréninkové skupiny a jejich členy.'},
         'EVENTS:REGISTRATIONS': {label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce'},
+        'FINANCE:VIEW': {label: 'Zobrazení financí člena', description: 'Zobrazení zůstatku a historie transakcí finančního účtu konkrétního člena'},
         'FINANCE:MANAGE': {label: 'Správa financí', description: 'Vklady, strhávání a storno transakcí na účtech členů'},
         'SYNC:MANAGE': {label: 'Správa synchronizace', description: 'Řešení konfliktů a řízení synchronizace s externími systémy'},
     },

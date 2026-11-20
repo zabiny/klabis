@@ -31,6 +31,7 @@ class AuthorityTest {
                 Arguments.of(Authority.CALENDAR_MANAGE, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.GROUPS_TRAINING, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.FINANCE_MANAGE, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
+                Arguments.of(Authority.FINANCE_VIEW, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.SYNC_MANAGE, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.DEVELOPER, TargetType.NONE, EnumSet.of(GrantForm.ALL))
         );
@@ -82,7 +83,31 @@ class AuthorityTest {
     void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
                 Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ,
-                Authority.GROUPS_OWNER);
+                Authority.GROUPS_OWNER, Authority.FINANCE_VIEW);
+    }
+
+    @Test
+    @DisplayName("account viewing has the wire value FINANCE:VIEW and is held over specific members only")
+    void shouldExposeFinanceViewAsMemberTargetedSpecificAuthority() {
+        assertThat(Authority.FINANCE_VIEW.getValue()).isEqualTo("FINANCE:VIEW");
+        assertThat(Authority.fromString("FINANCE:VIEW")).isEqualTo(Authority.FINANCE_VIEW);
+        assertThat(Authority.FINANCE_VIEW.getTargetType()).isEqualTo(TargetType.MEMBER);
+        assertThat(Authority.holdableOverTargets()).contains(Authority.FINANCE_VIEW);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.FINANCE_VIEW);
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.FINANCE_VIEW);
+    }
+
+    @Test
+    @DisplayName("free groups may delegate only profile editing")
+    void shouldDelegateOnlyProfileEditingInFreeGroups() {
+        assertThat(Authority.delegatableInFreeGroups()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+    }
+
+    @Test
+    @DisplayName("legal guardian groups delegate profile editing and account viewing")
+    void shouldDelegateProfileEditingAndFinanceViewByLegalGuardianGroups() {
+        assertThat(Authority.delegatedByLegalGuardianGroups())
+                .containsExactlyInAnyOrder(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW);
     }
 
     @Test

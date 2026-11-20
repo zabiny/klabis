@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
 import org.jspecify.annotations.Nullable;
-import com.klabis.common.authorization.TargetType;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
@@ -15,17 +14,11 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @AggregateRoot
 public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
-
-    private static final Set<Authority> DELEGATABLE_AUTHORITIES = Collections.unmodifiableSet(
-            Authority.holdableOverTargets().stream()
-                    .filter(authority -> authority.getTargetType() == TargetType.MEMBER)
-                    .collect(Collectors.toCollection(() -> EnumSet.noneOf(Authority.class))));
 
     @Identity
     private final FreeGroupId id;
@@ -41,7 +34,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
         // Guards the aggregate itself, so a client bypassing the create form cannot delegate an administrator authority.
         delegatedAuthorities.stream()
-                .filter(authority -> !DELEGATABLE_AUTHORITIES.contains(authority))
+                .filter(authority -> !Authority.delegatableInFreeGroups().contains(authority))
                 .findFirst()
                 .ifPresent(authority -> {
                     throw new InvalidDelegatedAuthorityException(authority);
@@ -51,13 +44,6 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         this.delegatedAuthorities = delegatedAuthorities.isEmpty()
                 ? Collections.emptySet()
                 : Collections.unmodifiableSet(EnumSet.copyOf(delegatedAuthorities));
-    }
-
-    /**
-     * The authorities a founder may choose to delegate: those that can be held over specific members.
-     */
-    public static Set<Authority> delegatableAuthorities() {
-        return DELEGATABLE_AUTHORITIES;
     }
 
     @RecordBuilder

@@ -200,6 +200,10 @@ describe('getPermissionInfo()', () => {
     it('labels MEMBERS:EDIT_PROFILE as "Úprava údajů člena"', () => {
         expect(getPermissionInfo('MEMBERS:EDIT_PROFILE')?.label).toBe('Úprava údajů člena');
     });
+
+    it('labels FINANCE:VIEW as "Zobrazení financí člena"', () => {
+        expect(getPermissionInfo('FINANCE:VIEW')?.label).toBe('Zobrazení financí člena');
+    });
 });
 
 describe('labels.errorTypes membership fees', () => {

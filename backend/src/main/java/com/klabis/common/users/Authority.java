@@ -42,6 +42,7 @@ public enum Authority {
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     GROUPS_OWNER("GROUPS:OWNER", TargetType.GROUP, GrantForm.SPECIFIC),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
+    FINANCE_VIEW("FINANCE:VIEW", TargetType.MEMBER, GrantForm.SPECIFIC),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
     DEVELOPER("DEVELOPER", TargetType.NONE, GrantForm.ALL);
 
@@ -51,6 +52,11 @@ public enum Authority {
     public static final String GROUPS_SCOPE = "GROUPS";
     public static final String FINANCE_SCOPE = "FINANCE";
     public static final String SYNC_SCOPE = "SYNC";
+
+    private static final Set<Authority> DELEGATABLE_IN_FREE_GROUPS =
+            Collections.unmodifiableSet(EnumSet.of(MEMBERS_EDIT_PROFILE));
+    private static final Set<Authority> DELEGATED_BY_LEGAL_GUARDIAN_GROUPS =
+            Collections.unmodifiableSet(EnumSet.of(MEMBERS_EDIT_PROFILE, FINANCE_VIEW));
 
     private final String value;
     private final TargetType targetType;
@@ -152,7 +158,8 @@ public enum Authority {
     /**
      * Authorities that may be held over specific targets, i.e. derived from relationships. Administrator
      * authorities are {@link GrantForm#ALL}-only and therefore never held over targets only. Not every one of
-     * them is delegatable to others (e.g. the event coordinator authorities).
+     * them is delegatable to others: what each kind of group delegates is defined explicitly by
+     * {@link #delegatableInFreeGroups()} and {@link #delegatedByLegalGuardianGroups()}.
      */
     public static Set<Authority> holdableOverTargets() {
         EnumSet<Authority> holdable = EnumSet.noneOf(Authority.class);
@@ -162,6 +169,21 @@ public enum Authority {
             }
         }
         return holdable;
+    }
+
+    /**
+     * Authorities a free group founder may choose to delegate. Listed explicitly so that a new member-targeted
+     * authority never becomes delegatable by accident.
+     */
+    public static Set<Authority> delegatableInFreeGroups() {
+        return DELEGATABLE_IN_FREE_GROUPS;
+    }
+
+    /**
+     * Authorities every legal guardian group delegates to its guardians over the group's minors.
+     */
+    public static Set<Authority> delegatedByLegalGuardianGroups() {
+        return DELEGATED_BY_LEGAL_GUARDIAN_GROUPS;
     }
 
     public static boolean isKnownAuthority(String value) {

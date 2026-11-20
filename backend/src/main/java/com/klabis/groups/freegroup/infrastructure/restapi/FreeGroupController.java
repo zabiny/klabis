@@ -307,7 +307,7 @@ class GroupListPostprocessor
             CollectionModel<EntityModel<GroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
                 .andAffordances(klabisAffordWithOptions(methodOn(GroupsApi.class).createGroup(null, null),
-                        Map.of("delegatedAuthorities", HalFormsOptionsDef.values(FreeGroup.delegatableAuthorities().stream()
+                        Map.of("delegatedAuthorities", HalFormsOptionsDef.values(Authority.delegatableInFreeGroups().stream()
                                 .map(Authority::getValue)
                                 .toList())))));
         return model;

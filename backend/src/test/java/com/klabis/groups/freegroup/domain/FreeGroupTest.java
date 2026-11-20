@@ -106,6 +106,15 @@ class FreeGroupTest {
         }
 
         @Test
+        @DisplayName("should reject account viewing, which only legal guardian groups delegate")
+        void shouldRejectFinanceView() {
+            assertThatThrownBy(() -> FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Peeking", CREATOR, Set.of(Authority.FINANCE_VIEW))))
+                    .isInstanceOf(InvalidDelegatedAuthorityException.class)
+                    .hasMessageContaining(Authority.FINANCE_VIEW.getValue());
+        }
+
+        @Test
         @DisplayName("should reject an authority mixed with a delegatable one")
         void shouldRejectAdministratorAuthorityAmongDelegatable() {
             Set<Authority> chosen = EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_PERMISSIONS);

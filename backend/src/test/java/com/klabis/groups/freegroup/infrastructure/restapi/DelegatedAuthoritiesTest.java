@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
-import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.infrastructure.restapi.DelegatedAuthority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ class DelegatedAuthoritiesTest {
         Set<String> wireValues = Arrays.stream(DelegatedAuthority.values())
                 .map(DelegatedAuthority::getValue)
                 .collect(Collectors.toSet());
-        Set<String> domainValues = FreeGroup.delegatableAuthorities().stream()
+        Set<String> domainValues = Authority.delegatableInFreeGroups().stream()
                 .map(Authority::getValue)
                 .collect(Collectors.toSet());
 
@@ -31,7 +30,7 @@ class DelegatedAuthoritiesTest {
     @Test
     @DisplayName("administrator authorities are never delegatable")
     void administratorAuthoritiesAreNotDelegatable() {
-        assertThat(FreeGroup.delegatableAuthorities())
+        assertThat(Authority.delegatableInFreeGroups())
                 .doesNotContain(Authority.MEMBERS_MANAGE, Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_READ, Authority.GROUPS_OWNER)
                 .containsExactly(Authority.MEMBERS_EDIT_PROFILE);
     }

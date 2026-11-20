@@ -85,7 +85,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
 
     @Override
     public Set<Authority> delegatedAuthorities() {
-        return Set.of(Authority.MEMBERS_EDIT_PROFILE);
+        return Authority.delegatedByLegalGuardianGroups();
     }
 
     public Set<UserId> getGuardians() {
