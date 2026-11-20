@@ -1237,7 +1237,7 @@ export const labels = {
     calendarFeed: {
         button: 'Zpřístupnit kalendář',
         dialogTitle: 'Zpřístupnit kalendář',
-        intro: 'Přihlaste se k odběru svých akcí v externím kalendáři.',
+        intro: 'Odebírejte své akce v externím kalendáři.',
         createButton: 'Vytvořit odkaz pro kalendář',
         regenerateButton: 'Vytvořit nový odkaz',
         copyButton: 'Kopírovat',
@@ -1245,7 +1245,7 @@ export const labels = {
         generatedAt: 'Odkaz vytvořen',
         confirmRegenerateTitle: 'Vytvořit nový odkaz?',
         confirmRegenerateMessage: 'Předchozí odkaz přestane fungovat. Všechna zařízení, která ho používají, se přestanou synchronizovat, dokud nezadáte nový odkaz.',
-        confirmRegenerateAction: 'Vytvořit',
+        confirmRegenerateAction: 'Vytvořit nový',
         fullUrlLabel: 'Odkaz na kalendář',
         fullUrlNote: 'Tento odkaz uvidíte pouze nyní. Uložte ho nebo přidejte do svého kalendáře. Pokud ho ztratíte, vytvořte nový odkaz.',
         maskedUrlLabel: 'Odkaz na kalendář (zamaskovaný)',

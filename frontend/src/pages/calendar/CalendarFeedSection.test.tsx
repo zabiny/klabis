@@ -164,7 +164,7 @@ describe('CalendarFeedSection', () => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(screen.getByText(/předchozí odkaz přestane fungovat/i)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Zrušit/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /^Vytvořit$/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /^Vytvořit nový$/i})).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /Vytvořit nový odkaz/i})).not.toBeInTheDocument();
         });
 
@@ -191,7 +191,7 @@ describe('CalendarFeedSection', () => {
             renderSection();
 
             await user.click(screen.getByRole('button', {name: /Vytvořit nový odkaz/i}));
-            await user.click(screen.getByRole('button', {name: /^Vytvořit$/i}));
+            await user.click(screen.getByRole('button', {name: /^Vytvořit nový$/i}));
 
             expect(mutateMock).toHaveBeenCalledWith(
                 {url: '/api/me/ical-token'},

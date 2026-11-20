@@ -25,7 +25,8 @@ Calendar sharing UI is driven entirely by the `calendarFeed` block in `frontend/
 | `createButton` | Vytvořit odkaz pro kalendář |
 | `regenerateButton` | Vytvořit nový odkaz |
 | `confirmRegenerateTitle` | Vytvořit nový odkaz? |
-| `confirmRegenerateAction` | Vytvořit |
+| `confirmRegenerateAction` | Vytvořit nový |
+| `intro` | Odebírejte své akce v externím kalendáři. |
 | `confirmRegenerateMessage` | Předchozí odkaz přestane fungovat. Všechna zařízení, která ho používají, se přestanou synchronizovat, dokud nezadáte nový odkaz. |
 | `generatedAt` | Odkaz vytvořen |
 | `fullUrlLabel` | Odkaz na kalendář |
