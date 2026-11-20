@@ -387,20 +387,20 @@ describe('CalendarPage Component', () => {
             },
         });
 
-        it('shows the "Kalendářový feed" button when the ical-token link is present', () => {
+        it('shows the "Zpřístupnit kalendář" button when the ical-token link is present', () => {
             mockUseHalPageData.mockReturnValue(createMockContext(withIcalToken()));
 
             renderWithRouter(<CalendarPage/>);
 
-            expect(screen.getByRole('button', {name: 'Kalendářový feed'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Zpřístupnit kalendář'})).toBeInTheDocument();
         });
 
-        it('hides the "Kalendářový feed" button when the ical-token link is absent', () => {
+        it('hides the "Zpřístupnit kalendář" button when the ical-token link is absent', () => {
             mockUseHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>);
 
-            expect(screen.queryByRole('button', {name: 'Kalendářový feed'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Zpřístupnit kalendář'})).not.toBeInTheDocument();
         });
 
         it('does not render the feed content until the dialog is opened', () => {
@@ -417,9 +417,9 @@ describe('CalendarPage Component', () => {
             const user = userEvent.setup();
 
             renderWithRouter(<CalendarPage/>);
-            await user.click(screen.getByRole('button', {name: 'Kalendářový feed'}));
+            await user.click(screen.getByRole('button', {name: 'Zpřístupnit kalendář'}));
 
-            expect(screen.getByRole('dialog', {name: 'Kalendářový feed'})).toBeInTheDocument();
+            expect(screen.getByRole('dialog', {name: 'Zpřístupnit kalendář'})).toBeInTheDocument();
             expect(screen.getByTestId('calendar-feed-section')).toHaveTextContent('/api/me/ical-token');
 
             await user.click(screen.getByRole('button', {name: 'Zavřít'}));

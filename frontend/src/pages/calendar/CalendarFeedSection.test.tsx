@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import {CalendarFeedSection} from './CalendarFeedSection';
+import {labels} from '../../localization';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
@@ -73,9 +74,9 @@ describe('CalendarFeedSection', () => {
             mockMutation();
         });
 
-        it('shows "Vytvořit kalendářový feed" button when no token exists', () => {
+        it('shows "Vytvořit odkaz pro kalendář" button when no token exists', () => {
             renderSection();
-            expect(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i})).toBeInTheDocument();
         });
 
         it('does not show masked URL when no token exists', () => {
@@ -102,7 +103,7 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i}));
 
             expect(mutateMock).toHaveBeenCalledWith(
                 {url: '/api/me/ical-token'},
@@ -115,7 +116,7 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            const button = screen.getByRole('button', {name: /Vytvořit kalendářový feed/i});
+            const button = screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i});
             expect(button).toBeDisabled();
         });
     });
@@ -139,32 +140,32 @@ describe('CalendarFeedSection', () => {
             expect(screen.getByText(/my-schedule\.ics/i)).toBeInTheDocument();
         });
 
-        it('shows "Vygenerovat nový token" button', () => {
+        it('shows "Vytvořit nový odkaz" button', () => {
             renderSection();
-            expect(screen.getByRole('button', {name: /Vygenerovat nový token/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Vytvořit nový odkaz/i})).toBeInTheDocument();
         });
 
-        it('does not show "Vytvořit kalendářový feed" button when token exists', () => {
+        it('does not show "Vytvořit odkaz pro kalendář" button when token exists', () => {
             renderSection();
-            expect(screen.queryByRole('button', {name: /Vytvořit kalendářový feed/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Vytvořit odkaz pro kalendář/i})).not.toBeInTheDocument();
         });
 
         it('shows lastSetAt date', () => {
             renderSection();
-            expect(screen.getByText(/Vygenerováno/i)).toBeInTheDocument();
+            expect(screen.getByText(/Odkaz vytvořen/i)).toBeInTheDocument();
         });
 
-        it('shows inline confirmation instead of a nested modal when "Vygenerovat nový token" is clicked', async () => {
+        it('shows inline confirmation instead of a nested modal when "Vytvořit nový odkaz" is clicked', async () => {
             const user = userEvent.setup();
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit nový odkaz/i}));
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-            expect(screen.getByText(/předchozí URL přestane fungovat/i)).toBeInTheDocument();
+            expect(screen.getByText(/předchozí odkaz přestane fungovat/i)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Zrušit/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /^Vygenerovat$/i})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /Vygenerovat nový token/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /^Vytvořit nový$/i})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /Vytvořit nový odkaz/i})).not.toBeInTheDocument();
         });
 
         it('cancels the inline confirmation without calling mutation', async () => {
@@ -174,12 +175,12 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit nový odkaz/i}));
             await user.click(screen.getByRole('button', {name: /Zrušit/i}));
 
             expect(mutateMock).not.toHaveBeenCalled();
-            expect(screen.queryByText(/předchozí URL přestane fungovat/i)).not.toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /Vygenerovat nový token/i})).toBeInTheDocument();
+            expect(screen.queryByText(/předchozí odkaz přestane fungovat/i)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Vytvořit nový odkaz/i})).toBeInTheDocument();
         });
 
         it('calls POST when the inline confirm button is clicked', async () => {
@@ -189,8 +190,8 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
-            await user.click(screen.getByRole('button', {name: /^Vygenerovat$/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit nový odkaz/i}));
+            await user.click(screen.getByRole('button', {name: /^Vytvořit nový$/i}));
 
             expect(mutateMock).toHaveBeenCalledWith(
                 {url: '/api/me/ical-token'},
@@ -237,7 +238,7 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i}));
 
             onSuccessCallback?.({data: {url: fullUrl, lastSetAt: '2026-05-21T10:00:00Z'}, location: null});
 
@@ -272,7 +273,7 @@ describe('CalendarFeedSection', () => {
 
             renderSection();
 
-            await user.click(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i}));
             onSuccessCallback?.({data: {url: fullUrl, lastSetAt: '2026-05-21T10:00:00Z'}, location: null});
 
             await waitFor(() => {
@@ -299,7 +300,7 @@ describe('CalendarFeedSection', () => {
                 }),
             });
             const view = renderSection();
-            await user.click(screen.getByRole('button', {name: /Vytvořit kalendářový feed/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit odkaz pro kalendář/i}));
             act(() => onSuccessCallback?.({data: {url: fullUrl, lastSetAt: '2026-05-21T10:00:00Z'}, location: null}));
             return {user, view};
         };
@@ -318,9 +319,9 @@ describe('CalendarFeedSection', () => {
         it('offers inline regeneration confirmation while the full URL is shown', async () => {
             const {user} = await renderAndReveal();
 
-            await user.click(screen.getByRole('button', {name: /Vygenerovat nový token/i}));
+            await user.click(screen.getByRole('button', {name: /Vytvořit nový odkaz/i}));
 
-            expect(screen.getByText(/předchozí URL přestane fungovat/i)).toBeInTheDocument();
+            expect(screen.getByText(/předchozí odkaz přestane fungovat/i)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Zrušit/i})).toBeInTheDocument();
         });
 
@@ -333,5 +334,12 @@ describe('CalendarFeedSection', () => {
 
             expect(screen.queryByText(fullUrl)).not.toBeInTheDocument();
         });
+    });
+});
+
+describe('calendarFeed labels', () => {
+    it('use plain language without technical terms', () => {
+        const text = Object.values(labels.calendarFeed).join(' ');
+        expect(text).not.toMatch(/token|subscribe url|feed/i);
     });
 });
