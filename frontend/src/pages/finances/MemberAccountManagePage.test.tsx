@@ -10,6 +10,7 @@ import {type Mock, vi} from 'vitest';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import type {Link} from '../../api/types.ts';
 import {labels} from '../../localization';
+import {formatCurrency} from '../../components/finance/financeFormatters.ts';
 
 vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -335,6 +336,52 @@ describe('MemberAccountManagePage', () => {
                 expect(screen.getByText('Initial deposit')).toBeInTheDocument();
             });
             expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Guardian view of a minor account (read-only)', () => {
+        const minorOwner = {
+            firstName: 'Sofie',
+            lastName: 'Svobodová',
+            registrationNumber: 'ZBM2015',
+            _links: {self: {href: 'https://test.com/api/members/456'}},
+        };
+
+        beforeEach(() => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionDataWithoutReverseAffordance));
+                }
+                if (baseUrl.endsWith('/api/members/456')) {
+                    return Promise.resolve(createMockResponse(minorOwner));
+                }
+                return Promise.resolve(createMockResponse({
+                    ...mockAccountDataWithoutAffordances,
+                    _links: {
+                        ...mockAccountDataWithoutAffordances._links,
+                        accountOwner: {href: 'https://test.com/api/members/456'},
+                    },
+                }));
+            });
+        });
+
+        it('shows the minor as account owner, the balance and the transaction', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            expect(await screen.findByText('Sofie Svobodová (ZBM2015)')).toBeInTheDocument();
+            expect(screen.getByText(formatCurrency(200, 'CZK'))).toBeInTheDocument();
+            expect(await screen.findByText('Initial deposit')).toBeInTheDocument();
+        });
+
+        it('offers no transaction dialog button and no reverse action', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            await screen.findByTestId('account-owner-header');
+            await screen.findByText('Initial deposit');
+            expect(screen.queryByRole('button', {name: /Provést finanční transakci/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
+            expect(screen.queryByTestId('finance-transaction-dialog')).not.toBeInTheDocument();
         });
     });
 });

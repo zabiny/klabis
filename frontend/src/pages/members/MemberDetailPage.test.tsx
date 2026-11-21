@@ -1057,6 +1057,18 @@ describe('MemberDetailPage', () => {
             expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
         });
 
+        it('shows the account action when the detail carries the account link', () => {
+            const data = holderData();
+            data._links = {...holderLinks, account: {href: `/api/members/${minorId}/account`}};
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: labels.finance.openMemberAccount})).toBeInTheDocument();
+        });
+
+        it('shows no account action when the detail lacks the account link', () => {
+            renderPage(createMockPageData(holderData()));
+            expect(screen.queryByRole('button', {name: labels.finance.openMemberAccount})).not.toBeInTheDocument();
+        });
+
         it('shows no fee, permissions, suspension or account actions', () => {
             renderPage(createMockPageData(holderData()));
             expect(screen.queryByRole('button', {name: /členské příspěvky/i})).not.toBeInTheDocument();

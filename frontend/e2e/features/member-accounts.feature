@@ -6,7 +6,7 @@
 Feature: Member financial accounts
   Every member has a prepaid financial account in CZK. Members see their own account,
   finance managers record deposits and charges and reverse transactions on any account.
-  Jan is a finance manager, Eva is a club member.
+  Jan is a finance manager, Eva is a club member and the legal guardian of the minor member Sofie Svobodová.
 
   Rule: Every member has a financial account that is created together with the member
 
@@ -28,6 +28,18 @@ Feature: Member financial accounts
     Scenario: Member cannot record any transaction on their own account
       Given a deposit of 100 CZK is recorded on the account of Eva
       When Eva opens Finance from the main menu
+      Then Eva is not offered to record or reverse transactions
+
+  Rule: A legal guardian views their minor child's account but cannot change it
+
+    Scenario: Guardian opens their child's account from the child's detail page
+      When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
+      Then the account of member "Sofie Svobodová" is shown with the owner's name and registration number
+      And Eva sees the balance and the transaction history
+
+    Scenario: Guardian cannot record any transaction on the child's account
+      Given a deposit of 100 CZK is recorded on the account of member "Sofie Svobodová"
+      When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
       Then Eva is not offered to record or reverse transactions
 
   Rule: A finance manager records a deposit that increases the balance
