@@ -31,6 +31,11 @@ class MembersImpl implements Members {
     }
 
     @Override
+    public boolean exists(MemberId memberId) {
+        return memberRepository.findDateOfBirth(memberId).isPresent();
+    }
+
+    @Override
     public Map<MemberId, MemberDto> findByIds(Collection<MemberId> memberIds) {
         if (memberIds.isEmpty()) {
             return Map.of();

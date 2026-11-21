@@ -26,8 +26,9 @@ class AccountOwnerRelationshipSource implements RelationshipSource {
 
     @Override
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
-        return members.findById(MemberId.fromUserId(userId))
-                .map(member -> Map.of(Authority.FINANCE_VIEW, Set.of(TargetRef.member(userId.uuid()))))
-                .orElseGet(Map::of);
+        if (!members.exists(MemberId.fromUserId(userId))) {
+            return Map.of();
+        }
+        return Map.of(Authority.FINANCE_VIEW, Set.of(TargetRef.member(userId.uuid())));
     }
 }

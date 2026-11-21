@@ -305,7 +305,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.1 owner gets 200 with history link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldReturn200ForOwner() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -385,7 +385,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("returns 200 without deposit affordance for plain member viewing own account")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldReturnAccountWithoutDepositAffordanceForRegularMember() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -426,7 +426,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("returns 200 without charge affordance for plain member viewing own account")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldReturnAccountWithoutChargeAffordanceForRegularMember() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -443,7 +443,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.5 returns paginated transactions for owner")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldReturnPaginatedTransactionsForOwner() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -470,7 +470,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.6 supports sorting by occurredAt")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldSupportSortingByOccurredAt() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "occurredAt")), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -483,7 +483,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.6 supports sorting by amount desc")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldSupportSortingByAmountDesc() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "amount")), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -496,7 +496,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.7 supports filtering by date range")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldSupportFilteringByDateRange() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -510,7 +510,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.7 supports filtering by type")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldSupportFilteringByType() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -525,7 +525,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("each transaction item in listing has a self link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldIncludeSelfLinkOnEachTransactionItem() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -569,7 +569,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("plain member (no FINANCE:MANAGE) does not see reverse affordance")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldNotIncludeReverseAffordanceForRegularMember() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -583,7 +583,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("reversed transaction in listing has reversedBy link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldIncludeReversedByLinkOnReversedTransactionInListing() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction tx = buildDepositTransaction();
@@ -614,7 +614,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("reversal transaction in listing has reverses link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldIncludeReversesLinkOnReversalTransactionInListing() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
@@ -650,7 +650,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.9 reversed transaction has reversedBy link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldExposeReversedByLinkOnReversedTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
@@ -666,7 +666,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.10 reversal transaction has reverses link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void shouldExposeReversesLinkOnReversalTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
@@ -903,7 +903,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("root contains account link for a user with a member profile")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
+        @AsAccountOwner
         void rootContainsAccountLinkForMember() throws Exception {
             when(membersPort.findByIds(any())).thenReturn(Map.of(new MemberId(MEMBER_UUID),
                     MemberDtoBuilder.builder().memberId(MEMBER_UUID).firstName("Jan").lastName("Novák").build()));

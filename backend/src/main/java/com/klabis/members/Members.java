@@ -11,6 +11,8 @@ public interface Members {
 
     Optional<MemberDto> findById(MemberId memberId);
 
+    boolean exists(MemberId memberId);
+
     Map<MemberId, MemberDto> findByIds(Collection<MemberId> memberIds);
 
     Map<MemberId, MemberAccommodationDto> findAccommodationDataByIds(Collection<MemberId> memberIds);

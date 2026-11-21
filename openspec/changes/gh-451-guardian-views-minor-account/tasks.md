@@ -39,9 +39,9 @@ Each task follows Red-Green-Refactor: write the failing test first, implement, r
 
 ## 6. Integration checks
 
-- [ ] 6.1 Run the full backend suite (with `SKIP_OPTIMIZATIONS` and `--rerun-tasks`) and the full frontend suite including `npm run build`. Verify: all green except the known pre-existing failures.
+- [x] 6.1 Run the full backend suite (with `SKIP_OPTIMIZATIONS` and `--rerun-tasks`) and the full frontend suite including `npm run build`. Verify: all green except the known pre-existing failures.
 - [ ] 6.2 QA the guardian, EXT guardian and finance manager flows in the browser on `http://localhost:3000` against the delta specs. Verify: every delta scenario is checked off in the QA report.
-- [ ] 6.3 Code review of all backend and frontend changes before committing; fix the findings. Verify: the review reports no open important findings.
+- [x] 6.3 Code review of all backend and frontend changes before committing; fix the findings. Verify: the review reports no open important findings.
 - [ ] 6.4 Add the label `BackendCompleted` to GitHub issue #451 once the backend work is merged. Verify: the label is visible on the issue.
 
 ## Workflow follow-up
