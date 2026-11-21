@@ -464,4 +464,53 @@ describe('Layout - Responsive Sidebar', () => {
             expect(bottomNav).toHaveTextContent('Členové')
         })
     })
+
+    describe('Finance entry for a user without member profile', () => {
+        beforeEach(() => {
+            useAuth.mockReturnValue({
+                isAuthenticated: true,
+                login: vi.fn(),
+                isLoading: false,
+                getUser: vi.fn().mockReturnValue({
+                    id: 'guardian-1',
+                    firstName: 'Petra',
+                    lastName: 'Rodicova',
+                    userName: 'guardian',
+                }),
+                logout: vi.fn(),
+            })
+        })
+
+        it.each([
+            ['desktop sidebar', true],
+            ['mobile bottom navigation', false],
+        ])('links Finance to the child account from the root account link in %s', async (_name, isLarge) => {
+            mockMatchMedia(isLarge)
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                    {rel: 'account', href: '/members/child-uuid-1/account', label: 'Finance', section: 'main'},
+                ])
+            )
+
+            renderLayout()
+
+            const link = await screen.findByRole('link', {name: /finance/i})
+            expect(link).toHaveAttribute('href', '/members/child-uuid-1/account')
+        })
+
+        it('shows no Finance entry when the root has no account link', async () => {
+            mockMatchMedia(true)
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([
+                    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+                ])
+            )
+
+            renderLayout()
+
+            await screen.findByText('Akce')
+            expect(screen.queryByRole('link', {name: /finance/i})).not.toBeInTheDocument()
+        })
+    })
 })

@@ -33,9 +33,9 @@ Each task follows Red-Green-Refactor: write the failing test first, implement, r
 
 ## 5. "Finance" menu entry for non-member guardians (design D7; spec: application-navigation)
 
-- [ ] 5.1 Change `AccountRootLinkProcessor` to link to the first viewable account (own account for a member, first child for a non-member guardian) and add no link without a viewable account. Tests: member → own account; EXT guardian of two minors → first minor by last name and first name; EXT guardian whose only child left the group → no link. Verify: tests pass.
-- [ ] 5.2 Frontend: confirm the "Finance" menu entry follows the root `account` link for an EXT guardian (no member profile); add a navigation test if the menu assumes a member profile. Verify: vitest passes.
-- [ ] 5.3 E2E: scenario "non-member guardian opens Finance and sees their child's account with the switcher". Verify: `npm run test:e2e` passes the new scenario.
+- [x] 5.1 Change `AccountRootLinkProcessor` to link to the first viewable account (own account for a member, first child for a non-member guardian) and add no link without a viewable account. Tests: member → own account; EXT guardian of two minors → first minor by last name and first name; EXT guardian whose only child left the group → no link. Verify: tests pass.
+- [x] 5.2 Frontend: confirm the "Finance" menu entry follows the root `account` link for an EXT guardian (no member profile); add a navigation test if the menu assumes a member profile. Verify: vitest passes.
+- [x] 5.3 E2E: scenario "non-member guardian opens Finance and sees their child's account with the switcher". Verify: `npm run test:e2e` passes the new scenario.
 
 ## 6. Integration checks
 

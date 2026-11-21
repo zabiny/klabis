@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import type {BrowserContext} from '@playwright/test';
 
-export type Role = 'admin' | 'member' | 'tester';
+export type Role = 'admin' | 'member' | 'tester' | 'guardian';
 
 export const roles: Record<Role, { user: string; password: string }> = {
     admin: {
@@ -15,6 +15,10 @@ export const roles: Record<Role, { user: string; password: string }> = {
     tester: {
         user: process.env.E2E_TESTER_USER ?? 'ZBM9501',
         password: process.env.E2E_TESTER_PASSWORD ?? 'password',
+    },
+    guardian: {
+        user: process.env.E2E_GUARDIAN_USER ?? 'EXT0001',
+        password: process.env.E2E_GUARDIAN_PASSWORD ?? 'password',
     },
 };
 

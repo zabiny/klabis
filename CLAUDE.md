@@ -38,6 +38,7 @@ These example users exist only when the `example-data` profile is active (defaul
 - Admin user (have all permissions) - registration number `ZBM9000`, password `password`
 - Club member user (have standard permissions as club member) - reigstration number `ZBM9500`, password `password`
 - Club member user for E2E scenarios that suspend/modify the user (standard permissions, no group memberships) - registration number `ZBM9501`, password `password`
+- Non-member legal guardian of two minors (Adam and Klára Dlouhý/á) - login `EXT0001`, password `password`
 
 The always-bootstrapped `admin` username user (password from `KLABIS_ADMIN_PASSWORD`, `admin123` via runLocalEnvironment.sh) is available in every profile.
 

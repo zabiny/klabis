@@ -905,6 +905,9 @@ class MemberAccountControllerTest {
         @DisplayName("root contains account link for a user with a member profile")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
         void rootContainsAccountLinkForMember() throws Exception {
+            when(membersPort.findByIds(any())).thenReturn(Map.of(new MemberId(MEMBER_UUID),
+                    MemberDtoBuilder.builder().memberId(MEMBER_UUID).firstName("Jan").lastName("Novák").build()));
+
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.account.href")

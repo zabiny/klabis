@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import com.klabis.common.users.UsernameAlreadyInUseException;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -352,6 +354,47 @@ class UserServiceImplTest {
             // Then - should not call save
             verify(userRepository).findById(testUserId);
             verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("activateWithPassword() method")
+    class ActivateWithPasswordMethod {
+
+        @Test
+        @DisplayName("should activate pending user with given password hash")
+        void shouldActivatePendingUser() {
+            User pending = User.reconstruct(testUserId, testUsername, "placeholder", AccountStatus.PENDING_ACTIVATION);
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(pending));
+            when(userRepository.save(any(User.class))).thenReturn(pending);
+
+            testedSubject.activateWithPassword(testUserId, "newHash");
+
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
+            assertThat(userCaptor.getValue().getPasswordHash()).isEqualTo("newHash");
+        }
+
+        @Test
+        @DisplayName("should fail for unknown user")
+        void shouldFailForUnknownUser() {
+            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> testedSubject.activateWithPassword(testUserId, "newHash"))
+                    .isInstanceOf(UserNotFoundException.class);
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = AccountStatus.class, names = "PENDING_ACTIVATION", mode = EnumSource.Mode.EXCLUDE)
+        @DisplayName("should reject user that is not pending activation")
+        void shouldRejectNonPendingUser(AccountStatus status) {
+            User user = User.reconstruct(testUserId, testUsername, testPasswordHash, status);
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> testedSubject.activateWithPassword(testUserId, "newHash"))
+                    .isInstanceOf(IllegalStateException.class);
+            verify(userRepository, never()).save(any(User.class));
         }
     }
 

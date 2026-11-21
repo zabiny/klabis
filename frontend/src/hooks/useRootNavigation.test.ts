@@ -277,3 +277,29 @@ describe('useEventSettingsTabs', () => {
         expect(result.current.data).toEqual([]);
     });
 });
+
+describe('useRootNavigation — account link', () => {
+    it('maps the root account link to a Finance main item pointing at the linked account', async () => {
+        mockFetchWithResponse({_links: {events: {href: '/api/events'}, account: {href: '/api/members/child-uuid-1/account'}}});
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.find(i => i.rel === 'account')).toMatchObject({
+            href: '/members/child-uuid-1/account',
+            label: 'Finance',
+            section: 'main',
+        });
+    });
+
+    it('has no Finance item when the root has no account link', async () => {
+        mockFetchWithResponse(buildHalResponse(['events']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.some(i => i.rel === 'account')).toBe(false);
+    });
+});
