@@ -111,7 +111,7 @@ class GuardianAccountAccessIntegrationTest {
 
     private Member registerMinor(String firstName, List<GuardianInput> guardians) {
         return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of(firstName, "Nezletilý", LocalDate.now().minusYears(10), Nationality.of("CZ"),
+                PersonalInformation.of(firstName, "Nezletilý", LocalDate.now().minusYears(10), Nationality.of("SK"),
                         Gender.MALE),
                 Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, guardians, null));
