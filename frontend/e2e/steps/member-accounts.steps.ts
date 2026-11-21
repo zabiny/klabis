@@ -4,7 +4,7 @@ import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
 import {chargeFrom, depositTo, findMemberIdByName, findMemberPath, REGISTERED_FIRST_NAME, splitName} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
-import {action, click, czechAmount, heading, openFromMenu} from '../support/ui';
+import {action, click, czechAmount, heading, openFromMenu, select} from '../support/ui';
 import {memberRow, openDetailAs, openMemberDetail, searchMembers} from './members.steps';
 
 const {Given, When, Then} = createBdd(test);
@@ -66,6 +66,18 @@ When('{persona} opens Finance from the main menu', async ({page, actAs}, persona
     await expect(heading(page, 'Historie transakcí')).toBeVisible();
 });
 
+Given('{persona} has Finance open', async ({page, actAs}, persona: Persona) => {
+    await actAs(persona);
+    await openFromMenu(page, 'Finance');
+    await expect(heading(page, 'Historie transakcí')).toBeVisible();
+});
+
+When('{persona} switches to the account of {string}', async ({page, currentRole}, persona: Persona, fullName: string) => {
+    expectActing(currentRole, persona);
+    await select(page, 'Zobrazit účet', fullName);
+    await expect(page.getByTestId('account-owner-header')).toContainText(fullName);
+});
+
 When('{persona} opens the account of the minor member {string} from the minor\'s detail', async ({page, actAs}, persona: Persona, fullName: string) => {
     const {firstName, lastName} = splitName(fullName);
     await openDetailAs(page, actAs, persona, lastName, firstName);
@@ -118,6 +130,17 @@ Then('{persona} is not offered to record or reverse transactions', async ({page,
     await expect(page.getByRole('row').filter({hasText: 'Vklad'}).first()).toBeVisible();
     await expect(page.getByRole('button', {name: 'Stornovat'})).toHaveCount(0);
     await expect(page.getByRole('button', {name: 'Provést finanční transakci'})).toHaveCount(0);
+});
+
+Then('the account switcher offers the accounts of {string} and {string}', async ({page}, first: string, second: string) => {
+    const options = page.getByTestId('account-switcher').getByRole('option');
+    await expect(options).toHaveText([first, second]);
+});
+
+Then('{persona} sees no account switcher', async ({page, currentRole}, persona: Persona) => {
+    expectActing(currentRole, persona);
+    await expect(balanceCard(page)).toBeVisible();
+    await expect(page.getByTestId('account-switcher')).toHaveCount(0);
 });
 
 Then('{persona} sees the balance and the transaction history', async ({page, currentRole}, persona: Persona) => {

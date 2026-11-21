@@ -751,6 +751,7 @@ export const labels = {
 
     finance: {
         memberAccountPageTitle: 'Finance',
+        accountSwitcher: 'Zobrazit účet',
         balance: 'Zůstatek',
         transactionHistory: 'Historie transakcí',
         noTransactions: 'Žádné transakce',

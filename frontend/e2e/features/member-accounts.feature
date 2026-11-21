@@ -42,6 +42,22 @@ Feature: Member financial accounts
       When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
       Then Eva is not offered to record or reverse transactions
 
+  Rule: The Finance page lets a user switch between the accounts they may view
+
+    Scenario: Member guardian opens Finance and sees their own account first
+      When Eva opens Finance from the main menu
+      Then the account switcher offers the accounts of "Eva Svobodová" and "Sofie Svobodová"
+
+    Scenario: Member guardian switches to a child's account
+      Given Eva has Finance open
+      When Eva switches to the account of "Sofie Svobodová"
+      Then the account of member "Sofie Svobodová" is shown with the owner's name and registration number
+      And Eva sees the balance and the transaction history
+
+    Scenario: Member without minor children sees no account switcher
+      When Tomáš opens Finance from the main menu
+      Then Tomáš sees no account switcher
+
   Rule: A finance manager records a deposit that increases the balance
 
     Scenario: Finance manager records a deposit

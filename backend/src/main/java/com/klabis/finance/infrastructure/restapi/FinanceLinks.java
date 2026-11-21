@@ -14,7 +14,11 @@ final class FinanceLinks {
     }
 
     static Optional<Link> accountLink(UUID memberId) {
+        return accountLink(memberId, "account");
+    }
+
+    static Optional<Link> accountLink(UUID memberId, String rel) {
         return klabisLinkTo(methodOn(FinanceApi.class).getAccount(memberId, null))
-                .map(link -> link.withRel("account"));
+                .map(link -> link.withRel(rel));
     }
 }

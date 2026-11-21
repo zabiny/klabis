@@ -156,6 +156,12 @@ record AccountTransaction(MemberId memberId, TransactionWithReversal transaction
 @MvcComponent
 class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAccountResource, MemberId> {
 
+    private final ViewableAccounts viewableAccounts;
+
+    MemberAccountPostprocessor(ViewableAccounts viewableAccounts) {
+        this.viewableAccounts = viewableAccounts;
+    }
+
     @Override
     public void process(EntityModel<MemberAccountResource> model, MemberId memberId) {
         klabisLinkTo(methodOn(FinanceApi.class).getAccount(memberId.uuid(), null))
@@ -172,6 +178,14 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
                 .ifPresent(link -> model.add(link.withRel("accountOwner")));
+
+        addViewableAccountLinks(model, memberId);
+    }
+
+    private void addViewableAccountLinks(EntityModel<MemberAccountResource> model, MemberId displayed) {
+        viewableAccounts.switcherFor(displayed.uuid()).forEach(account ->
+                FinanceLinks.accountLink(account.memberId(), "viewableAccount")
+                        .ifPresent(link -> model.add(link.withTitle(account.ownerName()))));
     }
 }
 

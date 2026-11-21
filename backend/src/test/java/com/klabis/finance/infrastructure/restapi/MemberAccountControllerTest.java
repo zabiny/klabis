@@ -38,11 +38,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -183,6 +186,108 @@ class MemberAccountControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(validChargeBody()))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/members/{id}/account - viewableAccount links")
+    class ViewableAccountLinks {
+
+        private static final String PARENT = "aaaaaaaa-0000-0000-0000-000000000001";
+        private static final String CHILD_NOVAK = "aaaaaaaa-0000-0000-0000-000000000002";
+        private static final String CHILD_ADAMEC = "aaaaaaaa-0000-0000-0000-000000000003";
+        private static final String STRANGER = "bbbbbbbb-0000-0000-0000-000000000001";
+
+        record Named(String id, String firstName, String lastName) {
+        }
+
+        private void stubMembers(Named... members) {
+            Map<MemberId, MemberDto> byId = new LinkedHashMap<>();
+            for (Named m : members) {
+                UUID id = UUID.fromString(m.id());
+                byId.put(new MemberId(id), MemberDtoBuilder.builder()
+                        .memberId(id).firstName(m.firstName()).lastName(m.lastName()).build());
+            }
+            when(membersPort.findByIds(any())).thenReturn(byId);
+            when(transactionQueryPort.findBalance(any())).thenReturn(Money.zero());
+        }
+
+        private ResultActions getAccount(String id) throws Exception {
+            return mockMvc.perform(get("/api/members/{id}/account", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+        }
+
+        @Test
+        @DisplayName("member guardian of two minors sees own account first, then minors by name, on own account")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListOwnThenChildrenOnOwnAccount() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(PARENT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(3)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Petr Zeman"))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].href").value(containsString("/api/members/" + PARENT + "/account")))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].title").value("Bob Adamec"))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].href").value(containsString("/api/members/" + CHILD_ADAMEC + "/account")))
+                    .andExpect(jsonPath("$._links.viewableAccount[2].title").value("Anna Novak"));
+        }
+
+        @Test
+        @DisplayName("same links are present on a child's account")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListSameLinksOnChildAccount() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(3)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Petr Zeman"));
+        }
+
+        @Test
+        @DisplayName("finance manager on a stranger's account gets no switcher")
+        @WithKlabisMockUser(memberId = PARENT, authorities = {Authority.FINANCE_MANAGE}, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK}))
+        void shouldHaveNoLinksOnStrangerAccount() throws Exception {
+            stubMembers(new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_NOVAK, "Anna", "Novak"));
+
+            getAccount(STRANGER)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("member without minors gets no switcher")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = PARENT))
+        void shouldHaveNoLinksForSingleAccount() throws Exception {
+            stubMembers(new Named(PARENT, "Petr", "Zeman"));
+
+            getAccount(PARENT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-member guardian of one minor gets no switcher")
+        @WithKlabisMockUser(userId = "cccccccc-0000-0000-0000-000000000001", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = CHILD_NOVAK))
+        void shouldHaveNoLinksForExtGuardianOfOneMinor() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-member guardian of two minors gets both ordered by name")
+        @WithKlabisMockUser(userId = "cccccccc-0000-0000-0000-000000000001", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListChildrenByNameForExtGuardian() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(2)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Bob Adamec"))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].title").value("Anna Novak"));
         }
     }
 

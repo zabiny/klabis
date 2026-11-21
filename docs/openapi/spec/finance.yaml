@@ -60,6 +60,9 @@ paths:
             accountOwner:
               operation: getMember
               description: The member this account belongs to
+            viewableAccount:
+              operation: getAccount
+              description: Accounts of other members the caller may switch to - their own account and minors under legal guardianship. Repeated links, each with href and title (owner name). Present only when the displayed account is one of them and there are at least two.
           x-hal-templates:
             deposit:
               operation: deposit
