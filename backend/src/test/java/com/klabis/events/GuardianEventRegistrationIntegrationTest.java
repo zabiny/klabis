@@ -2,28 +2,18 @@ package com.klabis.events;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.CleanupTestData;
-import com.klabis.common.authorization.AuthorizationSnapshotLoader;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.RegistrationDeadlines;
-import com.klabis.members.application.RegistrationPort;
-import com.klabis.members.domain.Address;
-import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.Country;
-import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.Gender;
+import com.klabis.members.AccessTestFixture;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.Nationality;
-import com.klabis.members.domain.PersonalInformation;
-import com.klabis.members.domain.PhoneNumber;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -57,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestApplicationConfiguration.class)
+@Import({TestApplicationConfiguration.class, AccessTestFixture.class})
 @CleanupTestData
 @DisplayName("Legal guardian manages their minor's event registration - full-stack integration")
 class GuardianEventRegistrationIntegrationTest {
@@ -65,7 +55,7 @@ class GuardianEventRegistrationIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
     @Autowired
-    private RegistrationPort registrationPort;
+    private AccessTestFixture fixture;
     @Autowired
     private LegalGuardianPort legalGuardianPort;
     @Autowired
@@ -74,32 +64,22 @@ class GuardianEventRegistrationIntegrationTest {
     private EventManagementPort eventManagement;
     @Autowired
     private EventRegistrationPort eventRegistration;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private AuthorizationSnapshotLoader snapshotLoader;
 
     private Member memberGuardian;
-    private UserId extGuardian;
-    private String extLoginName;
+    private AccessTestFixture.ExtGuardian extGuardian;
     private Member minor;
     private Member unrelatedMinor;
     private Event event;
 
     @BeforeEach
     void setUp() {
-        memberGuardian = registerAdult();
-        var extProfile = legalGuardianPort.register(
-                new LegalGuardianPort.NewLegalGuardian("Eva", "Externí", unique("ext") + "@example.com",
-                        "+420777111444"));
-        extGuardian = extProfile.guardian().getId();
-        extLoginName = extProfile.loginName();
-        userService.activateWithPassword(extGuardian, "{noop}password");
-        minor = registerMinor("Dítě", List.of(GuardianInput.existing(memberGuardian.getId().toUserId()),
-                GuardianInput.existing(extGuardian)));
-        unrelatedMinor = registerMinor("Cizí", List.of(GuardianInput.created(
-                new LegalGuardianPort.NewLegalGuardian("Jiný", "Zástupce", unique("other") + "@example.com",
-                        "+420777111333"))));
+        memberGuardian = fixture.adult("Jan");
+        extGuardian = fixture.extGuardian("ext");
+        minor = fixture.minor("Dítě", GuardianInput.existing(memberGuardian.getId().toUserId()),
+                GuardianInput.existing(extGuardian.id()));
+        unrelatedMinor = fixture.minor("Cizí", GuardianInput.created(
+                new LegalGuardianPort.NewLegalGuardian("Jiný", "Zástupce", AccessTestFixture.unique("other") + "@example.com",
+                        "+420777111333")));
 
         event = eventManagement.createEvent(EventCreateEventBuilder.builder()
                 .name("Guardian event")
@@ -116,46 +96,18 @@ class GuardianEventRegistrationIntegrationTest {
                 EventRegisterCommandBuilder.builder().siCardNumber("111111").build());
     }
 
-    private static String unique(String prefix) {
-        return prefix + "." + UUID.randomUUID();
-    }
-
-    private Member registerAdult() {
-        return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Jan", "Rodič", LocalDate.of(1990, 1, 1), Nationality.of("CZ"), Gender.MALE),
-                Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")),
-                EmailAddress.of(unique("jan") + "@example.com"),
-                PhoneNumber.of("+420777111555"),
-                BirthNumber.of("900101/1234"),
-                null, null, List.of(), null));
-    }
-
-    private Member registerMinor(String firstName, List<GuardianInput> guardians) {
-        return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of(firstName, "Nezletilý", LocalDate.now().minusYears(10), Nationality.of("SK"),
-                        Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
-                null, null, null, null, null, guardians, null));
-    }
-
     private RequestPostProcessor memberGuardianToken() {
-        UserId userId = memberGuardian.getId().toUserId();
-        return tokenOf(JwtParams.jwtTokenParams("ZBM8001", userId).withMemberId(memberGuardian.getId()), userId);
+        return fixture.tokenFor(memberGuardian);
     }
 
     private RequestPostProcessor extGuardianToken() {
-        return tokenOf(JwtParams.jwtTokenParams(extLoginName, extGuardian), extGuardian);
+        return fixture.tokenFor(extGuardian);
     }
 
     private RequestPostProcessor registrationsManagerToken() {
         return authentication(KlabisAuthenticationFactory.createAuthenticationToken(
                 JwtParams.jwtTokenParams("MANAGER", new UserId(UUID.randomUUID()))
                         .withAuthorities(Authority.EVENTS_READ, Authority.EVENTS_REGISTER_MEMBER)));
-    }
-
-    private RequestPostProcessor tokenOf(JwtParams params, UserId userId) {
-        return authentication(
-                KlabisAuthenticationFactory.createAuthenticationToken(params, snapshotLoader.loadFor(userId)));
     }
 
     private static final String REGISTRATION_URL = "/api/events/{eventId}/registrations/{memberId}";

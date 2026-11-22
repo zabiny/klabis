@@ -2,20 +2,8 @@ package com.klabis.members;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.authorization.AuthorizationSnapshotLoader;
-import com.klabis.common.security.JwtParams;
-import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
-import com.klabis.members.application.RegistrationPort;
-import com.klabis.members.domain.Address;
-import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.Country;
-import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.Nationality;
-import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,11 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestApplicationConfiguration.class)
+@Import({TestApplicationConfiguration.class, AccessTestFixture.class})
 @CleanupTestData
 @DisplayName("Access to own profile through self-grants - full-stack integration")
 class SelfAccessIntegrationTest {
@@ -56,73 +39,41 @@ class SelfAccessIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
     @Autowired
-    private RegistrationPort registrationPort;
-    @Autowired
-    private LegalGuardianPort legalGuardianPort;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private AuthorizationSnapshotLoader snapshotLoader;
+    private AccessTestFixture fixture;
 
-    private UserId extGuardian;
-    private String extLoginName;
-    private UserId otherExtGuardian;
+    private AccessTestFixture.ExtGuardian extGuardian;
+    private AccessTestFixture.ExtGuardian otherExtGuardian;
     private Member minor;
 
     @BeforeEach
     void setUp() {
-        extGuardian = registerExtGuardian("ext");
-        extLoginName = loginNameOf(extGuardian);
-        otherExtGuardian = registerExtGuardian("other");
-        minor = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", "Nezletilý", LocalDate.now().minusYears(10), Nationality.of("CZ"),
-                        Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
-                null, null, BirthNumber.of("900101/1234"), null, null,
-                List.of(LegalGuardianPort.GuardianInput.existing(extGuardian)), null));
-    }
-
-    private UserId registerExtGuardian(String prefix) {
-        var profile = legalGuardianPort.register(new LegalGuardianPort.NewLegalGuardian("Eva", "Externí",
-                prefix + "." + UUID.randomUUID() + "@example.com", "+420777111444"));
-        userService.activateWithPassword(profile.guardian().getId(), "{noop}password");
-        return profile.guardian().getId();
-    }
-
-    private String loginNameOf(UserId guardian) {
-        return legalGuardianPort.get(guardian).loginName();
-    }
-
-    private RequestPostProcessor tokenOf(JwtParams params, UserId userId) {
-        return authentication(
-                KlabisAuthenticationFactory.createAuthenticationToken(params, snapshotLoader.loadFor(userId)));
+        extGuardian = fixture.extGuardian("ext");
+        otherExtGuardian = fixture.extGuardian("other");
+        minor = fixture.minor("Dítě", LegalGuardianPort.GuardianInput.existing(extGuardian.id()));
     }
 
     private RequestPostProcessor extGuardianToken() {
-        return tokenOf(JwtParams.jwtTokenParams(extLoginName, extGuardian)
-                .withAuthorities(Authority.MEMBERS_READ), extGuardian);
+        return fixture.tokenFor(extGuardian, Authority.MEMBERS_READ);
     }
 
     private RequestPostProcessor minorToken() {
-        UserId userId = minor.getId().toUserId();
-        return tokenOf(JwtParams.jwtTokenParams("ZBM9999", userId).withMemberId(minor.getId())
-                .withAuthorities(Authority.MEMBERS_READ), userId);
+        return fixture.tokenFor(minor, Authority.MEMBERS_READ);
     }
 
     @Test
     @DisplayName("non-member guardian reads their own guardian profile")
     void guardianReadsOwnProfile() throws Exception {
-        mockMvc.perform(get("/api/legal-guardians/{id}", extGuardian.uuid()).with(extGuardianToken())
+        mockMvc.perform(get("/api/legal-guardians/{id}", extGuardian.id().uuid()).with(extGuardianToken())
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(extGuardian.uuid().toString()))
+                .andExpect(jsonPath("$.userId").value(extGuardian.id().uuid().toString()))
                 .andExpect(jsonPath("$._templates.updateLegalGuardian").exists());
     }
 
     @Test
     @DisplayName("non-member guardian updates their own guardian profile")
     void guardianUpdatesOwnProfile() throws Exception {
-        mockMvc.perform(patch("/api/legal-guardians/{id}", extGuardian.uuid()).with(extGuardianToken())
+        mockMvc.perform(patch("/api/legal-guardians/{id}", extGuardian.id().uuid()).with(extGuardianToken())
                         .contentType("application/json").content(PROFILE_UPDATE))
                 .andExpect(status().isNoContent());
     }
@@ -130,10 +81,10 @@ class SelfAccessIntegrationTest {
     @Test
     @DisplayName("non-member guardian is denied another guardian's profile")
     void guardianDeniedOtherProfile() throws Exception {
-        mockMvc.perform(get("/api/legal-guardians/{id}", otherExtGuardian.uuid()).with(extGuardianToken())
+        mockMvc.perform(get("/api/legal-guardians/{id}", otherExtGuardian.id().uuid()).with(extGuardianToken())
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(patch("/api/legal-guardians/{id}", otherExtGuardian.uuid()).with(extGuardianToken())
+        mockMvc.perform(patch("/api/legal-guardians/{id}", otherExtGuardian.id().uuid()).with(extGuardianToken())
                         .contentType("application/json").content(PROFILE_UPDATE))
                 .andExpect(status().isForbidden());
     }
@@ -141,7 +92,7 @@ class SelfAccessIntegrationTest {
     @Test
     @DisplayName("non-member guardian patching a member under their own user id gets 404")
     void guardianPatchingOwnIdAsMemberGetsNotFound() throws Exception {
-        mockMvc.perform(patch("/api/members/{id}", extGuardian.uuid()).with(extGuardianToken())
+        mockMvc.perform(patch("/api/members/{id}", extGuardian.id().uuid()).with(extGuardianToken())
                         .contentType("application/json").content("{\"phone\": \"+420777123456\"}"))
                 .andExpect(status().isNotFound());
     }

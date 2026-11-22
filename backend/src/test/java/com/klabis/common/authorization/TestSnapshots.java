@@ -17,30 +17,23 @@ public final class TestSnapshots {
     }
 
     /**
-     * What SelfRelationshipSource grants an adult member over themself; slice and cross-module tests have no
-     * relationship sources.
+     * Mirrors the decision of SelfRelationshipSource (slice and cross-module tests have no relationship sources);
+     * SelfRelationshipSourceTest guards the two against drifting apart.
      */
-    public static Map<Authority, Set<TargetRef>> selfGrantsOf(UUID memberId) {
-        Map<Authority, Set<TargetRef>> grants = new EnumMap<>(minorSelfGrantsOf(memberId));
-        grants.putAll(nonMemberSelfGrantsOf(memberId));
-        grants.put(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, Set.of(TargetRef.member(memberId)));
-        return grants;
-    }
-
-    /** A minor member may view their profile and register for events, but neither edit it nor choose a fee type. */
-    public static Map<Authority, Set<TargetRef>> minorSelfGrantsOf(UUID memberId) {
+    public static Map<Authority, Set<TargetRef>> selfGrants(UUID id, boolean isMember, boolean isMinor) {
+        Set<TargetRef> self = Set.of(TargetRef.member(id));
         Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
-        grants.put(Authority.MEMBERS_VIEW_PROFILE, Set.of(TargetRef.member(memberId)));
-        grants.put(Authority.EVENTS_REGISTER_MEMBER, Set.of(TargetRef.member(memberId)));
+        grants.put(Authority.MEMBERS_VIEW_PROFILE, self);
+        if (isMember) {
+            grants.put(Authority.EVENTS_REGISTER_MEMBER, self);
+        }
+        if (!isMinor) {
+            grants.put(Authority.MEMBERS_EDIT_PROFILE, self);
+        }
+        if (isMember && !isMinor) {
+            grants.put(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, self);
+        }
         return grants;
-    }
-
-    /** A user without a member profile (a legal guardian) holds only the profile permissions over themself. */
-    public static Map<Authority, Set<TargetRef>> nonMemberSelfGrantsOf(UUID userId) {
-        Set<TargetRef> self = Set.of(TargetRef.member(userId));
-        return Map.of(
-                Authority.MEMBERS_VIEW_PROFILE, self,
-                Authority.MEMBERS_EDIT_PROFILE, self);
     }
 
     public static AuthorizationSnapshot of(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {

@@ -31,7 +31,7 @@ record InvocationRules(List<Authority> authorities, Map<TargetType, TargetParame
             if (targetId == null) {
                 continue;
             }
-            if (targets.putIfAbsent(targetId.value(), new TargetParameter(index, targetId.value())) != null) {
+            if (targets.putIfAbsent(targetId.value(), new TargetParameter(index)) != null) {
                 throw new IllegalStateException("%s identifies more than one %s target with @TargetId"
                         .formatted(method, targetId.value()));
             }

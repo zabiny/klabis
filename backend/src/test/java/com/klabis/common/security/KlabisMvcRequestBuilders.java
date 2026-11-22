@@ -5,8 +5,6 @@ import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.users.Authority;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,9 +17,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 public class KlabisMvcRequestBuilders {
 
     public static RequestPostProcessor klabisMemberWithSelfGrants(UUID memberId, Authority... authorities) {
-        Set<Authority> overAll = EnumSet.noneOf(Authority.class);
-        overAll.addAll(Arrays.asList(authorities));
-        AuthorizationSnapshot snapshot = TestSnapshots.of(overAll, TestSnapshots.selfGrantsOf(memberId));
+        AuthorizationSnapshot snapshot = TestSnapshots.of(Set.of(authorities),
+                TestSnapshots.selfGrants(memberId, true, false));
         return authentication(KlabisAuthenticationFactory.createAuthenticationToken(
                 JwtParams.member(memberId).withAuthorities(authorities), snapshot));
     }

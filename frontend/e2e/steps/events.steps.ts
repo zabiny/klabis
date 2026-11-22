@@ -2,10 +2,9 @@ import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
 import {localIsoDate} from '../support/dates';
 import {createDraftEvent, createOpenEvent, registerForEvent, registerMemberForEvent} from '../support/eventsApi';
-import {test, type ApiClient} from '../support/fixtures';
-import type {Role} from '../support/roles';
+import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
-import {findMemberIdByName, splitName} from '../support/membersApi';
+import {findMemberHrefByName, findMemberIdByName, splitName} from '../support/membersApi';
 import {assignLevel, firstPublishedLevelName, withdrawChoice} from '../support/membershipFeesApi';
 import {personas, type Persona} from '../support/personas';
 import {openEvent, openEventList} from '../support/eventsPages';
@@ -20,13 +19,10 @@ const registrationRow = (page: Page, firstName: string, lastName: string) =>
 
 type RegistrationOwner = {firstName: string; lastName: string};
 
-const identityOf = (apiAs: (role: Role) => ApiClient, persona: Persona): Promise<RegistrationOwner> => memberIdentity(apiAs(personas[persona]));
-
 const openRegistration = async (page: Page, name: string, owner: RegistrationOwner) => {
     await openEvent(page, name);
     const row = registrationRow(page, owner.firstName, owner.lastName);
-    await expect(row).toBeVisible();
-    await expect(action(row, 'Upravit přihlášku').first(), `the row of ${owner.firstName} ${owner.lastName} offers the edit action`).toBeVisible();
+    await expect(row, `the registration of ${owner.firstName} ${owner.lastName} is listed`).toBeVisible();
     await action(row, 'Upravit přihlášku').first().click();
 };
 
@@ -61,7 +57,7 @@ Given('minor {string} is registered for event {name} in category {string}', asyn
     const id = await findMemberIdByName(admin, firstName, lastName);
     await assignLevel(admin, {id}, feeState, await firstPublishedLevelName(admin, feeState));
     await registerMemberForEvent(admin, name, id, category);
-    await withdrawChoice(apiAs('guardian'), id);
+    await withdrawChoice(apiAs('guardian'), await findMemberHrefByName(admin, firstName, lastName));
 });
 
 // Earlier campaign scenarios leave the member sanctioned, which blocks new registrations. An emergency assignment in the
@@ -125,12 +121,12 @@ const confirmUnregistering = async (page: Page) => {
 
 When('{persona} unregisters from event {name}', async ({page, actAs, apiAs}, persona: Persona, name: string) => {
     await actAs(persona);
-    await openRegistration(page, name, await identityOf(apiAs, persona));
+    await openRegistration(page, name, await memberIdentity(apiAs(personas[persona])));
     await confirmUnregistering(page);
 });
 
 When('{persona} unregisters {persona} from event {name}', async ({page, actAs, apiAs}, manager: Persona, member: Persona, name: string) => {
-    const owner = await identityOf(apiAs, member);
+    const owner = await memberIdentity(apiAs(personas[member]));
     await actAs(manager);
     await openRegistration(page, name, owner);
     await confirmUnregistering(page);
@@ -149,7 +145,7 @@ Then('event {name} is cancelled because of {string}', async ({page}, name: strin
 });
 
 Then('{persona} is registered for event {name} in category {string}', async ({page, actAs, apiAs}, persona: Persona, name: string, category: string) => {
-    const owner = await identityOf(apiAs, persona);
+    const owner = await memberIdentity(apiAs(personas[persona]));
     await actAs(persona);
     await expectRegisteredIn(page, name, owner, category);
 });
@@ -177,7 +173,7 @@ Then('{persona} remains registered for event {name}', async ({page, actAs, apiAs
 });
 
 Then('{persona}\'s registration for event {name} is cancelled', async ({page, actAs, apiAs}, persona: Persona, name: string) => {
-    const owner = await identityOf(apiAs, persona);
+    const owner = await memberIdentity(apiAs(personas[persona]));
     await actAs(persona);
     await expectRegistrationCancelled(page, name, owner);
 });

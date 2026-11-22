@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
@@ -48,7 +49,7 @@ class MemberFeeHistoryLinkProcessorTest {
 
     @Test
     @DisplayName("adds feeHistory when the caller views their own profile")
-    @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
+    @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MEMBER)
     void addsFeeHistoryOnOwnProfile() throws Exception {
         mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())

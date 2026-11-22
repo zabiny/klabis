@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.users.Authority;
@@ -312,7 +313,7 @@ class MembershipFeesErrorTypesTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = ADMIN_ID, selfGrants = true)
+        @WithKlabisMockUser(memberId = ADMIN_ID, selfGrants = SelfGrants.MEMBER)
         @DisplayName("voting is closed")
         void votingClosed() throws Exception {
             doThrow(new VotingClosedException()).when(lifecyclePort).chooseFeeLevel(any());

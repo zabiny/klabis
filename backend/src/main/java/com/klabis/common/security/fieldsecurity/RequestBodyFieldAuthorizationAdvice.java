@@ -115,6 +115,6 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         if (name.isEmpty()) {
             name = handlerMethod.getParameters()[targetParameter.index()].getName();
         }
-        return evaluator.toTarget(targetParameter.type(), uriVariables.get(name));
+        return evaluator.toTarget(kind, uriVariables.get(name));
     }
 }

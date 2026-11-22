@@ -89,17 +89,23 @@ export const createTrainingGroup = async (admin: ApiClient, name: string, traine
 export const memberBalance = async (admin: ApiClient, memberPath: string) =>
     (await memberAccount(admin, memberPath)).balance as number;
 
-const findMember = async (admin: ApiClient, lastName: string, firstName?: string) => {
+const findListedMember = async (admin: ApiClient, lastName: string, firstName?: string) => {
     const members = await admin.follow(await admin.root(), 'members');
     const found = embeddedList(await admin.get(`${members._links!.self.href.replace(/\{[^}]*\}/g, "")}?q=${encodeURIComponent(lastName)}`))
         .find((member) => member.lastName === lastName && (!firstName || member.firstName === firstName));
     if (!found) throw new Error(`membersApi: member "${firstName ? `${firstName} ` : ''}${lastName}" not found`);
-    return found.id as string;
+    return found;
 };
+
+const findMember = async (admin: ApiClient, lastName: string, firstName?: string) =>
+    (await findListedMember(admin, lastName, firstName)).id as string;
 
 export const findMemberPath = async (admin: ApiClient, lastName: string) => `/api/members/${await findMember(admin, lastName)}`;
 
 export const findMemberIdByName = (admin: ApiClient, firstName: string, lastName: string) => findMember(admin, lastName, firstName);
+
+export const findMemberHrefByName = async (admin: ApiClient, firstName: string, lastName: string) =>
+    (await findListedMember(admin, lastName, firstName))._links.self.href as string;
 
 export const splitName = (fullName: string) => {
     const [firstName, ...rest] = fullName.split(' ');

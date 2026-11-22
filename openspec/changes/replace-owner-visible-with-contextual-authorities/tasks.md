@@ -157,12 +157,12 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 8. Integration checks
 
-- [ ] 8.1 Run the full backend suite (with modulith optimizations skipped) through the test-runner. Verify: all tests pass.
-- [ ] 8.2 Run frontend vitest and `npm run build`. Verify: both pass.
-- [ ] 8.3 Run the full E2E suite against the local environment. Verify: all scenarios pass, or report failures known on `main`.
-- [ ] 8.4 Manual QA in the browser:
+- [x] 8.1 Run the full backend suite (with modulith optimizations skipped) through the test-runner. Verify: all tests pass.
+- [x] 8.2 Run frontend vitest and `npm run build`. Verify: both pass.
+- [x] 8.3 Run the full E2E suite against the local environment. Verify: all scenarios pass, or report failures known on `main`. (Full run: 127/129; the 2 failures in member-accounts.feature — finance deposit/charge dialog — passed when rerun in isolation, flaky and unrelated.)
+- [x] 8.4 Manual QA in the browser:
   - minor (own profile: data visible, no edit, no fee button),
   - `EXT0001` (child's registration edit and unregister; child's fee choice; own guardian profile edit),
   - event coordinator (registration detail read-only, accommodation list).
 
-  Verify: every check behaves as the delta specs say.
+  Verify: every check behaves as the delta specs say. (EXT0001, coordinator and adult member checks passed; the minor check is not manually testable — no minor has a login in example data — and is covered by integration tests.)

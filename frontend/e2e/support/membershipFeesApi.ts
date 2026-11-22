@@ -88,8 +88,12 @@ const publishedLevels = async (admin: ApiClient, feeState: FeeScenarioState) => 
     return embeddedList(await admin.follow(campaign, 'levels')) as Linked[];
 };
 
-const feeSummary = async (member: ApiClient, memberId?: string) =>
-    member.get(`${memberId ? `/api/members/${memberId}` : (await member.root())._links!.profile.href}/fee-summary`) as Promise<Linked>;
+// The history offers the summary only while the member can choose a type, so no link means there is nothing to choose or withdraw.
+const feeSummary = async (member: ApiClient, memberHref?: string): Promise<Linked | undefined> => {
+    const memberResource = memberHref ? await member.get(memberHref) : await member.follow(await member.root(), 'profile');
+    const history = await member.follow(memberResource, 'feeHistory');
+    return history._links?.feeSummary ? member.follow(history, 'feeSummary') : undefined;
+};
 
 const offeredTypes = async (member: ApiClient, summary: Linked) => {
     const property = (summary._templates!.chooseFeeType as any).properties // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -99,13 +103,14 @@ const offeredTypes = async (member: ApiClient, summary: Linked) => {
 
 export const chooseLevel = async (member: ApiClient, typeName: string) => {
     const summary = await feeSummary(member);
+    if (!summary) throw new Error('membershipFeesApi: the fee summary is not linked, so no fee type can be chosen (is a campaign active?)');
     const offered = (await offeredTypes(member, summary)).find((candidate) => candidate.name === typeName)!;
     await member.post(member.templateTarget(summary, 'chooseFeeType'), {membershipFeeGroupId: offered.id});
 };
 
-export const withdrawChoice = async (member: ApiClient, memberId?: string) => {
-    const summary = await feeSummary(member, memberId);
-    if (summary._templates?.removeChoice) {
+export const withdrawChoice = async (member: ApiClient, memberHref?: string) => {
+    const summary = await feeSummary(member, memberHref);
+    if (summary?._templates?.removeChoice) {
         await member.delete(member.templateTarget(summary, 'removeChoice'));
     }
 };

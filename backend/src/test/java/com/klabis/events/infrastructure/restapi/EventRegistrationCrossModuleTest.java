@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.CrossModuleTest;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
@@ -77,7 +78,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("Complete registration flow: register → view own → list all → unregister")
-    @WithKlabisMockUser(selfGrants = true, memberId = "11111111-1111-1111-1111-111111111111", authorities = {})
+    @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = "11111111-1111-1111-1111-111111111111", authorities = {})
     void shouldCompleteRegistrationFlow() throws Exception {
         // Given: Create an PUBLISHED event
         String publishedEventId = createPublishedEvent("Registration flow test event", LocalDate.now().plusDays(10));
@@ -247,7 +248,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("Unregistration should fail on or after event date")
-    @WithKlabisMockUser(selfGrants = true, memberId = TEST_MEMBER_ID_STRING)
+    @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = TEST_MEMBER_ID_STRING)
     @Sql(scripts = "/sql/test-past-event-with-registration.sql",
          executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldFailUnregistrationOnOrAfterEventDate() throws Exception {
@@ -471,7 +472,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("5.5 Editing registration after deadline returns 400 and leaves registration unchanged")
-    @WithKlabisMockUser(selfGrants = true, memberId = TEST_MEMBER_ID_STRING)
+    @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = TEST_MEMBER_ID_STRING)
     @Sql(scripts = "/sql/test-past-deadline-event-with-registration.sql",
          executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldReturn400WhenEditingRegistrationAfterDeadline() throws Exception {

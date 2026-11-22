@@ -1187,6 +1187,29 @@ describe('validateSpec — authorities held over specific targets', () => {
         expect(errors[0].message).toContain('x-klabis-target-id: EVENT (found 2)');
     });
 
+    it('rejects two parameters of the same kind even when the authority is {ALL}-only', () => {
+        const errors = validate(docWithOperation(
+            {'x-klabis-authority': 'MEMBERS_MANAGE'},
+            [idParam({'x-klabis-target-id': 'MEMBER'}), idParam({name: 'other', 'x-klabis-target-id': 'MEMBER'})],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('x-klabis-target-id: MEMBER (found 2)');
+    });
+
+    it('cites only the authorities of the kind each error is about', () => {
+        const errors = validate(docWithOperation(
+            {'x-klabis-authority': ['EVENTS_REGISTER_MEMBER', 'EVENTS_REGISTRATIONS_OVERVIEW']},
+            [],
+        ));
+        expect(errors).toHaveLength(2);
+        const member = errors.find((e) => e.message.includes('x-klabis-target-id: MEMBER'));
+        const event = errors.find((e) => e.message.includes('x-klabis-target-id: EVENT'));
+        expect(member.message).toContain('EVENTS_REGISTER_MEMBER');
+        expect(member.message).not.toContain('EVENTS_REGISTRATIONS_OVERVIEW');
+        expect(event.message).toContain('EVENTS_REGISTRATIONS_OVERVIEW');
+        expect(event.message).not.toContain('EVENTS_REGISTER_MEMBER');
+    });
+
     it('does not require a target parameter for an {ALL}-only authority', () => {
         expect(validate(docWithOperation({'x-klabis-authority': 'MEMBERS_MANAGE'}, [idParam()]))).toEqual([]);
     });
@@ -1225,6 +1248,21 @@ describe('validateSpec — response schema target for SPECIFIC authorities', () 
         }));
         expect(errors).toHaveLength(1);
         expect(errors[0].message).toContain('needs a property marked x-klabis-target-id: MEMBER');
+    });
+
+    it('reports one error per schema and kind however many fields are guarded', () => {
+        const errors = validate(docWith({
+            Thing: {
+                type: 'object',
+                properties: {
+                    note: {type: 'string', 'x-klabis-authority': 'MEMBERS_EDIT_PROFILE'},
+                    other: {type: 'string', 'x-klabis-authority': ['MEMBERS_EDIT_PROFILE', 'EVENTS_REGISTER_MEMBER']},
+                },
+            },
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('/components/schemas/Thing');
+        expect(errors[0].message).toContain('"MEMBERS_EDIT_PROFILE", "EVENTS_REGISTER_MEMBER"');
     });
 
     it('accepts it once the schema names a target property', () => {

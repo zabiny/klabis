@@ -3,26 +3,14 @@ package com.klabis.membershipfees;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.authorization.AuthorizationSnapshotLoader;
-import com.klabis.common.security.JwtParams;
-import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.finance.domain.Money;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.members.MemberId;
-import com.klabis.members.application.RegistrationPort;
-import com.klabis.members.domain.Address;
-import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.Country;
-import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.Gender;
+import com.klabis.members.AccessTestFixture;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.Nationality;
-import com.klabis.members.domain.PersonalInformation;
-import com.klabis.members.domain.PhoneNumber;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -49,7 +37,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestApplicationConfiguration.class)
+@Import({TestApplicationConfiguration.class, AccessTestFixture.class})
 @CleanupTestData
 @DisplayName("Fee type choice through MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE — full-stack integration")
 class MemberFeeSelfAccessIntegrationTest {
@@ -71,15 +58,13 @@ class MemberFeeSelfAccessIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
     @Autowired
-    private RegistrationPort registrationPort;
+    private AccessTestFixture fixture;
     @Autowired
     private MembershipFeeTypeManagementPort typeManagementPort;
     @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
     @Autowired
     private FeeYearLifecyclePort feeYearLifecyclePort;
-    @Autowired
-    private AuthorizationSnapshotLoader snapshotLoader;
     @Autowired
     private FreeGroupManagementPort freeGroupPort;
     @Autowired
@@ -102,53 +87,25 @@ class MemberFeeSelfAccessIntegrationTest {
         }
         groupId = campaignManagementPort.listGroupsForYear(YEAR).getFirst().getId().value().toString();
 
-        adult = registerAdult("Jan");
-        guardianOfMinor = registerAdult("Eva");
-        groupOwner = registerAdult("Petr");
-        groupMember = registerAdult("Karel");
-        minor = registerMinor(guardianOfMinor);
-    }
-
-    private Member registerAdult(String first) {
-        return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of(first, "Novák", LocalDate.of(1985, 5, 5), Nationality.of("CZ"), Gender.FEMALE),
-                Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")),
-                EmailAddress.of(first.toLowerCase() + "." + UUID.randomUUID() + "@example.com"),
-                PhoneNumber.of("+420777111222"),
-                BirthNumber.of("855505/1234"),
-                null, null, List.of(), null));
-    }
-
-    private Member registerMinor(Member guardian) {
-        return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), Nationality.of("CZ"),
-                        Gender.FEMALE),
-                Address.of("Dětská 1", "Praha", "11000", Country.of("CZ")),
-                null, null, BirthNumber.of("900101/1234"), null, null,
-                List.of(LegalGuardianPort.GuardianInput.existing(guardian.getId().toUserId())), null));
+        adult = fixture.adult("Jan");
+        guardianOfMinor = fixture.adult("Eva");
+        groupOwner = fixture.adult("Petr");
+        groupMember = fixture.adult("Karel");
+        minor = fixture.minor("Sofie", LegalGuardianPort.GuardianInput.existing(guardianOfMinor.getId().toUserId()));
     }
 
     private Member registerMinorOfNonMemberGuardian() {
-        return registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Tereza", "Dlouhá", LocalDate.now().minusYears(10), Nationality.of("CZ"),
-                        Gender.FEMALE),
-                Address.of("Dětská 2", "Praha", "11000", Country.of("CZ")),
-                null, null, BirthNumber.of("900101/1234"), null, null,
-                List.of(LegalGuardianPort.GuardianInput.created(new LegalGuardianPort.NewLegalGuardian("Ivana",
-                        "Dlouhá", "ivana." + UUID.randomUUID() + "@example.com", "+420604100100"))), null));
+        return fixture.minor("Tereza", LegalGuardianPort.GuardianInput.created(
+                new LegalGuardianPort.NewLegalGuardian("Ivana", "Dlouhá",
+                        AccessTestFixture.unique("ivana") + "@example.com", "+420604100100")));
     }
 
     private RequestPostProcessor loggedInAsNonMember(UserId userId) {
-        JwtParams params = JwtParams.jwtTokenParams("guardian", userId);
-        return authentication(KlabisAuthenticationFactory.createAuthenticationToken(params,
-                snapshotLoader.loadFor(userId)));
+        return fixture.tokenForNonMember(userId);
     }
 
     private RequestPostProcessor loggedInAs(Member member) {
-        UserId userId = member.getId().toUserId();
-        JwtParams params = JwtParams.jwtTokenParams("user", userId).withMemberId(member.getId());
-        return authentication(KlabisAuthenticationFactory.createAuthenticationToken(params,
-                snapshotLoader.loadFor(userId)));
+        return fixture.tokenFor(member);
     }
 
     // leaves the request untouched so the user from @WithKlabisMockUser applies

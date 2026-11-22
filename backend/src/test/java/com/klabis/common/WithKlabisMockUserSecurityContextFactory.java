@@ -45,8 +45,6 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
     }
 
     private static AuthorizationSnapshot fixedSnapshot(WithKlabisMockUser withUser) {
-        Assert.isTrue(!withUser.minor() || (withUser.selfGrants() && StringUtils.isNotBlank(withUser.memberId())),
-                "minor = true requires selfGrants = true and memberId");
         Map<Authority, Set<TargetRef>> overTargets = new EnumMap<>(Authority.class);
         for (TargetGrant grant : withUser.targetGrants()) {
             Set<TargetRef> targets = overTargets.computeIfAbsent(grant.authority(), a -> new HashSet<>());
@@ -54,20 +52,24 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
                 targets.add(new TargetRef(grant.type(), UUID.fromString(id)));
             }
         }
-        if (withUser.selfGrants()) {
-            selfGrants(withUser)
-                    .forEach((authority, targets) -> overTargets.computeIfAbsent(authority, a -> new HashSet<>()).addAll(targets));
-        }
+        selfGrants(withUser)
+                .forEach((authority, targets) -> overTargets.computeIfAbsent(authority, a -> new HashSet<>()).addAll(targets));
         return TestSnapshots.of(Set.of(withUser.authorities()), overTargets);
     }
 
     private static Map<Authority, Set<TargetRef>> selfGrants(WithKlabisMockUser withUser) {
-        if (StringUtils.isBlank(withUser.memberId())) {
-            Assert.hasText(withUser.userId(), "selfGrants = true requires memberId or userId");
-            return TestSnapshots.nonMemberSelfGrantsOf(UUID.fromString(withUser.userId()));
-        }
-        UUID memberId = UUID.fromString(withUser.memberId());
-        return withUser.minor() ? TestSnapshots.minorSelfGrantsOf(memberId) : TestSnapshots.selfGrantsOf(memberId);
+        return switch (withUser.selfGrants()) {
+            case NONE -> Map.of();
+            case NON_MEMBER -> {
+                Assert.hasText(withUser.userId(), "selfGrants = NON_MEMBER requires userId");
+                yield TestSnapshots.selfGrants(UUID.fromString(withUser.userId()), false, false);
+            }
+            case MEMBER, MINOR_MEMBER -> {
+                Assert.hasText(withUser.memberId(), "selfGrants = " + withUser.selfGrants() + " requires memberId");
+                yield TestSnapshots.selfGrants(UUID.fromString(withUser.memberId()), true,
+                        withUser.selfGrants() == SelfGrants.MINOR_MEMBER);
+            }
+        };
     }
 
     @Autowired(required = false)

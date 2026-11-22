@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
@@ -221,7 +222,7 @@ class GuardianEditsMinorApiTest {
     @Test
     @DisplayName("minor opens own detail: the birth number is visible (and audited) but a suspended member is not")
     @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = true, minor = true)
+            selfGrants = SelfGrants.MINOR_MEMBER)
     void minorViewsOwnDetail() throws Exception {
         givenMinor(CHILD_ID);
 
@@ -234,7 +235,7 @@ class GuardianEditsMinorApiTest {
     @Test
     @DisplayName("minor sees all their own data but gets no edit action")
     @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = true, minor = true)
+            selfGrants = SelfGrants.MINOR_MEMBER)
     void minorSeesOwnDataWithoutEditAction() throws Exception {
         givenMinor(CHILD_ID);
 
@@ -250,7 +251,7 @@ class GuardianEditsMinorApiTest {
     @Test
     @DisplayName("another member does not see the sensitive fields of a minor")
     @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = true)
+            selfGrants = SelfGrants.MEMBER)
     void otherMemberDoesNotSeeSensitiveFields() throws Exception {
         givenMinor(CHILD_ID);
 

@@ -77,7 +77,8 @@ public class AuthorizationEvaluator {
 
     /**
      * Whether the target is the authenticated user themself. Only members are identified by a target
-     * (a user's id is its member id).
+     * (a user's id is its member id). For presentation only (e.g. wording of a response); it must not decide
+     * authorization, as owner access is a self-grant of the relationship sources (see ADR-013).
      */
     public boolean isSelf(TargetRef target) {
         return target.type() == TargetType.MEMBER
@@ -246,7 +247,7 @@ public class AuthorizationEvaluator {
         if (parameter == null || arguments == null || parameter.index() >= arguments.length) {
             return null;
         }
-        return toTarget(parameter.type(), arguments[parameter.index()]);
+        return toTarget(kind, arguments[parameter.index()]);
     }
 
     private static List<TargetRef> targetsOfKinds(FieldRules rules, Function<TargetType, @Nullable TargetRef> targetOfKind) {

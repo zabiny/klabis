@@ -232,6 +232,7 @@ public class MemberController implements MembersApi {
         }
     }
 
+    private static final List<Authority> EDIT_VIEW_AUTHORITIES = List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE);
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
 
     private void validateSortFields(Sort sort) {
@@ -271,7 +272,7 @@ public class MemberController implements MembersApi {
     private MemberViewAccess viewAccessTo(MemberId memberId) {
         TargetRef member = TargetRef.member(memberId.uuid());
         return new MemberViewAccess(
-                authorizationEvaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE), member),
+                authorizationEvaluator.isAllowed(EDIT_VIEW_AUTHORITIES, member),
                 authorizationEvaluator.canReadField(MemberDetailsResponse.class, "birthNumber", member));
     }
 

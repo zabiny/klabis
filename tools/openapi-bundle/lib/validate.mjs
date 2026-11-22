@@ -127,42 +127,38 @@ function targetIdParameters(document, operation) {
 }
 
 /**
- * What an operation's `x-klabis-authority` demands of its parameters,
- * stated once per operation: an authority held over specific targets is evaluated against the
- * operation's target of the authority's own kind, which only a path parameter marked
- * `x-klabis-target-id` can name. An operation may identify one target per kind. Authorities held
- * over `{ALL}` only are target-agnostic and ask for nothing.
+ * What an operation's `x-klabis-authority` demands of its parameters, mirroring the runtime rule: an
+ * operation identifies at most one target per kind, and an authority held over specific targets is
+ * evaluated against the operation's target of the authority's own kind, which only a path parameter marked
+ * `x-klabis-target-id` can name. Authorities held over `{ALL}` only are target-agnostic and ask for nothing.
  */
 function operationTargetErrors(document, operation, path, authorities) {
-    const reasons = [];
-    const expectedKinds = new Set();
-
-    const names = authorityNames(operation['x-klabis-authority']) ?? [];
-    for (const name of names.filter((n) => authorities.get(n)?.grantForms.has('SPECIFIC'))) {
+    const reasonsByKind = new Map();
+    for (const name of authorityNames(operation['x-klabis-authority']) ?? []) {
+        if (!authorities.get(name)?.grantForms.has('SPECIFIC')) continue;
         const {targetType} = authorities.get(name);
-        expectedKinds.add(targetType);
-        reasons.push(`"${name}" may be held over specific ${targetType} targets`);
+        reasonsByKind.set(targetType, [...(reasonsByKind.get(targetType) ?? []),
+            `"${name}" may be held over specific ${targetType} targets`]);
     }
-    if (reasons.length === 0) return [];
 
     const countByKind = new Map();
     for (const param of targetIdParameters(document, operation)) {
         const kind = param['x-klabis-target-id'];
         countByKind.set(kind, (countByKind.get(kind) ?? 0) + 1);
     }
+
     const errorFor = (kind, found) => ({
         path,
-        message: `${reasons.join('; ')}, so the operation needs exactly one parameter marked `
-            + `x-klabis-target-id: ${kind} (found ${found})`,
+        message: `${(reasonsByKind.get(kind) ?? []).map((reason) => `${reason}, so `).join('')}the operation needs `
+            + `exactly one parameter marked x-klabis-target-id: ${kind} (found ${found})`,
     });
 
     const errors = [];
-    for (const kind of expectedKinds) {
-        const found = countByKind.get(kind) ?? 0;
-        if (found !== 1) errors.push(errorFor(kind, found));
-    }
     for (const [kind, found] of countByKind) {
-        if (found > 1 && !expectedKinds.has(kind) && errors.length === 0) errors.push(errorFor(kind, found));
+        if (found > 1) errors.push(errorFor(kind, found));
+    }
+    for (const kind of reasonsByKind.keys()) {
+        if (!countByKind.has(kind)) errors.push(errorFor(kind, 0));
     }
     return errors;
 }
@@ -349,16 +345,21 @@ function responseSchemaTargetErrors(document, authorities, requestSchemas) {
             .some((property) => typeof property?.['x-klabis-target-id'] === 'string');
         if (hasTarget) continue;
 
-        for (const [propertyName, property] of Object.entries(schema.properties)) {
+        const demanded = new Map();
+        for (const property of Object.values(schema.properties)) {
             for (const name of authorityNames(property?.['x-klabis-authority']) ?? []) {
                 const authority = authorities.get(name);
                 if (!authority?.grantForms.has('SPECIFIC')) continue;
-                errors.push({
-                    path: `/components/schemas/${schemaName}/properties/${propertyName}/x-klabis-authority`,
-                    message: `"${name}" may be held over specific ${authority.targetType} targets, so ${schemaName} `
-                        + `needs a property marked x-klabis-target-id: ${authority.targetType}`,
-                });
+                demanded.set(authority.targetType, [...(demanded.get(authority.targetType) ?? []), name]);
             }
+        }
+        for (const [targetType, names] of demanded) {
+            const guarding = [...new Set(names)].map((name) => `"${name}"`).join(', ');
+            errors.push({
+                path: `/components/schemas/${schemaName}`,
+                message: `${guarding} may be held over specific ${targetType} targets, so ${schemaName} `
+                    + `needs a property marked x-klabis-target-id: ${targetType}`,
+            });
         }
     }
     return errors;

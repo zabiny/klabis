@@ -33,8 +33,8 @@ class InvocationRulesTest {
         var rules = InvocationRules.of(method, Operations.class);
 
         assertThat(rules.targets()).containsOnlyKeys(TargetType.MEMBER, TargetType.EVENT);
-        assertThat(rules.targetOfKind(TargetType.MEMBER)).isEqualTo(new TargetParameter(0, TargetType.MEMBER));
-        assertThat(rules.targetOfKind(TargetType.EVENT)).isEqualTo(new TargetParameter(1, TargetType.EVENT));
+        assertThat(rules.targetOfKind(TargetType.MEMBER)).isEqualTo(new TargetParameter(0));
+        assertThat(rules.targetOfKind(TargetType.EVENT)).isEqualTo(new TargetParameter(1));
         assertThat(rules.targetOfKind(TargetType.GROUP)).isNull();
     }
 

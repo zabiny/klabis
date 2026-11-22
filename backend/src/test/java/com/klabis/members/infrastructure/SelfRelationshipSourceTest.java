@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure;
 
 import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -154,5 +155,30 @@ class SelfRelationshipSourceTest {
         when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
 
         assertThat(source().grantsOf(new UserId(id))).doesNotContainKey(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+    }
+
+    @Test
+    @DisplayName("grants an adult member exactly what TestSnapshots emulates")
+    void shouldMatchTestSnapshotsForAdultMember() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
+
+        assertThat(source().grantsOf(userId)).isEqualTo(TestSnapshots.selfGrants(userId.uuid(), true, false));
+    }
+
+    @Test
+    @DisplayName("grants a minor member exactly what TestSnapshots emulates")
+    void shouldMatchTestSnapshotsForMinorMember() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
+
+        assertThat(source().grantsOf(userId)).isEqualTo(TestSnapshots.selfGrants(userId.uuid(), true, true));
+    }
+
+    @Test
+    @DisplayName("grants a non-member exactly what TestSnapshots emulates")
+    void shouldMatchTestSnapshotsForNonMember() {
+        UUID id = UUID.randomUUID();
+        when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
+
+        assertThat(source().grantsOf(new UserId(id))).isEqualTo(TestSnapshots.selfGrants(id, false, false));
     }
 }

@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.restapi;
 import java.time.LocalDateTime;
 import com.klabis.common.TargetGrant;
 import com.klabis.common.authorization.TargetType;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
@@ -95,7 +96,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 201 Created with Location header and no body")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -111,7 +112,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("2.3 Location header after registration points to /{memberId} not /me")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturnLocationHeaderWithMemberIdNotMe() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -129,7 +130,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("member registers themself and Location points to their registration")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void memberRegistersThemselfAndLocationPointsToTheirRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -150,7 +151,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("plain member is denied registering another member")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void plainMemberIsDeniedRegisteringAnotherMember() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -188,7 +189,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("sanctioned member is still blocked")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void sanctionedMemberIsStillBlocked() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -209,7 +210,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 409 Conflict for duplicate registration")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -264,7 +265,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("passes wantsSharedTransport / wantsSharedAccommodation from the request into the command")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void passesSharedServiceChoicesIntoCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -287,7 +288,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("defaults both shared-service choices to false when the request omits them")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void defaultsSharedServiceChoicesToFalse() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -310,7 +311,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("passes trimmed notes from the request into the command")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void passesNotesIntoCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -333,7 +334,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("rejects a note longer than 255 characters with 400")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void rejectsOverLengthNote() throws Exception {
             String body = "{\"siCardNumber\":\"123456\",\"orisNote\":\"" + "a".repeat(256) + "\"}";
 
@@ -351,7 +352,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("accepts a note of exactly 255 characters")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void acceptsNoteAtMaxLength() throws Exception {
             String body = "{\"siCardNumber\":\"123456\",\"orisNote\":\"" + "a".repeat(255) + "\"}";
 
@@ -371,7 +372,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 204 No Content when service doesn't throw an exception")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldUnregisterMemberFromEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -408,7 +409,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 404 Not Found when service throws EventNotFoundException")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldRespond404WhenEventNotFoundException() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -583,7 +584,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("coordinator rows carry the registration link, other members' rows of a regular member do not")
-        @WithKlabisMockUser(selfGrants = true, memberId = REGULAR_MEMBER_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = REGULAR_MEMBER_ID)
         void regularMemberRowsOfOthersCarryNoRegistrationLink() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId ownId = new MemberId(UUID.fromString(REGULAR_MEMBER_ID));
@@ -739,7 +740,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST /registrations returns 400 when service throws BusinessRuleViolationException for expired deadline")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn400WhenRegistrationDeadlinePassed() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -759,7 +760,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("DELETE /registrations/{memberId} returns 400 when service throws BusinessRuleViolationException for expired deadline")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn400WhenUnregistrationDeadlinePassed() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -781,7 +782,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("4.1 acting user == memberId updates registration and returns 204")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldEditRegistrationAndReturn204WhenActingUserIsOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -837,7 +838,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("4.4 PUT with category not in event category list returns 400")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn400WhenCategoryIsNotInEventList() throws Exception {
             UUID eventId = UUID.randomUUID();
             String unknownCategoryId = UUID.randomUUID().toString();
@@ -901,7 +902,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("3.3 member without special authority can PUT own registration (owner flow preserved)")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldAllowOwnerToEditOwnRegistrationWithoutSpecialAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -924,7 +925,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("passes wantsSharedTransport / wantsSharedAccommodation from the request into the command")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void passesSharedServiceChoicesIntoEditCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -949,7 +950,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("passes trimmed notes from the request into the edit command")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void passesNotesIntoEditCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -972,7 +973,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("absent and blank notes reach the command as no note")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void absentAndBlankNotesMeanNoNote() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -1034,7 +1035,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("accepts a note of exactly 255 characters on edit")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void acceptsNoteAtMaxLengthOnEdit() throws Exception {
             String body = """
                     {"siCardNumber":"123456","internalNote":"%s"}
@@ -1228,7 +1229,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("sort=registrationTime as unauthorized member → silently falls back to default sort (registrationTime ASC)")
-        @WithKlabisMockUser(selfGrants = true, memberId = REGULAR_MEMBER_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = REGULAR_MEMBER_ID)
         void sortByRegistrationTimeAsUnauthorizedMemberFallsBackToDefault() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId member1Id = new MemberId(UUID.randomUUID());
@@ -1298,7 +1299,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("4.8 edit affordance present on acting member row and absent on other rows")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldExposeEditAffordanceOnlyOnActingMemberRow() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1440,7 +1441,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("1.1 owner gets 200 with SI card number and self link pointing to /{memberId}")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn200WithSiCardForOwner() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1568,7 +1569,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("owner reads both notes back")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void ownerReadsNotes() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1588,7 +1589,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("editRegistration template offers both note inputs limited to 255 characters")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void editTemplateOffersLimitedNoteInputs() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1660,7 +1661,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("RegistrationDto carries the member's stored shared-service choices when the event offers them")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void registrationDtoCarriesStoredChoicesWhenOffered() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1689,7 +1690,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("RegistrationDto omits a shared-service choice when the event does not offer it")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void registrationDtoOmitsChoiceWhenNotOffered() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1718,7 +1719,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("1.4 returns 404 when member is not registered for the event")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn404WhenMemberNotRegistered() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -1745,7 +1746,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("new=true for memberId == principal returns 200 with prefill from profile and registerForEvent affordance")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
         void shouldReturn200WithPrefillWhenPrincipalMatchesMemberId() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1784,7 +1785,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("new=true on event with closed registrations returns 200 without any registration affordance")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldNotOfferRegisterForEventWhenRegistrationsClosed() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1810,7 +1811,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("new=true for member blocked by sanction returns 200 without registerForEvent affordance")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldNotOfferRegisterForEventWhenMemberIsBlocked() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1863,7 +1864,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("new=false on non-existing registration still returns 404 (regression)")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn404WhenNewFalseAndNoRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -1884,7 +1885,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("new=true for member without siCardNumber in profile returns 200 with empty siCardNumber value (no error)")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldReturn200WithNullSiCardWhenMemberHasNoSiCard() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1984,7 +1985,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST without siCardNumber and with wantsToRentSi passes both to the service")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void registerPassesRentalWithoutSiNumber() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -2002,7 +2003,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST returns the domain's 'required' error for REQUIRED without number or rental")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void registerReturnsRequiredError() throws Exception {
             doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("SI card number is required") {})
                     .when(registrationServiceMock)
@@ -2018,7 +2019,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST rejects an SI card number outside 4-8 digits")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void registerRejectsMalformedSiNumber() throws Exception {
             mockMvc.perform(post("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                             .contentType("application/json")
@@ -2029,7 +2030,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("PUT without siCardNumber and with wantsToRentSi passes both to the service")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void editPassesRentalWithoutSiNumber() throws Exception {
             UUID eventId = UUID.randomUUID();
 
@@ -2048,7 +2049,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("PUT returns the domain's 'required' error when SI values are cleared")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void editReturnsRequiredError() throws Exception {
             doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("SI card number is required") {})
                     .when(registrationServiceMock)
@@ -2064,7 +2065,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("GET registration without SI number shows the rental request and both templates carry optional SI properties")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void getRegistrationWithoutSiNumber() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2092,7 +2093,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("registration defaults template carries both SI properties with siCardNumber not required")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
         void registerTemplateCarriesSiProperties() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2179,7 +2180,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("the registered member sees the mark on the detail of their registration")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void ownerSeesMarkOnDetail() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2196,7 +2197,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("an ordinary registration reads as not missing on the detail")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void ordinaryRegistrationIsNotMissing() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2234,7 +2235,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("owner gets the sync link for an enrolled registration without SYNC:MANAGE")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void ownerGetsSyncLink() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2271,7 +2272,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("registration that is not enrolled has no sync link")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void notEnrolledHasNoSyncLink() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2289,7 +2290,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("prefill response for a not-yet-existing registration has no sync link")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void prefillHasNoSyncLink() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2475,7 +2476,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("a member gets their own registration defaults with the register template")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldGetOwnDefaultsWithRegisterTemplate() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -2493,7 +2494,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("a member's own row in the registrations list hides registrationTime and missingInOris and does not change the sort")
-        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = SelfGrants.MEMBER, memberId = MEMBER_1_ID)
         void shouldHideEventWideFieldsOnOwnRowOfList() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId ownId = new MemberId(UUID.fromString(MEMBER_1_ID));
