@@ -77,7 +77,7 @@ const {dialogFixtures, resolveDialogQueryData} = vi.hoisted(() => {
             _templates: {
                 registerForEvent: {
                     method: 'POST',
-                    target: 'http://localhost:8443/api/events/1/registrations',
+                    target: 'http://localhost:8443/api/events/1/registrations/M001',
                     title: 'Přihlásit se',
                     properties: [
                         {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},

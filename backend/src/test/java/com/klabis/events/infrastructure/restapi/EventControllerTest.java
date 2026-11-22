@@ -1473,8 +1473,8 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should include POST affordance on registrations link for ACTIVE event with future date")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        @DisplayName("should include POST affordance targeting the caller's member path for ACTIVE event with future date")
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void shouldIncludeRegisterAffordanceForActiveEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -1490,7 +1490,30 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
-                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.target",
+                            org.hamcrest.Matchers.endsWith("/registrations/00000000-0000-0000-0000-000000000099")));
+        }
+
+        @Test
+        @DisplayName("should not include registerForEvent affordance for a user without a member profile")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTER_MEMBER})
+        void shouldNotIncludeRegisterAffordanceWithoutMemberProfile() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
         @Test
@@ -1587,7 +1610,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should not include unregisterFromEvent affordance when ACTIVE and user is NOT registered")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
         void shouldNotIncludeUnregisterAffordanceWhenUserIsNotRegistered() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
@@ -1903,7 +1926,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("registerForEvent template should include categoryId property with inline value/prompt options when event has categories")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void shouldIncludeCategoryPropertyWithInlineOptionsInRegisterForEventTemplate() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -1930,7 +1953,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("registerForEvent template should have no category options when event has no categories")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void shouldHaveNoCategoryOptionsWhenEventHasNoCategories() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -2638,7 +2661,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("list item includes registerForEvent affordance when registrations are open and user not registered")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
                 authorities = {Authority.EVENTS_READ})
         void shouldIncludeRegisterAffordanceOnListItemWhenRegistrationsOpen() throws Exception {
             Event event = EventTestDataBuilder.anEvent()
@@ -3056,7 +3079,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("Regular member (no EVENTS:MANAGE) sees only register/unregister — no management actions")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
                 authorities = {Authority.EVENTS_READ})
         void regularMemberSeesOnlyRegisterUnregisterNotManagementActions() throws Exception {
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -3666,7 +3689,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("non-blocked member receives registerForEvent affordance on event detail")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void nonBlockedMemberReceivesRegisterForEventAffordance() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
@@ -3687,9 +3710,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("user without member profile receives registerForEvent affordance on ACTIVE event with open registration")
+        @DisplayName("user without member profile receives no registerForEvent affordance on ACTIVE event with open registration")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
-        void userWithoutMemberProfileReceivesRegisterForEventAffordance() throws Exception {
+        void userWithoutMemberProfileReceivesNoRegisterForEventAffordance() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -3703,7 +3726,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
 
             // currentMemberId == null path must not call sanctionPort — no member to check
             verify(memberRegistrationSanctionPort, never()).isMemberBlocked(any());
@@ -3737,7 +3760,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("non-blocked member receives registerForEvent affordance on list items")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void nonBlockedMemberReceivesRegisterForEventAffordanceOnListItems() throws Exception {
             MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -3757,7 +3780,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("all events in list receive registerForEvent affordance when member is not blocked")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(selfGrants = true, username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void allEventsReceiveRegisterForEventAffordanceWhenMemberIsNotBlocked() throws Exception {
             MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
             Event event1 = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();

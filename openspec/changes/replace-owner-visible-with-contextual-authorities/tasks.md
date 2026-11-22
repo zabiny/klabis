@@ -53,20 +53,20 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 3. Registering names the member (design D5)
 
-- [ ] 3.1 RED: integration tests for `POST /api/events/{eventId}/registrations/{memberId}`, and confirm they fail:
+- [x] 3.1 RED: integration tests for `POST /api/events/{eventId}/registrations/{memberId}`, and confirm they fail:
   - a member registers themself and `Location` points to their registration,
   - a plain member is denied registering another member,
   - the registrations manager registers another member,
   - a sanctioned member is still blocked,
   - the event detail `registerForEvent` affordance targets the caller's member path and is absent for a user without a member profile.
-- [ ] 3.2 GREEN: move `registerForEvent` in `events.yaml` to the member path:
+- [x] 3.2 GREEN: move `registerForEvent` in `events.yaml` to the member path:
   - `x-klabis-authority: EVENTS_REGISTER_MEMBER`, with the member path parameter as MEMBER target,
   - remove `@ActingMember`,
   - build the affordances (event detail, summary, registration defaults) with the caller's member id,
   - use the path member for `Location`.
 
   Verify: the 3.1 tests and the events module tests pass.
-- [ ] 3.3 Frontend: regenerate types; adjust test fixtures holding the old register URL first (RED where a test asserts the URL), then confirm `EventRegistrationDialog` and `EventsPage` post to the template target. Verify:
+- [x] 3.3 Frontend: regenerate types; adjust test fixtures holding the old register URL first (RED where a test asserts the URL), then confirm `EventRegistrationDialog` and `EventsPage` post to the template target. Verify:
   - vitest passes,
   - `npm run build` passes,
   - the E2E "Member registers for an open event" scenario passes.

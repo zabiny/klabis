@@ -467,14 +467,12 @@ class EventAffordanceSupport {
             selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                     methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                     categoryOptions));
-        } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
+        } else if (currentMemberId != null && !sanctionPort.isMemberBlocked(currentMemberId)) {
             selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                    methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
+                    methodOn(EventRegistrationsApi.class).registerForEvent(eventId, currentMemberId.value(), null),
                     categoryOptions));
-            if (currentMemberId != null) {
-                klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
-                        .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
-            }
+            klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
+                    .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
         }
         return selfLink;
     }

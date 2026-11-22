@@ -38,7 +38,7 @@ const eventData = (overrides: Record<string, unknown> = {}) => ({
 
 const newRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     method: 'POST',
-    target: '/api/events/evt-1/registrations',
+    target: '/api/events/evt-1/registrations/M001',
     title: 'Přihlásit se',
     properties: [
         {name: 'siCardNumber', prompt: 'SI čip', type: 'text', regex: '\\d{6,7}'},
@@ -220,7 +220,7 @@ describe('EventRegistrationDialog', () => {
     it('renders category select and shared-service checkboxes only when template has the properties', async () => {
         const siOnlyTemplate = mockHalFormsTemplate({
             method: 'POST',
-            target: '/api/events/evt-1/registrations',
+            target: '/api/events/evt-1/registrations/M001',
             title: 'Přihlásit se',
             properties: [{name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true}],
         });
@@ -365,7 +365,7 @@ describe('EventRegistrationDialog', () => {
 
         const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
             (options as RequestInit | undefined)?.method === 'POST');
-        expect(postCall?.[0]).toBe('/api/events/evt-1/registrations');
+        expect(postCall?.[0]).toBe('/api/events/evt-1/registrations/M001');
         expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toEqual({
             siCardNumber: '1234567',
             categoryId: 'cat-1',
@@ -744,7 +744,7 @@ describe('EventRegistrationDialog', () => {
     describe('event without categories', () => {
         const templateWithCategory = (categoryProp: Record<string, unknown>) => mockHalFormsTemplate({
             method: 'POST',
-            target: '/api/events/evt-1/registrations',
+            target: '/api/events/evt-1/registrations/M001',
             title: 'Přihlásit se',
             properties: [
                 {name: 'siCardNumber', prompt: 'SI čip', type: 'text', regex: '\\d{6,7}'},

@@ -1196,57 +1196,6 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/events/{eventId}/registrations:
-    post:
-      operationId: registerForEvent
-      tags: [EventRegistrations]
-      summary: Register for an event
-      description: |
-        Register the authenticated member for an event with SI card number. Only allowed for ACTIVE
-        events. Returns Location header pointing to the registration.
-      security:
-        - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
-      # registration via @ActingMember — authorization is implicit in the caller's identity, there
-      # is no separate authority to check.
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
-      parameters:
-        - $ref: '#/components/parameters/RegEventIdParam'
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterEventRequest'
-      responses:
-        '201':
-          description: Successfully registered for event
-          headers:
-            Location:
-              description: URI of the created registration
-              schema:
-                type: string
-                format: uri
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          description: User already registered to this event
-          content:
-            application/problem+json:
-              schema:
-                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
     get:
       operationId: listRegistrations
       tags: [EventRegistrations]
@@ -1299,6 +1248,60 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/events/{eventId}/registrations/{memberId}:
+    post:
+      operationId: registerForEvent
+      tags: [EventRegistrations]
+      summary: Register a member for an event
+      description: |
+        Register the member named in the path for an event with SI card number. Requires
+        EVENTS:REGISTER_MEMBER over that member: held over everybody by the registrations manager,
+        and over specific members by the member themselves and by their legal guardian. Only
+        allowed for ACTIVE events. Returns Location header pointing to the registration.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTER_MEMBER
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - $ref: '#/components/parameters/RegMemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterEventRequest'
+      responses:
+        '201':
+          description: Successfully registered for event
+          headers:
+            Location:
+              description: URI of the created registration
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires EVENTS:REGISTER_MEMBER over the member
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: User already registered to this event
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
     put:
       operationId: editRegistration
       tags: [EventRegistrations]

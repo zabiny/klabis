@@ -19,7 +19,6 @@ import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.util.StringUtils;
-import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -35,7 +34,6 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -71,8 +69,8 @@ class EventRegistrationController implements EventRegistrationsApi {
     @Override
     public ResponseEntity<Void> registerForEvent(
             @PathVariable UUID eventId,
-            RegisterEventRequest request,
-            @ActingMember MemberId actingMember) {
+            @PathVariable UUID memberId,
+            RegisterEventRequest request) {
 
         Event.RegisterCommand command = new Event.RegisterCommand(
                 request.siCardNumber(),
@@ -82,10 +80,10 @@ class EventRegistrationController implements EventRegistrationsApi {
                 RegistrationNote.ofNullable(request.internalNote()),
                 RegistrationNote.ofNullable(request.orisNote()),
                 Boolean.TRUE.equals(request.wantsToRentSi()));
-        registrationService.registerMember(new EventId(eventId), actingMember, command);
+        registrationService.registerMember(new EventId(eventId), new MemberId(memberId), command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(EventRegistrationsApi.class).getRegistration(actingMember.value(),
+                linkTo(methodOn(EventRegistrationsApi.class).getRegistration(memberId,
                         eventId,
                         false)).toUri()
         ).build();
@@ -324,17 +322,14 @@ class RegistrationDetailsPostprocessor
 
     /**
      * The prefill response belongs to a registration that does not exist yet — the only action it
-     * can offer is registering. The sanction is checked against the target member.
-     * registerForEvent always registers the caller, so it is offered only on the caller's own defaults.
+     * can offer is registering. The sanction is checked against the target member; whether the
+     * caller may register that member is decided by the operation's declared rule.
      */
     private Link withRegisterAffordance(Link selfLink, Event event, MemberId memberId) {
-        MemberId callerMemberId = EventAffordanceSupport.resolveMemberId(
-                SecurityContextHolder.getContext().getAuthentication());
-        if (memberId.equals(callerMemberId)
-                && EventAffordanceSupport.shouldOfferRegistration(event)
+        if (EventAffordanceSupport.shouldOfferRegistration(event)
                 && !sanctionPort.isMemberBlocked(memberId)) {
             return selfLink.andAffordances(klabisAffordWithOptions(
-                    methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), null, null),
+                    methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), memberId.value(), null),
                     Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
         }
         return selfLink;

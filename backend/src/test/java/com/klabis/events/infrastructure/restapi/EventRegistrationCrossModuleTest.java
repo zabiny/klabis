@@ -86,7 +86,7 @@ class EventRegistrationCrossModuleTest {
         Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
         mockMvc.perform(
-                        post("/api/events/{id}/registrations", publishedEventId)
+                        post("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -155,7 +155,7 @@ class EventRegistrationCrossModuleTest {
         Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("876543").build();
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(registerCommand))
                         .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -163,7 +163,7 @@ class EventRegistrationCrossModuleTest {
 
         // When: Try to register again with same SI card
         mockMvc.perform(
-                        post("/api/events/{id}/registrations", eventId)
+                        post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -182,7 +182,7 @@ class EventRegistrationCrossModuleTest {
         Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("111122").build();
 
         mockMvc.perform(
-                        post("/api/events/{id}/registrations", eventId)
+                        post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -200,7 +200,7 @@ class EventRegistrationCrossModuleTest {
         // User 1 registration
         Event.RegisterCommand registerCommand1 = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(registerCommand1))
                         .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -209,10 +209,10 @@ class EventRegistrationCrossModuleTest {
         // User 2 registration
         Event.RegisterCommand registerCommand2 = EventRegisterCommandBuilder.builder().siCardNumber("789012").build();
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, UUID.fromString("22222222-2222-2222-2222-222222222222"))
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(registerCommand2))
-                        .with(klabisAuthentication(member(UUID.fromString("22222222-2222-2222-2222-222222222222"))))
+                        .with(klabisMemberWithSelfGrants(UUID.fromString("22222222-2222-2222-2222-222222222222")))
         ).andExpect(status().isCreated());
 
         // When: List all registrations (as User 1)
@@ -332,7 +332,7 @@ class EventRegistrationCrossModuleTest {
         String eventId = createPublishedEvent("SI card edit test", LocalDate.now().plusDays(10));
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456")))
                         .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -391,7 +391,7 @@ class EventRegistrationCrossModuleTest {
                 ? categories.get(0).get("id").asText() : categories.get(1).get("id").asText();
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "categoryId", m21Id)))
                         .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -422,7 +422,7 @@ class EventRegistrationCrossModuleTest {
         String eventId = createPublishedEvent("Forbidden edit test", LocalDate.now().plusDays(10));
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "111111")))
                         .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
@@ -445,7 +445,7 @@ class EventRegistrationCrossModuleTest {
         String eventId = createPublishedEvent("Second member edit test", LocalDate.now().plusDays(10));
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, member2Id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "777777")))
                         .with(klabisMemberWithSelfGrants(member2Id))
@@ -500,7 +500,7 @@ class EventRegistrationCrossModuleTest {
                 List.of(), Map.of("sharedTransportEnabled", true, "sharedAccommodationEnabled", true));
 
         mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
+                post("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456",
                                 "wantsSharedTransport", true, "wantsSharedAccommodation", true)))

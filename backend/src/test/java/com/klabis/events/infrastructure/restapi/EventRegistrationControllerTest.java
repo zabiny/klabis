@@ -13,6 +13,7 @@ import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.MemberRegistrationBlockedException;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberDto;
@@ -43,6 +44,7 @@ import static com.klabis.events.EventTestDataBuilder.aRegistration;
 import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -65,6 +67,7 @@ class EventRegistrationControllerTest {
     }
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
+    private static final String OTHER_MEMBER_ID = "22222222-2222-2222-2222-222222222222";
     private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
     private static final String COORDINATED_EVENT_ID = "00000000-0000-0000-0000-0000000000e1";
 
@@ -87,18 +90,18 @@ class EventRegistrationControllerTest {
     private MemberRegistrationSanctionPort memberRegistrationSanctionPortMock;
 
     @Nested
-    @DisplayName("POST /api/events/{id}/registrations")
+    @DisplayName("POST /api/events/{id}/registrations/{memberId}")
     class RegisterForEventTests {
 
         @Test
         @DisplayName("should return 201 Created with Location header and no body")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
@@ -108,13 +111,13 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("2.3 Location header after registration points to /{memberId} not /me")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void shouldReturnLocationHeaderWithMemberIdNotMe() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
@@ -125,8 +128,88 @@ class EventRegistrationControllerTest {
         }
 
         @Test
+        @DisplayName("member registers themself and Location points to their registration")
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        void memberRegistersThemselfAndLocationPointsToTheirRegistration() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location",
+                            containsString("/api/events/" + eventId + "/registrations/" + MEMBER_1_ID)));
+
+            verify(registrationServiceMock).registerMember(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))), any(Event.RegisterCommand.class));
+        }
+
+        @Test
+        @DisplayName("plain member is denied registering another member")
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        void plainMemberIsDeniedRegisteringAnotherMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, OTHER_MEMBER_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isForbidden());
+
+            verifyNoInteractions(registrationServiceMock);
+        }
+
+        @Test
+        @DisplayName("registrations manager registers another member")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_REGISTER_MEMBER})
+        void registrationsManagerRegistersAnotherMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, OTHER_MEMBER_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", containsString("/registrations/" + OTHER_MEMBER_ID)));
+
+            verify(registrationServiceMock).registerMember(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(OTHER_MEMBER_ID))), any(Event.RegisterCommand.class));
+        }
+
+        @Test
+        @DisplayName("sanctioned member is still blocked")
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
+        void sanctionedMemberIsStillBlocked() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
+
+            doThrow(new MemberRegistrationBlockedException(memberId))
+                    .when(registrationServiceMock)
+                    .registerMember(eq(new EventId(eventId)), eq(memberId), any(Event.RegisterCommand.class));
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
         @DisplayName("should return 409 Conflict for duplicate registration")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -136,7 +219,7 @@ class EventRegistrationControllerTest {
                     .registerMember(eq(new EventId(eventId)), any(MemberId.class), any(Event.RegisterCommand.class));
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
@@ -154,7 +237,7 @@ class EventRegistrationControllerTest {
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
@@ -170,18 +253,18 @@ class EventRegistrationControllerTest {
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.title").value("Authorization Failed"));
+                    .andExpect(jsonPath("$.title").value("Forbidden"));
         }
 
         @Test
         @DisplayName("passes wantsSharedTransport / wantsSharedAccommodation from the request into the command")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void passesSharedServiceChoicesIntoCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -189,7 +272,7 @@ class EventRegistrationControllerTest {
                     """;
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
@@ -204,7 +287,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("defaults both shared-service choices to false when the request omits them")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void defaultsSharedServiceChoicesToFalse() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -212,7 +295,7 @@ class EventRegistrationControllerTest {
                     """;
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
@@ -227,7 +310,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("passes trimmed notes from the request into the command")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void passesNotesIntoCommand() throws Exception {
             UUID eventId = UUID.randomUUID();
             String body = """
@@ -235,7 +318,7 @@ class EventRegistrationControllerTest {
                     """;
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
@@ -250,12 +333,12 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("rejects a note longer than 255 characters with 400")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void rejectsOverLengthNote() throws Exception {
             String body = "{\"siCardNumber\":\"123456\",\"orisNote\":\"" + "a".repeat(256) + "\"}";
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", UUID.randomUUID())
+                            post("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
@@ -268,12 +351,12 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("accepts a note of exactly 255 characters")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void acceptsNoteAtMaxLength() throws Exception {
             String body = "{\"siCardNumber\":\"123456\",\"orisNote\":\"" + "a".repeat(255) + "\"}";
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", UUID.randomUUID())
+                            post("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
@@ -656,7 +739,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST /registrations returns 400 when service throws BusinessRuleViolationException for expired deadline")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void shouldReturn400WhenRegistrationDeadlinePassed() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
@@ -666,7 +749,7 @@ class EventRegistrationControllerTest {
                     .registerMember(any(), any(), any());
 
             mockMvc.perform(
-                            post("/api/events/{eventId}/registrations", eventId)
+                            post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
@@ -1901,11 +1984,11 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST without siCardNumber and with wantsToRentSi passes both to the service")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void registerPassesRentalWithoutSiNumber() throws Exception {
             UUID eventId = UUID.randomUUID();
 
-            mockMvc.perform(post("/api/events/{eventId}/registrations", eventId)
+            mockMvc.perform(post("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("{\"wantsToRentSi\":true}"))
@@ -1919,13 +2002,13 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST returns the domain's 'required' error for REQUIRED without number or rental")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void registerReturnsRequiredError() throws Exception {
             doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("SI card number is required") {})
                     .when(registrationServiceMock)
                     .registerMember(any(), any(), any());
 
-            mockMvc.perform(post("/api/events/{eventId}/registrations", UUID.randomUUID())
+            mockMvc.perform(post("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("{}"))
@@ -1935,9 +2018,9 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("POST rejects an SI card number outside 4-8 digits")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @WithKlabisMockUser(selfGrants = true, memberId = MEMBER_1_ID)
         void registerRejectsMalformedSiNumber() throws Exception {
-            mockMvc.perform(post("/api/events/{eventId}/registrations", UUID.randomUUID())
+            mockMvc.perform(post("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("{\"siCardNumber\":\"123\"}"))
@@ -2369,7 +2452,8 @@ class EventRegistrationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.firstName").value("Jane"))
                     .andExpect(jsonPath("$.siCardNumber").value("777888"))
-                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+                    .andExpect(jsonPath("$._templates.registerForEvent.target",
+                            endsWith("/registrations/" + MEMBER_1_ID)));
         }
 
         @Test

@@ -424,7 +424,7 @@ class EventFilterCrossModuleTest {
 
     private void registerMember(String eventId, UUID memberId) throws Exception {
         mockMvc.perform(
-                        post("/api/events/{id}/registrations", eventId)
+                        post("/api/events/{id}/registrations/{memberId}", eventId, memberId)
                                 .contentType("application/json")
                                 .content("{\"siCardNumber\":\"123456\"}")
                                 .with(klabisAuthentication(member(memberId).withAuthorities(Authority.EVENTS_READ, Authority.EVENTS_REGISTER_MEMBER)))
