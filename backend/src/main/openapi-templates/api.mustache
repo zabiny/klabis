@@ -1,18 +1,13 @@
 {{!
   Klabis customization: a verbatim fork of the stock JavaSpring api.mustache with ONE addition —
-  the x-klabis-authority / x-klabis-owner-visible sections further down, which emit @HasAuthority
-  and @OwnerVisible on the generated interface method. Search this file for "Klabis" to find them.
+  the x-klabis-authority section further down, which emits @HasAuthority
+  on the generated interface method. Search this file for "Klabis" to find them.
 
-  Rationale: how an endpoint is authorized is declared in the spec. Both keys used to reach the
+  Rationale: how an endpoint is authorized is declared in the spec. The key used to reach the
   generator as x-operation-extra-annotation, rewritten during bundling, which put derived Java
   strings into the published klabis-full.json next to the spec keys they came from. Reading the
   keys here instead keeps the contract stated once, in the spec's own vocabulary — the same way
   pojo.mustache reads x-klabis-authority off a schema property.
-
-  @OwnerVisible needs @TargetId on a parameter to resolve ownership against; that half is emitted
-  by the forked pathParams.mustache. Neither template can see the other, so validate.mjs enforces
-  the pair — an operation declaring x-klabis-owner-visible must have exactly one parameter marked
-  x-klabis-target-id.
 
   The complete @HasAuthority({...}) text arrives pre-rendered in x-klabis-authority-annotation
   (KlabisSpringCodegen.renderAuthorityAnnotations), so this template prints it verbatim.
@@ -291,9 +286,6 @@ public interface {{classname}} {
     {{#vendorExtensions.x-klabis-authority-annotation}}
     {{{.}}}
     {{/vendorExtensions.x-klabis-authority-annotation}}
-    {{#vendorExtensions.x-klabis-owner-visible}}
-    @com.klabis.common.security.fieldsecurity.OwnerVisible
-    {{/vendorExtensions.x-klabis-owner-visible}}
     {{#vendorExtensions.x-sse}}
     @ResponseBody
     {{/vendorExtensions.x-sse}}

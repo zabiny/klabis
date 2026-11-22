@@ -36,9 +36,4 @@ final class UuidConversion {
             return null;
         }
     }
-
-    boolean canConvert(Class<?> type) {
-        ConversionService service = conversions.get();
-        return service != null && service.canConvert(type, UUID.class);
-    }
 }

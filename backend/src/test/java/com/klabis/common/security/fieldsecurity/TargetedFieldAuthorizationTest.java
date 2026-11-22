@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -60,17 +59,8 @@ class TargetedFieldAuthorizationTest {
             String publicField,
             @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW})
             String restrictedField,
-            @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
-            String ownerOrAdminField
-    ) {
-    }
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
-    record CoordinatedResponse(
-            @TargetId(TargetType.MEMBER) List<UUID> coordinators,
-            @HasAuthority(Authority.FINANCE_VIEW) @OwnerVisible
-            String coordinatorsField
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            String adminField
     ) {
     }
 
@@ -88,7 +78,7 @@ class TargetedFieldAuthorizationTest {
         @GetMapping(value = "/api/test/targeted/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<TargetedResponse> get(@PathVariable UUID id) {
             EntityModel<TargetedResponse> model = EntityModel.of(
-                    new TargetedResponse(id, "public-value", "restricted-value", "owner-or-admin-value"));
+                    new TargetedResponse(id, "public-value", "restricted-value", "admin-value"));
             klabisLinkTo(methodOn(TargetedFieldController.class).get(id)).ifPresent(link ->
                     model.add(link.withSelfRel()
                             .andAffordances(klabisAfford(methodOn(TargetedFieldController.class).update(id, null)))));
@@ -99,11 +89,6 @@ class TargetedFieldAuthorizationTest {
         ResponseEntity<Void> update(@PathVariable @TargetId(TargetType.MEMBER) UUID id,
                                     @RequestBody TargetedPatchRequest body) {
             return ResponseEntity.noContent().build();
-        }
-
-        @GetMapping(value = "/api/test/coordinated", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-        EntityModel<CoordinatedResponse> getCoordinated() {
-            return EntityModel.of(new CoordinatedResponse(List.of(OTHER_ID, TARGET_ID), "coordinators-value"));
         }
     }
 
@@ -137,7 +122,7 @@ class TargetedFieldAuthorizationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.publicField").value("public-value"))
                     .andExpect(jsonPath("$.restrictedField").value("restricted-value"))
-                    .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist());
+                    .andExpect(jsonPath("$.adminField").doesNotExist());
         }
 
         @Test
@@ -157,35 +142,26 @@ class TargetedFieldAuthorizationTest {
         void visibleWithGrantOverEverything() throws Exception {
             mockMvc.perform(get("/api/test/targeted/" + OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(jsonPath("$.restrictedField").value("restricted-value"))
-                    .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"));
+                    .andExpect(jsonPath("$.adminField").value("admin-value"));
         }
 
         @Test
-        @WithKlabisMockUser(memberId = TARGET_ID_STRING)
-        @DisplayName("owner-visible field is visible on the user's own record only")
-        void ownerVisibleOnOwnRecordOnly() throws Exception {
-            mockMvc.perform(get("/api/test/targeted/" + TARGET_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"))
-                    .andExpect(jsonPath("$.restrictedField").doesNotExist());
-            mockMvc.perform(get("/api/test/targeted/" + OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist());
-        }
-
-        @Test
-        @WithKlabisMockUser(memberId = TARGET_ID_STRING)
-        @DisplayName("owner-visible field is visible when the user is any of the listed owners")
-        void ownerVisibleWhenAnyOfOwnersIsTheUser() throws Exception {
-            mockMvc.perform(get("/api/test/coordinated").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$.coordinatorsField").value("coordinators-value"));
-        }
-
-        @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
+        @WithKlabisMockUser(memberId = TARGET_ID_STRING, targetGrants = @TargetGrant(authority = Authority.MEMBERS_MANAGE,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
-        @DisplayName("a grant over one of several listed owners does not reveal the field")
-        void grantOverOneOfOwnersDoesNotRevealField() throws Exception {
-            mockMvc.perform(get("/api/test/coordinated").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(jsonPath("$.coordinatorsField").doesNotExist());
+        @DisplayName("is visible on the user's own record through a grant over themself, and on no other")
+        void visibleOnOwnRecordThroughGrantOverSelf() throws Exception {
+            mockMvc.perform(get("/api/test/targeted/" + TARGET_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(jsonPath("$.adminField").value("admin-value"));
+            mockMvc.perform(get("/api/test/targeted/" + OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(jsonPath("$.adminField").doesNotExist());
+        }
+
+        @Test
+        @WithKlabisMockUser(memberId = TARGET_ID_STRING)
+        @DisplayName("is hidden on the user's own record without a grant over themself")
+        void hiddenOnOwnRecordWithoutGrant() throws Exception {
+            mockMvc.perform(get("/api/test/targeted/" + TARGET_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(jsonPath("$.adminField").doesNotExist());
         }
     }
 

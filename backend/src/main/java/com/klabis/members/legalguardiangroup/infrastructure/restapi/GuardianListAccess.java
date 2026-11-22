@@ -22,7 +22,7 @@ final class GuardianListAccess {
     static boolean permits(AuthorizationEvaluator authorizationEvaluator, LegalGuardianGroup group) {
         return authorizationEvaluator.has(Authority.MEMBERS_MANAGE)
                || group.getMembers().stream().anyMatch(minor -> authorizationEvaluator.isAllowed(
-                PROFILE_AUTHORITIES, TargetRef.member(minor.memberId().uuid()), false));
+                PROFILE_AUTHORITIES, TargetRef.member(minor.memberId().uuid())));
     }
 
     static void require(AuthorizationEvaluator authorizationEvaluator, LegalGuardianGroup group) {

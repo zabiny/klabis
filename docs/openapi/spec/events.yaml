@@ -1208,7 +1208,7 @@ paths:
         event. Unknown sort fields also fall back to default.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
+      # No x-klabis-authority: this endpoint acts on the CALLER's own
       # view of the event's registrations — every authenticated caller may list registrations, and
       # the registrationTime field is separately field-level-protected (see RegistrationSummaryDto).
       parameters:

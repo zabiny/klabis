@@ -7,7 +7,6 @@ import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.authorization.TargetType;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.AfterEach;
@@ -138,28 +137,22 @@ class HasAuthorityMethodInterceptorTargetTest {
     }
 
     @Nested
-    @DisplayName("owner visible")
-    class OwnerVisibleTarget {
+    @DisplayName("grant over the user themself")
+    class SelfGrantTarget {
 
         @Test
-        void shouldAllowTheUserThemselfWithoutAnyAuthority() {
-            authenticate(Set.of(), Map.of());
+        void shouldAllowTheUserThemselfOnlyWithGrantOverThemself() {
+            authenticateOverTargets(Authority.FINANCE_VIEW, MY_ID);
 
-            assertThat(service.ownerVisible(MY_ID)).isEqualTo("ok");
+            assertThat(service.targeted(MY_ID)).isEqualTo("ok");
+            assertThatThrownBy(() -> service.targeted(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
-        void shouldDenyAnotherMemberWithoutAuthority() {
+        void shouldDenyTheUserThemselfWithoutAnyGrant() {
             authenticate(Set.of(), Map.of());
 
-            assertThatThrownBy(() -> service.ownerVisible(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
-        }
-
-        @Test
-        void shouldAllowAnotherMemberWithGrantOverTheTarget() {
-            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
-
-            assertThat(service.ownerVisible(CHILD_ID)).isEqualTo("ok");
+            assertThatThrownBy(() -> service.targeted(MY_ID)).isInstanceOf(AccessDeniedException.class);
         }
     }
 
@@ -182,12 +175,6 @@ class HasAuthorityMethodInterceptorTargetTest {
 
         @HasAuthority({Authority.MEMBERS_READ, Authority.FINANCE_VIEW})
         String targetedAnyOf(@TargetId(TargetType.MEMBER) UUID memberId) {
-            return "ok";
-        }
-
-        @OwnerVisible
-        @HasAuthority(Authority.FINANCE_VIEW)
-        String ownerVisible(@TargetId(TargetType.MEMBER) UUID memberId) {
             return "ok";
         }
     }

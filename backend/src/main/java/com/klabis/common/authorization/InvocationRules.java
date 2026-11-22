@@ -1,7 +1,6 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.security.MethodSecurityAnnotations;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
@@ -13,11 +12,11 @@ import java.util.Map;
 
 /**
  * Security annotations of a controller or service method: the {@link HasAuthority} of the method (or else of its
- * class), {@link OwnerVisible} and the parameters marked {@link TargetId}, each also found on the interface the
+ * class), and the parameters marked {@link TargetId}, each also found on the interface the
  * method implements. A method identifies at most one target per {@link TargetType}, so each authority is checked
  * over the target of its own kind.
  */
-record InvocationRules(List<Authority> authorities, boolean ownerVisible, Map<TargetType, TargetParameter> targets) {
+record InvocationRules(List<Authority> authorities, Map<TargetType, TargetParameter> targets) {
 
     static InvocationRules of(Method method, Class<?> targetClass) {
         HasAuthority hasAuthority = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class);
@@ -25,7 +24,6 @@ record InvocationRules(List<Authority> authorities, boolean ownerVisible, Map<Ta
             hasAuthority = MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class);
         }
         List<Authority> authorities = hasAuthority != null ? List.of(hasAuthority.value()) : List.of();
-        boolean ownerVisible = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null;
 
         Map<TargetType, TargetParameter> targets = new EnumMap<>(TargetType.class);
         for (int index = 0; index < method.getParameterCount(); index++) {
@@ -38,11 +36,11 @@ record InvocationRules(List<Authority> authorities, boolean ownerVisible, Map<Ta
                         .formatted(method, targetId.value()));
             }
         }
-        return new InvocationRules(authorities, ownerVisible, Map.copyOf(targets));
+        return new InvocationRules(authorities, Map.copyOf(targets));
     }
 
     boolean isOpen() {
-        return authorities.isEmpty() && !ownerVisible;
+        return authorities.isEmpty();
     }
 
     @Nullable TargetParameter targetOfKind(TargetType kind) {
@@ -50,6 +48,6 @@ record InvocationRules(List<Authority> authorities, boolean ownerVisible, Map<Ta
     }
 
     String describe() {
-        return RequirementDescription.of(authorities, targets.keySet(), ownerVisible);
+        return RequirementDescription.of(authorities, targets.keySet());
     }
 }

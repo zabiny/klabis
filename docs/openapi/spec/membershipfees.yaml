@@ -1192,8 +1192,8 @@ components:
       description: Member UUID
       required: true
       # Identifies the target member. Inert on its own: @TargetId is only consulted for a method
-      # marked @OwnerVisible or guarded by an authority held over specific targets, so the
-      # operations here that do neither are unaffected.
+      # guarded by an authority held over specific targets, so the operations here that
+      # are not are unaffected.
       x-klabis-target-id: MEMBER
       schema:
         type: string
@@ -1214,8 +1214,8 @@ components:
       description: Member UUID
       required: true
       # Identifies the target member. Inert on its own: @TargetId is only consulted for a method
-      # marked @OwnerVisible or guarded by an authority held over specific targets, so the
-      # operations here that do neither are unaffected.
+      # guarded by an authority held over specific targets, so the operations here that
+      # are not are unaffected.
       x-klabis-target-id: MEMBER
       schema:
         type: string

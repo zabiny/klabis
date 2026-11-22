@@ -12,7 +12,7 @@ final class RequirementDescription {
     private RequirementDescription() {
     }
 
-    static String of(List<Authority> authorities, Collection<TargetType> targets, boolean ownerVisible) {
+    static String of(List<Authority> authorities, Collection<TargetType> targets) {
         List<String> alternatives = new ArrayList<>();
         if (!authorities.isEmpty()) {
             String names = authorities.stream().map(Authority::getValue).collect(Collectors.joining(" or "));
@@ -20,9 +20,6 @@ final class RequirementDescription {
                     ? "authority %s (over everything or over the %s)".formatted(names,
                     targets.stream().map(Object::toString).collect(Collectors.joining(" or ")))
                     : "authority " + names);
-        }
-        if (ownerVisible) {
-            alternatives.add("being the owner");
         }
         return String.join(", or ", alternatives);
     }

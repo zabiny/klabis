@@ -3227,7 +3227,7 @@ class EventControllerTest {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             // The caller is the coordinator (so it may reach the accommodation list) AND is the row's
             // own member. It holds no EVENTS:REGISTER_MEMBER authority, so the getRegistration link can
-            // only be offered through the owner-visible branch of that endpoint's gate.
+            // only be offered through the caller's self-grant over its own member.
             MemberId callerId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = aCoordinatedEvent()

@@ -271,7 +271,7 @@ public class MemberController implements MembersApi {
     private MemberViewAccess viewAccessTo(MemberId memberId) {
         TargetRef member = TargetRef.member(memberId.uuid());
         return new MemberViewAccess(
-                authorizationEvaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE), member, false),
+                authorizationEvaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE), member),
                 authorizationEvaluator.canReadField(MemberDetailsResponse.class, "birthNumber", member));
     }
 

@@ -39,7 +39,7 @@ public class MemberController implements MembersApi {
 | Concern | Generated from | Spec source |
 |---|---|---|
 | `@RequestMapping(method=…, value=PATH_…, produces=…)` | path + operation | the path item itself |
-| `@HasAuthority({Authority.X, …})`, `@OwnerVisible` | `x-klabis-authority: MEMBERS_READ` (or a list), `x-klabis-owner-visible` | per-operation |
+| `@HasAuthority({Authority.X, …})` | `x-klabis-authority: MEMBERS_READ` (or a list) | per-operation |
 | `@TargetId(TargetType.X)` | `x-klabis-target-id: MEMBER` | per path parameter |
 | `@Operation`, `@Parameter`, `@ApiResponse`, `@Tag`, `@SecurityRequirement` | `documentationProvider=springdoc` | summary/description/responses |
 | `@RequestBody`, `@RequestParam`, `@PathVariable`, `@Valid`, Bean Validation | parameter + schema definitions | parameters/requestBody |
@@ -52,7 +52,7 @@ The controller keeps only: `@PrimaryAdapter`, `@RestController`, a `@RequestMapp
 
 ## `@HasAuthority` — declared in the spec, not the controller
 
-`@HasAuthority({...})` lists authorities of which **any one** suffices. Without a `@TargetId` parameter an authority must be held over everything; with one it may also be held over just that target (see `authorization.md`). `HasAuthorityMethodInterceptor` (AuthorizationAdvisor) enforces it through `AuthorizationEvaluator.canInvoke` — the same call `klabisAfford`/`klabisLinkTo` use, so offered actions always match enforced ones; failure throws `AccessDeniedException` → 403. The interceptor's pointcut only considers classes under `com.klabis.*` — a bean from any other package is never secured by `@HasAuthority`/`@OwnerVisible`.
+`@HasAuthority({...})` lists authorities of which **any one** suffices. Without a `@TargetId` parameter an authority must be held over everything; with one it may also be held over just that target (see `authorization.md`). `HasAuthorityMethodInterceptor` (AuthorizationAdvisor) enforces it through `AuthorizationEvaluator.canInvoke` — the same call `klabisAfford`/`klabisLinkTo` use, so offered actions always match enforced ones; failure throws `AccessDeniedException` → 403. The interceptor's pointcut only considers classes under `com.klabis.*` — a bean from any other package is never secured by `@HasAuthority`.
 
 For spec'd endpoints do not write it by hand — set `x-klabis-authority: MEMBERS_READ` on the operation and the generator emits the annotation onto the interface method. Omitting the extension means "any authenticated caller" (per the `/api/**` `.authenticated()` rule), which is a deliberate choice worth a comment in the YAML rather than an accident.
 

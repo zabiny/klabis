@@ -125,7 +125,7 @@ public class EventController implements EventsApi {
 
         Event event = eventManagementService.getEvent(new EventId(id),
                 authorizationEvaluator.isAllowed(List.of(Authority.EVENTS_MANAGE, Authority.EVENTS_EDIT),
-                        TargetRef.event(id), false));
+                        TargetRef.event(id)));
 
         EventDto dto = conversionService.convert(event, EventDto.class);
         dto = EventDtoBuilder.builder(dto)
@@ -420,7 +420,7 @@ class EventAffordanceSupport {
      * specific members (a guardian, the member themself) does not, because the target kinds differ.
      */
     static boolean canOverviewRegistrations(AuthorizationEvaluator authorizationEvaluator, UUID eventId) {
-        return authorizationEvaluator.isAllowed(REGISTRATION_OVERVIEW_AUTHORITIES, TargetRef.event(eventId), false);
+        return authorizationEvaluator.isAllowed(REGISTRATION_OVERVIEW_AUTHORITIES, TargetRef.event(eventId));
     }
 
     static Link addManagementAffordances(Link selfLink, Event event) {

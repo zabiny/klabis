@@ -1,7 +1,6 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
@@ -87,17 +86,16 @@ public class AuthorizationEvaluator {
     }
 
     /**
-     * Rule for an operation or field guarded by {@code authorities} (any of them suffices) and optionally
-     * visible to the owner: with a target an authority must be held over everything or over that target,
-     * without a target over everything; an owner-visible element is also allowed when the target is the user.
+     * Rule for an operation or field guarded by {@code authorities} (any of them suffices): with a target an
+     * authority must be held over everything or over that target, without a target over everything.
      */
-    public boolean isAllowed(Collection<Authority> authorities, @Nullable TargetRef target, boolean ownerVisible) {
-        return isAllowedOver(snapshots.current(), authorities, () -> targetList(target), ownerVisible);
+    public boolean isAllowed(Collection<Authority> authorities, @Nullable TargetRef target) {
+        return isAllowedOver(snapshots.current(), authorities, () -> targetList(target));
     }
 
     /**
      * Whether the current user may invoke {@code method} with {@code arguments}, according to the
-     * {@link HasAuthority}, {@link OwnerVisible} and {@link TargetId} annotations of the method (and of its class,
+     * {@link HasAuthority} and {@link TargetId} annotations of the method (and of its class,
      * for the authorities). A method without any of them is open. The target is the argument of the parameter
      * annotated with {@link TargetId}; an absent or non-convertible value means the invocation has no target.
      * <p>
@@ -108,8 +106,7 @@ public class AuthorizationEvaluator {
         if (rules.isOpen()) {
             return true;
         }
-        return isAllowedOver(snapshots.current(), rules.authorities(),
-                () -> targetsOf(rules, arguments), rules.ownerVisible());
+        return isAllowedOver(snapshots.current(), rules.authorities(), () -> targetsOf(rules, arguments));
     }
 
     /**
@@ -142,9 +139,7 @@ public class AuthorizationEvaluator {
 
     /**
      * Whether the current user may see the response field guarded by the annotations of {@code accessor}.
-     * The record the field belongs to supplies the target: the component marked {@link TargetId} (or, for owner-visible
-     * fields, the single component convertible to a UUID). A component holding several ids is a set of owners, not a
-     * target: authorities must then be held over everything and the field is also visible to any of the owners.
+     * The record the field belongs to supplies the target: the component marked {@link TargetId}.
      */
     public boolean canReadField(Method accessor, Object record) {
         return isFieldAllowed(accessor, () -> recordTargets.of(record));
@@ -178,7 +173,7 @@ public class AuthorizationEvaluator {
         if (rules.isOpen()) {
             return true;
         }
-        return isAllowedOver(snapshots.current(), rules.authorities(), targets, rules.ownerVisible());
+        return isAllowedOver(snapshots.current(), rules.authorities(), targets);
     }
 
     /**
@@ -196,10 +191,10 @@ public class AuthorizationEvaluator {
         FieldRules rules = fieldRules(accessor);
         AuthorizationSnapshot snapshot = snapshots.current();
         Supplier<List<TargetRef>> targets = () -> targetsOfKinds(rules, targetOfKind);
-        if (isAllowedOver(snapshot, rules.authorities(), targets, rules.ownerVisible())) {
+        if (isAllowedOver(snapshot, rules.authorities(), targets)) {
             return FieldAccess.WRITE;
         }
-        if (!rules.readAuthorities().isEmpty() && isAllowedOver(snapshot, rules.readAuthorities(), targets, false)) {
+        if (!rules.readAuthorities().isEmpty() && isAllowedOver(snapshot, rules.readAuthorities(), targets)) {
             return FieldAccess.READ;
         }
         return FieldAccess.NONE;
@@ -220,29 +215,23 @@ public class AuthorizationEvaluator {
     }
 
     private boolean isAllowedOver(AuthorizationSnapshot snapshot, Collection<Authority> authorities,
-                                  Supplier<List<TargetRef>> targets, boolean ownerVisible) {
+                                  Supplier<List<TargetRef>> targets) {
         if (authorities.stream().anyMatch(snapshot::hasOverAll)) {
             return true;
         }
         boolean anyTargetedGrant = authorities.stream().anyMatch(authority -> !snapshot.targetsOf(authority).isEmpty());
-        if (!ownerVisible && !anyTargetedGrant) {
+        if (!anyTargetedGrant) {
             return false;
         }
         List<TargetRef> candidates = targets.get();
-        return authorities.stream().anyMatch(authority -> heldOverSoleTargetOfOwnKind(snapshot, authority, candidates))
-                || (ownerVisible && candidates.stream().anyMatch(this::isSelf));
+        return authorities.stream().anyMatch(authority -> heldOverTargetOfOwnKind(snapshot, authority, candidates));
     }
 
-    /**
-     * Several targets of one kind come from a component holding several ids (a set of owners), which is not a
-     * target an authority can be held over.
-     */
-    private static boolean heldOverSoleTargetOfOwnKind(AuthorizationSnapshot snapshot, Authority authority,
-                                                       List<TargetRef> candidates) {
-        List<TargetRef> ofKind = candidates.stream()
+    private static boolean heldOverTargetOfOwnKind(AuthorizationSnapshot snapshot, Authority authority,
+                                                   List<TargetRef> candidates) {
+        return candidates.stream()
                 .filter(target -> target.type() == authority.getTargetType())
-                .toList();
-        return ofKind.size() == 1 && snapshot.has(authority, ofKind.get(0));
+                .anyMatch(target -> snapshot.has(authority, target));
     }
 
     private List<TargetRef> targetsOf(InvocationRules rules, Object @Nullable [] arguments) {

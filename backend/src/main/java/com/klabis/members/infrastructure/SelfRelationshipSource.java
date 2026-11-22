@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Grants a user permissions over themself, replacing the former owner-visible rule. Every user may view their
+ * Grants a user permissions over themself, replacing the former hard-wired owner rule. Every user may view their
  * own profile; every user except a minor member may edit it (a minor's data is maintained by guardians and
  * administrators), which also covers a non-member legal guardian's own profile. Only a member may register
  * themself for events, and only an adult member chooses their own membership fee type (a minor's is chosen by

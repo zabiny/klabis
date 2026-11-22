@@ -52,7 +52,7 @@ class WithKlabisMockUserTargetGrantsTest {
 
         @GetMapping("/probe/registrations/{memberId}")
         boolean registrations(@PathVariable UUID memberId) {
-            return evaluatorProvider.getObject().isAllowed(List.of(Authority.FINANCE_VIEW), TargetRef.member(memberId), true);
+            return evaluatorProvider.getObject().isAllowed(List.of(Authority.FINANCE_VIEW), TargetRef.member(memberId));
         }
     }
 
@@ -84,11 +84,5 @@ class WithKlabisMockUserTargetGrantsTest {
     @WithKlabisMockUser(authorities = Authority.FINANCE_VIEW)
     void shouldAllowEveryTargetWhenHeldOverEverything() throws Exception {
         mockMvc.perform(get("/probe/registrations/" + STRANGER)).andExpect(content().string("true"));
-    }
-
-    @Test
-    @WithKlabisMockUser(memberId = ME)
-    void shouldAllowOwnerVisibleSelf() throws Exception {
-        mockMvc.perform(get("/probe/registrations/" + ME)).andExpect(content().string("true"));
     }
 }

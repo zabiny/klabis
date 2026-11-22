@@ -7,7 +7,7 @@
 #
 # All CALENDAR_MANAGE checks were plain @HasAuthority on the controller — no imperative
 # checkXxx()-style authorization was found in this module, so every operation maps directly to
-# x-klabis-authority with no x-klabis-owner-visible pairing.
+# x-klabis-authority.
 
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from

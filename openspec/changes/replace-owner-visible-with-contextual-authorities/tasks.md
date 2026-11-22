@@ -136,8 +136,8 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 7. Remove the owner-visible mechanism (design D6)
 
-- [ ] 7.1 RED: change the `common` security tests that assert owner-visible behavior so they assert the self-grant behavior instead, or delete them where the case no longer exists. The tests are `FieldLevelAuthorizationTest`, `AffordanceAuthorizationTest`, `InterfaceMethodSecurityAnnotationsTest` and `AuthorizationEvaluatorTest`. Confirm the build fails only on references to the removed API.
-- [ ] 7.2 GREEN: delete `OwnerVisible` and remove:
+- [x] 7.1 RED: change the `common` security tests that assert owner-visible behavior so they assert the self-grant behavior instead, or delete them where the case no longer exists. The tests are `FieldLevelAuthorizationTest`, `AffordanceAuthorizationTest`, `InterfaceMethodSecurityAnnotationsTest` and `AuthorizationEvaluatorTest`. Confirm the build fails only on references to the removed API.
+- [x] 7.2 GREEN: delete `OwnerVisible` and remove:
   - `ownerVisible` from `InvocationRules`, `FieldRules` and `RequirementDescription`,
   - the `ownerVisible` parameter of `AuthorizationEvaluator.isAllowed`, plus the owner branch of `isAllowedOver`,
   - `RecordTargets.discoverOwnerTarget` and the multi-id collection branch,
@@ -146,7 +146,7 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
   Verify:
   - `grep -rn "OwnerVisible\|owner-visible" backend/src docs/openapi tools` finds nothing,
   - the `common` module tests pass.
-- [ ] 7.3 Update the documentation: owner access is a self-grant, and operations may identify several targets of different kinds.
+- [x] 7.3 Update the documentation: owner access is a self-grant, and operations may identify several targets of different kinds.
   - `docs/openapi/spec/README.md` (extension table and pairing rules),
   - `docs/developerManual/06-security.html`,
   - `backend/CLAUDE.md`,
