@@ -204,6 +204,12 @@ describe('getPermissionInfo()', () => {
     it('labels FINANCE:VIEW as "Zobrazení financí člena"', () => {
         expect(getPermissionInfo('FINANCE:VIEW')?.label).toBe('Zobrazení financí člena');
     });
+
+    it('labels EVENTS:REGISTER_MEMBER as "Správa přihlášek člena" with description', () => {
+        const info = getPermissionInfo('EVENTS:REGISTER_MEMBER');
+        expect(info?.label).toBe('Správa přihlášek člena');
+        expect(info?.description).toBe('Přihlašování, úprava a odhlašování člena z akcí');
+    });
 });
 
 describe('labels.errorTypes membership fees', () => {

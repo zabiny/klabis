@@ -35,7 +35,8 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
     public static final String TYPE_DISCRIMINATOR = "LEGAL_GUARDIAN";
 
     private static final Set<Authority> DELEGATED_AUTHORITIES =
-            Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW));
+            Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW,
+                    Authority.EVENTS_REGISTER_MEMBER));
 
     @Identity
     private final LegalGuardianGroupId id;

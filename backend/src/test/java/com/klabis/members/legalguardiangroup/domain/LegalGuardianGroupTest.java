@@ -49,11 +49,12 @@ class LegalGuardianGroupTest {
 
         @Test
         @DisplayName("guardians always hold profile editing and account viewing over the minors")
-        void delegatesProfileEditingAndFinanceView() {
+        void delegatesProfileEditingFinanceViewAndEventRegistration() {
             LegalGuardianGroup group = LegalGuardianGroup.create(Set.of(NOVAK), MINOR_A);
 
             assertThat(group.delegatedAuthorities())
-                    .containsExactlyInAnyOrder(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW);
+                    .containsExactlyInAnyOrder(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW,
+                            Authority.EVENTS_REGISTER_MEMBER);
         }
     }
 

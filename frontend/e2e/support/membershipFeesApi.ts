@@ -88,8 +88,8 @@ const publishedLevels = async (admin: ApiClient, feeState: FeeScenarioState) => 
     return embeddedList(await admin.follow(campaign, 'levels')) as Linked[];
 };
 
-const feeSummary = async (member: ApiClient) =>
-    member.get(`${(await member.root())._links!.profile.href}/fee-summary`) as Promise<Linked>;
+const feeSummary = async (member: ApiClient, memberId?: string) =>
+    member.get(`${memberId ? `/api/members/${memberId}` : (await member.root())._links!.profile.href}/fee-summary`) as Promise<Linked>;
 
 const offeredTypes = async (member: ApiClient, summary: Linked) => {
     const property = (summary._templates!.chooseFeeType as any).properties // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -103,8 +103,8 @@ export const chooseLevel = async (member: ApiClient, typeName: string) => {
     await member.post(member.templateTarget(summary, 'chooseFeeType'), {membershipFeeGroupId: offered.id});
 };
 
-export const withdrawChoice = async (member: ApiClient) => {
-    const summary = await feeSummary(member);
+export const withdrawChoice = async (member: ApiClient, memberId?: string) => {
+    const summary = await feeSummary(member, memberId);
     if (summary._templates?.removeChoice) {
         await member.delete(member.templateTarget(summary, 'removeChoice'));
     }

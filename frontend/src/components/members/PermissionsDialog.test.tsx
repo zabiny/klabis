@@ -102,30 +102,30 @@ describe('PermissionsDialog', () => {
             expect(toggle).toHaveAttribute('aria-checked', 'false');
         });
 
-        it('renders a toggle for EVENTS:REGISTER_MEMBER permission with label "Správa přihlášek"', () => {
+        it('renders a toggle for EVENTS:REGISTER_MEMBER permission with label "Správa přihlášek člena"', () => {
             renderDialog();
 
-            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek člena/i});
             expect(toggle).toBeInTheDocument();
         });
 
-        it('shows description "Editace přihlášek ostatních členů na akce" for EVENTS:REGISTER_MEMBER', () => {
+        it('shows description "Přihlašování, úprava a odhlašování člena z akcí" for EVENTS:REGISTER_MEMBER', () => {
             renderDialog();
 
-            expect(screen.getByText('Editace přihlášek ostatních členů na akce')).toBeInTheDocument();
+            expect(screen.getByText('Přihlašování, úprava a odhlašování člena z akcí')).toBeInTheDocument();
         });
 
         it('reflects current state for EVENTS:REGISTER_MEMBER when assigned', () => {
             renderDialog({permissions: ['EVENTS:REGISTER_MEMBER']});
 
-            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek člena/i});
             expect(toggle).toHaveAttribute('aria-checked', 'true');
         });
 
         it('reflects current state for EVENTS:REGISTER_MEMBER when not assigned', () => {
             renderDialog();
 
-            const toggle = screen.getByRole('switch', {name: /Správa přihlášek/i});
+            const toggle = screen.getByRole('switch', {name: /Správa přihlášek člena/i});
             expect(toggle).toHaveAttribute('aria-checked', 'false');
         });
 

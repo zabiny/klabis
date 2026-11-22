@@ -73,20 +73,20 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 4. Legal guardians manage their minors' registrations (design D3; spec: legal-guardians, event-registrations)
 
-- [ ] 4.1 RED: a `LegalGuardianGroup` domain test asserts `EVENTS_REGISTER_MEMBER` is delegated. A `LegalGuardianGroupRelationshipSource` test asserts a guardian holds it over each minor and loses it once the minor leaves the group. Integration tests for a member guardian and for a non-member (EXT) guardian:
+- [x] 4.1 RED: a `LegalGuardianGroup` domain test asserts `EVENTS_REGISTER_MEMBER` is delegated. A `LegalGuardianGroupRelationshipSource` test asserts a guardian holds it over each minor and loses it once the minor leaves the group. Integration tests for a member guardian and for a non-member (EXT) guardian:
   - they get, edit, unregister and register their minor,
   - in the registrations list, the edit action is present on the child's row only,
   - they get no accommodation list and no `registrationTime`,
   - an unrelated minor is denied.
 
   Confirm the tests fail.
-- [ ] 4.2 GREEN: add `EVENTS_REGISTER_MEMBER` to `LegalGuardianGroup.delegatedAuthorities()`. Verify: the 4.1 tests pass.
-- [ ] 4.3 Frontend label: a RED label test for the wording "Správa přihlášek člena" of `'EVENTS:REGISTER_MEMBER'` in `labels.ts`, then GREEN. Verify: label tests and `npm run build` pass.
-- [ ] 4.4 E2E with the e2e-tester, using `EXT0001` and the example-data minors. Write the scenarios first and confirm they fail before 4.2 is in the running build, or record that they were written after it. The scenarios:
+- [x] 4.2 GREEN: add `EVENTS_REGISTER_MEMBER` to `LegalGuardianGroup.delegatedAuthorities()`. Verify: the 4.1 tests pass.
+- [x] 4.3 Frontend label: a RED label test for the wording "Správa přihlášek člena" of `'EVENTS:REGISTER_MEMBER'` in `labels.ts`, then GREEN. Verify: label tests and `npm run build` pass.
+- [x] 4.4 E2E with the e2e-tester, using `EXT0001` and the example-data minors. Write the scenarios first and confirm they fail before 4.2 is in the running build, or record that they were written after it. The scenarios:
   - "guardian edits their child's registration from the registrations list",
   - "guardian unregisters their child".
 
-  Verify: `npm run test:e2e` passes them.
+  Verify: `npm run test:e2e` passes them. (Written before 4.2 was in the running build; both failed on the missing edit action on the child's row, then passed after 4.2.)
 
 ## 5. Viewing member data through `MEMBERS:VIEW_PROFILE` (design D2, D3, D4)
 
