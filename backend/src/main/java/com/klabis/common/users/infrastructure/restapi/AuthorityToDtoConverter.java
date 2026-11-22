@@ -19,13 +19,14 @@ interface AuthorityToDtoConverter extends Converter<com.klabis.common.users.Auth
      * {@code DEVELOPER} is an internal-only authority, deliberately absent from the public
      * {@code Authority} wire schema and the permissions dialog. It must never reach a DTO;
      * hitting this mapping means it leaked past {@code UserPermissions.getManageableAuthorities()}.
-     * The coordinator and group ownership authorities are held over specific targets only, never directly, so they
-     * cannot appear in a user's permissions either.
+     * The coordinator, group ownership and account viewing authorities are held over specific targets only,
+     * never directly, so they cannot appear in a user's permissions either.
      */
     @Override
     @ValueMapping(source = "DEVELOPER", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "EVENTS_EDIT", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "EVENTS_REGISTRATIONS_READ", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "GROUPS_OWNER", target = MappingConstants.THROW_EXCEPTION)
+    @ValueMapping(source = "FINANCE_VIEW", target = MappingConstants.THROW_EXCEPTION)
     Authority convert(com.klabis.common.users.Authority source);
 }

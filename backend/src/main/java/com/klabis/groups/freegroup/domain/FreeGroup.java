@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
 import org.jspecify.annotations.Nullable;
-import com.klabis.common.authorization.TargetType;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
@@ -15,17 +14,14 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @AggregateRoot
 public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
-    private static final Set<Authority> DELEGATABLE_AUTHORITIES = Collections.unmodifiableSet(
-            Authority.holdableOverTargets().stream()
-                    .filter(authority -> authority.getTargetType() == TargetType.MEMBER)
-                    .collect(Collectors.toCollection(() -> EnumSet.noneOf(Authority.class))));
+    private static final Set<Authority> DELEGATABLE_AUTHORITIES =
+            Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE));
 
     @Identity
     private final FreeGroupId id;
@@ -54,7 +50,8 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     }
 
     /**
-     * The authorities a founder may choose to delegate: those that can be held over specific members.
+     * Authorities a free group founder may choose to delegate. Listed explicitly so that a new member-targeted
+     * authority never becomes delegatable by accident.
      */
     public static Set<Authority> delegatableAuthorities() {
         return DELEGATABLE_AUTHORITIES;

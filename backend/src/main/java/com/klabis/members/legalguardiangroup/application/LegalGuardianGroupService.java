@@ -1,6 +1,7 @@
 package com.klabis.members.legalguardiangroup.application;
 
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.text.CzechCollation;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberNotFoundException;
@@ -20,13 +21,11 @@ import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupWithoutGua
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -54,9 +53,8 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     @Transactional(readOnly = true)
     @Override
     public List<LegalGuardianGroup> listGroups() {
-        Collator czech = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
         return groupRepository.findAll(LegalGuardianGroupFilter.all()).stream()
-                .sorted(Comparator.comparing(LegalGuardianGroup::getName, czech))
+                .sorted(Comparator.comparing(LegalGuardianGroup::getName, CzechCollation.comparator()))
                 .toList();
     }
 

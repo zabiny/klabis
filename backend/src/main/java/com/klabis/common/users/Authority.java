@@ -42,6 +42,7 @@ public enum Authority {
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     GROUPS_OWNER("GROUPS:OWNER", TargetType.GROUP, GrantForm.SPECIFIC),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
+    FINANCE_VIEW("FINANCE:VIEW", TargetType.MEMBER, GrantForm.SPECIFIC),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
     DEVELOPER("DEVELOPER", TargetType.NONE, GrantForm.ALL);
 
@@ -152,7 +153,8 @@ public enum Authority {
     /**
      * Authorities that may be held over specific targets, i.e. derived from relationships. Administrator
      * authorities are {@link GrantForm#ALL}-only and therefore never held over targets only. Not every one of
-     * them is delegatable to others (e.g. the event coordinator authorities).
+     * them is delegatable to others: what each kind of group delegates is defined explicitly by
+     * the group itself (see {@code FreeGroup} and {@code LegalGuardianGroup}).
      */
     public static Set<Authority> holdableOverTargets() {
         EnumSet<Authority> holdable = EnumSet.noneOf(Authority.class);

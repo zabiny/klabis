@@ -1,6 +1,7 @@
 package com.klabis.common.users;
 
 import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserNotFoundException;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.Optional;
@@ -45,6 +46,16 @@ public interface UserService {
      * @return the ID of the created user
      */
     UserId createActiveUser(String username, String passwordHash, Set<Authority> authorities);
+
+    /**
+     * Sets the password of a user pending activation and activates the account, skipping the password setup flow.
+     * Intended for bootstrap data only.
+     *
+     * @param passwordHash the BCrypt-hashed password
+     * @throws UserNotFoundException if the user does not exist
+     * @throws IllegalStateException if the user is not pending activation
+     */
+    void activateWithPassword(UserId userId, String passwordHash);
 
     /**
      * Finds a user by username or altUsername.

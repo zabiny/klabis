@@ -12,6 +12,7 @@ import {FinanceTransactionDialog} from "../../components/finance/FinanceTransact
 import type {Link} from "../../api/types.ts";
 import type {GetAccountResource} from "../../api";
 import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
+import {AccountSwitcher} from "./AccountSwitcher.tsx";
 import {HalPageGate} from "../HalPageGate.tsx";
 
 /**
@@ -74,6 +75,8 @@ const MemberAccountManageContent = ({resourceData}: {resourceData: GetAccountRes
                         </div>
                     )}
                 </div>
+
+                <AccountSwitcher />
 
                 <AccountOwnerHeader />
 

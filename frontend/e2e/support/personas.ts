@@ -6,6 +6,7 @@ export const personas = {
     Jan: 'admin',
     Eva: 'member',
     Tomáš: 'tester',
+    Ivana: 'guardian',
 } as const satisfies Record<string, Role>;
 
 export type Persona = keyof typeof personas;

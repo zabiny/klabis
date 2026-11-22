@@ -1,6 +1,8 @@
 package com.klabis.finance.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.FinanceWebMvcTest;
 import com.klabis.finance.application.ChargePort;
@@ -36,11 +38,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -185,6 +190,108 @@ class MemberAccountControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/members/{id}/account - viewableAccount links")
+    class ViewableAccountLinks {
+
+        private static final String PARENT = "aaaaaaaa-0000-0000-0000-000000000001";
+        private static final String CHILD_NOVAK = "aaaaaaaa-0000-0000-0000-000000000002";
+        private static final String CHILD_ADAMEC = "aaaaaaaa-0000-0000-0000-000000000003";
+        private static final String STRANGER = "bbbbbbbb-0000-0000-0000-000000000001";
+
+        record Named(String id, String firstName, String lastName) {
+        }
+
+        private void stubMembers(Named... members) {
+            Map<MemberId, MemberDto> byId = new LinkedHashMap<>();
+            for (Named m : members) {
+                UUID id = UUID.fromString(m.id());
+                byId.put(new MemberId(id), MemberDtoBuilder.builder()
+                        .memberId(id).firstName(m.firstName()).lastName(m.lastName()).build());
+            }
+            when(membersPort.findByIds(any())).thenReturn(byId);
+            when(transactionQueryPort.findBalance(any())).thenReturn(Money.zero());
+        }
+
+        private ResultActions getAccount(String id) throws Exception {
+            return mockMvc.perform(get("/api/members/{id}/account", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+        }
+
+        @Test
+        @DisplayName("member guardian of two minors sees own account first, then minors by name, on own account")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListOwnThenChildrenOnOwnAccount() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(PARENT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(3)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Petr Zeman"))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].href").value(containsString("/api/members/" + PARENT + "/account")))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].title").value("Bob Adamec"))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].href").value(containsString("/api/members/" + CHILD_ADAMEC + "/account")))
+                    .andExpect(jsonPath("$._links.viewableAccount[2].title").value("Anna Novak"));
+        }
+
+        @Test
+        @DisplayName("same links are present on a child's account")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListSameLinksOnChildAccount() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(3)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Petr Zeman"));
+        }
+
+        @Test
+        @DisplayName("finance manager on a stranger's account gets no switcher")
+        @WithKlabisMockUser(memberId = PARENT, authorities = {Authority.FINANCE_MANAGE}, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {PARENT, CHILD_NOVAK}))
+        void shouldHaveNoLinksOnStrangerAccount() throws Exception {
+            stubMembers(new Named(PARENT, "Petr", "Zeman"), new Named(CHILD_NOVAK, "Anna", "Novak"));
+
+            getAccount(STRANGER)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("member without minors gets no switcher")
+        @WithKlabisMockUser(memberId = PARENT, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = PARENT))
+        void shouldHaveNoLinksForSingleAccount() throws Exception {
+            stubMembers(new Named(PARENT, "Petr", "Zeman"));
+
+            getAccount(PARENT)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-member guardian of one minor gets no switcher")
+        @WithKlabisMockUser(userId = "cccccccc-0000-0000-0000-000000000001", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = CHILD_NOVAK))
+        void shouldHaveNoLinksForExtGuardianOfOneMinor() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("non-member guardian of two minors gets both ordered by name")
+        @WithKlabisMockUser(userId = "cccccccc-0000-0000-0000-000000000001", targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = {CHILD_NOVAK, CHILD_ADAMEC}))
+        void shouldListChildrenByNameForExtGuardian() throws Exception {
+            stubMembers(new Named(CHILD_NOVAK, "Anna", "Novak"), new Named(CHILD_ADAMEC, "Bob", "Adamec"));
+
+            getAccount(CHILD_NOVAK)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.viewableAccount", hasSize(2)))
+                    .andExpect(jsonPath("$._links.viewableAccount[0].title").value("Bob Adamec"))
+                    .andExpect(jsonPath("$._links.viewableAccount[1].title").value("Anna Novak"));
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/members/{id}/account")
     class GetAccountEndpoint {
 
@@ -198,7 +305,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.1 owner gets 200 with history link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldReturn200ForOwner() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -234,7 +341,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("response includes accountOwner link pointing to the member resource")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
         void shouldIncludeAccountOwnerLink() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -278,7 +385,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("returns 200 without deposit affordance for plain member viewing own account")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldReturnAccountWithoutDepositAffordanceForRegularMember() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -319,7 +426,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("returns 200 without charge affordance for plain member viewing own account")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldReturnAccountWithoutChargeAffordanceForRegularMember() throws Exception {
             when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
@@ -336,7 +443,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.5 returns paginated transactions for owner")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldReturnPaginatedTransactionsForOwner() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -363,7 +470,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.6 supports sorting by occurredAt")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldSupportSortingByOccurredAt() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "occurredAt")), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -376,7 +483,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.6 supports sorting by amount desc")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldSupportSortingByAmountDesc() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "amount")), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -389,7 +496,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.7 supports filtering by date range")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldSupportFilteringByDateRange() throws Exception {
             Page<TransactionWithReversal> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
             when(transactionQueryPort.findTransactionsWithReversals(any())).thenReturn(page);
@@ -403,7 +510,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.7 supports filtering by type")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldSupportFilteringByType() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -418,7 +525,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("each transaction item in listing has a self link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldIncludeSelfLinkOnEachTransactionItem() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -462,7 +569,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("plain member (no FINANCE:MANAGE) does not see reverse affordance")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldNotIncludeReverseAffordanceForRegularMember() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -476,7 +583,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("reversed transaction in listing has reversedBy link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldIncludeReversedByLinkOnReversedTransactionInListing() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction tx = buildDepositTransaction();
@@ -492,7 +599,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("each transaction in listing has recordedBy link pointing to the recorder's member resource")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
         void shouldIncludeRecordedByLinkOnTransactionInListing() throws Exception {
             Transaction tx = buildDepositTransaction();
             var page = buildPageWithoutReversal(tx);
@@ -507,7 +614,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("reversal transaction in listing has reverses link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldIncludeReversesLinkOnReversalTransactionInListing() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
@@ -528,7 +635,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("transaction detail has recordedBy link pointing to the recorder's member resource")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = "11111111-1111-1111-1111-111111111111"))
         void shouldExposeRecordedByLinkOnTransaction() throws Exception {
             Transaction tx = buildDepositTransaction();
             when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(TX_UUID)))
@@ -543,7 +650,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.9 reversed transaction has reversedBy link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldExposeReversedByLinkOnReversedTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
@@ -559,7 +666,7 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("5.10 reversal transaction has reverses link")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void shouldExposeReversesLinkOnReversalTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
@@ -796,8 +903,11 @@ class MemberAccountControllerTest {
 
         @Test
         @DisplayName("root contains account link for a user with a member profile")
-        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        @AsAccountOwner
         void rootContainsAccountLinkForMember() throws Exception {
+            when(membersPort.findByIds(any())).thenReturn(Map.of(new MemberId(MEMBER_UUID),
+                    MemberDtoBuilder.builder().memberId(MEMBER_UUID).firstName("Jan").lastName("Novák").build()));
+
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.account.href")

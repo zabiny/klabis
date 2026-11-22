@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import {MemberAccountManagePage} from './MemberAccountManagePage.tsx';
@@ -10,6 +10,7 @@ import {type Mock, vi} from 'vitest';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import type {Link} from '../../api/types.ts';
 import {labels} from '../../localization';
+import {formatCurrency} from '../../components/finance/financeFormatters.ts';
 
 vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -175,6 +176,74 @@ describe('MemberAccountManagePage', () => {
         );
     };
 
+    describe('Account switcher', () => {
+        const LocationProbe = () => <div data-testid="location">{useLocation().pathname}</div>;
+
+        const viewable = [
+            {href: 'https://test.com/api/members/111/account', title: 'Eva Svobodová'},
+            {href: 'https://test.com/api/members/456/account', title: 'Jan Novák'},
+            {href: 'https://test.com/api/members/222/account', title: 'Petr Novák'},
+        ];
+
+        const mockAccount = (viewableAccount?: unknown) => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+                if (baseUrl.endsWith('/api/members/456')) {
+                    return Promise.resolve(createMockResponse(mockOwnerData));
+                }
+                return Promise.resolve(createMockResponse({
+                    ...mockAccountDataWithoutAffordances,
+                    _links: {
+                        ...mockAccountDataWithoutAffordances._links,
+                        self: {href: 'https://test.com/api/members/456/account'},
+                        ...(viewableAccount ? {viewableAccount} : {}),
+                    },
+                }));
+            });
+        };
+
+        it('lists options in link order with the current account selected', async () => {
+            mockAccount(viewable);
+            renderPage(<MemberAccountManagePage/>);
+
+            const select = await screen.findByLabelText(labels.finance.accountSwitcher) as HTMLSelectElement;
+            expect(Array.from(select.options).map(o => o.textContent))
+                .toEqual(['Eva Svobodová', 'Jan Novák', 'Petr Novák']);
+            expect(select.options[select.selectedIndex].textContent).toBe('Jan Novák');
+        });
+
+        it('navigates to the chosen account', async () => {
+            mockAccount(viewable);
+            renderPage(<><MemberAccountManagePage/><LocationProbe/></>);
+
+            const select = await screen.findByLabelText(labels.finance.accountSwitcher);
+            fireEvent.change(select, {target: {value: '/members/222/account'}});
+
+            await waitFor(() => {
+                expect(screen.getByTestId('location')).toHaveTextContent('/members/222/account');
+            });
+        });
+
+        it('is absent without viewableAccount links', async () => {
+            mockAccount();
+            renderPage(<MemberAccountManagePage/>);
+
+            await screen.findByRole('heading', {name: /^Finance$/i, level: 1});
+            expect(screen.queryByTestId('account-switcher')).not.toBeInTheDocument();
+        });
+
+        it('is absent with a single viewable account', async () => {
+            mockAccount(viewable[1]);
+            renderPage(<MemberAccountManagePage/>);
+
+            await screen.findByRole('heading', {name: /^Finance$/i, level: 1});
+            expect(screen.queryByTestId('account-switcher')).not.toBeInTheDocument();
+        });
+    });
+
     describe('With FINANCE:MANAGE affordances', () => {
         beforeEach(() => {
             fetchSpy.mockImplementation((url: string) => {
@@ -335,6 +404,52 @@ describe('MemberAccountManagePage', () => {
                 expect(screen.getByText('Initial deposit')).toBeInTheDocument();
             });
             expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Guardian view of a minor account (read-only)', () => {
+        const minorOwner = {
+            firstName: 'Sofie',
+            lastName: 'Svobodová',
+            registrationNumber: 'ZBM2015',
+            _links: {self: {href: 'https://test.com/api/members/456'}},
+        };
+
+        beforeEach(() => {
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionDataWithoutReverseAffordance));
+                }
+                if (baseUrl.endsWith('/api/members/456')) {
+                    return Promise.resolve(createMockResponse(minorOwner));
+                }
+                return Promise.resolve(createMockResponse({
+                    ...mockAccountDataWithoutAffordances,
+                    _links: {
+                        ...mockAccountDataWithoutAffordances._links,
+                        accountOwner: {href: 'https://test.com/api/members/456'},
+                    },
+                }));
+            });
+        });
+
+        it('shows the minor as account owner, the balance and the transaction', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            expect(await screen.findByText('Sofie Svobodová (ZBM2015)')).toBeInTheDocument();
+            expect(screen.getByText(formatCurrency(200, 'CZK'))).toBeInTheDocument();
+            expect(await screen.findByText('Initial deposit')).toBeInTheDocument();
+        });
+
+        it('offers no transaction dialog button and no reverse action', async () => {
+            renderPage(<MemberAccountManagePage/>);
+
+            await screen.findByTestId('account-owner-header');
+            await screen.findByText('Initial deposit');
+            expect(screen.queryByRole('button', {name: /Provést finanční transakci/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: labels.finance.reverse})).not.toBeInTheDocument();
+            expect(screen.queryByTestId('finance-transaction-dialog')).not.toBeInTheDocument();
         });
     });
 });

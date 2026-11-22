@@ -165,10 +165,11 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
 
         LOG.info("Created 16 bootstrap members");
 
-        createLegalGuardianScenarios(jan.getId().toUserId(), eva.getId().toUserId(), ondrej.getId().toUserId());
+        createLegalGuardianScenarios(jan.getId().toUserId(), eva.getId().toUserId(), ondrej.getId().toUserId(), passwordHash);
     }
 
-    private void createLegalGuardianScenarios(UserId registeredBy, UserId memberGuardian, UserId memberGuardianOfTwo) {
+    private void createLegalGuardianScenarios(UserId registeredBy, UserId memberGuardian, UserId memberGuardianOfTwo,
+                                              String passwordHash) {
         LocalDate today = LocalDate.now();
         NewLegalGuardian ivana = new NewLegalGuardian("Ivana", "Dlouhá", "ivana.dlouha@example.com", "+420 604 100 100");
         NewLegalGuardian lenka = new NewLegalGuardian("Lenka", "Kratochvílová", "lenka.kratochvilova@example.com",
@@ -177,6 +178,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         Member adam = registerMinor("Adam", "Dlouhý", today.minusYears(10), Gender.MALE, registeredBy,
                 List.of(GuardianInput.created(ivana)));
         UserId ivanaId = legalGuardianGroupPort.guardiansOf(adam.getId()).iterator().next();
+        userService.activateWithPassword(ivanaId, passwordHash);
         registerMinor("Klára", "Dlouhá", today.minusYears(8), Gender.FEMALE, registeredBy,
                 List.of(GuardianInput.existing(ivanaId)));
 
@@ -188,7 +190,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
 
         importMinorWithoutGuardian("Vojtěch", "Malý", today.minusYears(14), Gender.MALE, registeredBy);
 
-        LOG.info("Created bootstrap legal guardian scenarios (non-member guardians log in with EXT0001, EXT0002)");
+        LOG.info("Created bootstrap legal guardian scenarios (non-member guardian EXT0001 logs in with password password, EXT0002 has no password)");
     }
 
     private Member registerMinor(String firstName, String lastName, LocalDate dateOfBirth, Gender gender,

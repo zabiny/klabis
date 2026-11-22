@@ -2,10 +2,10 @@ import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
 import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
-import {chargeFrom, depositTo, findMemberPath, REGISTERED_FIRST_NAME} from '../support/membersApi';
+import {chargeFrom, depositTo, findMemberIdByName, findMemberPath, REGISTERED_FIRST_NAME, splitName} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
-import {action, click, czechAmount, heading, openFromMenu} from '../support/ui';
-import {memberRow, openMemberDetail, searchMembers} from './members.steps';
+import {action, click, czechAmount, heading, openFromMenu, select} from '../support/ui';
+import {memberRow, openDetailAs, openMemberDetail, searchMembers} from './members.steps';
 
 const {Given, When, Then} = createBdd(test);
 
@@ -49,6 +49,12 @@ Given('a deposit of {int} CZK is recorded on the account of {persona}', async ({
     await depositTo(apiAs('admin'), `/api/members/${(await memberIdentity(member)).id}`, amount);
 });
 
+Given('a deposit of {int} CZK is recorded on the account of member {string}', async ({apiAs}, amount: number, fullName: string) => {
+    const admin = apiAs('admin');
+    const {firstName, lastName} = splitName(fullName);
+    await depositTo(admin, `/api/members/${await findMemberIdByName(admin, firstName, lastName)}`, amount);
+});
+
 Given('the account of member {name} is overdrawn by {int} CZK', async ({apiAs}, lastName: string, amount: number) => {
     const admin = apiAs('admin');
     await chargeFrom(admin, await findMemberPath(admin, lastName), amount);
@@ -57,6 +63,25 @@ Given('the account of member {name} is overdrawn by {int} CZK', async ({apiAs}, 
 When('{persona} opens Finance from the main menu', async ({page, actAs}, persona: Persona) => {
     await actAs(persona);
     await openFromMenu(page, 'Finance');
+    await expect(heading(page, 'Historie transakcí')).toBeVisible();
+});
+
+Given('{persona} has Finance open', async ({page, actAs}, persona: Persona) => {
+    await actAs(persona);
+    await openFromMenu(page, 'Finance');
+    await expect(heading(page, 'Historie transakcí')).toBeVisible();
+});
+
+When('{persona} switches to the account of {string}', async ({page, currentRole}, persona: Persona, fullName: string) => {
+    expectActing(currentRole, persona);
+    await select(page, 'Zobrazit účet', fullName);
+    await expect(page.getByTestId('account-owner-header')).toContainText(fullName);
+});
+
+When('{persona} opens the account of the minor member {string} from the minor\'s detail', async ({page, actAs}, persona: Persona, fullName: string) => {
+    const {firstName, lastName} = splitName(fullName);
+    await openDetailAs(page, actAs, persona, lastName, firstName);
+    await click(page, 'Účet');
     await expect(heading(page, 'Historie transakcí')).toBeVisible();
 });
 
@@ -107,10 +132,30 @@ Then('{persona} is not offered to record or reverse transactions', async ({page,
     await expect(page.getByRole('button', {name: 'Provést finanční transakci'})).toHaveCount(0);
 });
 
+Then('the account switcher offers the accounts of {string} and {string}', async ({page}, first: string, second: string) => {
+    const options = page.getByTestId('account-switcher').getByRole('option');
+    await expect(options).toHaveText([first, second]);
+});
+
+Then('{persona} sees no account switcher', async ({page, currentRole}, persona: Persona) => {
+    expectActing(currentRole, persona);
+    await expect(balanceCard(page)).toBeVisible();
+    await expect(page.getByTestId('account-switcher')).toHaveCount(0);
+});
+
 Then('{persona} sees the balance and the transaction history', async ({page, currentRole}, persona: Persona) => {
     expectActing(currentRole, persona);
     await expect(balanceCard(page)).toBeVisible();
     await expect(heading(page, 'Historie transakcí')).toBeVisible();
+});
+
+Then('the account of member {string} is shown with the owner\'s name and registration number', async ({page, apiAs}, fullName: string) => {
+    const admin = apiAs('admin');
+    const {firstName, lastName} = splitName(fullName);
+    const member = await admin.get(`/api/members/${await findMemberIdByName(admin, firstName, lastName)}`) as {registrationNumber: string};
+    const header = page.getByTestId('account-owner-header');
+    await expect(header).toContainText(fullName);
+    await expect(header).toContainText(member.registrationNumber);
 });
 
 Then('the account of member {name} shows the balance {int} CZK', async ({page}, lastName: string, amount: number) => {

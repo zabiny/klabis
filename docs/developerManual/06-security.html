@@ -303,10 +303,11 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
 
 <p>
     Delegaci modeluje <code>MemberGroup.delegatedAuthorities()</code>: <code>LegalGuardianGroup</code> vrací
-    <code>{MEMBERS_EDIT_PROFILE}</code>, <code>TrainingGroup</code> prázdnou množinu (tréninková skupina
+    výslovný seznam <code>{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}</code>, <code>TrainingGroup</code> prázdnou množinu (tréninková skupina
     nedeleguje nic, a proto pro ni zdroj neexistuje), <code>FreeGroup</code> množinu zvolenou při vzniku.
-    Agregát odmítne autoritu bez <code>SPECIFIC</code> nebo s jiným <code>targetType</code>
-    (<code>InvalidDelegatedAuthorityException</code>), takže klient nemůže delegovat <code>MEMBERS_MANAGE</code>.
+    Agregát odmítne autoritu mimo <code>FreeGroup.delegatableAuthorities()</code> (výslovný seznam,
+    dnes <code>{MEMBERS_EDIT_PROFILE}</code>; <code>InvalidDelegatedAuthorityException</code>), takže klient nemůže
+    delegovat <code>MEMBERS_MANAGE</code> ani <code>FINANCE_VIEW</code>.
 </p>
 
 <pre class="signature"><code>@Component

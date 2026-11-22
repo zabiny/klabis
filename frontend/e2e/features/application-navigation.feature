@@ -1,7 +1,8 @@
 @spec:application-navigation
 Feature: Application navigation
   The main menu is derived from the destinations the signed-in user is authorized for.
-  Jan administers the club, Eva is a club member without administration permissions.
+  Jan administers the club, Eva is a club member without administration permissions,
+  Ivana is a legal guardian who is not a club member.
 
   Rule: The main menu offers exactly the destinations the user is authorized for
 
@@ -28,6 +29,11 @@ Feature: Application navigation
         | Členové              |
         | Přehled administrace |
         | Synchronizace        |
+
+    Scenario: Non-member guardian sees the Finance entry
+      When Ivana opens the application
+      Then the main menu offers:
+        | Finance |
 
   Rule: Event settings are offered as one menu entry for event managers
 

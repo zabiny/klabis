@@ -6,7 +6,8 @@
 Feature: Member financial accounts
   Every member has a prepaid financial account in CZK. Members see their own account,
   finance managers record deposits and charges and reverse transactions on any account.
-  Jan is a finance manager, Eva is a club member.
+  Jan is a finance manager, Eva is a club member and the legal guardian of the minor member Sofie Svobodová,
+  Ivana is not a member, she is the legal guardian of the minor members Adam Dlouhý and Klára Dlouhá.
 
   Rule: Every member has a financial account that is created together with the member
 
@@ -29,6 +30,45 @@ Feature: Member financial accounts
       Given a deposit of 100 CZK is recorded on the account of Eva
       When Eva opens Finance from the main menu
       Then Eva is not offered to record or reverse transactions
+
+  Rule: A legal guardian views their minor child's account but cannot change it
+
+    Scenario: Guardian opens their child's account from the child's detail page
+      When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
+      Then the account of member "Sofie Svobodová" is shown with the owner's name and registration number
+      And Eva sees the balance and the transaction history
+
+    Scenario: Guardian cannot record any transaction on the child's account
+      Given a deposit of 100 CZK is recorded on the account of member "Sofie Svobodová"
+      When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
+      Then Eva is not offered to record or reverse transactions
+
+  Rule: The Finance page lets a user switch between the accounts they may view
+
+    Scenario: Member guardian opens Finance and sees their own account first
+      When Eva opens Finance from the main menu
+      Then the account switcher offers the accounts of "Eva Svobodová" and "Sofie Svobodová"
+
+    Scenario: Member guardian switches to a child's account
+      Given Eva has Finance open
+      When Eva switches to the account of "Sofie Svobodová"
+      Then the account of member "Sofie Svobodová" is shown with the owner's name and registration number
+      And Eva sees the balance and the transaction history
+
+    Scenario: Non-member guardian opens Finance
+      When Ivana opens Finance from the main menu
+      Then the account of member "Klára Dlouhá" is shown with the owner's name and registration number
+      And the account switcher offers the accounts of "Klára Dlouhá" and "Adam Dlouhý"
+
+    Scenario: Non-member guardian switches to the other child's account
+      Given Ivana has Finance open
+      When Ivana switches to the account of "Adam Dlouhý"
+      Then the account of member "Adam Dlouhý" is shown with the owner's name and registration number
+      And Ivana sees the balance and the transaction history
+
+    Scenario: Member without minor children sees no account switcher
+      When Tomáš opens Finance from the main menu
+      Then Tomáš sees no account switcher
 
   Rule: A finance manager records a deposit that increases the balance
 

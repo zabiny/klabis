@@ -734,7 +734,7 @@ A group SHALL be able to define a set of delegated permissions that every owner 
 
 ### Requirement: Free Group Delegated Permissions Are Chosen At Creation
 
-The founder of a free group SHALL choose the delegated permissions when creating the group. The create form SHALL offer every delegatable permission (today only "Úprava údajů člena") with none selected by default. The delegated permissions of a free group SHALL NOT be changeable after creation.
+The founder of a free group SHALL choose the delegated permissions when creating the group. The create form SHALL offer "Úprava údajů člena" with nothing selected by default. "Zobrazení financí člena" is delegated only by legal guardian groups and SHALL NOT be offered for free groups. The delegated permissions of a free group SHALL NOT be changeable after creation.
 
 #### Scenario: Founder creates a free group without delegation
 
@@ -758,6 +758,11 @@ The founder of a free group SHALL choose the delegated permissions when creating
 
 - **WHEN** a member opens the "Create group" dialog
 - **THEN** no administrator permission (for example "Správa členů") is offered for delegation
+
+#### Scenario: Viewing finances is not offered for free groups
+
+- **WHEN** a member opens the "Create group" dialog
+- **THEN** "Zobrazení financí člena" is not offered for delegation
 
 ### Requirement: Delegated Permissions Are Visible Before And After Joining
 

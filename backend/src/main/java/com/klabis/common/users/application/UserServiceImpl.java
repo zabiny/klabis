@@ -81,6 +81,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void activateWithPassword(UserId userId, String passwordHash) {
+        User user = findById(userId).orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
+        if (user.getAccountStatus() != AccountStatus.PENDING_ACTIVATION) {
+            throw new IllegalStateException("User " + userId + " is not pending activation");
+        }
+        userRepository.save(user.activateWithPassword(passwordHash));
+        log.info("Activated user with password: userId={}", userId);
+    }
+
+    @Override
     public Optional<User> findUserById(UserId userId) {
         return userRepository.findById(userId);
     }

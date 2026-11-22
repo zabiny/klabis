@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
 import com.klabis.common.groups.domain.MemberGroup;
+import com.klabis.common.text.CzechCollation;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -13,11 +14,11 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
-import java.text.Collator;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,6 +33,9 @@ import java.util.stream.Collectors;
 public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGuardianGroupId, UserId> {
 
     public static final String TYPE_DISCRIMINATOR = "LEGAL_GUARDIAN";
+
+    private static final Set<Authority> DELEGATED_AUTHORITIES =
+            Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW));
 
     @Identity
     private final LegalGuardianGroupId id;
@@ -85,7 +89,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
 
     @Override
     public Set<Authority> delegatedAuthorities() {
-        return Set.of(Authority.MEMBERS_EDIT_PROFILE);
+        return DELEGATED_AUTHORITIES;
     }
 
     public Set<UserId> getGuardians() {
@@ -165,11 +169,10 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
     }
 
     private static String generateName(Set<Guardian> guardians) {
-        Collator czech = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
         List<String> surnames = guardians.stream()
                 .map(Guardian::lastName)
                 .distinct()
-                .sorted(czech)
+                .sorted(CzechCollation.comparator())
                 .toList();
         return String.join(" a ", surnames);
     }

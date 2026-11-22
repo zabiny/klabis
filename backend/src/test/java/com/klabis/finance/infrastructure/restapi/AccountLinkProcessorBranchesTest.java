@@ -1,8 +1,6 @@
 package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.SecurityContextAuthorizationEvaluator;
-import com.klabis.common.security.KlabisJwtAuthenticationToken;
-import com.klabis.common.ui.RootModel;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
@@ -16,7 +14,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -78,19 +75,6 @@ class AccountLinkProcessorBranchesTest {
         new AccountMemberSummaryLinkProcessor(SecurityContextAuthorizationEvaluator.create()).process(model);
 
         org.mockito.Mockito.verify(model, org.mockito.Mockito.never()).add(org.mockito.ArgumentMatchers.any(org.springframework.hateoas.Link.class));
-    }
-
-    @Test
-    @DisplayName("root processor adds no link when the member profile has no member id")
-    void rootProcessorAddsNoLinkWithoutMemberId() {
-        KlabisJwtAuthenticationToken token = mock(KlabisJwtAuthenticationToken.class);
-        when(token.hasMemberProfile()).thenReturn(true);
-        when(token.getMemberIdUuid()).thenReturn(Optional.empty());
-        SecurityContextHolder.getContext().setAuthentication(token);
-
-        var result = new AccountRootLinkProcessor().process(EntityModel.of(new RootModel()));
-
-        assertThat(result.getLinks()).isEmpty();
     }
 
     private void authenticateAsFinanceManager() {

@@ -1,6 +1,7 @@
 package com.klabis.members.application;
 
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.text.CzechCollation;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -10,11 +11,9 @@ import org.jmolecules.ddd.annotation.Service;
 import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.Collator;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -23,8 +22,6 @@ import java.util.stream.Stream;
 
 @Service
 class GroupMemberOptionsService implements GroupMemberOptionsPort {
-
-    private static final Collator CZECH = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
 
     private final GroupParticipantsPort groups;
     private final Members members;
@@ -68,7 +65,7 @@ class GroupMemberOptionsService implements GroupMemberOptionsPort {
                         "%s (%s)".formatted(guardian.getName().fullName(), guardian.getEmail().value())));
 
         return Stream.concat(memberOptions, guardianOptions)
-                .sorted(Comparator.comparing(GroupParticipantOption::displayName, CZECH))
+                .sorted(Comparator.comparing(GroupParticipantOption::displayName, CzechCollation.comparator()))
                 .toList();
     }
 }
