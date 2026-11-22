@@ -23,7 +23,7 @@ Feature: Event registrations
 
   Rule: A registration manager can cancel the registration of another member
 
-    Scenario: User with EVENTS:REGISTRATIONS unregisters another member
+    Scenario: User with EVENTS:REGISTER_MEMBER unregisters another member
       Given Eva is registered for the open event "Relay"
       When Jan unregisters Eva from event "Relay"
       Then Eva's registration for event "Relay" is cancelled

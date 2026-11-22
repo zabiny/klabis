@@ -40,7 +40,7 @@ class AuthorityValidatorTest {
                     "MEMBERS:PERMISSIONS",
                     "EVENTS:READ",
                     "EVENTS:MANAGE",
-                    "EVENTS:REGISTRATIONS",
+                    "EVENTS:REGISTER_MEMBER",
                     "GROUPS:TRAINING"
             );
             AuthorityValidator.validate(allAuthorities);

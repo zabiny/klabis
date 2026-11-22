@@ -18,7 +18,7 @@ import java.util.Set;
  * Default sort is registrationTime ASC (FCFS order).
  * <p>
  * sort=registrationTime is silently ignored when the caller is not authorized
- * (not the event coordinator and does not hold EVENTS:REGISTRATIONS).
+ * (not the event coordinator and does not hold EVENTS:REGISTER_MEMBER).
  * Any unknown sort field also silently falls back to the default.
  */
 class RegistrationSortApplier {

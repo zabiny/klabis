@@ -166,9 +166,9 @@
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", TargetType.MEMBER, GrantForm.ALL),
     EVENTS_READ("EVENTS:READ", TargetType.EVENT, GrantForm.ALL),
     EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
-    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_REGISTER_MEMBER("EVENTS:REGISTER_MEMBER", TargetType.MEMBER, GrantForm.ALL, GrantForm.SPECIFIC),
     EVENTS_EDIT("EVENTS:EDIT", TargetType.EVENT, GrantForm.SPECIFIC),
-    EVENTS_REGISTRATIONS_READ("EVENTS:REGISTRATIONS_READ", TargetType.EVENT, GrantForm.SPECIFIC),
+    EVENTS_REGISTRATIONS_OVERVIEW("EVENTS:REGISTRATIONS_OVERVIEW", TargetType.EVENT, GrantForm.SPECIFIC),
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
@@ -196,7 +196,7 @@
 
     <dt>GrantForm.SPECIFIC</dt>
     <dd>Autoritu lze držet <em>nad konkrétními cíli</em>, odvozenými ze vztahu (<code>holdableOverTargets()</code>).
-        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Mají ji <code>MEMBERS_EDIT_PROFILE</code> a autority koordinátora akce (<code>EVENTS_EDIT</code>, <code>EVENTS_REGISTRATIONS_READ</code>).</dd>
+        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Mají ji <code>MEMBERS_EDIT_PROFILE</code> a autority koordinátora akce (<code>EVENTS_EDIT</code>, <code>EVENTS_REGISTRATIONS_OVERVIEW</code>).</dd>
 
     <dt>isKnownAuthority(value)</dt>
     <dd>Použije se k filtrování — Spring <code>DaoAuthenticationProvider</code> přidává
@@ -295,7 +295,7 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
 <table class="ref-table">
     <thead><tr><th>Zdroj</th><th>Modul</th><th>Co uděluje</th></tr></thead>
     <tbody>
-        <tr><td><code>SelfProfileRelationshipSource</code></td><td><code>members.infrastructure</code></td><td><code>MEMBERS_EDIT_PROFILE</code> nad vlastním <code>MemberId</code>, pokud je člen k dnešnímu dni dospělý (nahrazuje dřívější <code>OwnProfileEditRule</code>)</td></tr>
+        <tr><td><code>SelfRelationshipSource</code></td><td><code>members.infrastructure</code></td><td><code>MEMBERS_EDIT_PROFILE</code> nad vlastním <code>MemberId</code>, pokud je člen k dnešnímu dni dospělý (nahrazuje dřívější <code>OwnProfileEditRule</code>)</td></tr>
         <tr><td><code>LegalGuardianGroupRelationshipSource</code></td><td><code>members.legalguardiangroup.infrastructure</code></td><td>pro každou skupinu, kde je uživatel (<code>UserId</code>) zákonným zástupcem: <code>group.delegatedAuthorities()</code> nad každým nezletilým členem skupiny; věk se nekontroluje, skupinu opouští nezletilý denním během po 18. narozeninách</td></tr>
         <tr><td><code>FreeGroupRelationshipSource</code></td><td><code>groups.freegroup.infrastructure</code></td><td>pro každou volnou skupinu, kterou uživatel vlastní: delegovaná oprávnění skupiny (<code>FreeGroup.delegatedAuthorities</code>, volí se při vzniku a jsou neměnná) nad každým členem; ne nad spoluvlastníky, mizí s odchodem člena i vlastníka</td></tr>
     </tbody>

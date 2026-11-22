@@ -19,14 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SelfProfileRelationshipSource")
-class SelfProfileRelationshipSourceTest {
+@DisplayName("SelfRelationshipSource")
+class SelfRelationshipSourceTest {
 
     @Mock
     private MemberRepository memberRepository;
 
-    private SelfProfileRelationshipSource source() {
-        return new SelfProfileRelationshipSource(memberRepository);
+    private SelfRelationshipSource source() {
+        return new SelfRelationshipSource(memberRepository);
     }
 
     private UserId givenMemberBornOn(LocalDate dateOfBirth) {
@@ -42,16 +42,16 @@ class SelfProfileRelationshipSourceTest {
 
         var grants = source().grantsOf(userId);
 
-        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_REGISTER_MEMBER);
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(TargetRef.member(userId.uuid()));
     }
 
     @Test
-    @DisplayName("grants nothing to a minor")
-    void shouldGrantNothingToMinor() {
+    @DisplayName("grants a minor no profile editing")
+    void shouldGrantMinorNoEditProfile() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
 
-        assertThat(source().grantsOf(userId)).isEmpty();
+        assertThat(source().grantsOf(userId)).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -59,15 +59,15 @@ class SelfProfileRelationshipSourceTest {
     void shouldGrantMemberTurningEighteenToday() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(18));
 
-        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(source().grantsOf(userId)).containsKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
-    @DisplayName("grants nothing to a member turning 18 tomorrow")
-    void shouldGrantNothingToMemberTurningEighteenTomorrow() {
+    @DisplayName("grants no profile editing to a member turning 18 tomorrow")
+    void shouldGrantNoEditToMemberTurningEighteenTomorrow() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(18).plusDays(1));
 
-        assertThat(source().grantsOf(userId)).isEmpty();
+        assertThat(source().grantsOf(userId)).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -75,7 +75,7 @@ class SelfProfileRelationshipSourceTest {
     void shouldGrantSuspendedAdult() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
 
-        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(source().grantsOf(userId)).containsKey(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
@@ -85,5 +85,24 @@ class SelfProfileRelationshipSourceTest {
         when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
 
         assertThat(source().grantsOf(new UserId(id))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("grants an adult member registering over themself")
+    void shouldGrantAdultRegisterMemberOverSelf() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
+
+        assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
+                .containsExactly(TargetRef.member(userId.uuid()));
+    }
+
+    @Test
+    @DisplayName("grants a minor member registering over themself")
+    void shouldGrantMinorRegisterMemberOverSelf() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
+
+        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.EVENTS_REGISTER_MEMBER);
+        assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
+                .containsExactly(TargetRef.member(userId.uuid()));
     }
 }

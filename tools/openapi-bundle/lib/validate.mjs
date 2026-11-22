@@ -130,48 +130,51 @@ function targetIdParameters(document, operation) {
 
 /**
  * What an operation's `x-klabis-authority` / `x-klabis-owner-visible` demand of its parameters,
- * stated once per operation: both are evaluated against the operation's single target, which only
- * a path parameter marked `x-klabis-target-id` can name. Authorities held over `{ALL}` only are
- * target-agnostic and ask for nothing.
- *
- * One error for a wrong parameter count however many reasons demand it; the target type is checked
- * per authority, since each may name a different one.
+ * stated once per operation: an authority held over specific targets is evaluated against the
+ * operation's target of the authority's own kind, which only a path parameter marked
+ * `x-klabis-target-id` can name. An operation may identify one target per kind. Authorities held
+ * over `{ALL}` only are target-agnostic and ask for nothing.
  */
 function operationTargetErrors(document, operation, path, authorities) {
     const reasons = [];
-    const expectedTypes = new Set();
-    const specificAuthorities = [];
+    const expectedKinds = new Set();
 
     const names = authorityNames(operation['x-klabis-authority']) ?? [];
     for (const name of names.filter((n) => authorities.get(n)?.grantForms.has('SPECIFIC'))) {
         const {targetType} = authorities.get(name);
-        specificAuthorities.push({name, targetType});
-        expectedTypes.add(targetType);
+        expectedKinds.add(targetType);
         reasons.push(`"${name}" may be held over specific ${targetType} targets`);
     }
-    if (operation['x-klabis-owner-visible'] === true) {
+    const ownerVisible = operation['x-klabis-owner-visible'] === true;
+    if (ownerVisible) {
         reasons.push('x-klabis-owner-visible resolves ownership against the target');
     }
     if (reasons.length === 0) return [];
 
-    const targetParams = targetIdParameters(document, operation);
-    if (targetParams.length !== 1) {
-        const type = expectedTypes.size > 0 ? `: ${[...expectedTypes].join(', ')}` : '';
-        return [{
-            path,
-            message: `${reasons.join('; ')}, so the operation needs exactly one parameter marked `
-                + `x-klabis-target-id${type} (found ${targetParams.length})`,
-        }];
+    const countByKind = new Map();
+    for (const param of targetIdParameters(document, operation)) {
+        const kind = param['x-klabis-target-id'];
+        countByKind.set(kind, (countByKind.get(kind) ?? 0) + 1);
     }
+    const errorFor = (kind, found) => ({
+        path,
+        message: `${reasons.join('; ')}, so the operation needs exactly one parameter marked `
+            + `x-klabis-target-id${kind ? `: ${kind}` : ''} (found ${found})`,
+    });
 
-    const actualType = targetParams[0]['x-klabis-target-id'];
-    return specificAuthorities
-        .filter(({targetType}) => actualType !== targetType)
-        .map(({name, targetType}) => ({
-            path,
-            message: `"${name}" is about ${targetType} targets but parameter `
-                + `"${targetParams[0].name}" is marked x-klabis-target-id: ${actualType}`,
-        }));
+    const errors = [];
+    for (const kind of expectedKinds) {
+        const found = countByKind.get(kind) ?? 0;
+        if (found !== 1) errors.push(errorFor(kind, found));
+    }
+    if (expectedKinds.size === 0 && ownerVisible) {
+        const total = [...countByKind.values()].reduce((sum, n) => sum + n, 0);
+        if (total !== 1) errors.push(errorFor(null, total));
+    }
+    for (const [kind, found] of countByKind) {
+        if (found > 1 && !expectedKinds.has(kind) && errors.length === 0) errors.push(errorFor(kind, found));
+    }
+    return errors;
 }
 
 /** Authority names named by an `x-klabis-authority` / `x-klabis-read-authority` value, or null if malformed. */

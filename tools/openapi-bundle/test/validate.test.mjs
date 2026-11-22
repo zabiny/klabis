@@ -10,6 +10,8 @@ public enum Authority {
     MEMBERS_MANAGE("MEMBERS:MANAGE", TargetType.MEMBER, GrantForm.ALL),
     EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
     MEMBERS_EDIT_PROFILE("MEMBERS:EDIT_PROFILE", TargetType.MEMBER, GrantForm.ALL, GrantForm.SPECIFIC),
+    EVENTS_REGISTER_MEMBER("EVENTS:REGISTER_MEMBER", TargetType.MEMBER, GrantForm.ALL, GrantForm.SPECIFIC),
+    EVENTS_REGISTRATIONS_OVERVIEW("EVENTS:REGISTRATIONS_OVERVIEW", TargetType.EVENT, GrantForm.SPECIFIC),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL);
 
     public static final String MEMBERS_SCOPE = "MEMBERS";
@@ -20,7 +22,8 @@ public enum Authority {
 describe('parseAuthorities', () => {
     it('extracts enum constants', () => {
         expect([...parseAuthorities(AUTHORITY_JAVA).keys()])
-            .toEqual(['CALENDAR_MANAGE', 'MEMBERS_MANAGE', 'EVENTS_MANAGE', 'MEMBERS_EDIT_PROFILE', 'FINANCE_MANAGE']);
+            .toEqual(['CALENDAR_MANAGE', 'MEMBERS_MANAGE', 'EVENTS_MANAGE', 'MEMBERS_EDIT_PROFILE',
+                'EVENTS_REGISTER_MEMBER', 'EVENTS_REGISTRATIONS_OVERVIEW', 'FINANCE_MANAGE']);
     });
 
     it('reads the target type and grant forms of each constant', () => {
@@ -1153,7 +1156,7 @@ describe('validateSpec — authorities held over specific targets', () => {
             [idParam({'x-klabis-target-id': 'EVENT'})],
         ));
         expect(errors).toHaveLength(1);
-        expect(errors[0].message).toContain('is about MEMBER targets');
+        expect(errors[0].message).toContain('exactly one parameter marked x-klabis-target-id: MEMBER (found 0)');
     });
 
     it('rejects a SPECIFIC authority when two parameters name a target', () => {
@@ -1172,6 +1175,40 @@ describe('validateSpec — authorities held over specific targets', () => {
         ));
         expect(errors).toHaveLength(1);
         expect(errors[0].message).toContain('exactly one parameter marked x-klabis-target-id: MEMBER (found 0)');
+    });
+
+    it('accepts one target parameter per kind for authorities of different kinds', () => {
+        expect(validate(docWithOperation(
+            {'x-klabis-authority': ['EVENTS_REGISTER_MEMBER', 'EVENTS_REGISTRATIONS_OVERVIEW']},
+            [idParam({'x-klabis-target-id': 'MEMBER'}), idParam({name: 'eventId', 'x-klabis-target-id': 'EVENT'})],
+        ))).toEqual([]);
+    });
+
+    it('rejects a missing target parameter of one of the authorities\' kinds', () => {
+        const errors = validate(docWithOperation(
+            {'x-klabis-authority': ['EVENTS_REGISTER_MEMBER', 'EVENTS_REGISTRATIONS_OVERVIEW']},
+            [idParam({'x-klabis-target-id': 'MEMBER'})],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('exactly one parameter marked x-klabis-target-id: EVENT (found 0)');
+    });
+
+    it('accepts a target parameter of a kind no listed authority is held over', () => {
+        expect(validate(docWithOperation(
+            {'x-klabis-authority': 'MEMBERS_EDIT_PROFILE'},
+            [idParam({'x-klabis-target-id': 'MEMBER'}), idParam({name: 'eventId', 'x-klabis-target-id': 'EVENT'})],
+        ))).toEqual([]);
+    });
+
+    it('rejects two parameters of the same kind no listed authority is held over', () => {
+        const errors = validate(docWithOperation(
+            {'x-klabis-authority': 'MEMBERS_EDIT_PROFILE'},
+            [idParam({'x-klabis-target-id': 'MEMBER'}),
+             idParam({name: 'eventId', 'x-klabis-target-id': 'EVENT'}),
+             idParam({name: 'otherEventId', 'x-klabis-target-id': 'EVENT'})],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('x-klabis-target-id: EVENT (found 2)');
     });
 
     it('does not require a target parameter for an {ALL}-only authority', () => {

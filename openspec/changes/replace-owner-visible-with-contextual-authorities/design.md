@@ -150,7 +150,7 @@ classDiagram
 | `registerForEvent` | caller only (`@ActingMember`) | `EVENTS_REGISTER_MEMBER`, target `memberId` |
 | `editRegistration`, `unregisterFromEvent` | `EVENTS_REGISTER_MEMBER` + owner | `EVENTS_REGISTER_MEMBER` |
 | `getRegistration` | hand-written `RegistrationReadAccess` | `[EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]`, targets `memberId` (MEMBER) and `eventId` (EVENT) |
-| `getRegistration?newRegistration=true` | caller must be the member | same rule as `getRegistration`; defaults are taken from the target member's profile |
+| `getRegistration?newRegistration=true` | caller must be the member | same rule as `getRegistration`, plus an inline controller check requiring `EVENTS_REGISTER_MEMBER` over `memberId` (the defaults expose the profile and SI card of a member who need not be registered, so the coordinator overview must not reach them); defaults are taken from the target member's profile |
 | accommodation list, `registrationTime`, `missingInOris`, sort by registration time | `[EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_READ]` over the event | `[EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]` over the event |
 
 - **Updating a legal guardian profile.** Only the administrator and the guardian themself can call `updateLegalGuardian`. Nobody else holds `EDIT_PROFILE` over a non-member guardian's id:

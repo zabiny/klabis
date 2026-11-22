@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static com.klabis.common.security.JwtParams.member;
 import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisMemberWithSelfGrants;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -76,7 +77,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("Complete registration flow: register → view own → list all → unregister")
-    @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {})
+    @WithKlabisMockUser(selfGrants = true, memberId = "11111111-1111-1111-1111-111111111111", authorities = {})
     void shouldCompleteRegistrationFlow() throws Exception {
         // Given: Create an PUBLISHED event
         String publishedEventId = createPublishedEvent("Registration flow test event", LocalDate.now().plusDays(10));
@@ -88,7 +89,7 @@ class EventRegistrationCrossModuleTest {
                         post("/api/events/{id}/registrations", publishedEventId)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -98,10 +99,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(
-                                        member(TEST_MEMBER_ID)
-                                                .withAuthorities(Authority.EVENTS_MANAGE)
-                                ))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID, Authority.EVENTS_MANAGE))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -114,10 +112,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations", publishedEventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(
-                                        member(TEST_MEMBER_ID)
-                                                .withAuthorities(Authority.EVENTS_MANAGE)
-                                ))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID, Authority.EVENTS_MANAGE))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -130,10 +125,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         delete("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
-                                .with(klabisAuthentication(
-                                        member(TEST_MEMBER_ID)
-                                                .withAuthorities(Authority.EVENTS_MANAGE)
-                                ))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID, Authority.EVENTS_MANAGE))
                 )
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -142,10 +134,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(
-                                        member(TEST_MEMBER_ID)
-                                                .withAuthorities(Authority.EVENTS_MANAGE)
-                                ))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID, Authority.EVENTS_MANAGE))
                 )
                 .andExpect(status().isNotFound());
     }
@@ -169,7 +158,7 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(registerCommand))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         // When: Try to register again with same SI card
@@ -177,9 +166,7 @@ class EventRegistrationCrossModuleTest {
                         post("/api/events/{id}/registrations", eventId)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
-                                .with(klabisAuthentication(
-                                        member(TEST_MEMBER_ID)
-                                ))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isConflict());
@@ -198,7 +185,7 @@ class EventRegistrationCrossModuleTest {
                         post("/api/events/{id}/registrations", eventId)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(registerCommand))
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isBadRequest());
@@ -216,7 +203,7 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(registerCommand1))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         // User 2 registration
@@ -232,7 +219,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations", eventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -249,7 +236,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -260,7 +247,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("Unregistration should fail on or after event date")
-    @WithKlabisMockUser(memberId = TEST_MEMBER_ID_STRING)
+    @WithKlabisMockUser(selfGrants = true, memberId = TEST_MEMBER_ID_STRING)
     @Sql(scripts = "/sql/test-past-event-with-registration.sql",
          executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldFailUnregistrationOnOrAfterEventDate() throws Exception {
@@ -286,7 +273,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -302,7 +289,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/me", eventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().is4xxClientError());
@@ -348,13 +335,13 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456")))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         String registeredAt = mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andExpect(status().isOk())
                 .andReturn()
@@ -367,7 +354,7 @@ class EventRegistrationCrossModuleTest {
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -375,7 +362,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.siCardNumber").value("999999"))
@@ -407,21 +394,21 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "categoryId", m21Id)))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456", "categoryId", w35Id)))
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(
                         get("/api/events/{id}/registrations", eventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -438,14 +425,14 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "111111")))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
-                                .with(klabisAuthentication(member(member2Id)))
+                                .with(klabisMemberWithSelfGrants(member2Id))
                 )
                 .andDo(print())
                 .andExpect(status().isForbidden());
@@ -461,14 +448,14 @@ class EventRegistrationCrossModuleTest {
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "777777")))
-                        .with(klabisAuthentication(member(member2Id)))
+                        .with(klabisMemberWithSelfGrants(member2Id))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, member2Id)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "888888")))
-                                .with(klabisAuthentication(member(member2Id)))
+                                .with(klabisMemberWithSelfGrants(member2Id))
                 )
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -476,7 +463,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, member2Id)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(member2Id)))
+                                .with(klabisMemberWithSelfGrants(member2Id))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.siCardNumber").value("888888"));
@@ -484,7 +471,7 @@ class EventRegistrationCrossModuleTest {
 
     @Test
     @DisplayName("5.5 Editing registration after deadline returns 400 and leaves registration unchanged")
-    @WithKlabisMockUser(memberId = TEST_MEMBER_ID_STRING)
+    @WithKlabisMockUser(selfGrants = true, memberId = TEST_MEMBER_ID_STRING)
     @Sql(scripts = "/sql/test-past-deadline-event-with-registration.sql",
          executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldReturn400WhenEditingRegistrationAfterDeadline() throws Exception {
@@ -517,7 +504,7 @@ class EventRegistrationCrossModuleTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "123456",
                                 "wantsSharedTransport", true, "wantsSharedAccommodation", true)))
-                        .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                        .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
@@ -532,7 +519,7 @@ class EventRegistrationCrossModuleTest {
                         put("/api/events/{eventId}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .content(objectMapper.writeValueAsString(Map.of("siCardNumber", "999999")))
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andExpect(status().isNoContent());
 
@@ -547,7 +534,7 @@ class EventRegistrationCrossModuleTest {
         mockMvc.perform(
                         get("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .with(klabisAuthentication(member(TEST_MEMBER_ID)))
+                                .with(klabisMemberWithSelfGrants(TEST_MEMBER_ID))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.siCardNumber").value("999999"))

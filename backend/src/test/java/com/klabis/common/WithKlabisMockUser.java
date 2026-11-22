@@ -27,6 +27,9 @@ public @interface WithKlabisMockUser {
     // authorities what will be available for authenticated user. Allows to easily test authorizations of the API endpoints.
     Authority[] authorities() default {};
 
+    // when true and memberId is set, the user holds EVENTS:REGISTER_MEMBER over themself, as the self-grant of SelfRelationshipSource does in production (slice tests have no relationship sources)
+    boolean selfGrants() default false;
+
     // authorities held only over specific targets, on top of the (global) authorities above
     TargetGrant[] targetGrants() default {};
 }

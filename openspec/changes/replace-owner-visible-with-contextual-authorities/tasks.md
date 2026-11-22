@@ -18,7 +18,7 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 2. Registration management through `EVENTS:REGISTER_MEMBER` over members (design D2, D3, D4; spec: event-registrations)
 
-- [ ] 2.1 Rename `EVENTS_REGISTRATIONS` → `EVENTS_REGISTER_MEMBER` (value `EVENTS:REGISTER_MEMBER`) in:
+- [x] 2.1 Rename `EVENTS_REGISTRATIONS` → `EVENTS_REGISTER_MEMBER` (value `EVENTS:REGISTER_MEMBER`) in:
   - backend code and tests,
   - `V001__initial_schema.sql` and the example data,
   - the `common.yaml` wire enum and the `events.yaml` descriptions,
@@ -28,16 +28,16 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
   - backend and frontend tests pass,
   - `npm run build` passes,
   - `grep -rnE "EVENTS[:_]REGISTRATIONS([^_]|$)" backend/src docs/openapi frontend/src` finds nothing.
-- [ ] 2.2 RED: `AuthorityTest` asserts `EVENTS_REGISTER_MEMBER` is MEMBER-kind and in both `assignableAuthorities()` and `holdableOverTargets()`. `SelfRelationshipSource` unit tests assert `EVENTS:REGISTER_MEMBER` over self for an adult member and for a minor member, and no grant for a non-member user. Confirm both fail.
-- [ ] 2.3 GREEN: re-target `EVENTS_REGISTER_MEMBER` to `TargetType.MEMBER` with `GrantForm.ALL, GrantForm.SPECIFIC`. Rename `SelfProfileRelationshipSource` → `SelfRelationshipSource` and add the member self-grant. Verify: the 2.2 tests pass.
-- [ ] 2.4 RED: integration tests for edit, unregister, get and get-defaults (`newRegistration=true`), and confirm the new expectations fail:
+- [x] 2.2 RED: `AuthorityTest` asserts `EVENTS_REGISTER_MEMBER` is MEMBER-kind and in both `assignableAuthorities()` and `holdableOverTargets()`. `SelfRelationshipSource` unit tests assert `EVENTS:REGISTER_MEMBER` over self for an adult member and for a minor member, and no grant for a non-member user. Confirm both fail.
+- [x] 2.3 GREEN: re-target `EVENTS_REGISTER_MEMBER` to `TargetType.MEMBER` with `GrantForm.ALL, GrantForm.SPECIFIC`. Rename `SelfProfileRelationshipSource` → `SelfRelationshipSource` and add the member self-grant. Verify: the 2.2 tests pass.
+- [x] 2.4 RED: integration tests for edit, unregister, get and get-defaults (`newRegistration=true`), and confirm the new expectations fail:
   - the member themself is allowed,
   - another plain member is denied,
   - the registrations manager is allowed,
   - the event coordinator may get, but not edit or unregister,
   - get-defaults for another member is allowed for the registrations manager and returns that member's SI card,
   - the accommodation list and `registrationTime` stay coordinator- and manager-only.
-- [ ] 2.5 GREEN: in `events.yaml`:
+- [x] 2.5 GREEN: in `events.yaml`:
   - remove `x-klabis-owner-visible` from `editRegistration` / `unregisterFromEvent`,
   - add `x-klabis-target-id: EVENT` to `RegEventIdParam`,
   - declare `getRegistration` with `x-klabis-authority: [EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]`,
@@ -49,7 +49,7 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
   - drop the "caller must be the member" check for `newRegistration=true`.
 
   Verify: the 2.4 tests and the events module tests pass.
-- [ ] 2.6 Verify the existing E2E registration scenarios (`frontend/e2e/features/event-registrations.feature`) still pass with `npm run test:e2e`.
+- [x] 2.6 Verify the existing E2E registration scenarios (`frontend/e2e/features/event-registrations.feature`) still pass with `npm run test:e2e`.
 
 ## 3. Registering names the member (design D5)
 

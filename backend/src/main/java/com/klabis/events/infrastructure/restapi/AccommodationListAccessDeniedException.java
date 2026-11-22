@@ -19,7 +19,7 @@ class AccommodationListAccessDeniedException extends AuthorizationException impl
 
     static AccommodationListAccessDeniedException callerNotPermitted() {
         return new AccommodationListAccessDeniedException(
-                "Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator",
+                "Access to accommodation list requires EVENTS:REGISTER_MEMBER authority or being the event coordinator",
                 CALLER_NOT_PERMITTED);
     }
 

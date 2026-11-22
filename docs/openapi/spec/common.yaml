@@ -524,7 +524,7 @@ components:
         - MEMBERS:EDIT_PROFILE
         - EVENTS:READ
         - EVENTS:MANAGE
-        - EVENTS:REGISTRATIONS
+        - EVENTS:REGISTER_MEMBER
         - GROUPS:TRAINING
         - FINANCE:MANAGE
         - SYNC:MANAGE

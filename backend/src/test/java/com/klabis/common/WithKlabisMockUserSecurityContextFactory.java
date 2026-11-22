@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -50,6 +51,11 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
             for (String id : grant.ids()) {
                 targets.add(new TargetRef(grant.type(), UUID.fromString(id)));
             }
+        }
+        if (withUser.selfGrants()) {
+            Assert.hasText(withUser.memberId(), "selfGrants = true requires memberId: only a member holds self-grants");
+            TestSnapshots.selfGrantsOf(UUID.fromString(withUser.memberId()))
+                    .forEach((authority, targets) -> overTargets.computeIfAbsent(authority, a -> new HashSet<>()).addAll(targets));
         }
         return TestSnapshots.of(Set.of(withUser.authorities()), overTargets);
     }

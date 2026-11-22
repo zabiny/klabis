@@ -427,7 +427,7 @@ class EventFilterCrossModuleTest {
                         post("/api/events/{id}/registrations", eventId)
                                 .contentType("application/json")
                                 .content("{\"siCardNumber\":\"123456\"}")
-                                .with(klabisAuthentication(member(memberId).withAuthorities(Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS)))
+                                .with(klabisAuthentication(member(memberId).withAuthorities(Authority.EVENTS_READ, Authority.EVENTS_REGISTER_MEMBER)))
                 )
                 .andExpect(status().isCreated());
     }

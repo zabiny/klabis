@@ -1027,8 +1027,8 @@ describe('EventDetailPage', () => {
             });
         });
 
-        describe('edit button for EVENTS:REGISTRATIONS holder (Group 9)', () => {
-            it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTRATIONS holder)', () => {
+        describe('edit button for EVENTS:REGISTER_MEMBER holder (Group 9)', () => {
+            it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTER_MEMBER holder)', () => {
                 const editTemplate = mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'});
                 const rows = [
                     buildRegistrationRow('member-1', {_templates: {editRegistration: editTemplate}}),

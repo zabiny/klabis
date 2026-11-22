@@ -22,7 +22,7 @@ const PERMISSION_COLORS: Record<string, string> = {
     'EVENTS:MANAGE':         'bg-indigo-100 text-indigo-600',
     'CALENDAR:MANAGE':       'bg-cyan-100 text-cyan-600',
     'GROUPS:TRAINING':       'bg-orange-100 text-orange-600',
-    'EVENTS:REGISTRATIONS':  'bg-purple-100 text-purple-600',
+    'EVENTS:REGISTER_MEMBER':  'bg-purple-100 text-purple-600',
     'FINANCE:MANAGE':        'bg-yellow-100 text-yellow-600',
     'SYNC:MANAGE':           'bg-blue-100 text-blue-600',
 };
