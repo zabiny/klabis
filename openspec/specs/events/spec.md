@@ -1513,7 +1513,7 @@ Turning an offer off is always allowed, even when members have already asked to 
 
 ### Requirement: Shared Transport And Accommodation Count Summary On The Event Detail Page
 
-On the detail page of an ACTIVE event, for each offer that is turned on, the event coordinator and users with the EVENTS:REGISTRATIONS authority SHALL see how many registered members have asked to use that offer. The summary shows a separate line per turned-on offer and is shown even when the count is zero. Members without the EVENTS:REGISTRATIONS authority who are not the coordinator do not see the summary. The summary is not shown for DRAFT, FINISHED, or CANCELLED events, nor for an offer that is turned off.
+On the detail page of an ACTIVE event, for each offer that is turned on, the event coordinator and users with the EVENTS:REGISTER_MEMBER authority SHALL see how many registered members have asked to use that offer. The summary shows a separate line per turned-on offer and is shown even when the count is zero. Members without the EVENTS:REGISTER_MEMBER authority who are not the coordinator do not see the summary. The summary is not shown for DRAFT, FINISHED, or CANCELLED events, nor for an offer that is turned off.
 
 #### Scenario: Coordinator sees the count summary for both offers
 
@@ -1525,7 +1525,7 @@ On the detail page of an ACTIVE event, for each offer that is turned on, the eve
 #### Scenario: User with EVENTS:REGISTRATIONS sees the count summary
 
 - **GIVEN** an ACTIVE event with at least one offer turned on
-- **WHEN** a user with the EVENTS:REGISTRATIONS authority opens the event detail page
+- **WHEN** a user with the EVENTS:REGISTER_MEMBER authority opens the event detail page
 - **THEN** the count summary is shown for each turned-on offer
 
 #### Scenario: Summary line is shown even when nobody has chosen the offer
@@ -1544,7 +1544,7 @@ On the detail page of an ACTIVE event, for each offer that is turned on, the eve
 #### Scenario: Regular member does not see the count summary
 
 - **GIVEN** an ACTIVE event with an offer turned on
-- **WHEN** an authenticated member who is not the coordinator and has no EVENTS:REGISTRATIONS authority opens the event detail page
+- **WHEN** an authenticated member who is not the coordinator and has no EVENTS:REGISTER_MEMBER authority opens the event detail page
 - **THEN** no count summary is shown
 
 #### Scenario: Summary is not shown for a non-active event

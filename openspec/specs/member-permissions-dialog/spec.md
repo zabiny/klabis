@@ -24,7 +24,7 @@ The system SHALL allow users with MEMBERS:PERMISSIONS authority to manage member
 
 ### Requirement: Display Current Permissions in Dialog
 
-The system SHALL load and display the user's current permissions when the dialog opens. The dialog SHALL include all available authorities, including `GROUPS:TRAINING` and `EVENTS:REGISTRATIONS`.
+The system SHALL load and display the user's current permissions when the dialog opens. The dialog SHALL include all available authorities, including `GROUPS:TRAINING` and `EVENTS:REGISTER_MEMBER`.
 
 #### Scenario: Dialog shows current permissions as toggles
 
@@ -43,8 +43,8 @@ The system SHALL load and display the user's current permissions when the dialog
 #### Scenario: Dialog shows EVENTS:REGISTRATIONS permission toggle
 
 - **WHEN** user opens the permissions dialog
-- **THEN** the dialog displays a toggle for `EVENTS:REGISTRATIONS` with a Czech label and description explaining it covers managing other members' event registrations
-- **AND** the toggle reflects whether the member currently has `EVENTS:REGISTRATIONS` assigned
+- **THEN** the dialog displays a toggle for `EVENTS:REGISTER_MEMBER` with a Czech label and description explaining it covers managing other members' event registrations
+- **AND** the toggle reflects whether the member currently has `EVENTS:REGISTER_MEMBER` assigned
 
 #### Scenario: Dialog shows loading state while fetching permissions
 
