@@ -98,19 +98,6 @@ class AuthorityTest {
     }
 
     @Test
-    @DisplayName("free groups may delegate only profile editing")
-    void shouldDelegateOnlyProfileEditingInFreeGroups() {
-        assertThat(Authority.delegatableInFreeGroups()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
-    }
-
-    @Test
-    @DisplayName("legal guardian groups delegate profile editing and account viewing")
-    void shouldDelegateProfileEditingAndFinanceViewByLegalGuardianGroups() {
-        assertThat(Authority.delegatedByLegalGuardianGroups())
-                .containsExactlyInAnyOrder(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW);
-    }
-
-    @Test
     @DisplayName("coordinator authorities are neither assignable nor grantable over everything")
     void shouldNotOfferCoordinatorAuthoritiesForDirectGrant() {
         assertThat(Authority.assignableAuthorities())

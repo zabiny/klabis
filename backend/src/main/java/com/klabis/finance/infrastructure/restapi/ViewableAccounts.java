@@ -4,23 +4,20 @@ import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.text.CzechCollation;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 
-import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 @MvcComponent
 class ViewableAccounts {
-
-    private static final Collator CZECH = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
 
     record ViewableAccount(UUID memberId, String ownerName) {
     }
@@ -61,8 +58,8 @@ class ViewableAccounts {
         return owners.values().stream()
                 .sorted(Comparator
                         .comparing((MemberDto m) -> !authorizationEvaluator.isSelf(TargetRef.member(m.memberId())))
-                        .thenComparing(MemberDto::lastName, CZECH)
-                        .thenComparing(MemberDto::firstName, CZECH))
+                        .thenComparing(MemberDto::lastName, CzechCollation.comparator())
+                        .thenComparing(MemberDto::firstName, CzechCollation.comparator()))
                 .map(m -> new ViewableAccount(m.memberId(), m.firstName() + " " + m.lastName()))
                 .toList();
     }

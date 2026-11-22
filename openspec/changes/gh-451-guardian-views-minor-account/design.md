@@ -46,12 +46,12 @@ A new `RelationshipSource` in the finance module grants the current user `FINANC
 
 *Alternative:* keep `x-klabis-owner-visible` and add `FINANCE_VIEW` next to it. Rejected: it would keep two parallel rules for the same question. With the self-grant, "viewable accounts" (D6) is simply the set of `FINANCE:VIEW` targets, including the user's own account.
 
-### D3: Domain changes — delegation sets live in `Authority`
+### D3: Domain changes — each group defines what it delegates
 
-`Authority` gets two functions next to `grantableOverAll()` / `holdableOverTargets()`. They are the single place that defines which authorities each kind of group delegates:
+Each kind of group holds its own explicit delegation set, so the rule sits with the aggregate that enforces it:
 
-- `Authority.delegatableInFreeGroups()` → `{MEMBERS_EDIT_PROFILE}`. These are the authorities a free group founder may choose from.
-- `Authority.delegatedByLegalGuardianGroups()` → `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}`. A legal guardian group always delegates exactly these.
+- `FreeGroup.delegatableAuthorities()` → `{MEMBERS_EDIT_PROFILE}`. These are the authorities a free group founder may choose from.
+- `LegalGuardianGroup.delegatedAuthorities()` → `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}`. A legal guardian group always delegates exactly these.
 
 ```mermaid
 classDiagram
@@ -62,18 +62,18 @@ classDiagram
         FINANCE_VIEW
         +grantableOverAll()$ Set~Authority~
         +holdableOverTargets()$ Set~Authority~
-        +delegatableInFreeGroups()$ Set~Authority~
-        +delegatedByLegalGuardianGroups()$ Set~Authority~
     }
     class MemberGroup {
         <<abstract>>
         +delegatedAuthorities() Set~Authority~
     }
     class LegalGuardianGroup {
+        -DELEGATED_AUTHORITIES$ Set~Authority~
         +delegatedAuthorities() Set~Authority~
     }
     class FreeGroup {
         -delegatedAuthorities Set~Authority~
+        +delegatableAuthorities()$ Set~Authority~
     }
     class TrainingGroup {
         +delegatedAuthorities() none
@@ -81,17 +81,13 @@ classDiagram
     MemberGroup <|-- LegalGuardianGroup
     MemberGroup <|-- FreeGroup
     MemberGroup <|-- TrainingGroup
-    LegalGuardianGroup ..> Authority : delegatedByLegalGuardianGroups()
-    FreeGroup ..> Authority : delegatableInFreeGroups()
 ```
 
 | Element | Change | Description |
 |---|---|---|
 | `Authority.FINANCE_VIEW` | **added** | View one member's financial account. Target type `MEMBER`, held over specific members only. |
-| `Authority.delegatableInFreeGroups()` | **added** | Authorities a free group founder may delegate: `{MEMBERS_EDIT_PROFILE}`. |
-| `Authority.delegatedByLegalGuardianGroups()` | **added** | Authorities every legal guardian group delegates: `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}`. |
-| `LegalGuardianGroup.delegatedAuthorities()` | **changed** | Returns `Authority.delegatedByLegalGuardianGroups()` instead of its own constant. Still computed, so no data migration. |
-| `FreeGroup` delegatable set | **changed** | Uses `Authority.delegatableInFreeGroups()` instead of deriving it from all member-targeted authorities. The aggregate guard (`InvalidDelegatedAuthorityException`) therefore rejects `FINANCE_VIEW`, and the create form's options leave it out. `FreeGroup.delegatableAuthorities()` is removed and its callers use the `Authority` function. |
+| `LegalGuardianGroup.delegatedAuthorities()` | **changed** | Returns `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}`. Still computed, so no data migration. |
+| `FreeGroup.delegatableAuthorities()` | **changed** | An explicit `{MEMBERS_EDIT_PROFILE}` instead of deriving the set from all member-targeted authorities. The aggregate guard (`InvalidDelegatedAuthorityException`) therefore rejects `FINANCE_VIEW`, and the create form's options leave it out. |
 | `TrainingGroup` | unchanged | Delegates nothing. |
 
 The two sets are listed explicitly rather than derived from per-constant attributes. A new authority therefore never becomes delegatable by accident.

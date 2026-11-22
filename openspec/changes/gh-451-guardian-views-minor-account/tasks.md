@@ -2,12 +2,12 @@
 
 Each task follows Red-Green-Refactor: write the failing test first, implement, refactor. Run tests through the test-runner; write E2E scenarios with the e2e-tester agent.
 
-## 1. `FINANCE:VIEW` authority and delegation sets in `Authority` (design D1, D3)
+## 1. `FINANCE:VIEW` authority and explicit group delegation sets (design D1, D3)
 
 - [x] 1.1 Add `Authority.FINANCE_VIEW("FINANCE:VIEW", TargetType.MEMBER, GrantForm.SPECIFIC)` with a unit test asserting it is in `holdableOverTargets()` and not in `grantableOverAll()`. Verify: `Authority` unit tests pass.
-- [x] 1.2 Add `Authority.delegatableInFreeGroups()` → `{MEMBERS_EDIT_PROFILE}` and `Authority.delegatedByLegalGuardianGroups()` → `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}` with unit tests for both sets. Verify: `Authority` unit tests pass.
-- [x] 1.3 Switch `FreeGroup` to `Authority.delegatableInFreeGroups()`, remove `FreeGroup.delegatableAuthorities()` and update its callers (`FreeGroupController` create-form options). Test that creating a free group delegating `FINANCE:VIEW` throws `InvalidDelegatedAuthorityException` and that the "Create group" form options contain only "Úprava údajů člena". Verify: FreeGroup domain and controller tests pass.
-- [x] 1.4 Make `LegalGuardianGroup.delegatedAuthorities()` return `Authority.delegatedByLegalGuardianGroups()`. Test that `LegalGuardianGroupRelationshipSource` grants a guardian `FINANCE:VIEW` and `MEMBERS:EDIT_PROFILE` over each minor of the group and nothing over the minor once removed from the group. Verify: legal guardian group tests pass.
+- [x] 1.2 Define the explicit delegation sets in the group aggregates: `FreeGroup.delegatableAuthorities()` → `{MEMBERS_EDIT_PROFILE}` and `LegalGuardianGroup.delegatedAuthorities()` → `{MEMBERS_EDIT_PROFILE, FINANCE_VIEW}`, with unit tests for both sets. Verify: group domain unit tests pass.
+- [x] 1.3 Switch `FreeGroup.delegatableAuthorities()` to the explicit set and keep its callers (`FreeGroupController` create-form options) on it. Test that creating a free group delegating `FINANCE:VIEW` throws `InvalidDelegatedAuthorityException` and that the "Create group" form options contain only "Úprava údajů člena". Verify: FreeGroup domain and controller tests pass.
+- [x] 1.4 Make `LegalGuardianGroup.delegatedAuthorities()` include `FINANCE_VIEW`. Test that `LegalGuardianGroupRelationshipSource` grants a guardian `FINANCE:VIEW` and `MEMBERS:EDIT_PROFILE` over each minor of the group and nothing over the minor once removed from the group. Verify: legal guardian group tests pass.
 - [x] 1.5 Add the `'FINANCE:VIEW'` authority label "Zobrazení financí člena" (with description) to `frontend/src/localization/labels.ts`. Verify: frontend label tests and `npm run build` pass.
 
 ## 2. Account owner sees own account through `FINANCE:VIEW` (design D2, D4, D5)

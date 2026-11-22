@@ -20,6 +20,9 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
+    private static final Set<Authority> DELEGATABLE_AUTHORITIES =
+            Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE));
+
     @Identity
     private final FreeGroupId id;
     private final Set<Invitation> invitations;
@@ -34,7 +37,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
         // Guards the aggregate itself, so a client bypassing the create form cannot delegate an administrator authority.
         delegatedAuthorities.stream()
-                .filter(authority -> !Authority.delegatableInFreeGroups().contains(authority))
+                .filter(authority -> !DELEGATABLE_AUTHORITIES.contains(authority))
                 .findFirst()
                 .ifPresent(authority -> {
                     throw new InvalidDelegatedAuthorityException(authority);
@@ -44,6 +47,14 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         this.delegatedAuthorities = delegatedAuthorities.isEmpty()
                 ? Collections.emptySet()
                 : Collections.unmodifiableSet(EnumSet.copyOf(delegatedAuthorities));
+    }
+
+    /**
+     * Authorities a free group founder may choose to delegate. Listed explicitly so that a new member-targeted
+     * authority never becomes delegatable by accident.
+     */
+    public static Set<Authority> delegatableAuthorities() {
+        return DELEGATABLE_AUTHORITIES;
     }
 
     @RecordBuilder

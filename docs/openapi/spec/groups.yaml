@@ -979,7 +979,7 @@ components:
     # === Groups (FreeGroup) ======================================================================
 
     # The permissions the owners of a free group may hold over its members: exactly
-    # Authority.delegatableInFreeGroups(). Never administrator permissions — FreeGroup rejects those
+    # FreeGroup.delegatableAuthorities(). Never administrator permissions — FreeGroup rejects those
     # even when a client bypasses this enum.
     DelegatedAuthority:
       type: string

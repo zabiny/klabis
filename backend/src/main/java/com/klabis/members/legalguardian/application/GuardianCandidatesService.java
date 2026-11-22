@@ -1,5 +1,6 @@
 package com.klabis.members.legalguardian.application;
 
+import com.klabis.common.text.CzechCollation;
 import com.klabis.common.users.UserId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
@@ -11,19 +12,15 @@ import org.jmolecules.ddd.annotation.Service;
 import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.Collator;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Service
 class GuardianCandidatesService implements GuardianCandidatesPort {
-
-    private static final Collator CZECH = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
 
     private final LegalGuardianRepository legalGuardianRepository;
     private final MemberRepository memberRepository;
@@ -46,7 +43,7 @@ class GuardianCandidatesService implements GuardianCandidatesPort {
         }
 
         List<GuardianCandidate> candidates = new ArrayList<>(byUser.values());
-        candidates.sort(Comparator.comparing(GuardianCandidate::displayName, CZECH));
+        candidates.sort(Comparator.comparing(GuardianCandidate::displayName, CzechCollation.comparator()));
         return candidates;
     }
 
