@@ -23,10 +23,11 @@ public final class TestSnapshots {
     public static Map<Authority, Set<TargetRef>> selfGrantsOf(UUID memberId) {
         Map<Authority, Set<TargetRef>> grants = new EnumMap<>(minorSelfGrantsOf(memberId));
         grants.putAll(nonMemberSelfGrantsOf(memberId));
+        grants.put(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, Set.of(TargetRef.member(memberId)));
         return grants;
     }
 
-    /** A minor member may view their profile and register for events, but not edit the profile. */
+    /** A minor member may view their profile and register for events, but neither edit it nor choose a fee type. */
     public static Map<Authority, Set<TargetRef>> minorSelfGrantsOf(UUID memberId) {
         Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
         grants.put(Authority.MEMBERS_VIEW_PROFILE, Set.of(TargetRef.member(memberId)));

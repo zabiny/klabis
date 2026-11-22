@@ -210,6 +210,18 @@ describe('getPermissionInfo()', () => {
         expect(info?.label).toBe('Správa přihlášek člena');
         expect(info?.description).toBe('Přihlašování, úprava a odhlašování člena z akcí');
     });
+
+    it('labels MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE as "Volba členského příspěvku" with description', () => {
+        const info = getPermissionInfo('MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE');
+        expect(info?.label).toBe('Volba členského příspěvku');
+        expect(info?.description).toBe('Volba typu členského příspěvku člena na další rok');
+    });
+
+    it('labels MEMBERS:VIEW_PROFILE as "Zobrazení údajů člena" with description', () => {
+        const info = getPermissionInfo('MEMBERS:VIEW_PROFILE');
+        expect(info?.label).toBe('Zobrazení údajů člena');
+        expect(info?.description).toBe('Zobrazení osobních údajů člena');
+    });
 });
 
 describe('labels.errorTypes membership fees', () => {

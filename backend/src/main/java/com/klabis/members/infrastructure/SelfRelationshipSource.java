@@ -19,7 +19,8 @@ import java.util.Set;
  * Grants a user permissions over themself, replacing the former owner-visible rule. Every user may view their
  * own profile; every user except a minor member may edit it (a minor's data is maintained by guardians and
  * administrators), which also covers a non-member legal guardian's own profile. Only a member may register
- * themself for events. Age is evaluated against today, so the edit grant starts on the 18th birthday
+ * themself for events, and only an adult member chooses their own membership fee type (a minor's is chosen by
+ * guardians). Age is evaluated against today, so the edit grant starts on the 18th birthday
  * without any intervention.
  */
 @Component
@@ -35,15 +36,19 @@ class SelfRelationshipSource implements RelationshipSource {
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
         Set<TargetRef> self = Set.of(TargetRef.member(userId.uuid()));
         Optional<LocalDate> dateOfBirth = memberRepository.findDateOfBirth(MemberId.fromUserId(userId));
+        boolean isMember = dateOfBirth.isPresent();
         boolean minor = dateOfBirth.map(PersonalInformation::isMinor).orElse(false);
 
         Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
         grants.put(Authority.MEMBERS_VIEW_PROFILE, self);
-        if (dateOfBirth.isPresent()) {
+        if (isMember) {
             grants.put(Authority.EVENTS_REGISTER_MEMBER, self);
         }
         if (!minor) {
             grants.put(Authority.MEMBERS_EDIT_PROFILE, self);
+        }
+        if (isMember && !minor) {
+            grants.put(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, self);
         }
         return grants;
     }

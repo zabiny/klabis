@@ -43,7 +43,7 @@ class SelfRelationshipSourceTest {
         var grants = source().grantsOf(userId);
 
         assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_VIEW_PROFILE,
-                Authority.EVENTS_REGISTER_MEMBER);
+                Authority.EVENTS_REGISTER_MEMBER, Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(TargetRef.member(userId.uuid()));
     }
 
@@ -128,5 +128,31 @@ class SelfRelationshipSourceTest {
                 Authority.MEMBERS_VIEW_PROFILE);
         assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
                 .containsExactly(TargetRef.member(userId.uuid()));
+    }
+
+    @Test
+    @DisplayName("grants an adult member fee type selection over themself")
+    void shouldGrantAdultSelectFeeTypeOverSelf() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
+
+        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE))
+                .containsExactly(TargetRef.member(userId.uuid()));
+    }
+
+    @Test
+    @DisplayName("grants a minor member no fee type selection")
+    void shouldGrantMinorNoSelectFeeType() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
+
+        assertThat(source().grantsOf(userId)).doesNotContainKey(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+    }
+
+    @Test
+    @DisplayName("grants a user who is not a member no fee type selection")
+    void shouldGrantNonMemberNoSelectFeeType() {
+        UUID id = UUID.randomUUID();
+        when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
+
+        assertThat(source().grantsOf(new UserId(id))).doesNotContainKey(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
     }
 }

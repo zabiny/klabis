@@ -81,7 +81,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should expose the active campaign year in the response")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldExposeCampaignYear() throws Exception {
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(
                     new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, true, Optional.empty()));
@@ -95,7 +95,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should return 404 when no campaign is active")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldReturn404WithoutActiveCampaign() throws Exception {
             when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
 
@@ -107,7 +107,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should return 200 with current group info when member has chosen a level")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldReturnCurrentGroupWhenChosen() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, false, Optional.empty());
@@ -125,7 +125,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should return votingOpen=true and recommendedGroupId when no choice and voting open")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldReturnVotingOpenWithRecommended() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true,
@@ -143,7 +143,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should include chooseFeeType affordance when voting is open")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldIncludeChooseLevelAffordanceWhenVotingOpen() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true, Optional.empty());
@@ -158,7 +158,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should expose membershipFeeGroupId as MembershipFeeGroupChoice with options.link to published groups")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldExposeGroupOptionsLinkOnChooseFeeTypeAffordance() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true, Optional.empty());
@@ -178,7 +178,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should include removeChoice affordance targeting the fee-choice endpoint when voting is open and member has chosen")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldIncludeRemoveChoiceAffordanceWhenChosenAndVotingOpen() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, true, Optional.empty());
@@ -195,7 +195,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should not include removeChoice affordance when voting is closed")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldNotIncludeRemoveChoiceAffordanceWhenVotingClosed() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, false, Optional.empty());
@@ -210,7 +210,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should not include chooseFeeType affordance when voting is closed")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldNotIncludeChooseLevelAffordanceWhenVotingClosed() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, false, Optional.empty());
@@ -256,7 +256,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should return 200 with list of past assignments")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldReturnFeeHistory() throws Exception {
             List<MemberFeeHistoryPort.LevelAssignment> history = List.of(
                     new MemberFeeHistoryPort.LevelAssignment(
@@ -287,7 +287,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should return 200 with empty assignments when no history")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldReturnEmptyHistory() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
 
@@ -301,7 +301,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should link back to the member")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
         void shouldLinkToMember() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
 
@@ -315,7 +315,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should offer yearless feeSummary link to the owner while a campaign is active")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldOfferFeeSummaryToOwnerWithActiveCampaign() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
             when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(2027)));
@@ -330,7 +330,7 @@ class MemberFeeSummaryControllerTest {
 
         @Test
         @DisplayName("should not offer feeSummary link when no campaign is active")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = true)
         void shouldNotOfferFeeSummaryWithoutActiveCampaign() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
             when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
@@ -399,7 +399,7 @@ class MemberFeeSummaryControllerTest {
         @Test
         @DisplayName("should offer feeSummary link to a guardian holding MEMBERS:EDIT_PROFILE over the member")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
-                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+                authority = Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
         void shouldReturnHistoryToGuardianOfTheMember() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
             when(publicationManagementPort.findActiveCampaign()).thenReturn(Optional.of(activeCampaign(YEAR)));
@@ -414,7 +414,7 @@ class MemberFeeSummaryControllerTest {
         @Test
         @DisplayName("should return history to a guardian without a member profile")
         @WithKlabisMockUser(userId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
-                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+                authority = Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
         void shouldReturnHistoryToNonMemberGuardian() throws Exception {
             when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
 
@@ -427,7 +427,7 @@ class MemberFeeSummaryControllerTest {
         @Test
         @DisplayName("should return 403 to a guardian holding the grant over a different member")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
-                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                authority = Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, type = TargetType.MEMBER,
                 ids = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
         void shouldReturn403ToGuardianOfDifferentMember() throws Exception {
             mockMvc.perform(

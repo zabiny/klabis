@@ -23,6 +23,7 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_PERMISSIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.MEMBERS_VIEW_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTER_MEMBER, TargetType.MEMBER, EnumSet.of(GrantForm.ALL, GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTRATIONS_OVERVIEW, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
@@ -85,7 +86,8 @@ class AuthorityTest {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
                 Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_VIEW_PROFILE, Authority.EVENTS_EDIT,
                 Authority.EVENTS_REGISTRATIONS_OVERVIEW,
-                Authority.GROUPS_OWNER, Authority.FINANCE_VIEW, Authority.EVENTS_REGISTER_MEMBER);
+                Authority.GROUPS_OWNER, Authority.FINANCE_VIEW, Authority.EVENTS_REGISTER_MEMBER,
+                Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
     }
 
     @Test
@@ -106,6 +108,16 @@ class AuthorityTest {
         assertThat(Authority.fromString("MEMBERS:VIEW_PROFILE")).isEqualTo(Authority.MEMBERS_VIEW_PROFILE);
         assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
         assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
+    }
+
+    @Test
+    @DisplayName("fee type selection has the wire value MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE and is held over specific members only")
+    void shouldExposeSelectMembershipFeeTypeAsMemberTargetedSpecificAuthority() {
+        assertThat(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE.getValue()).isEqualTo("MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE");
+        assertThat(Authority.fromString("MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE"))
+                .isEqualTo(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
     }
 
     @Test

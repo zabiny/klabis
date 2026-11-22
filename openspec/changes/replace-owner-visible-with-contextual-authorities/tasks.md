@@ -111,7 +111,7 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 6. Membership fee choice through `MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE` (design D2, D3, D4; spec: membership-fees, legal-guardians)
 
-- [ ] 6.1 RED: unit and integration tests, and confirm they fail:
+- [x] 6.1 RED: unit and integration tests, and confirm they fail:
   - `AuthorityTest` and the converter test for `MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE`.
   - `SelfRelationshipSource`: granted to an adult member; not to a minor or a non-member.
   - The `LegalGuardianGroup` delegation includes it; `FreeGroup.delegatableAuthorities()` does not.
@@ -121,18 +121,18 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
     - a member guardian and an EXT guardian read and choose for their minor,
     - the administrator reads but cannot choose,
     - a free group owner delegating "Úprava údajů člena" is denied both.
-- [ ] 6.2 GREEN:
+- [x] 6.2 GREEN:
   - add `Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE("MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE", MEMBER, SPECIFIC)` and its converter mapping,
   - add the adult self-grant and the legal guardian delegation,
   - in `membershipfees.yaml`, set `getChoice` / `getFeeSummary` / `getFeeHistory` to `[MEMBERS_MANAGE, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]` and `chooseFeeType` / `removeChoice` to `[MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]`, removing `x-klabis-owner-visible`.
 
   Verify: the 6.1 tests and the membershipfees, members and groups module tests pass.
-- [ ] 6.3 Frontend labels: RED label tests for `'MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE'` "Volba členského příspěvku" and `'MEMBERS:VIEW_PROFILE'` "Zobrazení údajů člena" (with descriptions), then GREEN in `labels.ts`. Verify: label tests and `npm run build` pass.
-- [ ] 6.4 E2E with the e2e-tester, written before checking against the running build. The scenarios:
+- [x] 6.3 Frontend labels: RED label tests for `'MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE'` "Volba členského příspěvku" and `'MEMBERS:VIEW_PROFILE'` "Zobrazení údajů člena" (with descriptions), then GREEN in `labels.ts`. Verify: label tests and `npm run build` pass.
+- [x] 6.4 E2E with the e2e-tester, written before checking against the running build. The scenarios:
   - "minor does not see the Členské příspěvky button on their own profile",
   - "guardian chooses a fee type for their child".
 
-  Verify: `npm run test:e2e` passes them.
+  Verify: `npm run test:e2e` passes them. (The minor scenario is not automated: no minor can log in with the example data, so it stays documented in `membership-fee-choice.feature` and is covered by `MemberFeeSelfAccessIntegrationTest`. This was the user's decision. The guardian scenario already passed before 6.2 through the delegated profile-edit permission, and it still passes after 6.2.)
 
 ## 7. Remove the owner-visible mechanism (design D6)
 

@@ -36,7 +36,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
 
     private static final Set<Authority> DELEGATED_AUTHORITIES =
             Collections.unmodifiableSet(EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW,
-                    Authority.EVENTS_REGISTER_MEMBER));
+                    Authority.EVENTS_REGISTER_MEMBER, Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE));
 
     @Identity
     private final LegalGuardianGroupId id;

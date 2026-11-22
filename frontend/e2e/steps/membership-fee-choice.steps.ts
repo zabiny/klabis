@@ -1,13 +1,15 @@
 import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
 import {test} from '../support/fixtures';
-import {expectActing, type Persona} from '../support/personas';
+import {expectActing, personas, type Persona} from '../support/personas';
+import {findMemberIdByName, splitName} from '../support/membersApi';
+import {withdrawChoice} from '../support/membershipFeesApi';
 import {openFeeHistoryFromDetail} from '../support/membershipFeesPages';
 import {openOwnProfile} from './members.steps';
 import {openFeeHistoryOfMember} from './membership-fee-history.steps';
 import {czechAmount, heading, openFromMenu, submitWith} from '../support/ui';
 
-const {When, Then} = createBdd(test);
+const {When, Then, After} = createBdd(test);
 
 const FEE_SECTION = 'ČLENSKÝ PŘÍSPĚVEK';
 const CHOOSE_PROMPT = 'Probíhá volba typu členského příspěvku. Zvolte si svůj typ.';
@@ -47,6 +49,8 @@ const openAccount = async (page: Page) => {
     await expect(page.getByRole('table').locator('tbody tr').first()).toBeVisible();
 };
 
+const choicesMadeForMinors: {persona: Persona; fullName: string}[] = [];
+
 // Choosing and changing the type is the same action in the section; the scenarios name it by its business meaning.
 for (const phrase of ['chooses type', 'changes the fee type choice to']) {
     When(`{persona} ${phrase} {name}`, async ({page, actAs}, persona: Persona, name: string) => {
@@ -59,8 +63,19 @@ for (const phrase of ['chooses type', 'changes the fee type choice to']) {
 When('{persona} chooses type {name} for member {string}',
     async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
         await openFeeHistoryOfMember(page, actAs, persona, fullName);
+        choicesMadeForMinors.push({persona, fullName});
         await submitChoice(page, name);
     });
+
+// The seeded minors are shared by all scenarios, so a choice made on their behalf is withdrawn again;
+// withdrawChoice itself does nothing when the summary offers no removal (no choice or no active campaign).
+After(async ({apiAs}) => {
+    const admin = apiAs('admin');
+    for (const {persona, fullName} of choicesMadeForMinors.splice(0)) {
+        const {firstName, lastName} = splitName(fullName);
+        await withdrawChoice(apiAs(personas[persona]), await findMemberIdByName(admin, firstName, lastName));
+    }
+});
 
 When('{persona} withdraws the fee type choice', async ({page, actAs}, persona: Persona) => {
     await actAs(persona);

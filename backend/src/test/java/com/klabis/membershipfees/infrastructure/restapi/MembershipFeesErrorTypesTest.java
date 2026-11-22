@@ -312,7 +312,7 @@ class MembershipFeesErrorTypesTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = ADMIN_ID)
+        @WithKlabisMockUser(memberId = ADMIN_ID, selfGrants = true)
         @DisplayName("voting is closed")
         void votingClosed() throws Exception {
             doThrow(new VotingClosedException()).when(lifecyclePort).chooseFeeLevel(any());

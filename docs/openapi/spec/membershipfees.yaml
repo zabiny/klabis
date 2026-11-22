@@ -13,11 +13,11 @@
 # Same precedent as events.yaml's getEvent.
 #
 # MemberFeeChoice and MemberFeeSummary operations: getChoice, getFeeSummary and getFeeHistory
-# admit the member themselves, MEMBERS:MANAGE, and MEMBERS:EDIT_PROFILE held over the member
-# (a legal guardian — OR semantics with ownership). chooseFeeType and removeChoice admit only the
-# member themselves and MEMBERS:EDIT_PROFILE held over the member (a legal guardian): MEMBERS:MANAGE
-# is deliberately not an alternative, so administrators cannot choose on a member's behalf.
-# MEMBERS:EDIT_PROFILE is SPECIFIC-grant only, so no holder has it globally.
+# admit MEMBERS:MANAGE and MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE held over the member. chooseFeeType
+# and removeChoice admit only MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE: MEMBERS:MANAGE is deliberately
+# not an alternative, so administrators cannot choose on a member's behalf. The grant is
+# SPECIFIC-only: an adult member holds it over themself, a legal guardian over their minors; a
+# minor holds it over nobody.
 #
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
@@ -894,8 +894,7 @@ paths:
         any.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -946,8 +945,7 @@ paths:
       description: Records the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: [MEMBERS_EDIT_PROFILE]
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -987,8 +985,7 @@ paths:
       description: Removes the member's chosen fee group for the given year.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: [MEMBERS_EDIT_PROFILE]
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]
       parameters:
         - $ref: '#/components/parameters/FeeChoiceMemberIdParam'
         - $ref: '#/components/parameters/FeeChoiceYearParam'
@@ -1024,8 +1021,7 @@ paths:
         voting is currently open, for the year of the active campaign. Answers 404 when no campaign is active.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
       responses:
@@ -1073,8 +1069,7 @@ paths:
       description: Returns the full history of the member's fee group assignments across years.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE]
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
       responses:

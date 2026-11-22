@@ -2,11 +2,13 @@
 # Spec scenarios intentionally not automated (covered by backend and frontend unit tests):
 # - "Section is locked after the voting deadline", "Member who missed the deadline is told the voting is closed",
 #   "Member cannot withdraw the choice after the deadline": a campaign cannot be published with a deadline in the past.
-# - "Non-member legal guardian chooses a type for their minor": the seeded non-member guardians cannot sign in.
+# - "Minor cannot choose a type for themself" ("minor does not see the Členské příspěvky button on their own profile"):
+#   a registered minor has no password, so no session of a minor can be opened.
 Feature: Member's fee type choice
   Members choose one of the published fee types in the "Členský příspěvek" section of their "Členské příspěvky" page
   while a campaign is active and see the yearly price of every offered type.
   Eva is a club member and the legal guardian of the minor member Sofie Svobodová, Jan a membership administrator.
+  Ivana is a non-member legal guardian of the minor member Adam Dlouhý.
 
   Rule: Until the deadline a member can choose, change or withdraw the type, also one assigned by an administrator
 
@@ -75,3 +77,8 @@ Feature: Member's fee type choice
       Given an active fee selection campaign offers types "Basic" and "Plus"
       When Eva chooses type "Plus" for member "Sofie Svobodová"
       Then Eva sees fee type "Plus" in the fee section of member "Sofie Svobodová"
+
+    Scenario: Non-member legal guardian chooses a type for their minor
+      Given an active fee selection campaign offers types "Basic" and "Plus"
+      When Ivana chooses type "Plus" for member "Adam Dlouhý"
+      Then Ivana sees fee type "Plus" in the fee section of member "Adam Dlouhý"
