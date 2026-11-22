@@ -4,7 +4,6 @@ import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.domain.Member;
 import com.klabis.members.infrastructure.restapi.LegalGuardianGroupsApi;
 import com.klabis.members.infrastructure.restapi.LegalGuardianOptions;
@@ -13,7 +12,6 @@ import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
@@ -50,7 +48,7 @@ public class MemberLegalGuardianGroupLinkProcessor extends ModelWithDomainPostpr
                             .ifPresent(dtoModel::add);
                     if (minor && mayViewGuardians(group)) {
                         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class)
-                                .listLegalGuardianGroupGuardians(group.getId().uuid(), null))
+                                .listLegalGuardianGroupGuardians(group.getId().uuid()))
                                 .map(link -> link.withRel("legalGuardians"))
                                 .ifPresent(dtoModel::add);
                     }
@@ -58,8 +56,6 @@ public class MemberLegalGuardianGroupLinkProcessor extends ModelWithDomainPostpr
     }
 
     private boolean mayViewGuardians(LegalGuardianGroup group) {
-        return CurrentUserData.from(SecurityContextHolder.getContext().getAuthentication())
-                .map(user -> GuardianListAccess.permits(authorizationEvaluator, user, group))
-                .orElse(false);
+        return GuardianListAccess.permits(authorizationEvaluator, group);
     }
 }

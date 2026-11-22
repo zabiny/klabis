@@ -42,7 +42,8 @@ class SelfRelationshipSourceTest {
 
         var grants = source().grantsOf(userId);
 
-        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_REGISTER_MEMBER);
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_VIEW_PROFILE,
+                Authority.EVENTS_REGISTER_MEMBER);
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(TargetRef.member(userId.uuid()));
     }
 
@@ -79,12 +80,34 @@ class SelfRelationshipSourceTest {
     }
 
     @Test
-    @DisplayName("grants nothing to a user who is not a member")
-    void shouldGrantNothingToNonMember() {
+    @DisplayName("grants a user who is not a member profile viewing and editing over themself, but no event registering")
+    void shouldGrantNonMemberProfileViewAndEdit() {
         UUID id = UUID.randomUUID();
         when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
 
-        assertThat(source().grantsOf(new UserId(id))).isEmpty();
+        var grants = source().grantsOf(new UserId(id));
+
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_VIEW_PROFILE, Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(grants.get(Authority.MEMBERS_VIEW_PROFILE)).containsExactly(TargetRef.member(id));
+        assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(TargetRef.member(id));
+    }
+
+    @Test
+    @DisplayName("grants an adult member profile viewing over themself")
+    void shouldGrantAdultViewProfileOverSelf() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
+
+        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_VIEW_PROFILE))
+                .containsExactly(TargetRef.member(userId.uuid()));
+    }
+
+    @Test
+    @DisplayName("grants a minor member profile viewing over themself")
+    void shouldGrantMinorViewProfileOverSelf() {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
+
+        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_VIEW_PROFILE))
+                .containsExactly(TargetRef.member(userId.uuid()));
     }
 
     @Test
@@ -101,7 +124,8 @@ class SelfRelationshipSourceTest {
     void shouldGrantMinorRegisterMemberOverSelf() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
 
-        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.EVENTS_REGISTER_MEMBER);
+        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.EVENTS_REGISTER_MEMBER,
+                Authority.MEMBERS_VIEW_PROFILE);
         assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
                 .containsExactly(TargetRef.member(userId.uuid()));
     }

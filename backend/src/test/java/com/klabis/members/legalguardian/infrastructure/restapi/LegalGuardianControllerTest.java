@@ -74,7 +74,7 @@ class LegalGuardianControllerTest {
 
         @Test
         @DisplayName("returns profile for the guardian themself")
-        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
         void returnsProfileForOwner() throws Exception {
             when(legalGuardianService.get(GUARDIAN_USER_ID)).thenReturn(profile());
 
@@ -96,7 +96,7 @@ class LegalGuardianControllerTest {
 
         @Test
         @DisplayName("omits registerAsMember link for the guardian themself")
-        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
         void omitsRegisterAsMemberLinkForOwner() throws Exception {
             when(legalGuardianService.get(GUARDIAN_USER_ID)).thenReturn(profile());
 
@@ -109,6 +109,14 @@ class LegalGuardianControllerTest {
         @DisplayName("returns 403 for a stranger")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void forbiddenForStranger() throws Exception {
+            mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("returns 403 for a member reading another guardian's profile")
+        @WithKlabisMockUser(memberId = "33333333-3333-3333-3333-333333333333", authorities = {Authority.MEMBERS_READ}, selfGrants = true)
+        void forbiddenForMemberReadingOtherGuardian() throws Exception {
             mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -137,7 +145,7 @@ class LegalGuardianControllerTest {
 
         @Test
         @DisplayName("updates contacts and returns 204 for the guardian themself")
-        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
         void updatesOwnContacts() throws Exception {
             when(legalGuardianService.update(any(), any())).thenReturn(profile());
 
@@ -156,6 +164,18 @@ class LegalGuardianControllerTest {
         @DisplayName("returns 403 for a stranger")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void forbiddenForStranger() throws Exception {
+            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
+                    .andExpect(status().isForbidden());
+
+            verifyNoInteractions(legalGuardianService);
+        }
+
+        @Test
+        @DisplayName("returns 403 for a member updating another guardian's profile")
+        @WithKlabisMockUser(memberId = "33333333-3333-3333-3333-333333333333", authorities = {Authority.MEMBERS_READ}, selfGrants = true)
+        void forbiddenForMemberUpdatingOtherGuardian() throws Exception {
             mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))

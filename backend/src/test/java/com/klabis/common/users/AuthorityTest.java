@@ -22,6 +22,7 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_READ, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_PERMISSIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.MEMBERS_VIEW_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTER_MEMBER, TargetType.MEMBER, EnumSet.of(GrantForm.ALL, GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTRATIONS_OVERVIEW, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
@@ -82,7 +83,8 @@ class AuthorityTest {
     @DisplayName("authorities holdable over specific targets are profile editing, registering members and the coordinator authorities")
     void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
-                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW,
+                Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_VIEW_PROFILE, Authority.EVENTS_EDIT,
+                Authority.EVENTS_REGISTRATIONS_OVERVIEW,
                 Authority.GROUPS_OWNER, Authority.FINANCE_VIEW, Authority.EVENTS_REGISTER_MEMBER);
     }
 
@@ -95,6 +97,15 @@ class AuthorityTest {
         assertThat(Authority.holdableOverTargets()).contains(Authority.FINANCE_VIEW);
         assertThat(Authority.grantableOverAll()).doesNotContain(Authority.FINANCE_VIEW);
         assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.FINANCE_VIEW);
+    }
+
+    @Test
+    @DisplayName("profile viewing has the wire value MEMBERS:VIEW_PROFILE and is held over specific members only")
+    void shouldExposeViewProfileAsMemberTargetedSpecificAuthority() {
+        assertThat(Authority.MEMBERS_VIEW_PROFILE.getValue()).isEqualTo("MEMBERS:VIEW_PROFILE");
+        assertThat(Authority.fromString("MEMBERS:VIEW_PROFILE")).isEqualTo(Authority.MEMBERS_VIEW_PROFILE);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
     }
 
     @Test

@@ -50,7 +50,7 @@ class RootLinksApiTest {
         }
 
         @Test
-        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = Authority.MEMBERS_READ)
+        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = Authority.MEMBERS_READ, selfGrants = true)
         @DisplayName("links the profile of a non-member guardian to the guardian profile")
         void guardianProfile() throws Exception {
             when(legalGuardians.findById(new UserId(UUID.fromString(GUARDIAN_ID)))).thenReturn(Optional.of(

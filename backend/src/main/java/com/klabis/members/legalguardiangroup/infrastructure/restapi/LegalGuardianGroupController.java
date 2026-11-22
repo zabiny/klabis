@@ -7,7 +7,6 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -76,9 +75,9 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     @Override
     public ResponseEntity<List<LegalGuardianGroupGuardianResponse>> listLegalGuardianGroupGuardians(
-            UUID id, CurrentUserData currentUser) {
+            UUID id) {
         LegalGuardianGroup group = legalGuardianGroupService.getGroup(new LegalGuardianGroupId(id));
-        GuardianListAccess.require(authorizationEvaluator, currentUser, group);
+        GuardianListAccess.require(authorizationEvaluator, group);
 
         List<GuardianContact> contacts = legalGuardianGroupService.listGuardians(group);
         HalResponseContext.setDomainList(contacts);
@@ -187,7 +186,7 @@ class LegalGuardianGroupDetailsPostprocessor extends ModelWithDomainPostprocesso
                                 LegalGuardianOptions.forLegalGuardiansField())))
                 .ifPresent(dtoModel::add);
 
-        klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroupGuardians(id, null))
+        klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroupGuardians(id))
                 .ifPresent(link -> dtoModel.add(link.withRel("legalGuardians")));
 
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroups())

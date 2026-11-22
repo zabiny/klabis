@@ -357,7 +357,7 @@ class LegalGuardianGroupControllerTest {
 
         @Test
         @DisplayName("is visible to a minor of the group without MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = MINOR_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = MINOR_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true, minor = true)
         void listsGuardiansForMinorOfTheGroup() throws Exception {
             stubGroupWithContacts();
 
@@ -394,7 +394,7 @@ class LegalGuardianGroupControllerTest {
 
         @Test
         @DisplayName("returns 403 to a member who is not a minor of the group and lacks MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = OTHER_GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = OTHER_GUARDIAN_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true)
         void forbiddenForOtherMember() throws Exception {
             stubGroupWithContacts();
 

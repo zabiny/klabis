@@ -45,6 +45,8 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
     }
 
     private static AuthorizationSnapshot fixedSnapshot(WithKlabisMockUser withUser) {
+        Assert.isTrue(!withUser.minor() || (withUser.selfGrants() && StringUtils.isNotBlank(withUser.memberId())),
+                "minor = true requires selfGrants = true and memberId");
         Map<Authority, Set<TargetRef>> overTargets = new EnumMap<>(Authority.class);
         for (TargetGrant grant : withUser.targetGrants()) {
             Set<TargetRef> targets = overTargets.computeIfAbsent(grant.authority(), a -> new HashSet<>());
@@ -53,11 +55,19 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
             }
         }
         if (withUser.selfGrants()) {
-            Assert.hasText(withUser.memberId(), "selfGrants = true requires memberId: only a member holds self-grants");
-            TestSnapshots.selfGrantsOf(UUID.fromString(withUser.memberId()))
+            selfGrants(withUser)
                     .forEach((authority, targets) -> overTargets.computeIfAbsent(authority, a -> new HashSet<>()).addAll(targets));
         }
         return TestSnapshots.of(Set.of(withUser.authorities()), overTargets);
+    }
+
+    private static Map<Authority, Set<TargetRef>> selfGrants(WithKlabisMockUser withUser) {
+        if (StringUtils.isBlank(withUser.memberId())) {
+            Assert.hasText(withUser.userId(), "selfGrants = true requires memberId or userId");
+            return TestSnapshots.nonMemberSelfGrantsOf(UUID.fromString(withUser.userId()));
+        }
+        UUID memberId = UUID.fromString(withUser.memberId());
+        return withUser.minor() ? TestSnapshots.minorSelfGrantsOf(memberId) : TestSnapshots.selfGrantsOf(memberId);
     }
 
     @Autowired(required = false)

@@ -90,7 +90,7 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 5. Viewing member data through `MEMBERS:VIEW_PROFILE` (design D2, D3, D4)
 
-- [ ] 5.1 RED: unit and integration tests, and confirm they fail:
+- [x] 5.1 RED: unit and integration tests, and confirm they fail:
   - `AuthorityTest`: `MEMBERS_VIEW_PROFILE` is not grantable over everything and is holdable over targets.
   - `AuthorityToDtoConverter` throws for it.
   - `SelfRelationshipSource`:
@@ -101,13 +101,13 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
     - another member does not see the sensitive fields,
     - the EXT guardian reads and updates their own guardian profile,
     - a member is denied another guardian's profile.
-- [ ] 5.2 GREEN:
+- [x] 5.2 GREEN:
   - add `Authority.MEMBERS_VIEW_PROFILE("MEMBERS:VIEW_PROFILE", MEMBER, SPECIFIC)` and its converter mapping,
   - extend `SelfRelationshipSource`,
   - in `members.yaml`, set the 12 `MemberDetailsResponse` fields to `[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE, MEMBERS_VIEW_PROFILE]`, `getLegalGuardian` to `[MEMBERS_MANAGE, MEMBERS_VIEW_PROFILE]` and `updateLegalGuardian` to `[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, removing `x-klabis-owner-visible`.
 
   Verify: the 5.1 tests and the members module tests pass.
-- [ ] 5.3 Refactor `GuardianListAccess` to `MEMBERS_MANAGE` or `[MEMBERS_EDIT_PROFILE, MEMBERS_VIEW_PROFILE]` over any minor of the group, with the existing guardian-list tests as the safety net. Add a "minor sees their own guardians" test first if one is missing. Verify: the guardian-list tests pass.
+- [x] 5.3 Refactor `GuardianListAccess` to `MEMBERS_MANAGE` or `[MEMBERS_EDIT_PROFILE, MEMBERS_VIEW_PROFILE]` over any minor of the group, with the existing guardian-list tests as the safety net. Add a "minor sees their own guardians" test first if one is missing. Verify: the guardian-list tests pass.
 
 ## 6. Membership fee choice through `MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE` (design D2, D3, D4; spec: membership-fees, legal-guardians)
 

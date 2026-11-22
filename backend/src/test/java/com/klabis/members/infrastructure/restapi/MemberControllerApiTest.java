@@ -3296,7 +3296,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("adds legalGuardians link on the minor's own detail without MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = true, minor = true)
         void addsGuardiansLinkForTheMinorThemself() throws Exception {
             givenMember(LocalDate.now().minusYears(9), groupOfChild());
 

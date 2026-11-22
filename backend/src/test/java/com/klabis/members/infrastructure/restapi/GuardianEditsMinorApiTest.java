@@ -220,7 +220,8 @@ class GuardianEditsMinorApiTest {
 
     @Test
     @DisplayName("minor opens own detail: the birth number is visible (and audited) but a suspended member is not")
-    @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = true, minor = true)
     void minorViewsOwnDetail() throws Exception {
         givenMinor(CHILD_ID);
 
@@ -228,6 +229,36 @@ class GuardianEditsMinorApiTest {
 
         verify(managementService).getMemberAndRecordView(eq(new MemberId(UUID.fromString(CHILD_ID))),
                 any(UserId.class), eq(new MemberViewAccess(false, true)));
+    }
+
+    @Test
+    @DisplayName("minor sees all their own data but gets no edit action")
+    @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = true, minor = true)
+    void minorSeesOwnDataWithoutEditAction() throws Exception {
+        givenMinor(CHILD_ID);
+
+        getMember(CHILD_ID)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.birthNumber").value("900101/1234"))
+                .andExpect(jsonPath("$.dateOfBirth").exists())
+                .andExpect(jsonPath("$.nationality").exists())
+                .andExpect(jsonPath("$.dietaryRestrictions").value("no nuts"))
+                .andExpect(jsonPath("$._templates.updateMember").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("another member does not see the sensitive fields of a minor")
+    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = true)
+    void otherMemberDoesNotSeeSensitiveFields() throws Exception {
+        givenMinor(CHILD_ID);
+
+        getMember(CHILD_ID)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.birthNumber").doesNotExist())
+                .andExpect(jsonPath("$.dietaryRestrictions").doesNotExist())
+                .andExpect(jsonPath("$.dateOfBirth").doesNotExist());
     }
 
     @Test

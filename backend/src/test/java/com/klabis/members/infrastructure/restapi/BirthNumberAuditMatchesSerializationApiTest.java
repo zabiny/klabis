@@ -94,7 +94,8 @@ class BirthNumberAuditMatchesSerializationApiTest {
 
     @Test
     @DisplayName("the member themself")
-    @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = true)
     void self() throws Exception {
         assertAuditDecisionMatchesSerializedField(MEMBER_ID, true);
     }
