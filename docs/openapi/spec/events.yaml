@@ -847,7 +847,7 @@ paths:
               operation: getRegistration
               description: |
                 Present for the registered member or callers with EVENTS:REGISTRATIONS or
-                EVENTS:REGISTRATIONS_READ
+                EVENTS:REGISTRATIONS_OVERVIEW
             recordTransaction:
               operation: getAccount
               description: Present only for callers with FINANCE:MANAGE
@@ -992,7 +992,7 @@ paths:
       summary: Get accommodation list for an event
       description: |
         Returns the accommodation list for an event with personal details for each registered
-        member. Accessible only to users holding EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ
+        member. Accessible only to users holding EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_OVERVIEW
         over the event (the event coordinators). Fields that are not recorded for a member are returned as null.
 
         This operation also supports `Accept: text/csv`, returning a UTF-8 BOM, semicolon-delimited
@@ -1000,7 +1000,7 @@ paths:
         representation described below.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority: the caller needs EVENTS_REGISTRATIONS or EVENTS_REGISTRATIONS_READ over
+      # No x-klabis-authority: the caller needs EVENTS_REGISTRATIONS or EVENTS_REGISTRATIONS_OVERVIEW over
       # the event (the coordinator grant), and the event must offer shared accommodation. Both are
       # checked in EventController through AuthorizationEvaluator.isAllowed over TargetRef.event,
       # because the event offering the service is a domain rule the spec cannot express.
@@ -1255,7 +1255,7 @@ paths:
         List all registrations for an event. SI card numbers are not included for privacy
         protection. Supported sort fields: firstName, lastName, category, registrationTime.
         Default sort: registrationTime ASC. sort=registrationTime is silently ignored for members
-        without EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ (the event coordinators) over the
+        without EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_OVERVIEW (the event coordinators) over the
         event. Unknown sort fields also fall back to default.
       security:
         - KlabisAuth: [EVENTS]
@@ -1387,7 +1387,7 @@ paths:
       description: |
         Get a member's event registration including SI card number. Accessible by the member
         themselves, a user with EVENTS:REGISTRATIONS authority, or the event coordinators
-        (EVENTS:REGISTRATIONS_READ over the event). When new=true, returns prefilled
+        (EVENTS:REGISTRATIONS_OVERVIEW over the event). When new=true, returns prefilled
         defaults (siCardNumber from profile) for a not-yet-existing registration — this still
         requires the caller to be the target member themselves regardless of authority.
       # No x-klabis-authority / x-klabis-owner-visible: the rule is "owner of the member OR a grant
@@ -2362,7 +2362,7 @@ components:
       type: object
       description: |
         Registration summary for list views. SI card numbers are not included. registrationTime is
-        visible to callers with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event
+        visible to callers with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_OVERVIEW over the event
         (the event coordinators).
       x-klabis-relation:
         collectionRelation: registrationDtoList
@@ -2377,13 +2377,13 @@ components:
         registrationTime:
           type: string
           format: date-time
-          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_OVERVIEW]
         missingInOris:
           type: boolean
           description: |
             The registration's ORIS entry has disappeared; the registration is kept. Visible to callers
-            with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event (the event coordinators).
-          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+            with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_OVERVIEW over the event (the event coordinators).
+          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_OVERVIEW]
         wantsSharedTransport:
           type: boolean
           description: |

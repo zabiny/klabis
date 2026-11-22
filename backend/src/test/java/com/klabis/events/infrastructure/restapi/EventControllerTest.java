@@ -2172,7 +2172,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(a) coordinator on ACTIVE event with both offers sees both counts")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void coordinatorSeesBothCounts() throws Exception {
             Event event = activeEventWithBothOffers()
                     .addRegistrations(List.of(
@@ -2192,7 +2192,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(a) an enabled offer nobody chose still yields a sub-object with count 0")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void enabledOfferWithNoTakersHasCountZero() throws Exception {
             Event event = activeEventWithBothOffers()
                     .addRegistrations(List.of(registration(true, false)))
@@ -2255,7 +2255,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(e) only sharedTransportEnabled → sharedTransport present, sharedAccommodation absent")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void onlyTransportEnabledShowsOnlyTransport() throws Exception {
             Event event = aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -3128,7 +3128,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("event coordinator gets 200 with accommodation items")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void coordinatorGets200WithAccommodationItems() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -3199,7 +3199,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("item self link is present for a caller who is the row's own member, with no authorities")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void itemSelfLinkPresentWhenCallerIsTheRowMember() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             // The caller is the coordinator (so it may reach the accommodation list) AND is the row's
@@ -3231,7 +3231,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("item self link is offered to a coordinator who is not the row member")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void itemSelfLinkPresentForCoordinatorWhoIsNotTheRowMember() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId rowMemberId = new MemberId(UUID.randomUUID());
@@ -3262,7 +3262,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("event link is offered to a caller who may read the event")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void eventLinkPresentWhenCallerMayReadTheEvent() throws Exception {
             UUID eventId = accommodationListFor(UUID.fromString(COORDINATED_EVENT_ID));
 
@@ -3277,7 +3277,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("event link is withheld from a coordinator who lacks EVENTS:READ")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void eventLinkAbsentWhenCallerMayNotReadTheEvent() throws Exception {
             UUID eventId = accommodationListFor(UUID.fromString(COORDINATED_EVENT_ID));
 
@@ -3358,7 +3358,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("empty accommodation list still carries the event link")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void emptyListStillCarriesEventLink() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             stubEventForAccommodationAuthorization(eventId, true);
@@ -3899,7 +3899,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("a grant over another event does not help — update refused with 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
         void grantOverOtherEventDoesNotAllowUpdate() throws Exception {
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventCoordinatedInDomain());
 
@@ -3914,7 +3914,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("a grant over another event does not help — detail offers nothing")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
         void grantOverOtherEventDoesNotOfferAnything() throws Exception {
             stubEventAndRegistration(eventCoordinatedInDomain());
 
@@ -3923,7 +3923,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("a grant over another event does not help — accommodation list refused with 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
         void grantOverOtherEventDoesNotOpenAccommodationList() throws Exception {
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(eventCoordinatedInDomain());
 

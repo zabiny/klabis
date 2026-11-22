@@ -6,13 +6,13 @@ Run tests through the test-runner, never in parallel. Write E2E scenarios with t
 
 ## 1. Multi-target rules and the coordinator overview rename (design D1, D3)
 
-- [ ] 1.1 RED: add `AuthorizationEvaluatorTest` / `InvocationRulesTest` cases and confirm the new cases fail. The cases:
+- [x] 1.1 RED: add `AuthorizationEvaluatorTest` / `InvocationRulesTest` cases and confirm the new cases fail. The cases:
   - MEMBER-kind authority granted over the member target of a two-target method,
   - EVENT-kind authority granted over the event target of the same method,
   - an authority whose kind has no identified target passes only when held over everything,
   - two `@TargetId` parameters of the same kind are rejected when the rules are built.
-- [ ] 1.2 GREEN: `InvocationRules` keeps one identified target per target kind, and `isAllowedOver` checks each authority over the target of its own `TargetType`. Adapt the `targetOf` / `targetParameterOf` callers (request-body field security, link building) to ask for a kind. Verify: the 1.1 tests and all existing `common` authorization tests pass.
-- [ ] 1.3 Rename `EVENTS_REGISTRATIONS_READ` → `EVENTS_REGISTRATIONS_OVERVIEW` (`EVENTS:REGISTRATIONS_OVERVIEW`) in `Authority`, `EventCoordinatorRelationshipSource`, `AuthorityToDtoConverter`, `events.yaml` descriptions and comments, and the `common.yaml` comment. Verify:
+- [x] 1.2 GREEN: `InvocationRules` keeps one identified target per target kind, and `isAllowedOver` checks each authority over the target of its own `TargetType`. Adapt the `targetOf` / `targetParameterOf` callers (request-body field security, link building) to ask for a kind. Verify: the 1.1 tests and all existing `common` authorization tests pass.
+- [x] 1.3 Rename `EVENTS_REGISTRATIONS_READ` → `EVENTS_REGISTRATIONS_OVERVIEW` (`EVENTS:REGISTRATIONS_OVERVIEW`) in `Authority`, `EventCoordinatorRelationshipSource`, `AuthorityToDtoConverter`, `events.yaml` descriptions and comments, and the `common.yaml` comment. Verify:
   - events module tests and `AuthorityToDtoConverter` tests pass,
   - `grep -r REGISTRATIONS_READ backend/src docs/openapi frontend/src` finds nothing.
 

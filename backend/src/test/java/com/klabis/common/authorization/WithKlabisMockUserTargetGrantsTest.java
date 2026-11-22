@@ -52,7 +52,7 @@ class WithKlabisMockUserTargetGrantsTest {
 
         @GetMapping("/probe/registrations/{memberId}")
         boolean registrations(@PathVariable UUID memberId) {
-            return evaluatorProvider.getObject().isAllowed(List.of(Authority.EVENTS_REGISTRATIONS), TargetRef.member(memberId), true);
+            return evaluatorProvider.getObject().isAllowed(List.of(Authority.FINANCE_VIEW), TargetRef.member(memberId), true);
         }
     }
 
@@ -69,19 +69,19 @@ class WithKlabisMockUserTargetGrantsTest {
     }
 
     @Test
-    @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS, type = TargetType.MEMBER, ids = CHILD))
+    @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = CHILD))
     void shouldAllowGrantedTarget() throws Exception {
         mockMvc.perform(get("/probe/registrations/" + CHILD)).andExpect(content().string("true"));
     }
 
     @Test
-    @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS, type = TargetType.MEMBER, ids = CHILD))
+    @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW, type = TargetType.MEMBER, ids = CHILD))
     void shouldDenyOtherTarget() throws Exception {
         mockMvc.perform(get("/probe/registrations/" + STRANGER)).andExpect(content().string("false"));
     }
 
     @Test
-    @WithKlabisMockUser(authorities = Authority.EVENTS_REGISTRATIONS)
+    @WithKlabisMockUser(authorities = Authority.FINANCE_VIEW)
     void shouldAllowEveryTargetWhenHeldOverEverything() throws Exception {
         mockMvc.perform(get("/probe/registrations/" + STRANGER)).andExpect(content().string("true"));
     }

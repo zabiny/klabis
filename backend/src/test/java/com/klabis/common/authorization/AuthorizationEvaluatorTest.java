@@ -16,10 +16,12 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("AuthorizationEvaluator")
 class AuthorizationEvaluatorTest {
 
-    private static final Authority DELEGATED = Authority.EVENTS_REGISTRATIONS;
+    private static final Authority DELEGATED = Authority.FINANCE_VIEW;
 
     private final UUID myId = UUID.randomUUID();
     private final TargetRef me = TargetRef.member(myId);
@@ -48,6 +50,10 @@ class AuthorizationEvaluatorTest {
 
     private static AuthorizationSnapshot overAll(Authority... authorities) {
         return AuthorizationSnapshot.of(Set.of(authorities), Map.of());
+    }
+
+    private static Function<TargetType, TargetRef> over(TargetRef target) {
+        return kind -> target != null && target.type() == kind ? target : null;
     }
 
     private AuthorizationSnapshot delegatedOver(TargetRef... targets) {
@@ -239,15 +245,27 @@ class AuthorizationEvaluatorTest {
     }
 
     record Payload(String open,
-                   @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS}) @OwnerVisible String secured,
+                   @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW}) @OwnerVisible String secured,
                    @HasAuthority(Authority.MEMBERS_MANAGE) @ReadAuthority(Authority.MEMBERS_READ) String readable) {
     }
 
     static class Operations {
 
-        @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})
+        @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW})
         @OwnerVisible
         public void targeted(@TargetId(TargetType.MEMBER) UUID id) {
+        }
+
+        @HasAuthority({Authority.MEMBERS_READ, Authority.EVENTS_EDIT})
+        public void memberAndEvent(@TargetId(TargetType.MEMBER) UUID memberId, @TargetId(TargetType.EVENT) UUID eventId) {
+        }
+
+        @HasAuthority({Authority.MEMBERS_READ, Authority.GROUPS_OWNER})
+        public void memberOnly(@TargetId(TargetType.MEMBER) UUID memberId) {
+        }
+
+        @HasAuthority(Authority.MEMBERS_READ)
+        public void twoMemberTargets(@TargetId(TargetType.MEMBER) UUID first, @TargetId(TargetType.MEMBER) UUID second) {
         }
 
         @HasAuthority(Authority.EVENTS_MANAGE)
@@ -264,27 +282,27 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldBeWriteForUnsecuredProperty() {
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "open", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "open", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "missing", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "missing", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
         }
 
         @Test
         void shouldBeWriteWithAuthorityOverTarget() {
-            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", child))
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", over(child)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", stranger))
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", over(stranger)))
                     .isEqualTo(FieldAccess.NONE);
         }
 
         @Test
         void shouldBeReadWithReadAuthorityOnly() {
-            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.READ);
-            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.NONE);
         }
     }
@@ -337,7 +355,7 @@ class AuthorizationEvaluatorTest {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.describeRequirement(Operations.class.getMethod("targeted", UUID.class), Operations.class))
-                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS (over everything or over the MEMBER), or being the owner");
+                    .isEqualTo("authority MEMBERS:MANAGE or FINANCE:VIEW (over everything or over the MEMBER), or being the owner");
         }
 
         @Test
@@ -353,7 +371,7 @@ class AuthorizationEvaluatorTest {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.describeRequirement(Payload.class.getMethod("secured")))
-                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS, or being the owner");
+                    .isEqualTo("authority MEMBERS:MANAGE or FINANCE:VIEW, or being the owner");
         }
     }
 
@@ -386,6 +404,75 @@ class AuthorizationEvaluatorTest {
 
             assertThat(evaluator.toTarget(TargetType.MEMBER, myId.toString())).isEqualTo(me);
             assertThat(evaluator.toTarget(TargetType.MEMBER, "not-a-uuid")).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("canInvoke with several targets")
+    class CanInvokeWithSeveralTargets {
+
+        private final UUID memberId = UUID.randomUUID();
+        private final UUID eventId = UUID.randomUUID();
+        private final TargetRef member = TargetRef.member(memberId);
+        private final TargetRef event = new TargetRef(TargetType.EVENT, eventId);
+
+        private boolean canInvoke(AuthorizationEvaluator evaluator, String method, UUID... arguments) {
+            try {
+                Class<?>[] parameterTypes = new Class<?>[arguments.length];
+                Arrays.fill(parameterTypes, UUID.class);
+                return evaluator.canInvoke(Operations.class.getMethod(method, parameterTypes), Operations.class, arguments);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Test
+        void shouldAllowMemberKindAuthorityOverMemberTarget() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(), Map.of(Authority.MEMBERS_READ, Set.of(member)));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isTrue();
+        }
+
+        @Test
+        void shouldAllowEventKindAuthorityOverEventTarget() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(), Map.of(Authority.EVENTS_EDIT, Set.of(event)));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isTrue();
+        }
+
+        @Test
+        void shouldDenyEventKindAuthorityOverOtherEvent() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(new TargetRef(TargetType.EVENT, UUID.randomUUID()))));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isFalse();
+        }
+
+        @Test
+        void shouldPassAuthorityWhoseKindHasNoIdentifiedTargetOnlyOverEverything() {
+            var groupGrant = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.GROUPS_OWNER, Set.of(new TargetRef(TargetType.GROUP, memberId))));
+            var everything = AuthorizationSnapshot.of(Set.of(Authority.GROUPS_OWNER), Map.of());
+
+            assertThat(canInvoke(evaluatorOver(groupGrant), "memberOnly", memberId)).isFalse();
+            assertThat(canInvoke(evaluatorOver(everything), "memberOnly", memberId)).isTrue();
+        }
+
+        @Test
+        void shouldNotLetEventKindGrantMatchMemberTargetWithTheSameId() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(new TargetRef(TargetType.EVENT, memberId))));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberOnly", memberId)).isFalse();
+        }
+
+        @Test
+        void shouldRejectTwoTargetParametersOfTheSameKind() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThatThrownBy(() -> canInvoke(evaluator, "twoMemberTargets", memberId, eventId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("MEMBER");
         }
     }
 }

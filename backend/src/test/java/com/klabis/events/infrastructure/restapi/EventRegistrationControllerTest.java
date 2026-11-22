@@ -531,7 +531,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator rows carry the registration link")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void coordinatorRowsCarryRegistrationLink() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -591,7 +591,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator sees registrationTime in registration list")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void eventCoordinatorSeesRegistrationTime() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -1456,7 +1456,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator gets 200 with SI card number and neither edit nor unregister template")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void shouldReturn200ForCoordinatorWithoutEditTemplates() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1525,7 +1525,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator sees both notes")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void coordinatorReadsNotes() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
@@ -1553,7 +1553,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("coordinator of another event gets 403")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void shouldReturn403ForCoordinatorOfAnotherEvent() throws Exception {
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
@@ -2068,7 +2068,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator sees the mark in the registration list")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void coordinatorSeesMarkInList() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -2184,7 +2184,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("coordinator gets the sync link for an enrolled registration")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void coordinatorGetsSyncLink() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));

@@ -135,7 +135,7 @@ class AffordanceAuthorizationTest {
         }
 
         @PatchMapping("/api/afford-test/targeted/{id}")
-        @HasAuthority({Authority.EVENTS_REGISTRATIONS, Authority.MEMBERS_MANAGE})
+        @HasAuthority({Authority.FINANCE_VIEW, Authority.MEMBERS_MANAGE})
         @OwnerVisible
         ResponseEntity<Void> updateTargeted(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
@@ -345,7 +345,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_REGISTRATIONS})
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_VIEW})
         @DisplayName("present for a grant over everything, whichever the target")
         void presentForGrantOverEverything() throws Exception {
             assertAffordance(OWNER_ID, true);
@@ -360,7 +360,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = OWNER_ID_STRING))
         @DisplayName("present for a grant over the target")
         void presentForGrantOverTheTarget() throws Exception {
@@ -368,7 +368,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = OTHER_ID_STRING))
         @DisplayName("absent for a grant over another target")
         void absentForGrantOverAnotherTarget() throws Exception {

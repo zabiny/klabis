@@ -15,7 +15,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Single rule for reading a registration detail: the registered member, or a holder of
- * EVENTS:REGISTRATIONS / EVENTS:REGISTRATIONS_READ over the event. {@code getRegistration} is not
+ * EVENTS:REGISTRATIONS / EVENTS:REGISTRATIONS_OVERVIEW over the event. {@code getRegistration} is not
  * declared in the spec because one target cannot express "owner of the member or grant over the
  * event", so this check must guard the endpoint and every link to it.
  */
@@ -23,7 +23,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class RegistrationReadAccess {
 
     private static final List<Authority> READ_AUTHORITIES =
-            List.of(Authority.EVENTS_REGISTRATIONS, Authority.EVENTS_REGISTRATIONS_READ);
+            List.of(Authority.EVENTS_REGISTRATIONS, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
 
     private final AuthorizationEvaluator authorizationEvaluator;
 

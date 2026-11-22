@@ -58,7 +58,7 @@ class TargetedFieldAuthorizationTest {
     record TargetedResponse(
             @TargetId(TargetType.MEMBER) UUID id,
             String publicField,
-            @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})
+            @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW})
             String restrictedField,
             @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
             String ownerOrAdminField
@@ -69,14 +69,14 @@ class TargetedFieldAuthorizationTest {
     @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
     record CoordinatedResponse(
             @TargetId(TargetType.MEMBER) List<UUID> coordinators,
-            @HasAuthority(Authority.EVENTS_REGISTRATIONS) @OwnerVisible
+            @HasAuthority(Authority.FINANCE_VIEW) @OwnerVisible
             String coordinatorsField
     ) {
     }
 
     record TargetedPatchRequest(
             JsonNullable<String> publicField,
-            @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})
+            @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW})
             JsonNullable<String> restrictedField
     ) {
     }
@@ -129,7 +129,7 @@ class TargetedFieldAuthorizationTest {
     class ResponseField {
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is visible with a grant of the second authority over the record's target")
         void visibleWithGrantOverTheRecordsTarget() throws Exception {
@@ -141,7 +141,7 @@ class TargetedFieldAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is hidden on another record the user holds no grant over")
         void hiddenOnAnotherRecord() throws Exception {
@@ -180,7 +180,7 @@ class TargetedFieldAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("a grant over one of several listed owners does not reveal the field")
         void grantOverOneOfOwnersDoesNotRevealField() throws Exception {
@@ -196,7 +196,7 @@ class TargetedFieldAuthorizationTest {
         private static final String BODY = "{\"restrictedField\":\"new\"}";
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is accepted with a grant over the path's target")
         void acceptedWithGrantOverTheTarget() throws Exception {
@@ -206,7 +206,7 @@ class TargetedFieldAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is rejected with a grant over another target")
         void rejectedWithGrantOverAnotherTarget() throws Exception {
@@ -216,7 +216,7 @@ class TargetedFieldAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("finds the path variable declared on the interface the handler implements")
         void findsPathVariableDeclaredOnInterface() throws Exception {
@@ -246,7 +246,7 @@ class TargetedFieldAuthorizationTest {
     class TemplateProperty {
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is offered for a grant over the target of the invocation")
         void offeredForGrantOverTheTarget() throws Exception {
@@ -256,7 +256,7 @@ class TargetedFieldAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = TARGET_ID_STRING))
         @DisplayName("is not offered for another target")
         void notOfferedForAnotherTarget() throws Exception {

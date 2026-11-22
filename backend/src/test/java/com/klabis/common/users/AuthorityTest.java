@@ -24,7 +24,7 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
-                Arguments.of(Authority.EVENTS_REGISTRATIONS_READ, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.EVENTS_REGISTRATIONS_OVERVIEW, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.GROUPS_OWNER, TargetType.GROUP, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_READ, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_MANAGE, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
@@ -82,7 +82,7 @@ class AuthorityTest {
     @DisplayName("authorities holdable over specific targets are profile editing and the coordinator authorities")
     void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
-                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ,
+                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW,
                 Authority.GROUPS_OWNER, Authority.FINANCE_VIEW);
     }
 
@@ -101,9 +101,9 @@ class AuthorityTest {
     @DisplayName("coordinator authorities are neither assignable nor grantable over everything")
     void shouldNotOfferCoordinatorAuthoritiesForDirectGrant() {
         assertThat(Authority.assignableAuthorities())
-                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
         assertThat(Authority.grantableOverAll())
-                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
     }
 
     @Test

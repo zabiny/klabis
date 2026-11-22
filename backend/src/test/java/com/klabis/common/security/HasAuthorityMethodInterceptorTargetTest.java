@@ -89,7 +89,7 @@ class HasAuthorityMethodInterceptorTargetTest {
 
         @Test
         void shouldNotAcceptAGrantOverATargetWithoutATargetParameter() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThatThrownBy(service::untargeted).isInstanceOf(AccessDeniedException.class);
         }
@@ -101,35 +101,35 @@ class HasAuthorityMethodInterceptorTargetTest {
 
         @Test
         void shouldAllowGrantOverEverythingForAnyTarget() {
-            authenticateOverAll(Authority.EVENTS_REGISTRATIONS);
+            authenticateOverAll(Authority.FINANCE_VIEW);
 
             assertThat(service.targeted(STRANGER_ID)).isEqualTo("ok");
         }
 
         @Test
         void shouldAllowGrantOverTheTarget() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThat(service.targeted(CHILD_ID)).isEqualTo("ok");
         }
 
         @Test
         void shouldDenyGrantOverAnotherTarget() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThatThrownBy(() -> service.targeted(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
         void shouldDenyWhenTargetArgumentIsNull() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThatThrownBy(() -> service.targeted(null)).isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
         void shouldAllowGrantOverTheTargetOfAListedAuthority() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThat(service.targetedAnyOf(CHILD_ID)).isEqualTo("ok");
             assertThatThrownBy(() -> service.targetedAnyOf(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
@@ -157,7 +157,7 @@ class HasAuthorityMethodInterceptorTargetTest {
 
         @Test
         void shouldAllowAnotherMemberWithGrantOverTheTarget() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
+            authenticateOverTargets(Authority.FINANCE_VIEW, CHILD_ID);
 
             assertThat(service.ownerVisible(CHILD_ID)).isEqualTo("ok");
         }
@@ -170,23 +170,23 @@ class HasAuthorityMethodInterceptorTargetTest {
             return "ok";
         }
 
-        @HasAuthority(Authority.EVENTS_REGISTRATIONS)
+        @HasAuthority(Authority.FINANCE_VIEW)
         String untargeted() {
             return "ok";
         }
 
-        @HasAuthority(Authority.EVENTS_REGISTRATIONS)
+        @HasAuthority(Authority.FINANCE_VIEW)
         String targeted(@TargetId(TargetType.MEMBER) UUID memberId) {
             return "ok";
         }
 
-        @HasAuthority({Authority.MEMBERS_READ, Authority.EVENTS_REGISTRATIONS})
+        @HasAuthority({Authority.MEMBERS_READ, Authority.FINANCE_VIEW})
         String targetedAnyOf(@TargetId(TargetType.MEMBER) UUID memberId) {
             return "ok";
         }
 
         @OwnerVisible
-        @HasAuthority(Authority.EVENTS_REGISTRATIONS)
+        @HasAuthority(Authority.FINANCE_VIEW)
         String ownerVisible(@TargetId(TargetType.MEMBER) UUID memberId) {
             return "ok";
         }

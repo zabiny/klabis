@@ -79,10 +79,10 @@ class EventCoordinatorGrantsIntegrationTest {
         TargetRef own = TargetRef.event(coordinated.getId().value());
         TargetRef notOwn = TargetRef.event(foreign.getId().value());
         assertThat(snapshot.has(Authority.EVENTS_EDIT, own)).isTrue();
-        assertThat(snapshot.has(Authority.EVENTS_REGISTRATIONS_READ, own)).isTrue();
+        assertThat(snapshot.has(Authority.EVENTS_REGISTRATIONS_OVERVIEW, own)).isTrue();
         assertThat(snapshot.has(Authority.EVENTS_EDIT, notOwn)).isFalse();
-        assertThat(snapshot.has(Authority.EVENTS_REGISTRATIONS_READ, notOwn)).isFalse();
-        assertThat(snapshot.overAll()).doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+        assertThat(snapshot.has(Authority.EVENTS_REGISTRATIONS_OVERVIEW, notOwn)).isFalse();
+        assertThat(snapshot.overAll()).doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
     }
 
     @Test
@@ -94,6 +94,6 @@ class EventCoordinatorGrantsIntegrationTest {
         AuthorizationSnapshot snapshot = snapshotLoader.loadFor(member);
 
         assertThat(snapshot.targetsOf(Authority.EVENTS_EDIT)).isEmpty();
-        assertThat(snapshot.targetsOf(Authority.EVENTS_REGISTRATIONS_READ)).isEmpty();
+        assertThat(snapshot.targetsOf(Authority.EVENTS_REGISTRATIONS_OVERVIEW)).isEmpty();
     }
 }

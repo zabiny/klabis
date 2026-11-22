@@ -25,7 +25,7 @@ interface AuthorityToDtoConverter extends Converter<com.klabis.common.users.Auth
     @Override
     @ValueMapping(source = "DEVELOPER", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "EVENTS_EDIT", target = MappingConstants.THROW_EXCEPTION)
-    @ValueMapping(source = "EVENTS_REGISTRATIONS_READ", target = MappingConstants.THROW_EXCEPTION)
+    @ValueMapping(source = "EVENTS_REGISTRATIONS_OVERVIEW", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "GROUPS_OWNER", target = MappingConstants.THROW_EXCEPTION)
     @ValueMapping(source = "FINANCE_VIEW", target = MappingConstants.THROW_EXCEPTION)
     Authority convert(com.klabis.common.users.Authority source);

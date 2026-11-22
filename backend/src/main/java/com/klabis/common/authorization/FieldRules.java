@@ -9,7 +9,9 @@ import org.jspecify.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Security annotations of a record component accessor (or of the interface method a non-record payload exposes).
@@ -67,11 +69,24 @@ record FieldRules(List<Authority> authorities, boolean ownerVisible, List<Author
                 .orElse(null);
     }
 
+    /**
+     * Kinds of target the rules can be satisfied over: those of the authorities, and members for the owner.
+     */
+    Set<TargetType> targetKinds() {
+        Set<TargetType> kinds = EnumSet.noneOf(TargetType.class);
+        authorities.forEach(authority -> kinds.add(authority.getTargetType()));
+        if (ownerVisible) {
+            kinds.add(TargetType.MEMBER);
+        }
+        kinds.remove(TargetType.NONE);
+        return kinds;
+    }
+
     boolean isOpen() {
         return authorities.isEmpty() && !ownerVisible;
     }
 
     String describe() {
-        return RequirementDescription.of(authorities, null, ownerVisible);
+        return RequirementDescription.of(authorities, List.of(), ownerVisible);
     }
 }
