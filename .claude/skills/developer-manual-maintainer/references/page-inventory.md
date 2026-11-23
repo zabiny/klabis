@@ -70,7 +70,7 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 - Snapshot oprávnění: `AuthorizationSnapshot`, `AuthorizationSnapshotLoader`, `AuthorizationSnapshotProvider`, `RelationshipSource`, `TargetRef`
 - `AuthorizationEvaluator` + ArchUnit `AuthorizationArchitectureTest`
 - `@HasAuthority` (seznam) + `@TargetId` (method-level)
-- `@OwnerVisible`, `@ReadAuthority` (field-level)
+- `@ReadAuthority` (field-level)
 - Pomocné komponenty: `AccountStatusValidationFilter`, `CorsConfiguration`, `FrontendProperties`, `PasswordEncoderConfiguration`
 - Custom AuthenticationEntryPoint
 - **OAuth2 customizace v `members`:** `KlabisAuthorizationServerCustomizer`, `KlabisUserDetailsService`, `MemberIdToUuidConverter`
