@@ -7,7 +7,7 @@ the model (grants over everything vs. over targets, the evaluator rule).
 
 Filter individual response fields and HAL+FORMS template properties based on the authenticated user's grants. Implemented via a custom Jackson 3 `ValueSerializerModifier` — annotations go directly on record components, no interface needed.
 
-On generated request/response DTOs these annotations are emitted from the spec's `x-klabis-authority` / `x-klabis-owner-visible` / `x-klabis-target-id` / `x-klabis-read-authority` field extensions (see `klabis-api-spec`) — never add them by hand to generated code. The records below show the resulting shape.
+On generated request/response DTOs these annotations are emitted from the spec's `x-klabis-authority` / `x-klabis-target-id` / `x-klabis-read-authority` field extensions (see `klabis-api-spec`) — never add them by hand to generated code. The records below show the resulting shape.
 
 ## Pattern: Annotated Record (no interface)
 
@@ -39,9 +39,9 @@ public ResponseEntity<MemberDetailResponse> getMember(@PathVariable UUID id, @Ac
 }
 ```
 
-## Target and ownership (`@TargetId`, `@OwnerVisible`)
+## Target and self-grants (`@TargetId`)
 
-The record supplies the target its fields are about through the component marked `@TargetId(TargetType.X)`. An authority listed in `@HasAuthority` then passes when it is held over everything **or** over that target. `@OwnerVisible` adds "the target is the caller" with OR semantics:
+The record supplies the target its fields are about through the component marked `@TargetId(TargetType.X)` (one target per record). An authority listed in `@HasAuthority` then passes when it is held over everything **or** over that target. The member's own access is a self-grant (`SelfRelationshipSource`), so the owner is let in by listing the `SPECIFIC` authority the source grants:
 
 ```java
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -49,20 +49,18 @@ The record supplies the target its fields are about through the component marked
 record MemberDetailResponse(
     @TargetId(TargetType.MEMBER) UUID id,         // the member the record is about
     String firstName,                              // always visible
-    @HasAuthority({Authority.MEMBERS_MANAGE}) @OwnerVisible
-    String birthNumber,                            // MEMBERS_MANAGE over this member OR the member themself
-    @OwnerVisible
-    String email,                                  // visible only to the member themself
+    @HasAuthority({Authority.MEMBERS_MANAGE, Authority.MEMBERS_VIEW_PROFILE})
+    String birthNumber,                            // MEMBERS_MANAGE, or VIEW_PROFILE over this member (self-grant, guardians)
     @HasAuthority({Authority.MEMBERS_MANAGE})
     String suspensionNote                          // MEMBERS_MANAGE over this member
 ) {}
 ```
 
-- Without `@TargetId`, when some component is `@OwnerVisible`, the single component convertible to UUID via `ConversionService` is taken as a member target. If ambiguous, mark it with `@TargetId` (spec: `x-klabis-target-id: MEMBER`).
-- A `@TargetId` component holding a **collection** of ids is a set of owners, not one target: authorities must then be held over everything, and an `@OwnerVisible` field is visible to any of the owners.
-- `isSelf` compares a member target with the user id and member id of `KlabisJwtAuthenticationToken` (`token.isSelf(id)`, used only inside the evaluator).
+- A record without a `@TargetId` component has no target: its authorities must be held over everything. There is no implicit member target.
+- A `@TargetId` component holds one id; a collection of ids is not a target.
+- `isSelf` compares a member target with the user id and member id of `KlabisJwtAuthenticationToken`; it serves presentation decisions only, never access.
 
-In collections (`GET /members`), each item is evaluated independently — owner sees more on their own record.
+In collections (`GET /members`), each item is evaluated independently — a user with a grant over themself sees more on their own record.
 
 ## Key rules
 
@@ -70,13 +68,12 @@ In collections (`GET /members`), each item is evaluated independently — owner 
 - Class-level `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` sets default deny behavior
 - Per-field override with `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` for masked fields
 - `@HasAuthority({...})` lists authorities of which any one suffices; SpEL `@PreAuthorize` on a field or record component is **not** supported — express the rule with `@HasAuthority`
-- `@OwnerVisible` adds ownership-based access with OR semantics
 - No interface, no proxy — `FieldSecurityBeanSerializerModifier` handles everything during serialization
 - Never read these annotations yourself — `AuthorizationArchitectureTest` fails the build; ask the evaluator
 
 ## Field-Level Authorization on Request DTOs (PATCH)
 
-`JsonNullable<T>` components with `@HasAuthority`, or `@OwnerVisible` are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId` parameter, whose `@PathVariable` may be declared on the generated `*Api` interface; the raw URI variable is converted by `AuthorizationEvaluator.toTarget`. The check stays in `afterBodyRead`, so a forbidden field answers 403 before bean validation can answer 400. A denial is reported with `describeRequirement` — callers never compose the required-authority text themselves.
+`JsonNullable<T>` components with `@HasAuthority` are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId` parameter, whose `@PathVariable` may be declared on the generated `*Api` interface; the raw URI variable is converted by `AuthorizationEvaluator.toTarget`. The check stays in `afterBodyRead`, so a forbidden field answers 403 before bean validation can answer 400. A denial is reported with `describeRequirement` — callers never compose the required-authority text themselves.
 
 ```java
 record UpdateMemberRequest(
@@ -85,21 +82,20 @@ record UpdateMemberRequest(
     @HasAuthority({Authority.MEMBERS_MANAGE})
     JsonNullable<String> birthNumber,  // only MEMBERS_MANAGE — 403 otherwise
 
-    @HasAuthority({Authority.MEMBERS_MANAGE}) @OwnerVisible
-    JsonNullable<String> chipNumber,  // MEMBERS_MANAGE OR the member themself
+    @HasAuthority({Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE})
+    JsonNullable<String> chipNumber,  // MEMBERS_MANAGE, or EDIT_PROFILE over this member (self-grant, guardians)
 
     @HasAuthority({Authority.MEMBERS_MANAGE}) @ReadAuthority({Authority.MEMBERS_READ})
     JsonNullable<String> registrationNote  // writable by MEMBERS_MANAGE, shown read-only to MEMBERS_READ
 ) {}
 ```
 
-The `@TargetId` path variable and the method-level authorization are declared on the **generated interface** (emitted from the spec's `x-klabis-authority` / `x-klabis-owner-visible` / `x-klabis-target-id` extensions), which is where the evaluator reads them:
+The `@TargetId` path variable and the method-level authorization are declared on the **generated interface** (emitted from the spec's `x-klabis-authority` / `x-klabis-target-id` extensions), which is where the evaluator reads them:
 
 ```java
 // generated <X>Api interface — not hand-written
 @RequestMapping(method = RequestMethod.PATCH, value = MembersApi.PATH_UPDATE_MEMBER, ...)
-@HasAuthority({Authority.MEMBERS_MANAGE})
-@OwnerVisible
+@HasAuthority({Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE})
 ResponseEntity<Void> updateMember(@TargetId(TargetType.MEMBER) @PathVariable UUID id, @RequestBody UpdateMemberRequest request);
 ```
 
@@ -129,7 +125,7 @@ No extra configuration needed. The template itself is offered only when `canInvo
 - Serializer: `com.klabis.common.security.fieldsecurity.FieldSecurityBeanSerializerModifier`, `SecuredBeanPropertyWriter`
 - Request auth: `com.klabis.common.security.fieldsecurity.RequestBodyFieldAuthorizationAdvice`
 - Decisions: `com.klabis.common.authorization.AuthorizationEvaluator` (`canReadField`, `canWriteField`, `requestFieldAccess`, `describeRequirement`)
-- Annotations: `@HasAuthority`, `@TargetId`, `@OwnerVisible`, `@ReadAuthority`
+- Annotations: `@HasAuthority`, `@TargetId`, `@ReadAuthority`
 - Handlers: `com.klabis.common.security.fieldsecurity.NullDeniedHandler`, `MaskDeniedHandler`
 - Tests: `FieldLevelAuthorizationTest`, `TargetedFieldAuthorizationTest`, `HalFormsReadOnlyPropertiesTest`
 - HAL+FORMS filtering: `com.klabis.common.ui.HalFormsSupport` (`FieldAuthorization`)

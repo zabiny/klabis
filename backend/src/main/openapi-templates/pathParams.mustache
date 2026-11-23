@@ -4,13 +4,11 @@
   method's parameter.
 
   Rationale: @TargetId names the parameter holding the ID of the target the operation is about, so
-  that an authority held only over specific targets and @OwnerVisible on the operation have
-  something to resolve against. It used to reach the generator as
+  that an authority held only over specific targets has something to resolve against. It used to reach the generator as
   x-field-extra-annotation, stamped on during bundling, which also forced the bundler to inline
   any shared $ref parameter so the annotation landed on one operation only. Reading the key here
   instead means the annotation can sit on the shared parameter: @TargetId is inert on its own —
-  the evaluator only consults it for a method or field that is already guarded by an authority or
-  marked @OwnerVisible.
+  the evaluator only consults it for a method or field that is already guarded by an authority.
 
   Maintenance: this is a vendor fork and nothing detects drift. On an openapi-generator upgrade,
   diff it against the new stock JavaSpring/pathParams.mustache and port the addition across.

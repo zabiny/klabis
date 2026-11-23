@@ -77,7 +77,7 @@ const {dialogFixtures, resolveDialogQueryData} = vi.hoisted(() => {
             _templates: {
                 registerForEvent: {
                     method: 'POST',
-                    target: 'http://localhost:8443/api/events/1/registrations',
+                    target: 'http://localhost:8443/api/events/1/registrations/M001',
                     title: 'Přihlásit se',
                     properties: [
                         {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
@@ -1027,8 +1027,8 @@ describe('EventDetailPage', () => {
             });
         });
 
-        describe('edit button for EVENTS:REGISTRATIONS holder (Group 9)', () => {
-            it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTRATIONS holder)', () => {
+        describe('edit button for EVENTS:REGISTER_MEMBER holder (Group 9)', () => {
+            it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTER_MEMBER holder)', () => {
                 const editTemplate = mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'});
                 const rows = [
                     buildRegistrationRow('member-1', {_templates: {editRegistration: editTemplate}}),

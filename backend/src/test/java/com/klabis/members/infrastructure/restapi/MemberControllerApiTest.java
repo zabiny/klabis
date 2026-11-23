@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
@@ -3296,7 +3297,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("adds legalGuardians link on the minor's own detail without MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MINOR_MEMBER)
         void addsGuardiansLinkForTheMinorThemself() throws Exception {
             givenMember(LocalDate.now().minusYears(9), groupOfChild());
 

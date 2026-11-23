@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
@@ -48,7 +49,7 @@ class MemberFeeHistoryLinkProcessorTest {
 
     @Test
     @DisplayName("adds feeHistory when the caller views their own profile")
-    @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MEMBER)
     void addsFeeHistoryOnOwnProfile() throws Exception {
         mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -78,7 +79,7 @@ class MemberFeeHistoryLinkProcessorTest {
     @Test
     @DisplayName("adds feeHistory for a guardian viewing their minor")
     @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(
-            authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+            authority = Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
     void addsFeeHistoryForGuardianOfTheMember() throws Exception {
         mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
@@ -89,7 +90,7 @@ class MemberFeeHistoryLinkProcessorTest {
     @Test
     @DisplayName("does not add feeHistory for a guardian viewing a member who is not their minor")
     @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(
-            authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+            authority = Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, type = TargetType.MEMBER,
             ids = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
     void omitsFeeHistoryForGuardianOfDifferentMember() throws Exception {
         mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))

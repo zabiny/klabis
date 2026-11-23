@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
         authorities = {Authority.EVENTS_READ},
         targetGrants = {
                 @TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = AsEventCoordinator.EVENT_ID),
-                @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = AsEventCoordinator.EVENT_ID)
+                @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_OVERVIEW, type = TargetType.EVENT, ids = AsEventCoordinator.EVENT_ID)
         })
 public @interface AsEventCoordinator {
 

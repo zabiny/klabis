@@ -795,7 +795,7 @@ paths:
               operation: getAccommodationList
               description: |
                 Present only when the event offers shared accommodation and the caller is the
-                event coordinator or has EVENTS:REGISTRATIONS
+                event coordinator or has EVENTS:REGISTER_MEMBER
             newRegistration:
               operation: getRegistration
               description: |
@@ -846,8 +846,8 @@ paths:
             self:
               operation: getRegistration
               description: |
-                Present for the registered member or callers with EVENTS:REGISTRATIONS or
-                EVENTS:REGISTRATIONS_READ
+                Present for callers with EVENTS:REGISTER_MEMBER over the row's member or
+                EVENTS:REGISTRATIONS_OVERVIEW over the event
             recordTransaction:
               operation: getAccount
               description: Present only for callers with FINANCE:MANAGE
@@ -992,7 +992,7 @@ paths:
       summary: Get accommodation list for an event
       description: |
         Returns the accommodation list for an event with personal details for each registered
-        member. Accessible only to users holding EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ
+        member. Accessible only to users holding EVENTS:REGISTER_MEMBER or EVENTS:REGISTRATIONS_OVERVIEW
         over the event (the event coordinators). Fields that are not recorded for a member are returned as null.
 
         This operation also supports `Accept: text/csv`, returning a UTF-8 BOM, semicolon-delimited
@@ -1000,7 +1000,7 @@ paths:
         representation described below.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority: the caller needs EVENTS_REGISTRATIONS or EVENTS_REGISTRATIONS_READ over
+      # No x-klabis-authority: the caller needs EVENTS_REGISTER_MEMBER or EVENTS_REGISTRATIONS_OVERVIEW over
       # the event (the coordinator grant), and the event must offer shared accommodation. Both are
       # checked in EventController through AuthorizationEvaluator.isAllowed over TargetRef.event,
       # because the event offering the service is a domain rule the spec cannot express.
@@ -1026,14 +1026,14 @@ paths:
               operation: getEvent
               description: |
                 The event this accommodation list belongs to. Present only when the caller may also
-                read the event: reaching this list needs EVENTS:REGISTRATIONS or being the
+                read the event: reaching this list needs EVENTS:REGISTER_MEMBER or being the
                 coordinator, which does not imply EVENTS:READ.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS
+          description: Forbidden - must be the event coordinator or have EVENTS:REGISTER_MEMBER
           content:
             application/problem+json:
               schema:
@@ -1196,57 +1196,6 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/events/{eventId}/registrations:
-    post:
-      operationId: registerForEvent
-      tags: [EventRegistrations]
-      summary: Register for an event
-      description: |
-        Register the authenticated member for an event with SI card number. Only allowed for ACTIVE
-        events. Returns Location header pointing to the registration.
-      security:
-        - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
-      # registration via @ActingMember — authorization is implicit in the caller's identity, there
-      # is no separate authority to check.
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
-      parameters:
-        - $ref: '#/components/parameters/RegEventIdParam'
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterEventRequest'
-      responses:
-        '201':
-          description: Successfully registered for event
-          headers:
-            Location:
-              description: URI of the created registration
-              schema:
-                type: string
-                format: uri
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          description: User already registered to this event
-          content:
-            application/problem+json:
-              schema:
-                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
     get:
       operationId: listRegistrations
       tags: [EventRegistrations]
@@ -1255,11 +1204,11 @@ paths:
         List all registrations for an event. SI card numbers are not included for privacy
         protection. Supported sort fields: firstName, lastName, category, registrationTime.
         Default sort: registrationTime ASC. sort=registrationTime is silently ignored for members
-        without EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ (the event coordinators) over the
+        without EVENTS:REGISTER_MEMBER or EVENTS:REGISTRATIONS_OVERVIEW (the event coordinators) over the
         event. Unknown sort fields also fall back to default.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
+      # No x-klabis-authority: this endpoint acts on the CALLER's own
       # view of the event's registrations — every authenticated caller may list registrations, and
       # the registrationTime field is separately field-level-protected (see RegistrationSummaryDto).
       parameters:
@@ -1299,18 +1248,72 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/events/{eventId}/registrations/{memberId}:
+    post:
+      operationId: registerForEvent
+      tags: [EventRegistrations]
+      summary: Register a member for an event
+      description: |
+        Register the member named in the path for an event with SI card number. Requires
+        EVENTS:REGISTER_MEMBER over that member: held over everybody by the registrations manager,
+        and over specific members by the member themselves and by their legal guardian. Only
+        allowed for ACTIVE events. Returns Location header pointing to the registration.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTER_MEMBER
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - $ref: '#/components/parameters/RegMemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterEventRequest'
+      responses:
+        '201':
+          description: Successfully registered for event
+          headers:
+            Location:
+              description: URI of the created registration
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires EVENTS:REGISTER_MEMBER over the member
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: User already registered to this event
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
     put:
       operationId: editRegistration
       tags: [EventRegistrations]
       summary: Edit event registration
       description: |
-        Update SI card number and/or category for a member's registration. Accessible by the
-        member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when
-        registrations are open.
+        Update SI card number and/or category for a member's registration. Requires
+        EVENTS:REGISTER_MEMBER over that member: held over everybody by the registrations manager,
+        and over specific members by the member themselves and by their legal guardian. Only
+        allowed when registrations are open.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_REGISTRATIONS
-      x-klabis-owner-visible: true
+      x-klabis-authority: EVENTS_REGISTER_MEMBER
       parameters:
         - $ref: '#/components/parameters/RegEventIdParam'
         - $ref: '#/components/parameters/RegMemberIdParam'
@@ -1331,7 +1334,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - must be the member or have EVENTS:REGISTRATIONS
+          description: Forbidden - requires EVENTS:REGISTER_MEMBER over the member
           content:
             application/problem+json:
               schema:
@@ -1348,13 +1351,12 @@ paths:
       tags: [EventRegistrations]
       summary: Unregister a member from an event
       description: |
-        Cancel a member's registration. Accessible by the member themselves or a user with
-        EVENTS:REGISTRATIONS authority. Only allowed before the event date and before the
-        registration deadline.
+        Cancel a member's registration. Requires EVENTS:REGISTER_MEMBER over that member
+        (see editRegistration). Only allowed before the event date and before the registration
+        deadline.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_REGISTRATIONS
-      x-klabis-owner-visible: true
+      x-klabis-authority: EVENTS_REGISTER_MEMBER
       parameters:
         - $ref: '#/components/parameters/RegEventIdParam'
         - $ref: '#/components/parameters/RegMemberIdParam'
@@ -1368,7 +1370,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - must be the member or have EVENTS:REGISTRATIONS
+          description: Forbidden - requires EVENTS:REGISTER_MEMBER over the member
           content:
             application/problem+json:
               schema:
@@ -1385,17 +1387,15 @@ paths:
       tags: [EventRegistrations]
       summary: Get registration by member ID
       description: |
-        Get a member's event registration including SI card number. Accessible by the member
-        themselves, a user with EVENTS:REGISTRATIONS authority, or the event coordinators
-        (EVENTS:REGISTRATIONS_READ over the event). When new=true, returns prefilled
-        defaults (siCardNumber from profile) for a not-yet-existing registration — this still
-        requires the caller to be the target member themselves regardless of authority.
-      # No x-klabis-authority / x-klabis-owner-visible: the rule is "owner of the member OR a grant
-      # over the event", and one target cannot express both. It is checked imperatively by
-      # RegistrationReadAccess.canRead in EventRegistrationController, and every producer of a link
-      # to this operation checks it too (design.md D3).
+        Get a member's event registration including SI card number. Requires
+        EVENTS:REGISTER_MEMBER over that member, or EVENTS:REGISTRATIONS_OVERVIEW over the event
+        (the event coordinators). When new=true, returns prefilled defaults (siCardNumber from the
+        member's profile) for a not-yet-existing registration, under the same rule.
       security:
         - KlabisAuth: [EVENTS]
+      # memberId (MEMBER) and eventId (EVENT) are both identified targets: each authority is
+      # checked over the target of its own kind.
+      x-klabis-authority: [EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]
       parameters:
         - $ref: '#/components/parameters/RegMemberIdParam'
         - $ref: '#/components/parameters/RegEventIdParam'
@@ -1445,16 +1445,16 @@ paths:
               operation: unregisterFromEvent
               description: |
                 Present only on the existing-registration (newRegistration=false) response, when
-                registrations are open and the caller is the registered member or holds
-                EVENTS:REGISTRATIONS
+                registrations are open and the caller holds EVENTS:REGISTER_MEMBER over the
+                registered member
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
           description: |
-            Forbidden - must be the member, have EVENTS:REGISTRATIONS or be a coordinator of the
-            event; or new=true with mismatched memberId
+            Forbidden - requires EVENTS:REGISTER_MEMBER over the member or
+            EVENTS:REGISTRATIONS_OVERVIEW over the event
           content:
             application/problem+json:
               schema:
@@ -1718,6 +1718,7 @@ components:
       in: path
       description: Event UUID
       required: true
+      x-klabis-target-id: EVENT
       schema:
         type: string
         format: uuid
@@ -1727,9 +1728,8 @@ components:
       in: path
       description: Member UUID
       required: true
-      # Identifies the target member. Inert on its own: @TargetId is only consulted for a method
-      # marked @OwnerVisible or guarded by an authority held over specific targets, so the
-      # operations here that do neither are unaffected.
+      # Identifies the target member. Inert unless the operation lists an authority held over
+      # specific members.
       x-klabis-target-id: MEMBER
       schema:
         type: string
@@ -1906,7 +1906,7 @@ components:
       type: object
       description: |
         Per-offer counts of registered members who opted into a shared service. Populated by the
-        server only for the event coordinator or callers with EVENTS:REGISTRATIONS, only for ACTIVE
+        server only for the event coordinator or callers with EVENTS:REGISTER_MEMBER, only for ACTIVE
         events, and only while at least one offer is enabled; omitted entirely otherwise. Each
         sub-object is present only when the corresponding offer is enabled.
       properties:
@@ -2362,7 +2362,7 @@ components:
       type: object
       description: |
         Registration summary for list views. SI card numbers are not included. registrationTime is
-        visible to callers with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event
+        visible to callers with EVENTS:REGISTER_MEMBER or EVENTS:REGISTRATIONS_OVERVIEW over the event
         (the event coordinators).
       x-klabis-relation:
         collectionRelation: registrationDtoList
@@ -2377,13 +2377,13 @@ components:
         registrationTime:
           type: string
           format: date-time
-          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+          x-klabis-authority: [EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]
         missingInOris:
           type: boolean
           description: |
             The registration's ORIS entry has disappeared; the registration is kept. Visible to callers
-            with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event (the event coordinators).
-          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+            with EVENTS:REGISTER_MEMBER or EVENTS:REGISTRATIONS_OVERVIEW over the event (the event coordinators).
+          x-klabis-authority: [EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW]
         wantsSharedTransport:
           type: boolean
           description: |

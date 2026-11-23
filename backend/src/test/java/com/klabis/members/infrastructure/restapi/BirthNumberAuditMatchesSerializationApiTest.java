@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.jayway.jsonpath.JsonPath;
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
@@ -94,7 +95,8 @@ class BirthNumberAuditMatchesSerializationApiTest {
 
     @Test
     @DisplayName("the member themself")
-    @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = SelfGrants.MEMBER)
     void self() throws Exception {
         assertAuditDecisionMatchesSerializedField(MEMBER_ID, true);
     }

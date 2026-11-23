@@ -1,6 +1,6 @@
 # Authorization Model
 
-Who may do what, and how code asks. Rationale: ADR-010 in `docs/design-decisions.md`. Field-level
+Who may do what, and how code asks. Rationale: ADR-010 and ADR-013 in `docs/design-decisions.md`. Field-level
 specifics (hiding/masking response fields, PATCH request fields) are in `field-security.md`; the
 spec extensions that generate the annotations are in the `klabis-api-spec` skill.
 
@@ -8,7 +8,7 @@ spec extensions that generate the annotations are in the `klabis-api-spec` skill
 - Grants: over everything vs. over specific targets
 - The permission snapshot
 - `AuthorizationEvaluator` — the only place that decides
-- Annotations: `@HasAuthority`, `@TargetId`, `@OwnerVisible`, `@ReadAuthority`
+- Annotations: `@HasAuthority`, `@TargetId`, `@ReadAuthority`
 - Imperative checks in application code
 - Adding a relationship-based permission (`RelationshipSource`)
 - Testing
@@ -71,17 +71,20 @@ Every decision goes through `com.klabis.common.authorization.AuthorizationEvalua
 | `has(authority)` / `has(authority, target)` / `isSelf(target)` | application code (controllers, postprocessors) |
 | `targetIdsOf(authority, type)` | application code that restricts a list query to the targets of that type the user holds `authority` over through a SPECIFIC grant |
 
-Rule for an element guarded by authorities `[A1..An]`, an optional target `t` and optional `@OwnerVisible`:
+Rule for an element guarded by authorities `[A1..An]`, where `t_Ai` is the identified target of the kind of `Ai`'s `targetType` (an operation may identify one target per kind):
 
 ```
-allowed ⇔ ∃ Ai: (t present ? has(Ai, t) : hasOverAll(Ai))   ∨   (ownerVisible ∧ isSelf(t))
+allowed ⇔ ∃ Ai: (t_Ai present ? has(Ai, t_Ai) : hasOverAll(Ai))
 ```
+
+There is no owner rule: a user's access to their own data is a self-grant (`SelfRelationshipSource`) like any
+other relationship grant, so list the relevant `SPECIFIC` authority on the element and a target will do.
 
 Because affordances and enforcement share this code path, an offered template or link is always one
 the user may invoke — never compute "can the user do X" separately for a link.
 
 `AuthorizationArchitectureTest` (ArchUnit) fails the build when code outside `common.authorization`
-/ `common.security` reads `@HasAuthority`, `@OwnerVisible`, `@TargetId`, `@ReadAuthority`,
+/ `common.security` reads `@HasAuthority`, `@TargetId`, `@ReadAuthority`,
 or `Authentication.getAuthorities()`. *Applying* the annotations is fine; *reading* them is not.
 
 ## Annotations
@@ -93,7 +96,6 @@ them by hand on generated code or on a controller override.
 |---|---|---|
 | `@HasAuthority({A, B})` (`common.users`) | `x-klabis-authority: A` or `[A, B]` | any one of the listed authorities suffices |
 | `@TargetId(TargetType.MEMBER)` (`common.authorization`) | `x-klabis-target-id: MEMBER` | the path parameter / record component identifying the target |
-| `@OwnerVisible` (`common.security.fieldsecurity`) | `x-klabis-owner-visible: true` | also allowed when the target is the caller; alone = owner-only |
 | `@ReadAuthority({A})` (`common.security.fieldsecurity`) | `x-klabis-read-authority: [A]` | request field only: HAL-FORMS shows it read-only to holders of `A` who may not change it |
 
 ```java
@@ -103,8 +105,10 @@ ResponseEntity<Void> updateMember(@TargetId(TargetType.MEMBER) @PathVariable("id
                                   @RequestBody UpdateMemberRequest request);
 ```
 
-Without a `@TargetId` parameter an authority must be held over everything. `@OwnerVisible` without
-`@TargetId` denies (nothing to compare with the caller) — `validate.mjs` rejects that in the spec.
+Without a `@TargetId` parameter an authority must be held over everything. An operation may carry several
+`@TargetId` parameters of different `TargetType`s (e.g. a member and an event); each authority is checked
+over the target of its own kind, and two parameters of one kind are rejected. `validate.mjs` requires one
+`x-klabis-target-id` parameter of the right kind for every `SPECIFIC` authority an operation lists.
 
 `MethodSecurityAnnotations` resolves these annotations across the interface boundary; the
 interceptor's pointcut only considers classes under `com.klabis.*`.
@@ -122,7 +126,7 @@ authorization), inject `AuthorizationEvaluator`:
 ```java
 boolean canManage = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);                      // over everything
 boolean canEdit   = authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(id)); // over this member
-boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
+boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id)); // presentation only, never for access
 ```
 
 - `CurrentUserData` (`@ActingUser`) identifies the caller (`userId`, `memberId`) — it carries no
@@ -132,6 +136,7 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
   themselves. Keep a gate only when the offering rule genuinely differs (e.g. a navigation entry for
   an operation any authenticated user may call, or hiding an owner-accessible link from the owner),
   and say why in a one-line comment.
+- An inline check on top of the declared authorities is right when they are too broad for part of an operation: `EventRegistrationController.getRegistration` (`newRegistration=true`) additionally requires `has(EVENTS_REGISTER_MEMBER, member)`, because `EVENTS_REGISTRATIONS_OVERVIEW` over the event (coordinators) must not expose any member's name and SI card through the defaults.
 - To restrict a list query to what the user holds a grant over (e.g. DRAFT events a coordinator may see), ask
   `targetIdsOf(authority, type)` in the controller and pass the ids down as a query criterion. Combine with
   `has(authority)` (grant over everything = unrestricted). Modules must not re-derive relationships
@@ -164,23 +169,22 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 4. Response/request records whose fields the authority guards need the target component marked
    `x-klabis-target-id` too.
 
-Existing sources (the first three grant `Authority.MEMBERS_EDIT_PROFILE`, `SPECIFIC`, target `MEMBER`; `MEMBERS_MANAGE`
-does not imply it, so rules list both):
+Existing sources (`SPECIFIC` authorities are not implied by `MEMBERS_MANAGE`, so rules list both):
 
 | Source | Module | Grants |
 |---|---|---|
-| `SelfProfileRelationshipSource` | `members.infrastructure` | over own `MemberId` when the member is an adult today (replaces `OwnProfileEditRule`) |
+| `SelfRelationshipSource` | `members.infrastructure` | the self-grant, over own `MemberId`: `MEMBERS_VIEW_PROFILE` always, `EVENTS_REGISTER_MEMBER` for a member, `MEMBERS_EDIT_PROFILE` unless a minor, `MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE` for an adult member — evaluated against today (replaces the former owner rule) |
 | `LegalGuardianGroupRelationshipSource` | `members.legalguardiangroup.infrastructure` | for each group where the user is a guardian: the group's `delegatedAuthorities()` over each minor member (age not checked; the minor leaves the group in the daily run after turning 18), plus `GROUPS_OWNER` over each guarded group |
 | `FreeGroupRelationshipSource` | `groups.freegroup.infrastructure` | for each free group the user owns: its `delegatedAuthorities()` over each member (not over co-owners; follows membership), plus `GROUPS_OWNER` over each owned group (all three group sources build their grants with `DelegatedGrants.of` / `DelegatedGrants.ownershipOf(groups, idToUuid)`) |
-| `EventCoordinatorRelationshipSource` | `events.infrastructure` | `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (`SPECIFIC`, target `EVENT`) over every event the user coordinates, read through `EventRepository.findIdsCoordinatedBy` (ids only, no aggregates) |
+| `EventCoordinatorRelationshipSource` | `events.infrastructure` | `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_OVERVIEW` (`SPECIFIC`, target `EVENT`) over every event the user coordinates, read through `EventRepository.findIdsCoordinatedBy` (ids only, no aggregates) |
 | `TrainingGroupRelationshipSource` | `groups.traininggroup.infrastructure` | `GROUPS_OWNER` (`SPECIFIC`, target `GROUP`) over each training group the user trains |
 
 Not every `SPECIFIC` authority is delegatable to others: the event coordinator authorities come from the coordinator
 relationship only. They are not in `FreeGroup`'s delegatable set (MEMBER-typed only), not assignable in the permissions
 dialog, and not in the `Authority` enum of `common.yaml` (never on the wire). They sit beside the ALL-only
-`EVENTS_MANAGE` / `EVENTS_REGISTRATIONS` on the same operations (`x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]`,
-`x-klabis-target-id: EVENT` on the path parameter), so `isAllowed(List.of(EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ),
-TargetRef.event(id), false)` answers "may this caller read the event's registrations" for both holders. Publishing and
+`EVENTS_MANAGE` / `EVENTS_REGISTER_MEMBER` on the same operations (`x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]`,
+`x-klabis-target-id: EVENT` on the path parameter), so `isAllowed(List.of(EVENTS_REGISTER_MEMBER, EVENTS_REGISTRATIONS_OVERVIEW),
+TargetRef.event(id))` answers "may this caller read the event's registrations" for both holders. Publishing and
 cancelling stay `EVENTS_MANAGE`-only, which is why the coordinator holds narrower authorities rather than `EVENTS_MANAGE`
 over specific events.
 
@@ -205,7 +209,7 @@ creation (immutable; the aggregate rejects authorities without `SPECIFIC` or wit
 
 ## Reference implementation
 
-- Sources: `SelfProfileRelationshipSource`, `LegalGuardianGroupRelationshipSource`, `FreeGroupRelationshipSource`
+- Sources: `SelfRelationshipSource`, `LegalGuardianGroupRelationshipSource`, `FreeGroupRelationshipSource`
 - Model: `common.authorization` — `AuthorizationSnapshot`, `AuthorizationSnapshotLoader`, `AuthorizationSnapshotProvider`,
   `AuthorizationEvaluator`, `RelationshipSource`, `TargetRef`, `TargetType`, `GrantForm`, `TargetId`
 - Authorities: `common.users.Authority`, `common.users.HasAuthority`

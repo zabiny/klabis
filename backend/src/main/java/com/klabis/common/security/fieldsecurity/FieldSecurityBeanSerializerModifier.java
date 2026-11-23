@@ -18,8 +18,7 @@ import java.util.function.Supplier;
 
 /**
  * Jackson {@link ValueSerializerModifier} that wraps {@link BeanPropertyWriter} instances
- * for record components annotated with {@link HasAuthority} or
- * {@link OwnerVisible}. Authorization is evaluated during serialization — no interface or
+ * for record components annotated with {@link HasAuthority}. Authorization is evaluated during serialization — no interface or
  * proxy needed.
  * <p>
  * Runs from {@link #updateBuilder}, not {@link #changeProperties}. Jackson applies every

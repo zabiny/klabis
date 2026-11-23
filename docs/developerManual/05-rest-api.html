@@ -284,7 +284,7 @@ public ... register(@PathVariable EventId id,
 
 <aside class="note">
     <code>CurrentUserData</code> nese jen identitu, ne oprávnění. Autorizaci deklarujte ve specu
-    (<code>@HasAuthority</code>, <code>@TargetId</code>, <code>@OwnerVisible</code> — kap. 06); co deklarovat
+    (<code>@HasAuthority</code>, <code>@TargetId</code> — kap. 06); co deklarovat
     nejde (příznak měnící dotaz, podmíněný link v postprocessoru), se ptá injektovaného
     <code>AuthorizationEvaluator</code>u (<code>has(authority)</code>, <code>has(authority, target)</code>,
     <code>isSelf(target)</code>). Přímé čtení oprávnění z <code>Authentication</code> zakazuje

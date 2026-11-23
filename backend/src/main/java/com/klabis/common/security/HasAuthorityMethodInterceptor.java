@@ -2,7 +2,6 @@ package com.klabis.common.security;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.ClassFilter;
@@ -28,7 +27,7 @@ import java.util.function.Supplier;
  * field-level authorization on response DTOs in addition to bean-level method security.
  * <p>
  * The decision itself is made by {@link AuthorizationEvaluator#canInvoke}, which also covers
- * {@link OwnerVisible} methods and authorities held over just the target identified by a
+ * authorities held over just the target identified by a
  * {@link com.klabis.common.authorization.TargetId} parameter.
  * <p>
  * Registered as a {@code @Bean} so {@code AuthorizationAdvisorProxyFactory} auto-discovers it.
@@ -43,7 +42,7 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor {
     private static final String APPLICATION_PACKAGE_PREFIX = "com.klabis.";
 
     /**
-     * Matches methods annotated with {@link HasAuthority} or {@link OwnerVisible} on the class
+     * Matches methods annotated with {@link HasAuthority} on the class
      * itself, OR on any interface it implements — {@link org.springframework.aop.support.annotation.AnnotationMatchingPointcut}
      * only looks at the target class/method directly and misses annotations declared on a
      * generated OpenAPI {@code *Api} interface that the controller implements.

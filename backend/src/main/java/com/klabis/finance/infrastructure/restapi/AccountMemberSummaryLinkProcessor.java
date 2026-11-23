@@ -23,7 +23,7 @@ class AccountMemberSummaryLinkProcessor implements RepresentationModelProcessor<
 
     @Override
     public EntityModel<MemberSummaryResponse> process(EntityModel<MemberSummaryResponse> model) {
-        // getAccount is also open to the account owner (x-klabis-owner-visible); the link is for
+        // getAccount is also open to the account owner through a self-grant; the link is for
         // managers browsing the member list, so it stays hidden on the owner's own row.
         if (!authorizationEvaluator.has(Authority.FINANCE_MANAGE)) {
             return model;

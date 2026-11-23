@@ -13,7 +13,6 @@ import {forEachHalResponse, halResponsePayloadNames, isDerivedEntityModel, isEnv
 
 export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-target-id',
-    'x-klabis-owner-visible',
     'x-klabis-authority',
     'x-klabis-read-authority',
     'x-klabis-halforms-access',
@@ -52,7 +51,6 @@ export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE'
 /** Extensions that belong on the HTTP-method node rather than on a schema property. */
 const OPERATION_LEVEL_EXTENSIONS = new Set([
     'x-klabis-authority',
-    'x-klabis-owner-visible',
     'x-klabis-hal',
 ]);
 
@@ -129,49 +127,40 @@ function targetIdParameters(document, operation) {
 }
 
 /**
- * What an operation's `x-klabis-authority` / `x-klabis-owner-visible` demand of its parameters,
- * stated once per operation: both are evaluated against the operation's single target, which only
- * a path parameter marked `x-klabis-target-id` can name. Authorities held over `{ALL}` only are
- * target-agnostic and ask for nothing.
- *
- * One error for a wrong parameter count however many reasons demand it; the target type is checked
- * per authority, since each may name a different one.
+ * What an operation's `x-klabis-authority` demands of its parameters, mirroring the runtime rule: an
+ * operation identifies at most one target per kind, and an authority held over specific targets is
+ * evaluated against the operation's target of the authority's own kind, which only a path parameter marked
+ * `x-klabis-target-id` can name. Authorities held over `{ALL}` only are target-agnostic and ask for nothing.
  */
 function operationTargetErrors(document, operation, path, authorities) {
-    const reasons = [];
-    const expectedTypes = new Set();
-    const specificAuthorities = [];
-
-    const names = authorityNames(operation['x-klabis-authority']) ?? [];
-    for (const name of names.filter((n) => authorities.get(n)?.grantForms.has('SPECIFIC'))) {
+    const reasonsByKind = new Map();
+    for (const name of authorityNames(operation['x-klabis-authority']) ?? []) {
+        if (!authorities.get(name)?.grantForms.has('SPECIFIC')) continue;
         const {targetType} = authorities.get(name);
-        specificAuthorities.push({name, targetType});
-        expectedTypes.add(targetType);
-        reasons.push(`"${name}" may be held over specific ${targetType} targets`);
-    }
-    if (operation['x-klabis-owner-visible'] === true) {
-        reasons.push('x-klabis-owner-visible resolves ownership against the target');
-    }
-    if (reasons.length === 0) return [];
-
-    const targetParams = targetIdParameters(document, operation);
-    if (targetParams.length !== 1) {
-        const type = expectedTypes.size > 0 ? `: ${[...expectedTypes].join(', ')}` : '';
-        return [{
-            path,
-            message: `${reasons.join('; ')}, so the operation needs exactly one parameter marked `
-                + `x-klabis-target-id${type} (found ${targetParams.length})`,
-        }];
+        reasonsByKind.set(targetType, [...(reasonsByKind.get(targetType) ?? []),
+            `"${name}" may be held over specific ${targetType} targets`]);
     }
 
-    const actualType = targetParams[0]['x-klabis-target-id'];
-    return specificAuthorities
-        .filter(({targetType}) => actualType !== targetType)
-        .map(({name, targetType}) => ({
-            path,
-            message: `"${name}" is about ${targetType} targets but parameter `
-                + `"${targetParams[0].name}" is marked x-klabis-target-id: ${actualType}`,
-        }));
+    const countByKind = new Map();
+    for (const param of targetIdParameters(document, operation)) {
+        const kind = param['x-klabis-target-id'];
+        countByKind.set(kind, (countByKind.get(kind) ?? 0) + 1);
+    }
+
+    const errorFor = (kind, found) => ({
+        path,
+        message: `${(reasonsByKind.get(kind) ?? []).map((reason) => `${reason}, so `).join('')}the operation needs `
+            + `exactly one parameter marked x-klabis-target-id: ${kind} (found ${found})`,
+    });
+
+    const errors = [];
+    for (const [kind, found] of countByKind) {
+        if (found > 1) errors.push(errorFor(kind, found));
+    }
+    for (const kind of reasonsByKind.keys()) {
+        if (!countByKind.has(kind)) errors.push(errorFor(kind, 0));
+    }
+    return errors;
 }
 
 /** Authority names named by an `x-klabis-authority` / `x-klabis-read-authority` value, or null if malformed. */
@@ -339,6 +328,44 @@ function missingEnvelopeBaseErrors(document) {
 }
 
 /**
+ * A response record supplies the target its fields are about through its own `x-klabis-target-id`
+ * property; there is no implicit fallback. A field guarded by an authority that may be held over
+ * specific targets in a schema with no target at all would be denied to everyone who does not hold
+ * it over everything. A schema that names a target of another kind is left alone: a record has one
+ * target, and the other-kind authority then deliberately works over everything only (see
+ * `RegistrationSummaryDto`). Request schemas are exempt: their target comes from the path parameters.
+ */
+function responseSchemaTargetErrors(document, authorities, requestSchemas) {
+    const errors = [];
+    const schemas = document?.components?.schemas ?? {};
+    for (const [schemaName, schema] of Object.entries(schemas)) {
+        if (requestSchemas.has(schemaName) || !isPlainObject(schema?.properties)) continue;
+
+        const hasTarget = Object.values(schema.properties)
+            .some((property) => typeof property?.['x-klabis-target-id'] === 'string');
+        if (hasTarget) continue;
+
+        const demanded = new Map();
+        for (const property of Object.values(schema.properties)) {
+            for (const name of authorityNames(property?.['x-klabis-authority']) ?? []) {
+                const authority = authorities.get(name);
+                if (!authority?.grantForms.has('SPECIFIC')) continue;
+                demanded.set(authority.targetType, [...(demanded.get(authority.targetType) ?? []), name]);
+            }
+        }
+        for (const [targetType, names] of demanded) {
+            const guarding = [...new Set(names)].map((name) => `"${name}"`).join(', ');
+            errors.push({
+                path: `/components/schemas/${schemaName}`,
+                message: `${guarding} may be held over specific ${targetType} targets, so ${schemaName} `
+                    + `needs a property marked x-klabis-target-id: ${targetType}`,
+            });
+        }
+    }
+    return errors;
+}
+
+/**
  * @returns {Array<{path: string, message: string}>} empty when the document is valid
  */
 export function validateSpec(document, {authorities}) {
@@ -351,6 +378,7 @@ export function validateSpec(document, {authorities}) {
     targetTypes.delete('NONE');
     targetTypes.delete(undefined);
     const requestSchemas = requestSchemaNames(document);
+    errors.push(...responseSchemaTargetErrors(document, authorities, requestSchemas));
 
     walk(document, '', (node, path, context) => {
         if (!isPlainObject(node)) return;
@@ -373,9 +401,8 @@ export function validateSpec(document, {authorities}) {
                 continue;
             }
 
-            // x-klabis-authority (-> method-level @HasAuthority), x-klabis-owner-visible
-            // (-> @OwnerVisible, paired with a @TargetId parameter, see below) and x-klabis-hal (-> the deriver's
-            // opt-out) make sense directly on an operation. The others describe field-level access
+            // x-klabis-authority (-> method-level @HasAuthority, paired with @TargetId parameters, see below)
+            // and x-klabis-hal (-> the deriver's opt-out) make sense directly on an operation. The others describe field-level access
             // on a schema property and have no meaning without a property to attach to.
             if (context === 'operation' && !OPERATION_LEVEL_EXTENSIONS.has(key)) {
                 errors.push({
@@ -564,10 +591,6 @@ export function validateSpec(document, {authorities}) {
                         message: `"${key}" is not honoured on a parameter — use a standard OpenAPI keyword instead`,
                     });
                 }
-            }
-
-            if (key === 'x-klabis-owner-visible' && value !== true) {
-                errors.push({path: `${path}/${key}`, message: 'must be true when present'});
             }
         }
 

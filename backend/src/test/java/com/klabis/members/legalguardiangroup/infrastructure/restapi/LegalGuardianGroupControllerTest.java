@@ -2,6 +2,7 @@ package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.TargetGrant;
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.groups.domain.GroupMembership;
@@ -357,7 +358,7 @@ class LegalGuardianGroupControllerTest {
 
         @Test
         @DisplayName("is visible to a minor of the group without MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = MINOR_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = MINOR_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MINOR_MEMBER)
         void listsGuardiansForMinorOfTheGroup() throws Exception {
             stubGroupWithContacts();
 
@@ -394,7 +395,7 @@ class LegalGuardianGroupControllerTest {
 
         @Test
         @DisplayName("returns 403 to a member who is not a minor of the group and lacks MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = OTHER_GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(memberId = OTHER_GUARDIAN_ID, authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MEMBER)
         void forbiddenForOtherMember() throws Exception {
             stubGroupWithContacts();
 

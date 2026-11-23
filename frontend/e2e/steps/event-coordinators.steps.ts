@@ -21,7 +21,7 @@ Given('{persona} coordinates the draft event {name}', async ({apiAs}, persona: P
 });
 
 Given('{persona} coordinates the open event {name}', async ({apiAs}, persona: Persona, name: string) => {
-    await createOpenEvent(apiAs('admin'), name, [await memberId(apiAs, persona)]);
+    await createOpenEvent(apiAs('admin'), name, {coordinators: [await memberId(apiAs, persona)]});
 });
 
 Given('category preset {name} offers categories {string}', async ({apiAs}, name: string, categories: string) => {

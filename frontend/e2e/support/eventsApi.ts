@@ -21,8 +21,8 @@ const findEvent = async (client: ApiClient, name: string) => {
 export const createDraftEvent = (admin: ApiClient, name: string, coordinators: string[] = []) =>
     createEvent(admin, {name, coordinators});
 
-export const createOpenEvent = async (admin: ApiClient, name: string, coordinators: string[] = []) => {
-    await createEvent(admin, {name, coordinators, deadlines: [REGISTRATION_DEADLINE], categories: [{name: 'M21'}]});
+export const createOpenEvent = async (admin: ApiClient, name: string, {coordinators = [], categories = ['M21']}: {coordinators?: string[]; categories?: string[]} = {}) => {
+    await createEvent(admin, {name, coordinators, deadlines: [REGISTRATION_DEADLINE], categories: categories.map((category) => ({name: category}))});
     const event = await findEvent(admin, name);
     await admin.post(admin.templateTarget(event, 'publishEvent'), {});
 };
@@ -39,4 +39,13 @@ export const registerForEvent = async (member: ApiClient, name: string) => {
 export const createCategoryPreset = async (admin: ApiClient, name: string, categories: string[]) => {
     const presets = await admin.follow(await admin.root(), 'category-presets');
     await admin.post(admin.templateTarget(presets, 'createCategoryPreset'), {name, categories});
+};
+
+export const registerMemberForEvent = async (admin: ApiClient, name: string, memberId: string, category: string) => {
+    const event = await findEvent(admin, name);
+    const categoryId = (event.categories as Array<{id: string; name: string}>).find((candidate) => candidate.name === category)?.id;
+    if (!categoryId) throw new Error(`eventsApi: category "${category}" not found in event "${name}"`);
+    const self = event._links?.self?.href;
+    if (!self) throw new Error(`eventsApi: event "${name}" has no self link`);
+    await admin.post(`${self}/registrations/${memberId}`, {categoryId});
 };

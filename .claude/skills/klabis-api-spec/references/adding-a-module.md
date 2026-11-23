@@ -80,11 +80,11 @@ reference for how the existing ones are put together.
    tests will necessarily catch
    Authorization is not always an annotation. A controller may enforce it **imperatively** — a
    private `checkXxxAccess()` throwing `AccessDeniedException`, typically "owner OR MANAGE
-   authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair (plus
-   `x-klabis-target-id: MEMBER` on the path parameter); move it into the spec and delete the helper.
-   A check that cannot be declared stays in the body but asks `AuthorizationEvaluator`. A helper that permits *only* the caller themselves, with no authority
-   alternative, is `x-klabis-owner-visible` on its own — declaring it alone does not widen access
-   (see that extension's section). Read each method body before concluding an endpoint is
+   authority". That is `x-klabis-authority` listing the administrator authority and the `SPECIFIC` authority the
+   self-grant provides (plus `x-klabis-target-id: MEMBER` on the path parameter); move it into the spec and
+   delete the helper. A check that cannot be declared stays in the body but asks `AuthorizationEvaluator`.
+   A helper that permits *only* the caller themselves lists just the self-granted authority (see
+   `field-security.md`). Read each method body before concluding an endpoint is
    unprotected, because an imperative check is invisible both to reflection and to the drift check.
 6. Register the module with `openApiModule(...)` (above), then `./gradlew compileJava`
 7. Rework the controller: implement the generated `*Api`, return plain payloads, and register the

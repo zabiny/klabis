@@ -1,7 +1,6 @@
 package com.klabis;
 
 import com.klabis.common.authorization.TargetId;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.ReadAuthority;
 import com.klabis.common.users.HasAuthority;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -40,7 +39,7 @@ class AuthorizationArchitectureTest {
     private static final String[] ALLOWED_PACKAGES = {"com.klabis.common.authorization..", "com.klabis.common.security.."};
 
     private static final Set<Class<?>> EVALUATOR_ONLY_TYPES = Set.of(
-            HasAuthority.class, OwnerVisible.class, TargetId.class, ReadAuthority.class);
+            HasAuthority.class, TargetId.class, ReadAuthority.class);
 
     private static JavaClasses classes;
 

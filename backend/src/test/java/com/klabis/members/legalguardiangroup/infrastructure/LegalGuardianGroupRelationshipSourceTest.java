@@ -50,9 +50,13 @@ class LegalGuardianGroupRelationshipSourceTest {
 
         var grants = source.grantsOf(ANNA.userId());
 
-        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW, Authority.GROUPS_OWNER);
+        assertThat(grants).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE, Authority.FINANCE_VIEW,
+                Authority.EVENTS_REGISTER_MEMBER, Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, Authority.GROUPS_OWNER);
         assertThat(grants.get(Authority.FINANCE_VIEW)).containsExactlyInAnyOrder(member(first), member(second));
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactlyInAnyOrder(member(first), member(second));
+        assertThat(grants.get(Authority.EVENTS_REGISTER_MEMBER)).containsExactlyInAnyOrder(member(first), member(second));
+        assertThat(grants.get(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE))
+                .containsExactlyInAnyOrder(member(first), member(second));
     }
 
     @Test
@@ -107,6 +111,7 @@ class LegalGuardianGroupRelationshipSourceTest {
 
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(member(staying));
         assertThat(grants.get(Authority.FINANCE_VIEW)).containsExactly(member(staying));
+        assertThat(grants.get(Authority.EVENTS_REGISTER_MEMBER)).containsExactly(member(staying));
     }
 
     @Test
@@ -119,7 +124,8 @@ class LegalGuardianGroupRelationshipSourceTest {
 
         assertThat(source.grantsOf(ANNA.userId()))
                 .doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE)
-                .doesNotContainKey(Authority.FINANCE_VIEW);
+                .doesNotContainKey(Authority.FINANCE_VIEW)
+                .doesNotContainKey(Authority.EVENTS_REGISTER_MEMBER);
     }
 
     @Test

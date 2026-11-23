@@ -39,10 +39,10 @@ class EventCoordinatorRelationshipSourceTest {
 
         var grants = source().grantsOf(userId);
 
-        assertThat(grants).containsOnlyKeys(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+        assertThat(grants).containsOnlyKeys(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
         assertThat(grants.get(Authority.EVENTS_EDIT))
                 .containsExactlyInAnyOrder(TargetRef.event(first.value()), TargetRef.event(second.value()));
-        assertThat(grants.get(Authority.EVENTS_REGISTRATIONS_READ))
+        assertThat(grants.get(Authority.EVENTS_REGISTRATIONS_OVERVIEW))
                 .containsExactlyInAnyOrder(TargetRef.event(first.value()), TargetRef.event(second.value()));
     }
 

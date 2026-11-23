@@ -3,6 +3,7 @@ package com.klabis.common.ui;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.FieldAccess;
 import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.authorization.TargetType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.klabis.common.ui.CollectionPropertyContext.markCollectionProperty;
@@ -187,17 +189,18 @@ public class HalFormsSupport {
      * Decides, through the same evaluator that enforces request bodies, what the user may do with a template
      * property: change it, only see it, or neither.
      */
-    private record FieldAuthorization(AuthorizationEvaluator evaluator, @Nullable TargetRef target) {
+    private record FieldAuthorization(AuthorizationEvaluator evaluator,
+                                      Function<TargetType, @Nullable TargetRef> targetOfKind) {
 
         static FieldAuthorization of(MethodInvocation invocation) {
             AuthorizationEvaluator evaluator = instance().authorizationEvaluator;
             Method method = invocation.getMethod();
             return new FieldAuthorization(evaluator,
-                    evaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments()));
+                    kind -> evaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments(), kind));
         }
 
         FieldAccess accessTo(@Nullable Class<?> payloadType, String property) {
-            return evaluator.requestFieldAccess(payloadType, property, target);
+            return evaluator.requestFieldAccess(payloadType, property, targetOfKind);
         }
     }
 

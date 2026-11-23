@@ -1,6 +1,5 @@
 package com.klabis.common.security;
 
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link MethodSecurityAnnotations}, the shared lookup utility that lets
- * {@code @HasAuthority} / {@code @OwnerVisible} be declared on an interface method (e.g. a
+ * {@code @HasAuthority} be declared on an interface method (e.g. a
  * generated OpenAPI {@code *Api} interface) and still be found when the concrete controller
  * implements that interface — plain {@link Method#getAnnotation} does not search implemented
  * interfaces, since method annotations are not inherited from interfaces in Java.
@@ -24,9 +23,6 @@ class InterfaceMethodSecurityAnnotationsTest {
     interface AnnotatedOnInterface {
         @HasAuthority(Authority.MEMBERS_READ)
         String secured();
-
-        @OwnerVisible
-        String ownerVisible();
 
         String unsecured();
     }
@@ -43,11 +39,6 @@ class InterfaceMethodSecurityAnnotationsTest {
         }
 
         @Override
-        public String ownerVisible() {
-            return "ownerVisible";
-        }
-
-        @Override
         public String unsecured() {
             return "unsecured";
         }
@@ -58,11 +49,6 @@ class InterfaceMethodSecurityAnnotationsTest {
         @HasAuthority(Authority.MEMBERS_MANAGE)
         public String secured() {
             return "secured";
-        }
-
-        @Override
-        public String ownerVisible() {
-            return "ownerVisible";
         }
 
         @Override
@@ -103,17 +89,6 @@ class InterfaceMethodSecurityAnnotationsTest {
 
             assertThat(found).isNotNull();
             assertThat(found.value()).containsExactly(Authority.MEMBERS_READ);
-        }
-
-        @Test
-        @DisplayName("finds @OwnerVisible declared only on the implemented interface method")
-        void findsOwnerVisibleFromInterfaceMethod() throws NoSuchMethodException {
-            Method method = ImplementingClass.class.getMethod("ownerVisible");
-
-            OwnerVisible found = MethodSecurityAnnotations.findMethodAnnotation(
-                    method, ImplementingClass.class, OwnerVisible.class);
-
-            assertThat(found).isNotNull();
         }
 
         @Test

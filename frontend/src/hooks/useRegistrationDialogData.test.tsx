@@ -32,7 +32,7 @@ const CATEGORY_OPTIONS = {inline: [{value: 'cat-1', prompt: 'H21'}, {value: 'cat
 
 const newRegistrationTemplate = () => mockHalFormsTemplate({
     method: 'POST',
-    target: '/api/events/evt-1/registrations',
+    target: '/api/events/evt-1/registrations/M001',
     title: 'Přihlásit se',
     properties: [
         {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
@@ -131,7 +131,7 @@ describe('useRegistrationDialogData', () => {
 
         await waitFor(() => expect(result.current.mode).toBe('new'));
 
-        expect(result.current.template?.target).toBe('/api/events/evt-1/registrations');
+        expect(result.current.template?.target).toBe('/api/events/evt-1/registrations/M001');
         expect(result.current.template?.method).toBe('POST');
         expect(result.current.memberName).toBe('Jana Nováková');
         expect(result.current.prefillData?.siCardNumber).toBe('1234567');

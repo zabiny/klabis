@@ -284,7 +284,7 @@ describe('EventsPage', () => {
     describe('new-registration prefill flow', () => {
         const newRegistrationUrl = '/api/events/evt-1/registrations/M001?newRegistration=true';
 
-        const registerForEventTarget = '/api/events/evt-1/registrations';
+        const registerForEventTarget = '/api/events/evt-1/registrations/M001';
 
         const dialogEventData = {
             name: 'Jarní závod',
@@ -458,7 +458,7 @@ describe('EventsPage', () => {
 
             await waitFor(() => {
                 expect(mutateMock).toHaveBeenCalledWith(
-                    expect.objectContaining({url: '/api/events/evt-1/registrations'}),
+                    expect.objectContaining({url: '/api/events/evt-1/registrations/M001'}),
                     expect.anything(),
                 );
             });
@@ -571,7 +571,7 @@ describe('EventsPage', () => {
 
         it('renders registerForEvent button with primary-ghost (text-primary) class', async () => {
             renderWithEventTemplates({
-                registerForEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/register'}),
+                registerForEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-color/registrations/M001'}),
             });
             const btn = await screen.findByTitle(labels.templates.registerForEvent);
             expect(btn).toHaveClass('text-primary');

@@ -22,7 +22,7 @@
     Klabis je <strong>OAuth2 Authorization Server i Resource Server</strong> v jedné aplikaci.
     Frontend získává access token přes Authorization Code Grant + PKCE. Autorizace má tři vrstvy:
     endpoint-level (<code>SecurityConfiguration</code>), method-level (<code>@HasAuthority</code> +
-    <code>@TargetId</code>) a field-level (<code>@OwnerVisible</code>, <code>@ReadAuthority</code>).
+    <code>@TargetId</code>) a field-level (<code>@HasAuthority</code>, <code>@ReadAuthority</code>).
     Method- i field-level rozhodnutí dělá jediný <code>AuthorizationEvaluator</code> nad snapshotem
     oprávnění, který se načítá pro každý request.
 </p>
@@ -39,7 +39,7 @@
         <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>; nese snapshot oprávnění requestu (<code>snapshot()</code>), z něhož odvozuje <code>getAuthorities()</code>.</td></tr>
         <tr><td><code>AuthorizationSnapshot</code> + <code>AuthorizationSnapshotLoader</code> + <code>AuthorizationSnapshotProvider</code></td><td>Neměnná sada oprávnění uživatele pro jeden request (nad vším + nad konkrétními cíli), načtená líně tokenem; provider ji čte z aktuální autentizace.</td></tr>
         <tr><td><code>AuthorizationEvaluator</code></td><td>Jediné místo, které odpovídá na autorizační otázky (metody, affordance, pole, aplikační kód).</td></tr>
-        <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> — vynucuje <code>@HasAuthority</code> + <code>@OwnerVisible</code> přes <code>AuthorizationEvaluator.canInvoke</code>.</td></tr>
+        <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> — vynucuje <code>@HasAuthority</code> přes <code>AuthorizationEvaluator.canInvoke</code>.</td></tr>
         <tr><td><code>FieldSecurityJacksonModule</code></td><td>Jackson modul, který při serializaci response filtruje pole bez oprávnění.</td></tr>
         <tr><td><code>SpaFallbackFilter</code></td><td>Servlet filtr (<code>@Order(LOWEST_PRECEDENCE)</code>) — pro browser navigaci na SPA cestu, která neodpovídá žádnému static resource ani backendovému handleru, forwarduje na <code>/index.html</code>. Patří k routingu, ne k autorizaci, ale tvoří poslední článek serving chainu pod security vrstvami.</td></tr>
     </tbody>
@@ -166,9 +166,9 @@
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", TargetType.MEMBER, GrantForm.ALL),
     EVENTS_READ("EVENTS:READ", TargetType.EVENT, GrantForm.ALL),
     EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
-    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_REGISTER_MEMBER("EVENTS:REGISTER_MEMBER", TargetType.MEMBER, GrantForm.ALL, GrantForm.SPECIFIC),
     EVENTS_EDIT("EVENTS:EDIT", TargetType.EVENT, GrantForm.SPECIFIC),
-    EVENTS_REGISTRATIONS_READ("EVENTS:REGISTRATIONS_READ", TargetType.EVENT, GrantForm.SPECIFIC),
+    EVENTS_REGISTRATIONS_OVERVIEW("EVENTS:REGISTRATIONS_OVERVIEW", TargetType.EVENT, GrantForm.SPECIFIC),
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
@@ -196,7 +196,7 @@
 
     <dt>GrantForm.SPECIFIC</dt>
     <dd>Autoritu lze držet <em>nad konkrétními cíli</em>, odvozenými ze vztahu (<code>holdableOverTargets()</code>).
-        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Mají ji <code>MEMBERS_EDIT_PROFILE</code> a autority koordinátora akce (<code>EVENTS_EDIT</code>, <code>EVENTS_REGISTRATIONS_READ</code>).</dd>
+        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Mají ji <code>MEMBERS_EDIT_PROFILE</code> a autority koordinátora akce (<code>EVENTS_EDIT</code>, <code>EVENTS_REGISTRATIONS_OVERVIEW</code>).</dd>
 
     <dt>isKnownAuthority(value)</dt>
     <dd>Použije se k filtrování — Spring <code>DaoAuthenticationProvider</code> přidává
@@ -264,9 +264,17 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
     </tbody>
 </table>
 
-<p>Pravidlo pro prvek chráněný autoritami <code>[A1..An]</code>, volitelným cílem <code>t</code> a <code>@OwnerVisible</code>:</p>
+<p>
+    Pravidlo pro prvek chráněný autoritami <code>[A1..An]</code>, kde <code>t<sub>Ai</sub></code> je cíl
+    druhu, nad kterým se drží <code>Ai</code> (operace smí identifikovat jeden cíl každého druhu, např. člena i akci):
+</p>
 
-<pre class="signature"><code>allowed ⇔ ∃ Ai: (t ? has(Ai, t) : hasOverAll(Ai))  ∨  (ownerVisible ∧ isSelf(t))</code></pre>
+<pre class="signature"><code>allowed ⇔ ∃ Ai: (t<sub>Ai</sub> ? has(Ai, t<sub>Ai</sub>) : hasOverAll(Ai))</code></pre>
+
+<p>
+    Přístup k vlastním datům není zvláštní pravidlo, ale <em>self-grant</em>: <code>SelfRelationshipSource</code>
+    uděluje uživateli příslušné autority nad ním samotným jako každý jiný vztah.
+</p>
 
 <p>
     Protože vynucení i nabízené akce jdou stejnou cestou, je nabídnutý HAL-FORMS template nebo link
@@ -276,10 +284,14 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
 <aside class="note warn">
     ArchUnit test <code>AuthorizationArchitectureTest</code> shodí build, pokud kód mimo
     <code>common.authorization</code> a <code>common.security</code> čte <code>@HasAuthority</code>,
-    <code>@OwnerVisible</code>, <code>@TargetId</code>, <code>@ReadAuthority</code>
+    <code>@TargetId</code>, <code>@ReadAuthority</code>
     nebo <code>Authentication.getAuthorities()</code>.
     Imperativní kontrolu v controlleru napište jako
     <code>authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(id))</code>.
+    Doplňující kontrola je namístě, když jsou deklarované autority pro část operace příliš široké
+    (<code>EventRegistrationController.getRegistration</code> s <code>newRegistration=true</code> navíc vyžaduje
+    <code>EVENTS_REGISTER_MEMBER</code> nad členem, protože <code>EVENTS_REGISTRATIONS_OVERVIEW</code> nad akcí
+    by koordinátorovi odhalila jméno a SI čip libovolného člena).
 </aside>
 
 <h3 id="relationship-sources">Relationship sources</h3>
@@ -287,15 +299,15 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
 <p>
     Cílové granty (<code>overTargets</code>) vznikají výhradně z <code>RelationshipSource</code> beanů.
     Každý zdroj vrací všechny granty uživatele jedním dotazem; „kdo drží jaké oprávnění nad kým“ tak
-    vyplývá ze vztahů v doméně, ne z řádků v <code>user_permissions</code>. Dnes existují tři zdroje,
-    všechny udělují <code>Authority.MEMBERS_EDIT_PROFILE</code> (<code>SPECIFIC</code>, <code>targetType = MEMBER</code>;
-    <code>MEMBERS_MANAGE</code> ji neimplikuje, pravidla proto uvádějí obě autority):
+    vyplývá ze vztahů v doméně, ne z řádků v <code>user_permissions</code>. Dnes existují tři zdroje.
+    Autority s <code>GrantForm.SPECIFIC</code> (např. <code>MEMBERS_EDIT_PROFILE</code>, <code>targetType = MEMBER</code>)
+    <code>MEMBERS_MANAGE</code> neimplikuje, pravidla proto uvádějí obě autority:
 </p>
 
 <table class="ref-table">
     <thead><tr><th>Zdroj</th><th>Modul</th><th>Co uděluje</th></tr></thead>
     <tbody>
-        <tr><td><code>SelfProfileRelationshipSource</code></td><td><code>members.infrastructure</code></td><td><code>MEMBERS_EDIT_PROFILE</code> nad vlastním <code>MemberId</code>, pokud je člen k dnešnímu dni dospělý (nahrazuje dřívější <code>OwnProfileEditRule</code>)</td></tr>
+        <tr><td><code>SelfRelationshipSource</code></td><td><code>members.infrastructure</code></td><td>nad vlastním <code>MemberId</code>: <code>MEMBERS_VIEW_PROFILE</code> každému uživateli, <code>EVENTS_REGISTER_MEMBER</code> členovi, <code>MEMBERS_EDIT_PROFILE</code> každému mimo nezletilého člena, <code>MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE</code> dospělému členovi; věk se vyhodnocuje k dnešnímu dni (nahrazuje dřívější pevně zapojené pravidlo „cíl jsem já“ a <code>OwnProfileEditRule</code>)</td></tr>
         <tr><td><code>LegalGuardianGroupRelationshipSource</code></td><td><code>members.legalguardiangroup.infrastructure</code></td><td>pro každou skupinu, kde je uživatel (<code>UserId</code>) zákonným zástupcem: <code>group.delegatedAuthorities()</code> nad každým nezletilým členem skupiny; věk se nekontroluje, skupinu opouští nezletilý denním během po 18. narozeninách</td></tr>
         <tr><td><code>FreeGroupRelationshipSource</code></td><td><code>groups.freegroup.infrastructure</code></td><td>pro každou volnou skupinu, kterou uživatel vlastní: delegovaná oprávnění skupiny (<code>FreeGroup.delegatedAuthorities</code>, volí se při vzniku a jsou neměnná) nad každým členem; ne nad spoluvlastníky, mizí s odchodem člena i vlastníka</td></tr>
     </tbody>
@@ -336,7 +348,7 @@ public @interface TargetId {      // com.klabis.common.authorization
 
 <p>
     Anotace se negenerují ručně — vznikají ze spec extensions <code>x-klabis-authority</code>
-    (hodnota nebo seznam), <code>x-klabis-owner-visible</code> a <code>x-klabis-target-id: MEMBER</code>
+    (hodnota nebo seznam) a <code>x-klabis-target-id</code> (<code>MEMBER</code>, <code>EVENT</code>, …)
     na generovaném <code>*Api</code> rozhraní (kap. 05). Výsledný tvar:
 </p>
 
@@ -350,8 +362,8 @@ public @interface TargetId {      // com.klabis.common.authorization
 
 <aside class="note">
     Bez parametru <code>@TargetId</code> musí být autorita držena nad vším; s ním stačí i nad tímto
-    cílem. <code>@OwnerVisible</code> přidává OR „cíl jsem já“; samotné znamená owner-only.
-    <code>@OwnerVisible</code> bez <code>@TargetId</code> odmítá — validátor specu to nepustí.
+    cílem. Operace smí mít více parametrů <code>@TargetId</code> různých druhů; každá autorita se kontroluje nad
+    cílem svého druhu. Přístup „cíl jsem já“ řeší self-grant, ne zvláštní anotace.
 </aside>
 
 <h2>Field-level autorizace</h2>
@@ -365,20 +377,16 @@ public @interface TargetId {      // com.klabis.common.authorization
 <pre class="signature"><code>public record MemberDetailsResponse(
         @TargetId(TargetType.MEMBER) UUID id,
         String firstName,
-        @HasAuthority({ Authority.MEMBERS_MANAGE }) @OwnerVisible
+        @HasAuthority({ Authority.MEMBERS_MANAGE, Authority.MEMBERS_VIEW_PROFILE })
         String email,
-        @HasAuthority({ Authority.MEMBERS_MANAGE }) @OwnerVisible
+        @HasAuthority({ Authority.MEMBERS_MANAGE, Authority.MEMBERS_VIEW_PROFILE })
         String birthNumber
 ) {}</code></pre>
 
 <dl class="api-list">
     <dt>@TargetId</dt>
-    <dd>Komponenta recordu (nebo parametr), která identifikuje cíl. Bez ní se pro <code>@OwnerVisible</code>
-        pole použije jediná komponenta konvertibilní na UUID (bere se jako člen). Komponenta s kolekcí
-        id je množina vlastníků: autority pak musí být drženy nad vším.</dd>
-
-    <dt>@OwnerVisible</dt>
-    <dd>Pole je viditelné, když je cílem sám přihlášený člen (<code>isSelf</code>).</dd>
+    <dd>Komponenta recordu (nebo parametr), která identifikuje cíl. Bez ní jsou autority
+        drženy jen nad vším.</dd>
 
     <dt>@ReadAuthority</dt>
     <dd>Jen na request DTO (<code>x-klabis-read-authority</code>): uživatel s touto autoritou, který pole
@@ -397,11 +405,12 @@ public @interface TargetId {      // com.klabis.common.authorization
     <code>AuthorizationEvaluator.isSelf(target)</code> porovná členský cíl s id uživatele a s <code>memberIdUuid</code>
     z <code>KlabisJwtAuthenticationToken</code> (<code>token.isSelf(id)</code>). Hodnoty cílů (např. <code>MemberId</code>)
     se na UUID převádějí přes Spring <code>ConversionService</code> — proto modul <code>members</code>
-    registruje <code>MemberIdToUuidConverter</code>.
+    registruje <code>MemberIdToUuidConverter</code>. <code>isSelf</code> neslouží k autorizaci (tu řeší self-grant),
+    jen k prezentačním rozhodnutím (skrytí odkazu na účet na vlastním profilu, řazení vlastního účtu).
 </p>
 
 <aside class="note">
-    Pravidla polí se vyjadřují jen anotacemi <code>@HasAuthority</code>, <code>@OwnerVisible</code>,
+    Pravidla polí se vyjadřují jen anotacemi <code>@HasAuthority</code>,
     <code>@TargetId</code> a <code>@ReadAuthority</code>; SpEL <code>@PreAuthorize</code> na polích se nepodporuje
     (na metodách dál funguje přes <code>getAuthorities()</code>).
 </aside>

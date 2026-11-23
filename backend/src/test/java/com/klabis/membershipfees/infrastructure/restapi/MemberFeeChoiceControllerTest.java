@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
@@ -51,7 +52,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 200 with current choice when member has chosen")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturnCurrentChoice() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.of(new MembershipFeeGroupId(GROUP_UUID)));
@@ -69,7 +70,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return recommended default when no current choice")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturnRecommendedDefault() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR)))
                     .thenReturn(Optional.empty());
@@ -106,7 +107,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should include choose and remove affordances")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldIncludeAffordances() throws Exception {
             when(memberFeeHistoryPort.getCurrentChoice(any(), eq(YEAR))).thenReturn(Optional.empty());
             when(memberFeeHistoryPort.getRecommendedTypeForYear(any(), eq(YEAR))).thenReturn(Optional.empty());
@@ -126,7 +127,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 204 when choice is successful")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturn204OnSuccess() throws Exception {
             doNothing().when(feeYearLifecyclePort).chooseFeeLevel(any());
 
@@ -142,7 +143,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 400 when voting is closed")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturn400WhenVotingClosed() throws Exception {
             doThrow(new VotingClosedException()).when(feeYearLifecyclePort).chooseFeeLevel(any());
 
@@ -158,7 +159,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 400 when membershipFeeGroupId is missing")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturn400WhenGroupIdMissing() throws Exception {
             mockMvc.perform(
                             post("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
@@ -204,7 +205,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 204 on successful removal")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturn204OnSuccess() throws Exception {
             doNothing().when(feeYearLifecyclePort).removeFeeChoice(any(), eq(YEAR));
 
@@ -216,7 +217,7 @@ class MemberFeeChoiceControllerTest {
 
         @Test
         @DisplayName("should return 400 when voting is closed")
-        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, selfGrants = SelfGrants.MEMBER)
         void shouldReturn400WhenVotingClosed() throws Exception {
             doThrow(new VotingClosedException()).when(feeYearLifecyclePort).removeFeeChoice(any(), eq(YEAR));
 

@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -51,7 +52,24 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
                 targets.add(new TargetRef(grant.type(), UUID.fromString(id)));
             }
         }
+        selfGrants(withUser)
+                .forEach((authority, targets) -> overTargets.computeIfAbsent(authority, a -> new HashSet<>()).addAll(targets));
         return TestSnapshots.of(Set.of(withUser.authorities()), overTargets);
+    }
+
+    private static Map<Authority, Set<TargetRef>> selfGrants(WithKlabisMockUser withUser) {
+        return switch (withUser.selfGrants()) {
+            case NONE -> Map.of();
+            case NON_MEMBER -> {
+                Assert.hasText(withUser.userId(), "selfGrants = NON_MEMBER requires userId");
+                yield TestSnapshots.selfGrants(UUID.fromString(withUser.userId()), false, false);
+            }
+            case MEMBER, MINOR_MEMBER -> {
+                Assert.hasText(withUser.memberId(), "selfGrants = " + withUser.selfGrants() + " requires memberId");
+                yield TestSnapshots.selfGrants(UUID.fromString(withUser.memberId()), true,
+                        withUser.selfGrants() == SelfGrants.MINOR_MEMBER);
+            }
+        };
     }
 
     @Autowired(required = false)

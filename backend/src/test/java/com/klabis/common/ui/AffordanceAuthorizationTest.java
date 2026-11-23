@@ -6,7 +6,6 @@ import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.DisplayName;
@@ -79,49 +78,18 @@ class AffordanceAuthorizationTest {
             return ResponseEntity.noContent().build();
         }
 
-        @GetMapping(value = "/api/afford-test/owner-visible/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-        EntityModel<AffordanceTestResponse> getOwnerVisible(@PathVariable UUID id) {
+        @GetMapping(value = "/api/afford-test/targeted-null/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<AffordanceTestResponse> getTargetedNullId(@PathVariable UUID id) {
             EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
-            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerVisible(id))
+            klabisLinkTo(methodOn(AffordanceTestController.class).getTargetedNullId(id))
                     .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerVisible(id, null)))));
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateTargetedNullId(null, null)))));
             return model;
         }
 
-        @PatchMapping("/api/afford-test/owner-visible/{id}")
-        @OwnerVisible
-        ResponseEntity<Void> updateOwnerVisible(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
-            return ResponseEntity.noContent().build();
-        }
-
-        @GetMapping(value = "/api/afford-test/owner-or-admin/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-        EntityModel<AffordanceTestResponse> getOwnerOrAdmin(@PathVariable UUID id) {
-            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
-            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerOrAdmin(id))
-                    .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerOrAdmin(id, null)))));
-            return model;
-        }
-
-        @PatchMapping("/api/afford-test/owner-or-admin/{id}")
-        @HasAuthority(Authority.MEMBERS_MANAGE)
-        @OwnerVisible
-        ResponseEntity<Void> updateOwnerOrAdmin(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
-            return ResponseEntity.noContent().build();
-        }
-
-        @GetMapping(value = "/api/afford-test/owner-null/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-        EntityModel<AffordanceTestResponse> getOwnerNullId(@PathVariable UUID id) {
-            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
-            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerNullId(id))
-                    .ifPresent(link -> model.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerNullId(null, null)))));
-            return model;
-        }
-
-        @PatchMapping("/api/afford-test/owner-null/{id}")
-        @OwnerVisible
-        ResponseEntity<Void> updateOwnerNullId(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
+        @PatchMapping("/api/afford-test/targeted-null/{id}")
+        @HasAuthority(Authority.FINANCE_VIEW)
+        ResponseEntity<Void> updateTargetedNullId(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
 
@@ -135,8 +103,7 @@ class AffordanceAuthorizationTest {
         }
 
         @PatchMapping("/api/afford-test/targeted/{id}")
-        @HasAuthority({Authority.EVENTS_REGISTRATIONS, Authority.MEMBERS_MANAGE})
-        @OwnerVisible
+        @HasAuthority({Authority.FINANCE_VIEW, Authority.MEMBERS_MANAGE})
         ResponseEntity<Void> updateTargeted(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
@@ -271,71 +238,22 @@ class AffordanceAuthorizationTest {
     }
 
     @Nested
-    @DisplayName("method with @OwnerVisible + @TargetId")
-    class OwnerVisibleMethod {
+    @DisplayName("method with @HasAuthority + @TargetId and no target argument")
+    class MissingTargetArgument {
 
         @Test
-        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
-        @DisplayName("affordance present when user is the owner")
-        void affordancePresentForOwner() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-visible/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").exists());
-        }
-
-        @Test
-        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
-        @DisplayName("affordance absent when user is not the owner")
-        void affordanceAbsentForNonOwner() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-visible/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").doesNotExist());
-        }
-
-        @Test
-        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
+                type = TargetType.MEMBER, ids = OWNER_ID_STRING))
         @DisplayName("affordance absent when @TargetId(TargetType.MEMBER) argument is null — conservative approach")
-        void affordanceAbsentWhenOwnerIdArgumentIsNull() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-null/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        void affordanceAbsentWhenTargetArgumentIsNull() throws Exception {
+            mockMvc.perform(get("/api/afford-test/targeted-null/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").doesNotExist());
         }
     }
 
     @Nested
-    @DisplayName("method with @HasAuthority + @OwnerVisible (OR semantics)")
-    class HasAuthorityOrOwnerVisible {
-
-        @Test
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        @DisplayName("affordance present when user has required authority (not owner)")
-        void affordancePresentForAdmin() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-or-admin/{id}", OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").exists());
-        }
-
-        @Test
-        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
-        @DisplayName("affordance present when user is the owner (lacks authority)")
-        void affordancePresentForOwnerWithoutAuthority() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-or-admin/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").exists());
-        }
-
-        @Test
-        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
-        @DisplayName("affordance absent when user is not owner and lacks authority")
-        void affordanceAbsentForUnauthorizedNonOwner() throws Exception {
-            mockMvc.perform(get("/api/afford-test/owner-or-admin/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").doesNotExist());
-        }
-    }
-
-    @Nested
-    @DisplayName("method with @HasAuthority list + @OwnerVisible + @TargetId")
+    @DisplayName("method with @HasAuthority list + @TargetId")
     class TargetedMethod {
 
         private void assertAffordance(UUID target, boolean present) throws Exception {
@@ -345,7 +263,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_REGISTRATIONS})
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_VIEW})
         @DisplayName("present for a grant over everything, whichever the target")
         void presentForGrantOverEverything() throws Exception {
             assertAffordance(OWNER_ID, true);
@@ -360,7 +278,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = OWNER_ID_STRING))
         @DisplayName("present for a grant over the target")
         void presentForGrantOverTheTarget() throws Exception {
@@ -368,7 +286,7 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
                 type = TargetType.MEMBER, ids = OTHER_ID_STRING))
         @DisplayName("absent for a grant over another target")
         void absentForGrantOverAnotherTarget() throws Exception {
@@ -376,11 +294,19 @@ class AffordanceAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
-        @DisplayName("present for the target themself, absent for somebody else")
-        void presentForSelf() throws Exception {
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING, targetGrants = @TargetGrant(authority = Authority.FINANCE_VIEW,
+                type = TargetType.MEMBER, ids = OWNER_ID_STRING))
+        @DisplayName("present for the target themself through a grant over themself, absent for somebody else")
+        void presentForSelfGrant() throws Exception {
             assertAffordance(OWNER_ID, true);
             assertAffordance(OTHER_ID, false);
+        }
+
+        @Test
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
+        @DisplayName("absent for the target themself without a grant over themself")
+        void absentForSelfWithoutGrant() throws Exception {
+            assertAffordance(OWNER_ID, false);
         }
 
         @Test

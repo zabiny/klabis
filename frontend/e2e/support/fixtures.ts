@@ -1,6 +1,8 @@
 import type {APIRequestContext, APIResponse} from '@playwright/test';
 import {test as base} from 'playwright-bdd';
 import {waitForApp} from './app';
+import {findMemberHrefByName, splitName} from './membersApi';
+import {withdrawChoice} from './membershipFeesApi';
 import {personas, type Persona} from './personas';
 import {readSession, type Role, type RoleSession} from './roles';
 import {renewSession} from './session';
@@ -26,7 +28,13 @@ export type GuardianScenarioState = Record<string, { minor: string }>;
 
 export type FeeScenarioState = { year?: number; closedYear?: number; campaignPath?: string };
 
+export type MinorChoices = {
+    // The seeded minors are shared by all scenarios, so a choice made on their behalf is withdrawn again after the scenario.
+    withdrawAfterScenario: (guardian: Persona, minorFullName: string) => void;
+};
+
 type Fixtures = {
+    minorChoices: MinorChoices;
     feeState: FeeScenarioState;
     guardians: GuardianScenarioState;
     actAs: (persona: Persona) => Promise<void>;
@@ -62,6 +70,21 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     // eslint-disable-next-line no-empty-pattern
     feeState: async ({}, provide) => {
         await provide({});
+    },
+    // withdrawChoice does nothing when the summary offers no removal (no choice or no active campaign).
+    minorChoices: async ({apiAs}, provide) => {
+        const pending: {guardian: Persona; minorFullName: string}[] = [];
+        await provide({withdrawAfterScenario: (guardian, minorFullName) => void pending.push({guardian, minorFullName})});
+        const errors: unknown[] = [];
+        for (const {guardian, minorFullName} of pending) {
+            try {
+                const {firstName, lastName} = splitName(minorFullName);
+                await withdrawChoice(apiAs(personas[guardian]), await findMemberHrefByName(apiAs('admin'), firstName, lastName));
+            } catch (error) {
+                errors.push(error);
+            }
+        }
+        if (errors.length) throw new AggregateError(errors, 'minorChoices: withdrawing choices made for minors failed');
     },
     sessionOf: [async ({browser}, provide, workerInfo) => {
         // Calls are chained per role, so concurrent callers near expiry share one renewal.

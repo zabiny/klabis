@@ -3,6 +3,7 @@ package com.klabis.common.security.fieldsecurity;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.TargetParameter;
 import com.klabis.common.authorization.TargetRef;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.security.MethodSecurityAnnotations;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -20,6 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.function.Function;
 
 @RestControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
@@ -44,7 +46,8 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
 
         RecordComponent[] components = record.getClass().getRecordComponents();
 
-        TargetRef target = resolveTargetFromPath(parameter.getMethod());
+        Method handlerMethod = parameter.getMethod();
+        Function<TargetType, @Nullable TargetRef> target = kind -> resolveTargetFromPath(handlerMethod, kind);
 
         for (RecordComponent component : components) {
             if (!JsonNullable.class.isAssignableFrom(component.getType())) {
@@ -72,20 +75,21 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         return body;
     }
 
-    private void checkFieldAuthorization(RecordComponent component, Method accessor, @Nullable TargetRef target) {
+    private void checkFieldAuthorization(RecordComponent component, Method accessor,
+                                       Function<TargetType, @Nullable TargetRef> target) {
         if (!evaluator.canWriteField(accessor, target)) {
             throw new FieldAuthorizationException(component.getName(), evaluator.describeRequirement(accessor));
         }
     }
 
     @Nullable
-    private TargetRef resolveTargetFromPath(@Nullable Method handlerMethod) {
+    private TargetRef resolveTargetFromPath(@Nullable Method handlerMethod, TargetType kind) {
         if (handlerMethod == null) {
             return null;
         }
 
         Class<?> handlerClass = handlerMethod.getDeclaringClass();
-        TargetParameter targetParameter = evaluator.targetParameterOf(handlerMethod, handlerClass);
+        TargetParameter targetParameter = evaluator.targetParameterOf(handlerMethod, handlerClass, kind);
         if (targetParameter == null) {
             return null;
         }
@@ -111,6 +115,6 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         if (name.isEmpty()) {
             name = handlerMethod.getParameters()[targetParameter.index()].getName();
         }
-        return evaluator.toTarget(targetParameter.type(), uriVariables.get(name));
+        return evaluator.toTarget(kind, uriVariables.get(name));
     }
 }

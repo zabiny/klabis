@@ -101,7 +101,6 @@ Field-level authorization, on schema properties:
 | extension | generates |
 |---|---|
 | `x-klabis-target-id: MEMBER` | `@TargetId(TargetType.MEMBER)` — the property identifies the target the record is about |
-| `x-klabis-owner-visible: true` | `@OwnerVisible` — the target being the caller is enough |
 | `x-klabis-authority: MEMBERS_MANAGE` or `[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` | `@HasAuthority({Authority.MEMBERS_MANAGE, ...})` — any one of the listed authorities suffices |
 | `x-klabis-read-authority: [MEMBERS_READ]` | `@ReadAuthority({Authority.MEMBERS_READ})` — **request schemas only**: HAL-FORMS shows the field read-only to a user who holds one of these but may not change it |
 | `x-klabis-halforms-access: READ_ONLY` | `@HalForms(access = READ_ONLY)` |
@@ -109,24 +108,25 @@ Field-level authorization, on schema properties:
 The generator renders the complete annotation text from these keys (`x-klabis-authority` /
 `x-klabis-read-authority` accept a single name or a list) and the templates print it verbatim.
 
-Endpoint authorization uses the same keys one level up: `x-klabis-authority` and
-`x-klabis-owner-visible: true` on the **operation**, `x-klabis-target-id: <TYPE>` on one of its **path
-parameters** (`TYPE` is `MEMBER` or `EVENT`). The target-id parameter may be a shared `$ref` —
-`@TargetId` is inert unless the method is guarded by an authority held over specific targets or is
-`@OwnerVisible`. `validate.mjs` enforces during bundling that:
+Endpoint authorization uses the same keys one level up: `x-klabis-authority` on the **operation**,
+`x-klabis-target-id: <TYPE>` on its **path parameters** (`TYPE` is `MEMBER`, `EVENT`, ...). An operation may
+identify several targets, one per kind (e.g. a member and an event); each listed authority is checked over the
+target of its own kind. The target-id parameter may be a shared `$ref` — `@TargetId` is inert unless the method is
+guarded by an authority held over specific targets.
+
+There is no owner rule. A user's access to their own data is a self-grant: the members module
+grants every user the relevant authorities over themself (and legal guardians over their minors) as relationships,
+so the operation or field needs nothing beyond `x-klabis-authority` and a target. `validate.mjs` enforces during
+bundling that:
 
 - every authority in the list is a constant of `Authority.java`;
 - an operation listing an authority that may be held over specific targets (`GrantForm.SPECIFIC`)
-  has exactly one `x-klabis-target-id` parameter, and its type equals that authority's `targetType`.
-  `ALL`-only authorities are target-agnostic and need none;
-- an operation declaring `x-klabis-owner-visible` has exactly one `x-klabis-target-id` parameter —
-  `@OwnerVisible` without `@TargetId` denies instead of resolving ownership. Both rules are one check
-  per operation: a wrong parameter count is reported once, whatever combination of authority and
-  owner-visible demands the target;
+  has exactly one `x-klabis-target-id` parameter of that authority's `targetType`; with authorities of
+  different kinds, one parameter per kind. `ALL`-only authorities are target-agnostic and need none;
 - `x-klabis-target-id` sits on a path parameter or a schema property, never on an operation;
 - `x-klabis-read-authority` sits only on properties of schemas reachable from a request body.
 
-`x-klabis-owner-id: true` no longer exists; the validator rejects it.
+The former owner extensions (`x-klabis-owner-id` and its successor for "the target is the caller") no longer exist; the validator rejects them as unknown.
 
 Codegen directives, on schema properties (consumed by `KlabisSpringCodegen` and stripped from the
 bundle by `derive.mjs`, so frontend types never see them):

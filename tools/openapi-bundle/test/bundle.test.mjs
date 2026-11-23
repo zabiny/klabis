@@ -356,12 +356,11 @@ paths:
     });
 });
 
-describe('x-klabis-owner-visible on an operation', () => {
-    // Both halves of the pair are now emitted by the templates from their own spec key —
-    // @OwnerVisible from the operation (api.mustache), @TargetId from the parameter
-    // (pathParams.mustache). The bundler used to synthesise both, which forced it to inline any
-    // shared $ref parameter so @TargetId reached one operation only. It no longer needs to:
-    // @TargetId is inert without @OwnerVisible, so it can sit on the shared parameter.
+describe('x-klabis-authority with a shared target-id parameter', () => {
+    // Both halves of the pair are emitted by the templates from their own spec key —
+    // @HasAuthority from the operation (api.mustache), @TargetId from the parameter
+    // (pathParams.mustache). The bundler does not inline a shared $ref parameter:
+    // @TargetId is inert without a guarding authority, so it can sit on the shared parameter.
     // validate.mjs enforces that the pair stays together; see validate.test.mjs.
     it('is carried through untouched, and leaves a shared parameter $ref intact', () => {
         const readYaml = fakeReader({
@@ -380,7 +379,6 @@ paths:
     patch:
       operationId: updateMember
       x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: true
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       responses:
@@ -403,7 +401,6 @@ components:
         const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
 
         const patch = document.paths['/api/members/{id}'].patch;
-        expect(patch['x-klabis-owner-visible']).toBe(true);
         expect(patch['x-klabis-authority']).toBe('MEMBERS_MANAGE');
         expect(patch['x-operation-extra-annotation']).toBeUndefined();
 
@@ -412,9 +409,8 @@ components:
         const get = document.paths['/api/members/{id}'].get;
         expect(get.parameters[0].$ref).toBe('#/components/parameters/MemberIdParam');
 
-        // getMember shares the target-id parameter but never opted into ownership. That is
-        // harmless: @TargetId is only consulted for a method already marked @OwnerVisible.
-        expect(get['x-klabis-owner-visible']).toBeUndefined();
+        // getMember shares the target-id parameter. That is harmless: @TargetId is only
+        // consulted for a method already guarded by an authority held over specific targets.
         expect(document.components.parameters.MemberIdParam['x-klabis-target-id']).toBe('MEMBER');
     });
 });

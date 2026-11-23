@@ -33,7 +33,7 @@ differ enough between them that generalising from one to another produces broken
 | Working on | Read |
 |---|---|
 | Any response: media types, the derived HAL envelope, `_embedded` keys, `x-hal-entity-items`/`x-hal-embedded`, `x-hal-links`/`x-hal-templates` | `references/hypermedia.md` |
-| Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-target-id`, `x-klabis-owner-visible`, `x-klabis-read-authority`) | `references/field-security.md` |
+| Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-target-id`, `x-klabis-read-authority`) | `references/field-security.md` |
 | Constraints on request fields, cross-field rules | `references/validation.md` |
 | A PATCH endpoint (the `JsonNullable<T>` tri-state) | `references/patch-bodies.md` |
 | Registering a new module for codegen, or migrating one to spec-first | `references/adding-a-module.md` |
@@ -122,7 +122,7 @@ wording differs from another module's copy of the same name collides the same wa
 existing wording exactly or pick a distinct name.
 
 A name collision can also surface far from its cause: if a colliding parameter component resolves to
-the *other* module's definition, `x-klabis-owner-visible: <name>` then fails with "not declared on
+the *other* module's definition, a parameter-name check then fails with "not declared on
 that operation" even though the operation's own file looks correct. Check for a duplicate component
 name before believing the error at face value.
 
@@ -282,7 +282,7 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   owns the affordance logic — e.g. `SyncStatePostprocessor` → `SynchronizationPort`); passing
   port-derived data from the controller through a request attribute is the old workaround, don't
   reintroduce it. Slice tests stub the shared mock via `@Autowired`.
-- Putting `x-klabis-authority` / `x-klabis-owner-visible` on a property that uses `oneOf` or
+- Putting `x-klabis-authority` on a property that uses `oneOf` or
   `allOf`. Composition strips property-level vendor extensions, and `allOf` additionally yields a
   bare type rather than `JsonNullable<T>` — which `RequestBodyFieldAuthorizationAdvice` skips, so
   the field silently stops being authorization-checked. Inline the type
@@ -308,11 +308,11 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   composition strips sibling vendor extensions, so the property can carry neither
   `x-klabis-authority` nor `x-hal-input-type`. `$ref` + `x-klabis-nullable: true` generates the same
   wrapper with no composition, and the bundle emits the identical `oneOf` shape either way.
-- Writing a PATCH property with `oneOf` or `allOf` when it also carries `x-klabis-authority` or
-  `x-klabis-owner-visible`. `oneOf` strips the extension (scalar ones included); `allOf` keeps it
+- Writing a PATCH property with `oneOf` or `allOf` when it also carries `x-klabis-authority`.
+  `oneOf` strips the extension (scalar ones included); `allOf` keeps it
   but generates a bare type, and `RequestBodyFieldAuthorizationAdvice` skips every component that is
   not `JsonNullable`, so the annotation is never evaluated. Either way the check silently stops
-  running for the one caller it exists for — the owner. On a nullable `$ref` property the way out is
+  running for the callers it exists for — those who hold the authority only over their own record. On a nullable `$ref` property the way out is
   `$ref` + `x-klabis-nullable: true` (no composition at all); otherwise inline the type and map
   `<Parent>_<property>` in `schemaMappings`; see the `gender` section above.
 - Marking a response property or a POST/PUT body property nullable. There is no tri-state to express

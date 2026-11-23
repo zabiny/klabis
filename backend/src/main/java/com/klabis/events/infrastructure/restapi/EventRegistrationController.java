@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -18,7 +19,6 @@ import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.util.StringUtils;
-import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -34,8 +34,6 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,22 +57,20 @@ class EventRegistrationController implements EventRegistrationsApi {
     private final EventRegistrationPort registrationService;
     private final Members members;
     private final AuthorizationEvaluator authorizationEvaluator;
-    private final RegistrationReadAccess readAccess;
 
     public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members,
-                                       AuthorizationEvaluator authorizationEvaluator, RegistrationReadAccess readAccess) {
+                                       AuthorizationEvaluator authorizationEvaluator) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
-        this.readAccess = readAccess;
     }
 
     @Override
     public ResponseEntity<Void> registerForEvent(
             @PathVariable UUID eventId,
-            RegisterEventRequest request,
-            @ActingMember MemberId actingMember) {
+            @PathVariable UUID memberId,
+            RegisterEventRequest request) {
 
         Event.RegisterCommand command = new Event.RegisterCommand(
                 request.siCardNumber(),
@@ -84,10 +80,10 @@ class EventRegistrationController implements EventRegistrationsApi {
                 RegistrationNote.ofNullable(request.internalNote()),
                 RegistrationNote.ofNullable(request.orisNote()),
                 Boolean.TRUE.equals(request.wantsToRentSi()));
-        registrationService.registerMember(new EventId(eventId), actingMember, command);
+        registrationService.registerMember(new EventId(eventId), new MemberId(memberId), command);
 
         return ResponseEntity.created(
-                linkTo(methodOn(EventRegistrationsApi.class).getRegistration(actingMember.value(),
+                linkTo(methodOn(EventRegistrationsApi.class).getRegistration(memberId,
                         eventId,
                         false)).toUri()
         ).build();
@@ -133,7 +129,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = readAccess.canReadRegistrations(event.getId().value());
+        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.canOverviewRegistrations(authorizationEvaluator, event.getId().value());
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,
                 event,
@@ -158,12 +154,13 @@ class EventRegistrationController implements EventRegistrationsApi {
             @PathVariable UUID eventId,
             @RequestParam(required = false, defaultValue = "false") Boolean newRegistration) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId targetMember = new MemberId(memberId);
 
         if (Boolean.TRUE.equals(newRegistration)) {
-            MemberId principalMemberId = EventAffordanceSupport.resolveMemberId(auth);
-            if (principalMemberId == null || !principalMemberId.equals(targetMember)) {
+            // Not covered by the operation's authorities: EVENTS_REGISTRATIONS_OVERVIEW over the event lets a
+            // coordinator read registrations, but the defaults expose the name and SI card of any member,
+            // registered or not, so registering rights over that member are required.
+            if (!authorizationEvaluator.has(Authority.EVENTS_REGISTER_MEMBER, TargetRef.member(memberId))) {
                 throw new AccessDeniedException(
                         "Not authorized to request registration defaults for member " + memberId);
             }
@@ -181,12 +178,8 @@ class EventRegistrationController implements EventRegistrationsApi {
             return ResponseEntity.ok(defaults);
         }
 
-        if (!readAccess.canRead(eventId, memberId)) {
-            throw new AccessDeniedException("Not authorized to read registration of member " + memberId);
-        }
-
         Event event = eventManagementService.getEvent(new EventId(eventId),
-                authorizationEvaluator.has(Authority.EVENTS_REGISTRATIONS));
+                authorizationEvaluator.has(Authority.EVENTS_REGISTER_MEMBER));
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
@@ -240,11 +233,9 @@ class RegistrationSyncTargets {
 class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
-    private final RegistrationReadAccess readAccess;
     private final SyncLinks syncLinks;
 
-    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess, SyncLinks syncLinks) {
-        this.readAccess = readAccess;
+    RegistrationSummaryPostprocessor(SyncLinks syncLinks) {
         this.syncLinks = syncLinks;
     }
 
@@ -254,7 +245,7 @@ class RegistrationSummaryPostprocessor
         UUID eventId = event.getId().value();
         UUID rowMemberId = view.memberId().value();
 
-        readAccess.linkTo(eventId, rowMemberId)
+        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(rowMemberId, eventId, false))
                 .ifPresent(selfLinkBuilder -> {
                     if (event.areRegistrationsOpen()) {
                         dtoModel.add(selfLinkBuilder.withSelfRel()
@@ -331,13 +322,14 @@ class RegistrationDetailsPostprocessor
 
     /**
      * The prefill response belongs to a registration that does not exist yet — the only action it
-     * can offer is registering. The controller already guarantees that the acting member is the
-     * target member, so the sanction is checked against the target.
+     * can offer is registering. The sanction is checked against the target member; whether the
+     * caller may register that member is decided by the operation's declared rule.
      */
     private Link withRegisterAffordance(Link selfLink, Event event, MemberId memberId) {
-        if (EventAffordanceSupport.shouldOfferRegistration(event) && !sanctionPort.isMemberBlocked(memberId)) {
+        if (EventAffordanceSupport.shouldOfferRegistration(event)
+                && !sanctionPort.isMemberBlocked(memberId)) {
             return selfLink.andAffordances(klabisAffordWithOptions(
-                    methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), null, null),
+                    methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), memberId.value(), null),
                     Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
         }
         return selfLink;

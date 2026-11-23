@@ -2,7 +2,6 @@ package com.klabis.common.authorization;
 
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.ReadAuthority;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -16,10 +15,12 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("AuthorizationEvaluator")
 class AuthorizationEvaluatorTest {
 
-    private static final Authority DELEGATED = Authority.EVENTS_REGISTRATIONS;
+    private static final Authority DELEGATED = Authority.FINANCE_VIEW;
 
     private final UUID myId = UUID.randomUUID();
     private final TargetRef me = TargetRef.member(myId);
@@ -48,6 +49,10 @@ class AuthorizationEvaluatorTest {
 
     private static AuthorizationSnapshot overAll(Authority... authorities) {
         return AuthorizationSnapshot.of(Set.of(authorities), Map.of());
+    }
+
+    private static Function<TargetType, TargetRef> over(TargetRef target) {
+        return kind -> target != null && target.type() == kind ? target : null;
     }
 
     private AuthorizationSnapshot delegatedOver(TargetRef... targets) {
@@ -154,7 +159,7 @@ class AuthorizationEvaluatorTest {
             SecurityContextHolder.clearContext();
 
             assertThat(evaluator.has(Authority.MEMBERS_MANAGE)).isFalse();
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), child, true)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), child)).isFalse();
         }
 
         @Test
@@ -176,78 +181,74 @@ class AuthorizationEvaluatorTest {
         void shouldAllowWhenAnyOfAuthoritiesIsHeldOverEverything() {
             var evaluator = evaluatorOver(overAll(Authority.MEMBERS_MANAGE));
 
-            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), null, false)).isTrue();
-            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), child, false)).isTrue();
+            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), null)).isTrue();
+            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), child)).isTrue();
         }
 
         @Test
         void shouldDenyWhenNoneOfAuthoritiesIsHeld() {
             var evaluator = evaluatorOver(overAll(Authority.EVENTS_MANAGE));
 
-            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), child, false)).isFalse();
-            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), null, false)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), child)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(DELEGATED, Authority.MEMBERS_MANAGE), null)).isFalse();
         }
 
         @Test
         void shouldAllowTargetedGrantOnlyForThatTarget() {
             var evaluator = evaluatorOver(delegatedOver(child));
 
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, DELEGATED), child, false)).isTrue();
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, DELEGATED), stranger, false)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, DELEGATED), child)).isTrue();
+            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, DELEGATED), stranger)).isFalse();
         }
 
         @Test
         void shouldNotLetTargetedGrantSatisfyOperationWithoutTarget() {
             var evaluator = evaluatorOver(delegatedOver(child));
 
-            assertThat(evaluator.isAllowed(List.of(DELEGATED), null, false)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(DELEGATED), null)).isFalse();
         }
 
         @Test
-        void shouldAllowSelfWhenOwnerVisible() {
-            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
-
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), me, true)).isTrue();
-            assertThat(evaluator.isAllowed(List.of(), me, true)).isTrue();
+        void shouldAllowSelfOnlyThroughGrantOverSelf() {
+            assertThat(evaluatorOver(delegatedOver(me)).isAllowed(List.of(DELEGATED), me)).isTrue();
+            assertThat(evaluatorOver(delegatedOver(me)).isAllowed(List.of(DELEGATED), stranger)).isFalse();
         }
 
         @Test
-        void shouldDenyOtherThanSelfWhenOwnerVisible() {
+        void shouldNotAllowSelfWithoutGrantOverSelf() {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), stranger, true)).isFalse();
-        }
-
-        @Test
-        void shouldNotTreatOwnerVisibleAsSelfWithoutTarget() {
-            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
-
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), null, true)).isFalse();
-        }
-
-        @Test
-        void shouldNotAllowSelfWhenNotOwnerVisible() {
-            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
-
-            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), me, false)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), me)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(), me)).isFalse();
         }
 
         @Test
         void shouldDenyWhenNothingGrantsAccess() {
-            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).isAllowed(List.of(), child, false)).isFalse();
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).isAllowed(List.of(), child)).isFalse();
         }
     }
 
     record Payload(String open,
-                   @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS}) @OwnerVisible String secured,
+                   @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW}) String secured,
                    @HasAuthority(Authority.MEMBERS_MANAGE) @ReadAuthority(Authority.MEMBERS_READ) String readable) {
     }
 
     static class Operations {
 
-        @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})
-        @OwnerVisible
+        @HasAuthority({Authority.MEMBERS_MANAGE, Authority.FINANCE_VIEW})
         public void targeted(@TargetId(TargetType.MEMBER) UUID id) {
+        }
+
+        @HasAuthority({Authority.MEMBERS_READ, Authority.EVENTS_EDIT})
+        public void memberAndEvent(@TargetId(TargetType.MEMBER) UUID memberId, @TargetId(TargetType.EVENT) UUID eventId) {
+        }
+
+        @HasAuthority({Authority.MEMBERS_READ, Authority.GROUPS_OWNER})
+        public void memberOnly(@TargetId(TargetType.MEMBER) UUID memberId) {
+        }
+
+        @HasAuthority(Authority.MEMBERS_READ)
+        public void twoMemberTargets(@TargetId(TargetType.MEMBER) UUID first, @TargetId(TargetType.MEMBER) UUID second) {
         }
 
         @HasAuthority(Authority.EVENTS_MANAGE)
@@ -264,27 +265,27 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldBeWriteForUnsecuredProperty() {
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "open", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "open", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "missing", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "missing", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
         }
 
         @Test
         void shouldBeWriteWithAuthorityOverTarget() {
-            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", child))
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", over(child)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", stranger))
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", over(stranger)))
                     .isEqualTo(FieldAccess.NONE);
         }
 
         @Test
         void shouldBeReadWithReadAuthorityOnly() {
-            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.READ);
-            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.WRITE);
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "readable", null))
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "readable", over(null)))
                     .isEqualTo(FieldAccess.NONE);
         }
     }
@@ -317,9 +318,10 @@ class AuthorizationEvaluatorTest {
         }
 
         @Test
-        void shouldBeAllowedToOwnerOfOwnerVisibleField() {
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).canReadField(Payload.class, "secured", me)).isTrue();
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).canReadField(Payload.class, "secured", stranger)).isFalse();
+        void shouldBeAllowedToUserWithGrantOverSelf() {
+            assertThat(evaluatorOver(delegatedOver(me)).canReadField(Payload.class, "secured", me)).isTrue();
+            assertThat(evaluatorOver(delegatedOver(me)).canReadField(Payload.class, "secured", stranger)).isFalse();
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).canReadField(Payload.class, "secured", me)).isFalse();
         }
 
         @Test
@@ -333,11 +335,11 @@ class AuthorizationEvaluatorTest {
     class DescribeRequirement {
 
         @Test
-        void shouldDescribeOperationWithAuthoritiesTargetAndOwner() throws NoSuchMethodException {
+        void shouldDescribeOperationWithAuthoritiesAndTarget() throws NoSuchMethodException {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.describeRequirement(Operations.class.getMethod("targeted", UUID.class), Operations.class))
-                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS (over everything or over the MEMBER), or being the owner");
+                    .isEqualTo("authority MEMBERS:MANAGE or FINANCE:VIEW (over everything or over the MEMBER)");
         }
 
         @Test
@@ -353,7 +355,7 @@ class AuthorizationEvaluatorTest {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.describeRequirement(Payload.class.getMethod("secured")))
-                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS, or being the owner");
+                    .isEqualTo("authority MEMBERS:MANAGE or FINANCE:VIEW");
         }
     }
 
@@ -386,6 +388,75 @@ class AuthorizationEvaluatorTest {
 
             assertThat(evaluator.toTarget(TargetType.MEMBER, myId.toString())).isEqualTo(me);
             assertThat(evaluator.toTarget(TargetType.MEMBER, "not-a-uuid")).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("canInvoke with several targets")
+    class CanInvokeWithSeveralTargets {
+
+        private final UUID memberId = UUID.randomUUID();
+        private final UUID eventId = UUID.randomUUID();
+        private final TargetRef member = TargetRef.member(memberId);
+        private final TargetRef event = new TargetRef(TargetType.EVENT, eventId);
+
+        private boolean canInvoke(AuthorizationEvaluator evaluator, String method, UUID... arguments) {
+            try {
+                Class<?>[] parameterTypes = new Class<?>[arguments.length];
+                Arrays.fill(parameterTypes, UUID.class);
+                return evaluator.canInvoke(Operations.class.getMethod(method, parameterTypes), Operations.class, arguments);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Test
+        void shouldAllowMemberKindAuthorityOverMemberTarget() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(), Map.of(Authority.MEMBERS_READ, Set.of(member)));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isTrue();
+        }
+
+        @Test
+        void shouldAllowEventKindAuthorityOverEventTarget() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(), Map.of(Authority.EVENTS_EDIT, Set.of(event)));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isTrue();
+        }
+
+        @Test
+        void shouldDenyEventKindAuthorityOverOtherEvent() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(new TargetRef(TargetType.EVENT, UUID.randomUUID()))));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberAndEvent", memberId, eventId)).isFalse();
+        }
+
+        @Test
+        void shouldPassAuthorityWhoseKindHasNoIdentifiedTargetOnlyOverEverything() {
+            var groupGrant = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.GROUPS_OWNER, Set.of(new TargetRef(TargetType.GROUP, memberId))));
+            var everything = AuthorizationSnapshot.of(Set.of(Authority.GROUPS_OWNER), Map.of());
+
+            assertThat(canInvoke(evaluatorOver(groupGrant), "memberOnly", memberId)).isFalse();
+            assertThat(canInvoke(evaluatorOver(everything), "memberOnly", memberId)).isTrue();
+        }
+
+        @Test
+        void shouldNotLetEventKindGrantMatchMemberTargetWithTheSameId() {
+            var snapshot = AuthorizationSnapshot.of(Set.of(),
+                    Map.of(Authority.EVENTS_EDIT, Set.of(new TargetRef(TargetType.EVENT, memberId))));
+
+            assertThat(canInvoke(evaluatorOver(snapshot), "memberOnly", memberId)).isFalse();
+        }
+
+        @Test
+        void shouldRejectTwoTargetParametersOfTheSameKind() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThatThrownBy(() -> canInvoke(evaluator, "twoMemberTargets", memberId, eventId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("MEMBER");
         }
     }
 }

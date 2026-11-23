@@ -233,7 +233,7 @@ The membership fees page SHALL list past (closed) fee selection campaigns, each 
 
 ### Requirement: Member Chooses a Fee Type for the Upcoming Year
 
-The system SHALL allow each member, and the legal guardian of a minor member on the minor's behalf, to choose, change or withdraw one published membership fee type for the upcoming year in the "Členský příspěvek" section until the voting deadline. After the deadline or once the campaign is closed the choice is locked. A membership administrator who is neither the member nor their guardian cannot choose or withdraw a type.
+The system SHALL allow each adult member, and the legal guardian of a minor member on the minor's behalf, to choose, change or withdraw one published membership fee type for the upcoming year in the "Členský příspěvek" section until the voting deadline. A minor never chooses for themself. After the deadline or once the campaign is closed the choice is locked. Nobody else - neither a membership administrator nor an owner of a group the member belongs to - can choose or withdraw a type.
 
 #### Scenario: Member chooses a type
 
@@ -309,9 +309,22 @@ The system SHALL allow each member, and the legal guardian of a minor member on 
 - **WHEN** a legal guardian attempts to choose a type for a member who is not their minor
 - **THEN** the system rejects the request as forbidden
 
+#### Scenario: Minor cannot choose a type for themself
+
+- **GIVEN** voting is open
+- **WHEN** a minor member opens their own profile
+- **THEN** the "Členské příspěvky" button is not displayed
+- **AND** the minor cannot choose, change or withdraw a type
+
+#### Scenario: Free group owner cannot choose for a group member
+
+- **GIVEN** voting is open and a user owns a free group that delegates "Úprava údajů člena"
+- **WHEN** the owner opens the detail of a member of that group who is not their minor
+- **THEN** the "Členské příspěvky" button is not displayed
+
 ### Requirement: Fee Type Section on the Member's Fees Page
 
-The "Členské příspěvky" page of a member SHALL show a "Členský příspěvek" section above the history only while a fee selection campaign is active, and only to the member and to a legal guardian who may choose for them. The section shows the chosen type or a prompt to choose one and holds the controls for choosing, changing and withdrawing it. Outside an active campaign the chosen type is visible only in the history.
+The "Členské příspěvky" page of a member SHALL show a "Členský příspěvek" section above the history only while a fee selection campaign is active, and only to an adult member and to a legal guardian who may choose for them. The section shows the chosen type or a prompt to choose one and holds the controls for choosing, changing and withdrawing it. Outside an active campaign the chosen type is visible only in the history.
 
 #### Scenario: Member sees the section with the assigned type during an active campaign
 
@@ -367,7 +380,7 @@ The "Členské příspěvky" page of a member SHALL show a "Členský příspěv
 
 ### Requirement: Audit Trail of Fee Type Assignments
 
-The system SHALL keep a record of the membership fee type each member was assigned in each year, and the "Členské příspěvky" page SHALL show it as a history with one entry per year, newest first. Each entry shows the year, the type name, the yearly price of the type as published for that year, and how the type was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page.
+The system SHALL keep a record of the membership fee type each member was assigned in each year, and the "Členské příspěvky" page SHALL show it as a history with one entry per year, newest first. Each entry shows the year, the type name, the yearly price of the type as published for that year, and how the type was assigned. Only an adult member themself, a membership administrator and a legal guardian of the member may open the page; a minor member cannot open their own fee page.
 
 #### Scenario: Member opens their fee type history from the profile
 
@@ -441,3 +454,14 @@ The system SHALL keep a record of the membership fee type each member was assign
 
 - **WHEN** a user on a member's "Členské příspěvky" page clicks the back link
 - **THEN** the system shows the detail of that member again
+
+#### Scenario: Minor cannot open their own fee page
+
+- **WHEN** a minor member opens their own profile
+- **THEN** the "Členské příspěvky" button is not displayed
+
+#### Scenario: Free group owner cannot open a group member's fee page
+
+- **GIVEN** a user owns a free group and has no membership administration permission
+- **WHEN** the owner opens the detail of a member of that group who is not their minor
+- **THEN** the "Členské příspěvky" button is not displayed

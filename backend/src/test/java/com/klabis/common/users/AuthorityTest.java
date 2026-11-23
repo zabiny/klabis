@@ -22,9 +22,11 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_READ, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_PERMISSIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
-                Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
+                Arguments.of(Authority.MEMBERS_VIEW_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.EVENTS_REGISTER_MEMBER, TargetType.MEMBER, EnumSet.of(GrantForm.ALL, GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
-                Arguments.of(Authority.EVENTS_REGISTRATIONS_READ, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.EVENTS_REGISTRATIONS_OVERVIEW, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.GROUPS_OWNER, TargetType.GROUP, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_READ, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_MANAGE, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
@@ -79,11 +81,13 @@ class AuthorityTest {
     }
 
     @Test
-    @DisplayName("authorities holdable over specific targets are profile editing and the coordinator authorities")
+    @DisplayName("authorities holdable over specific targets are profile editing, registering members and the coordinator authorities")
     void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
         assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
-                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ,
-                Authority.GROUPS_OWNER, Authority.FINANCE_VIEW);
+                Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_VIEW_PROFILE, Authority.EVENTS_EDIT,
+                Authority.EVENTS_REGISTRATIONS_OVERVIEW,
+                Authority.GROUPS_OWNER, Authority.FINANCE_VIEW, Authority.EVENTS_REGISTER_MEMBER,
+                Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
     }
 
     @Test
@@ -98,12 +102,31 @@ class AuthorityTest {
     }
 
     @Test
+    @DisplayName("profile viewing has the wire value MEMBERS:VIEW_PROFILE and is held over specific members only")
+    void shouldExposeViewProfileAsMemberTargetedSpecificAuthority() {
+        assertThat(Authority.MEMBERS_VIEW_PROFILE.getValue()).isEqualTo("MEMBERS:VIEW_PROFILE");
+        assertThat(Authority.fromString("MEMBERS:VIEW_PROFILE")).isEqualTo(Authority.MEMBERS_VIEW_PROFILE);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_VIEW_PROFILE);
+    }
+
+    @Test
+    @DisplayName("fee type selection has the wire value MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE and is held over specific members only")
+    void shouldExposeSelectMembershipFeeTypeAsMemberTargetedSpecificAuthority() {
+        assertThat(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE.getValue()).isEqualTo("MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE");
+        assertThat(Authority.fromString("MEMBERS:SELECT_MEMBERSHIP_FEE_TYPE"))
+                .isEqualTo(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
+    }
+
+    @Test
     @DisplayName("coordinator authorities are neither assignable nor grantable over everything")
     void shouldNotOfferCoordinatorAuthoritiesForDirectGrant() {
         assertThat(Authority.assignableAuthorities())
-                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
         assertThat(Authority.grantableOverAll())
-                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_OVERVIEW);
     }
 
     @Test
@@ -133,5 +156,12 @@ class AuthorityTest {
         for (Authority authority : Authority.holdableOverTargets()) {
             assertThat(authority.getGrantForms()).contains(GrantForm.SPECIFIC);
         }
+    }
+
+    @Test
+    @DisplayName("registering members is both assignable over everything and holdable over targets")
+    void shouldAllowRegisterMemberInBothGrantForms() {
+        assertThat(Authority.assignableAuthorities()).contains(Authority.EVENTS_REGISTER_MEMBER);
+        assertThat(Authority.holdableOverTargets()).contains(Authority.EVENTS_REGISTER_MEMBER);
     }
 }

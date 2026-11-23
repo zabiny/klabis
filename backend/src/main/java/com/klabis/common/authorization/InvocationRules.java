@@ -1,19 +1,22 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.security.MethodSecurityAnnotations;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Method;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Security annotations of a controller or service method: the {@link HasAuthority} of the method (or else of its
- * class), {@link OwnerVisible} and the parameter marked {@link TargetId}, each also found on the interface the
- * method implements.
+ * class), and the parameters marked {@link TargetId}, each also found on the interface the
+ * method implements. A method identifies at most one target per {@link TargetType}, so each authority is checked
+ * over the target of its own kind.
  */
-record InvocationRules(List<Authority> authorities, boolean ownerVisible, TargetParameter target) {
+record InvocationRules(List<Authority> authorities, Map<TargetType, TargetParameter> targets) {
 
     static InvocationRules of(Method method, Class<?> targetClass) {
         HasAuthority hasAuthority = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class);
@@ -21,19 +24,30 @@ record InvocationRules(List<Authority> authorities, boolean ownerVisible, Target
             hasAuthority = MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class);
         }
         List<Authority> authorities = hasAuthority != null ? List.of(hasAuthority.value()) : List.of();
-        boolean ownerVisible = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null;
 
-        int index = MethodSecurityAnnotations.findAnnotatedParameterIndex(method, targetClass, TargetId.class);
-        TargetId targetId = MethodSecurityAnnotations.findParameterAnnotation(method, targetClass, index, TargetId.class);
-        TargetParameter target = targetId != null ? new TargetParameter(index, targetId.value()) : null;
-        return new InvocationRules(authorities, ownerVisible, target);
+        Map<TargetType, TargetParameter> targets = new EnumMap<>(TargetType.class);
+        for (int index = 0; index < method.getParameterCount(); index++) {
+            TargetId targetId = MethodSecurityAnnotations.findParameterAnnotation(method, targetClass, index, TargetId.class);
+            if (targetId == null) {
+                continue;
+            }
+            if (targets.putIfAbsent(targetId.value(), new TargetParameter(index)) != null) {
+                throw new IllegalStateException("%s identifies more than one %s target with @TargetId"
+                        .formatted(method, targetId.value()));
+            }
+        }
+        return new InvocationRules(authorities, Map.copyOf(targets));
     }
 
     boolean isOpen() {
-        return authorities.isEmpty() && !ownerVisible;
+        return authorities.isEmpty();
+    }
+
+    @Nullable TargetParameter targetOfKind(TargetType kind) {
+        return targets.get(kind);
     }
 
     String describe() {
-        return RequirementDescription.of(authorities, target != null ? target.type() : null, ownerVisible);
+        return RequirementDescription.of(authorities, targets.keySet());
     }
 }

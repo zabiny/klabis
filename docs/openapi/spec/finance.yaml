@@ -7,7 +7,8 @@
 # The three GET operations are readable by FINANCE:MANAGE or by a holder of FINANCE:VIEW over the
 # account owner: x-klabis-authority [FINANCE_MANAGE, FINANCE_VIEW] with the target taken from
 # AccountMemberIdParam (x-klabis-target-id). The owner holds FINANCE:VIEW over themself and legal
-# guardians over their minors, both granted as relationships, so no owner-visible rule is needed.
+# guardians over their minors, both granted as relationships (account-owner relationship and
+# delegation), so nothing besides x-klabis-authority is needed.
 # The three POST operations are FINANCE:MANAGE only and carry x-klabis-authority alone; they share
 # AccountMemberIdParam, whose target id is inert for an authority without a target type.
 

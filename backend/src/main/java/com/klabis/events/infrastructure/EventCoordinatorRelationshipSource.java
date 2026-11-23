@@ -36,6 +36,6 @@ class EventCoordinatorRelationshipSource implements RelationshipSource {
         }
         return Map.of(
                 Authority.EVENTS_EDIT, coordinated,
-                Authority.EVENTS_REGISTRATIONS_READ, coordinated);
+                Authority.EVENTS_REGISTRATIONS_OVERVIEW, coordinated);
     }
 }

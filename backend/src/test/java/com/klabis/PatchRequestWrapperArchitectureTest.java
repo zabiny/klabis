@@ -22,9 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code @HasAuthority(MEMBERS_MANAGE)}.
  *
  * <p>The caller this actually exposes is the <em>owner</em>: the endpoint is annotated
- * {@code @HasAuthority(MEMBERS_MANAGE)} <em>and</em> {@code @OwnerVisible}, so a stranger is turned
+ * {@code @HasAuthority(MEMBERS_MANAGE)}, so a stranger is turned
  * away before any field is read, and an admin satisfies every field anyway. A member editing their
- * own record is the one caller for whom these per-field checks decide anything — and the one who
+ * own record (through a grant over themself) is the one caller for whom these per-field checks decide anything — and the one who
  * silently gains write access to all five when a wrapper goes missing.
  *
  * <p>These records are generated from the spec, where the wrapper follows from the OpenAPI 3.1
@@ -64,7 +64,7 @@ class PatchRequestWrapperArchitectureTest {
             assertThat(unwrapped)
                     .as("%s has components that are not JsonNullable, so "
                         + "RequestBodyFieldAuthorizationAdvice will skip them and any "
-                        + "@HasAuthority/@OwnerVisible on them is silently unenforced",
+                        + "@HasAuthority on them is silently unenforced",
                             patchRequest.getSimpleName())
                     .isEmpty();
         }

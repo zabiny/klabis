@@ -57,8 +57,9 @@ for (const phrase of ['chooses type', 'changes the fee type choice to']) {
 }
 
 When('{persona} chooses type {name} for member {string}',
-    async ({page, actAs}, persona: Persona, name: string, fullName: string) => {
+    async ({page, actAs, minorChoices}, persona: Persona, name: string, fullName: string) => {
         await openFeeHistoryOfMember(page, actAs, persona, fullName);
+        minorChoices.withdrawAfterScenario(persona, fullName);
         await submitChoice(page, name);
     });
 

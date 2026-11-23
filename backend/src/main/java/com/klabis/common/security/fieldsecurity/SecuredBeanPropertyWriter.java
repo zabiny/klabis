@@ -13,8 +13,7 @@ import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 /**
- * Wraps a {@link BeanPropertyWriter} to evaluate security annotations ({@link HasAuthority} or
- * {@link OwnerVisible}) during serialization. When authorization is
+ * Wraps a {@link BeanPropertyWriter} to evaluate security annotations ({@link HasAuthority}) during serialization. When authorization is
  * denied the field is either masked or skipped entirely, depending on the
  * {@link HandleAuthorizationDenied} configuration resolved from the record component or class level.
  * <p>

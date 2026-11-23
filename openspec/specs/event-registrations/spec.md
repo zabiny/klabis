@@ -81,7 +81,7 @@ When the registration form opens for an event that uses SI cards, the SI card nu
 
 ### Requirement: Unregister from Event
 
-The system SHALL allow members to cancel their event registration before the event date and before the registration deadline (if set). Users with the EVENTS:REGISTRATIONS authority SHALL additionally be able to cancel any member's registration under the same timing rules. A single unregister operation serves both cases: it names the member whose registration is cancelled, and the unregister action is offered wherever the user is allowed to use it. The unregister action is reached from the registration edit dialog, where it asks for confirmation; the event detail page does not offer a separate unregister button.
+The system SHALL allow members to cancel their event registration before the event date and before the registration deadline (if set). A legal guardian SHALL additionally be able to cancel the registration of their minor, and users with the EVENTS:REGISTER_MEMBER authority the registration of any member, under the same timing rules. A single unregister operation serves both cases: it names the member whose registration is cancelled, and the unregister action is offered wherever the user is allowed to use it. The unregister action is reached from the registration edit dialog, where it asks for confirmation; the event detail page does not offer a separate unregister button.
 
 #### Scenario: Member unregisters before event date
 
@@ -93,26 +93,26 @@ The system SHALL allow members to cancel their event registration before the eve
 #### Scenario: User with EVENTS:REGISTRATIONS unregisters another member
 
 - **GIVEN** a member is registered for an event that has not started and whose registration deadline has not passed
-- **WHEN** a user with EVENTS:REGISTRATIONS opens that member's registration and chooses "Odhlásit" and confirms
+- **WHEN** a user with EVENTS:REGISTER_MEMBER opens that member's registration and chooses "Odhlásit" and confirms
 - **THEN** the member's registration is cancelled
 - **AND** the registrations list no longer shows the member
 
 #### Scenario: Unregister action is offered to a user with EVENTS:REGISTRATIONS on another member's registration
 
 - **GIVEN** a member is registered for an event for which unregistering is still allowed
-- **WHEN** a user with EVENTS:REGISTRATIONS opens that member's registration
+- **WHEN** a user with EVENTS:REGISTER_MEMBER opens that member's registration
 - **THEN** the registration shows the unregister action
 
 #### Scenario: Member cannot unregister another member
 
-- **GIVEN** a member without EVENTS:REGISTRATIONS
-- **WHEN** they attempt to unregister a different member from an event
+- **GIVEN** a member without EVENTS:REGISTER_MEMBER
+- **WHEN** they attempt to unregister a different member who is not their minor from an event
 - **THEN** the system refuses the request as forbidden
 - **AND** the other member's registration remains
 
 #### Scenario: Event coordinator without EVENTS:REGISTRATIONS cannot unregister members
 
-- **GIVEN** an event coordinator who does not hold EVENTS:REGISTRATIONS
+- **GIVEN** an event coordinator who does not hold EVENTS:REGISTER_MEMBER
 - **WHEN** they open a member's registration for their event
 - **THEN** no unregister action is offered
 
@@ -135,15 +135,15 @@ The system SHALL allow members to cancel their event registration before the eve
 
 The system SHALL display the list of members registered for an event. Each registration shows the member's first name, last name, and selected category (if applicable). SI card numbers are not shown to other members.
 
-The registration timestamp SHALL be visible only to the event coordinator (the member assigned as the event's coordinator) and to users with the EVENTS:REGISTRATIONS authority. Other members do not see the registration timestamp column.
+The registration timestamp SHALL be visible only to the event coordinator (the member assigned as the event's coordinator) and to users with the EVENTS:REGISTER_MEMBER authority. Other members do not see the registration timestamp column.
 
 When the event offers shared transport, each registration additionally shows whether the member asked to use shared transport. When the event offers shared accommodation, each registration additionally shows whether the member asked to use shared accommodation. These choices are displayed as "Ano"/"Ne" and SHALL be visible to every authenticated member who can view the registration list. When the event does not offer a service, the corresponding choice is not displayed for any registration; when the event offers neither service, no shared-service choice is displayed at all.
 
-The list SHALL be sorted by registration time ascending by default (first-come-first-served order). Users SHALL be able to sort the list by first name, last name, and category by clicking the corresponding column headers. The event coordinator and users with EVENTS:REGISTRATIONS authority SHALL additionally be able to sort by registration time.
+The list SHALL be sorted by registration time ascending by default (first-come-first-served order). Users SHALL be able to sort the list by first name, last name, and category by clicking the corresponding column headers. The event coordinator and users with EVENTS:REGISTER_MEMBER authority SHALL additionally be able to sort by registration time.
 
 #### Scenario: Member views registration list for an event
 
-- **WHEN** an authenticated club member without EVENTS:REGISTRATIONS authority views the registration list for an event they did not coordinate
+- **WHEN** an authenticated club member without EVENTS:REGISTER_MEMBER authority views the registration list for an event they did not coordinate
 - **THEN** the list shows each registered member's first name, last name, and category (if the event has categories)
 - **AND** SI card numbers are not shown
 - **AND** the registration timestamp column is not shown
@@ -158,7 +158,7 @@ The list SHALL be sorted by registration time ascending by default (first-come-f
 
 #### Scenario: User with EVENTS:REGISTRATIONS authority views registration list
 
-- **WHEN** an authenticated user with EVENTS:REGISTRATIONS authority views the registration list for any event
+- **WHEN** an authenticated user with EVENTS:REGISTER_MEMBER authority views the registration list for any event
 - **THEN** the list additionally shows the registration timestamp column for each row
 - **AND** the registration timestamp column is sortable
 
@@ -170,7 +170,7 @@ The list SHALL be sorted by registration time ascending by default (first-come-f
 
 #### Scenario: Member attempts to sort by registration time without authorization
 
-- **GIVEN** an authenticated member without EVENTS:REGISTRATIONS authority is not the event coordinator
+- **GIVEN** an authenticated member without EVENTS:REGISTER_MEMBER authority is not the event coordinator
 - **WHEN** the member views the registration list
 - **THEN** the registration time column header is not displayed
 - **AND** the member cannot sort by registration time
@@ -203,12 +203,12 @@ The list SHALL be sorted by registration time ascending by default (first-come-f
 #### Scenario: Shared service choices are visible regardless of authority
 
 - **GIVEN** an event with the shared accommodation offer turned on where some registered members asked for shared accommodation
-- **WHEN** an authenticated club member without EVENTS:REGISTRATIONS authority who is not the coordinator views the registration list
+- **WHEN** an authenticated club member without EVENTS:REGISTER_MEMBER authority who is not the coordinator views the registration list
 - **THEN** the member sees for every registration whether that member asked for shared accommodation
 
 ### Requirement: Generate Accommodation List for Event Registrations
 
-The event coordinator and users with the EVENTS:REGISTRATIONS authority SHALL be able to generate an accommodation list for an event that has the shared accommodation offer turned on. The list contains, for every member registered for the event who asked to use shared accommodation, the member's first name, last name, identity card number, identity card validity date, date of birth, and full address. Members who are registered but did not ask for shared accommodation are not on the list.
+The event coordinator and users with the EVENTS:REGISTER_MEMBER authority SHALL be able to generate an accommodation list for an event that has the shared accommodation offer turned on. The list contains, for every member registered for the event who asked to use shared accommodation, the member's first name, last name, identity card number, identity card validity date, date of birth, and full address. Members who are registered but did not ask for shared accommodation are not on the list.
 
 The "Seznam pro ubytování" action SHALL be offered only when the event has the shared accommodation offer turned on. When the offer is off, the action is not exposed in the event detail page and any direct attempt to open the accommodation list, including the CSV download, is rejected.
 
@@ -218,7 +218,7 @@ The page SHALL additionally offer a "Stáhnout CSV" action that downloads the sa
 
 If a listed member has no identity card recorded in their profile, the corresponding cells of the printable list SHALL display the literal text "neuvedeno" so the coordinator can quickly spot incomplete records before printing. In the CSV download the corresponding cells SHALL instead be left empty, so the file is easier to process in the accommodation provider's system.
 
-Members without EVENTS:REGISTRATIONS authority who are not the event coordinator SHALL NOT have access to this list — neither through the user interface (the "Seznam pro ubytování" action is not exposed in the event detail page) nor through the API (any request, including the CSV download, is rejected).
+Members without EVENTS:REGISTER_MEMBER authority who are not the event coordinator SHALL NOT have access to this list — neither through the user interface (the "Seznam pro ubytování" action is not exposed in the event detail page) nor through the API (any request, including the CSV download, is rejected).
 
 #### Scenario: Event coordinator generates the accommodation list
 
@@ -238,20 +238,20 @@ Members without EVENTS:REGISTRATIONS authority who are not the event coordinator
 #### Scenario: Accommodation list action is hidden when the event does not offer shared accommodation
 
 - **GIVEN** an event with the shared accommodation offer turned off
-- **WHEN** the event coordinator or a user with EVENTS:REGISTRATIONS opens the event detail page
+- **WHEN** the event coordinator or a user with EVENTS:REGISTER_MEMBER opens the event detail page
 - **THEN** the "Seznam pro ubytování" action is not displayed
 - **AND** a direct attempt to open the accommodation list or download its CSV is rejected
 
 #### Scenario: User with EVENTS:REGISTRATIONS authority generates the accommodation list for any event
 
-- **GIVEN** the user has the EVENTS:REGISTRATIONS authority
+- **GIVEN** the user has the EVENTS:REGISTER_MEMBER authority
 - **AND** the event has the shared accommodation offer turned on
 - **WHEN** the user opens the accommodation list for that event
 - **THEN** the list is rendered with full details for every member who asked for shared accommodation
 
 #### Scenario: Coordinator downloads the accommodation list as CSV
 
-- **GIVEN** an event with the shared accommodation offer turned on has members who asked for shared accommodation and the user is the coordinator or has the EVENTS:REGISTRATIONS authority
+- **GIVEN** an event with the shared accommodation offer turned on has members who asked for shared accommodation and the user is the coordinator or has the EVENTS:REGISTER_MEMBER authority
 - **WHEN** the user selects the "Stáhnout CSV" action on the accommodation list page
 - **THEN** the browser downloads a CSV file
 - **AND** the file is named after the event so the coordinator can recognise which event it belongs to
@@ -282,19 +282,19 @@ Members without EVENTS:REGISTRATIONS authority who are not the event coordinator
 #### Scenario: User with EVENTS:REGISTRATIONS authority sees the accommodation list action in event detail
 
 - **GIVEN** an event has the shared accommodation offer turned on
-- **WHEN** a user with EVENTS:REGISTRATIONS authority opens the event detail page
+- **WHEN** a user with EVENTS:REGISTER_MEMBER authority opens the event detail page
 - **THEN** the "Seznam pro ubytování" action is displayed
 
 #### Scenario: Unauthorized user cannot access the accommodation list
 
-- **GIVEN** an authenticated member without EVENTS:REGISTRATIONS authority and not the event coordinator
+- **GIVEN** an authenticated member without EVENTS:REGISTER_MEMBER authority and not the event coordinator
 - **WHEN** the member opens the event detail page
 - **THEN** the "Seznam pro ubytování" action is NOT displayed
 - **AND** direct attempts to load the accommodation list, including the CSV download, return an authorization error
 
 ### Requirement: View Own Registration
 
-The system SHALL allow members to view their own registration details including their SI card number. Users with the EVENTS:REGISTRATIONS authority SHALL be able to view any member's registration details including their SI card number. The coordinator of an event SHALL be able to open the registration details of any registration for that event in read-only form, including the member's SI card number (needed to register the member at the event presentation); the coordinator is not offered any action to change the registration.
+The system SHALL allow members to view their own registration details including their SI card number. A legal guardian SHALL be able to view the registration details of their minor, and users with the EVENTS:REGISTER_MEMBER authority those of any member, including the SI card number. The coordinator of an event SHALL be able to open the registration details of any registration for that event in read-only form, including the member's SI card number (needed to register the member at the event presentation); the coordinator is not offered any action to change the registration.
 
 #### Scenario: Member views their own registration
 
@@ -305,7 +305,7 @@ The system SHALL allow members to view their own registration details including 
 
 #### Scenario: User with EVENTS:REGISTRATIONS views a specific member's registration
 
-- **WHEN** authenticated user with EVENTS:REGISTRATIONS views a member's registration for an event
+- **WHEN** authenticated user with EVENTS:REGISTER_MEMBER views a member's registration for an event
 - **THEN** the registration details are shown including the member's SI card number and registration time
 
 #### Scenario: Event coordinator views a member's registration
@@ -317,7 +317,7 @@ The system SHALL allow members to view their own registration details including 
 
 #### Scenario: User without EVENTS:REGISTRATIONS cannot view another member's registration
 
-- **WHEN** authenticated user without EVENTS:REGISTRATIONS who is not the event coordinator attempts to view another member's registration details
+- **WHEN** authenticated user without EVENTS:REGISTER_MEMBER who is neither the event coordinator nor the member's legal guardian attempts to view another member's registration details
 - **THEN** access is refused
 
 #### Scenario: Own registration page shows not found when not registered
@@ -327,12 +327,12 @@ The system SHALL allow members to view their own registration details including 
 
 #### Scenario: User with EVENTS:REGISTRATIONS views registration for member who is not registered
 
-- **WHEN** user with EVENTS:REGISTRATIONS navigates to a registration for a member who is not registered for the event
+- **WHEN** user with EVENTS:REGISTER_MEMBER navigates to a registration for a member who is not registered for the event
 - **THEN** the system shows a not-found message
 
 ### Requirement: Edit Own Registration
 
-Members SHALL be able to change their existing event registration (SI card number and category) before the event starts, without having to unregister and register again. Users with the EVENTS:REGISTRATIONS authority SHALL additionally be able to edit any member's registration under the same timing rules. Editing preserves the original registration time so the member does not lose their place in the first-come-first-served order.
+Members SHALL be able to change their existing event registration (SI card number and category) before the event starts, without having to unregister and register again. A legal guardian SHALL additionally be able to edit the registration of their minor, and users with the EVENTS:REGISTER_MEMBER authority the registration of any member, under the same timing rules. Editing preserves the original registration time so the member does not lose their place in the first-come-first-served order.
 
 #### Scenario: Edit button is visible on own registration view when editing is still allowed
 
@@ -342,7 +342,7 @@ Members SHALL be able to change their existing event registration (SI card numbe
 
 #### Scenario: Edit button is visible on the member's own row in the registrations list
 
-- **GIVEN** a member without EVENTS:REGISTRATIONS is registered for an active event with an open registration window
+- **GIVEN** a member without EVENTS:REGISTER_MEMBER who is not a legal guardian is registered for an active event with an open registration window
 - **WHEN** the member views the registrations list on the event detail page
 - **THEN** the row representing the member shows an "Upravit" action
 - **AND** no other row shows an "Upravit" action
@@ -350,7 +350,7 @@ Members SHALL be able to change their existing event registration (SI card numbe
 #### Scenario: Edit button is visible on every row for a user with EVENTS:REGISTRATIONS
 
 - **GIVEN** an active event with an open registration window and several registrations
-- **WHEN** a user with EVENTS:REGISTRATIONS views the registrations list on the event detail page
+- **WHEN** a user with EVENTS:REGISTER_MEMBER views the registrations list on the event detail page
 - **THEN** every registration row shows an "Upravit" action
 
 #### Scenario: Edit button is hidden after the registration deadline
@@ -388,7 +388,7 @@ Members SHALL be able to change their existing event registration (SI card numbe
 
 #### Scenario: User with EVENTS:REGISTRATIONS edits another member's registration
 
-- **GIVEN** a user with EVENTS:REGISTRATIONS views the registrations list for an active event with an open registration window
+- **GIVEN** a user with EVENTS:REGISTER_MEMBER views the registrations list for an active event with an open registration window
 - **WHEN** the user clicks "Upravit" on another member's row, changes the SI card number or category, and submits the form
 - **THEN** the registration is updated with the new values
 - **AND** the registration time shown on that row is unchanged
@@ -418,7 +418,7 @@ Members SHALL be able to change their existing event registration (SI card numbe
 
 #### Scenario: Editing another member's registration without EVENTS:REGISTRATIONS is not possible
 
-- **WHEN** a member without EVENTS:REGISTRATIONS attempts to open or submit the edit form for another member's registration
+- **WHEN** a member without EVENTS:REGISTER_MEMBER attempts to open or submit the edit form for the registration of another member who is not their minor
 - **THEN** the edit action is not offered in the UI
 - **AND** a direct attempt to submit an edit for another member is refused
 
@@ -632,7 +632,7 @@ When registering for an event, a member SHALL be able to say whether they want t
 
 ### Requirement: Member Edits Their Shared Transport And Shared Accommodation Choices
 
-A member SHALL be able to change their shared transport and shared accommodation choices for an event they are registered for, under the same conditions that allow editing the registration (before the registration deadline and before the event date, for an ACTIVE event). Each choice is editable only when the event has the matching offer turned on. A user with the EVENTS:REGISTRATIONS authority SHALL be able to change these choices on another member's registration under the same conditions.
+A member SHALL be able to change their shared transport and shared accommodation choices for an event they are registered for, under the same conditions that allow editing the registration (before the registration deadline and before the event date, for an ACTIVE event). Each choice is editable only when the event has the matching offer turned on. A user with the EVENTS:REGISTER_MEMBER authority SHALL be able to change these choices on another member's registration under the same conditions.
 
 #### Scenario: Member turns on shared accommodation after registering
 
@@ -662,7 +662,7 @@ A member SHALL be able to change their shared transport and shared accommodation
 
 #### Scenario: User with EVENTS:REGISTRATIONS edits another member's choices
 
-- **GIVEN** a user with the EVENTS:REGISTRATIONS authority
+- **GIVEN** a user with the EVENTS:REGISTER_MEMBER authority
 - **AND** an ACTIVE event with the shared transport offer turned on and open editing
 - **WHEN** the user edits another member's registration and changes the shared transport choice
 - **THEN** the other member's registration reflects the new choice
@@ -721,7 +721,7 @@ The registration form (new registration and registration edit) SHALL be built fr
 
 ### Requirement: Member Adds Notes To Their Registration
 
-When registering for an event and when editing a registration, a member SHALL be able to fill in two optional free-text notes: "Interní poznámka", meant only for the club, and "Poznámka do ORIS", meant for the event organiser's registration in ORIS. Both notes are empty by default. The notes follow the same timing rules as the rest of the registration. A user with EVENTS:REGISTRATIONS SHALL be able to fill in and change both notes on any member's registration.
+When registering for an event and when editing a registration, a member SHALL be able to fill in two optional free-text notes: "Interní poznámka", meant only for the club, and "Poznámka do ORIS", meant for the event organiser's registration in ORIS. Both notes are empty by default. The notes follow the same timing rules as the rest of the registration. A user with EVENTS:REGISTER_MEMBER SHALL be able to fill in and change both notes on any member's registration.
 
 #### Scenario: Registration form offers both notes
 
@@ -757,19 +757,19 @@ When registering for an event and when editing a registration, a member SHALL be
 
 #### Scenario: User with EVENTS:REGISTRATIONS edits another member's notes
 
-- **GIVEN** a user with EVENTS:REGISTRATIONS and an ACTIVE event with an open registration window
+- **GIVEN** a user with EVENTS:REGISTER_MEMBER and an ACTIVE event with an open registration window
 - **WHEN** the user opens another member's registration, clicks "Upravit", changes both notes and saves
 - **THEN** the other member's registration shows the new notes
 - **AND** the member sees the new notes when they next open their registration
 
 ### Requirement: Registration Notes Are Shown Only On The Registration Detail
 
-Both notes SHALL be shown only on the registration detail and in the registration edit form, never in the registrations list. The notes SHALL be visible to the registered member, to users with EVENTS:REGISTRATIONS and to the event's coordinator. The coordinator sees them read-only. No other member SHALL see another member's notes.
+Both notes SHALL be shown only on the registration detail and in the registration edit form, never in the registrations list. The notes SHALL be visible to the registered member, to users with EVENTS:REGISTER_MEMBER and to the event's coordinator. The coordinator sees them read-only. No other member SHALL see another member's notes.
 
 #### Scenario: Registrations list does not show notes
 
 - **GIVEN** registrations of an event carry notes
-- **WHEN** any user, including the event coordinator and a user with EVENTS:REGISTRATIONS, views the registrations list of the event
+- **WHEN** any user, including the event coordinator and a user with EVENTS:REGISTER_MEMBER, views the registrations list of the event
 - **THEN** no note is shown in the list
 
 #### Scenario: Event coordinator reads the notes of a registration
@@ -781,7 +781,7 @@ Both notes SHALL be shown only on the registration detail and in the registratio
 
 #### Scenario: Other members do not see notes
 
-- **WHEN** a member without EVENTS:REGISTRATIONS who is not the event coordinator views the registrations of an event
+- **WHEN** a member without EVENTS:REGISTER_MEMBER who is not the event coordinator views the registrations of an event
 - **THEN** they cannot open another member's registration detail
 - **AND** they see no note of any other member
 
@@ -891,7 +891,7 @@ The registration form and the edit form SHALL follow the event's SI policy. When
 #### Scenario: Registration detail shows the rental request
 
 - **GIVEN** a member's registration records a rental request
-- **WHEN** the member, or a user with EVENTS:REGISTRATIONS, opens the registration detail
+- **WHEN** the member, or a user with EVENTS:REGISTER_MEMBER, opens the registration detail
 - **THEN** the detail shows that the member wants to rent an SI card
 
 ### Requirement: Registrations Entered In ORIS Appear In Klabis
@@ -978,19 +978,19 @@ Once a registration is matched with an ORIS entry, the system SHALL keep it in s
 
 ### Requirement: A Registration Removed From ORIS Is Kept And Marked
 
-When the ORIS entry matched with a registration disappears from ORIS, the system SHALL NOT delete the registration in Klabis. It SHALL mark the registration as "V ORISu nenalezena". The mark SHALL be shown on the registration detail and, to the event coordinator and users with EVENTS:REGISTRATIONS, in the registrations list. When the member is entered into the event in ORIS again, the mark SHALL disappear and the registration SHALL take the ORIS values.
+When the ORIS entry matched with a registration disappears from ORIS, the system SHALL NOT delete the registration in Klabis. It SHALL mark the registration as "V ORISu nenalezena". The mark SHALL be shown on the registration detail and, to the event coordinator and users with EVENTS:REGISTER_MEMBER, in the registrations list. When the member is entered into the event in ORIS again, the mark SHALL disappear and the registration SHALL take the ORIS values.
 
 #### Scenario: Entry deleted in ORIS stays in Klabis with a mark
 
 - **GIVEN** a registration matched with an ORIS entry
 - **WHEN** the registrar deletes the entry in ORIS
 - **THEN** after the next synchronisation run the registration is still listed in Klabis
-- **AND** the coordinator and users with EVENTS:REGISTRATIONS see it marked "V ORISu nenalezena"
+- **AND** the coordinator and users with EVENTS:REGISTER_MEMBER see it marked "V ORISu nenalezena"
 - **AND** the member sees the mark on the detail of their registration
 
 #### Scenario: Other members do not see the mark in the list
 
-- **WHEN** a member without EVENTS:REGISTRATIONS who is not the coordinator views the registrations list
+- **WHEN** a member without EVENTS:REGISTER_MEMBER who is not the coordinator views the registrations list
 - **THEN** no "V ORISu nenalezena" mark is shown on other members' rows
 
 #### Scenario: Entry re-created in ORIS removes the mark
@@ -1126,7 +1126,7 @@ For a registration matched with ORIS, the registration detail and the registrati
 
 ### Requirement: Registration Edit Dialog Offers Unregistering
 
-When a user edits a registration that they are allowed to cancel — their own, or any member's for a user with EVENTS:REGISTRATIONS — the edit dialog SHALL offer an "Odhlásit" action. Choosing it SHALL lead to the same confirmation of unregistering as elsewhere in the application; the registration is cancelled only after confirmation. The action is not offered when unregistering is not allowed.
+When a user edits a registration that they are allowed to cancel — their own, or any member's for a user with EVENTS:REGISTER_MEMBER — the edit dialog SHALL offer an "Odhlásit" action. Choosing it SHALL lead to the same confirmation of unregistering as elsewhere in the application; the registration is cancelled only after confirmation. The action is not offered when unregistering is not allowed.
 
 #### Scenario: Member unregisters from the edit dialog
 
@@ -1138,7 +1138,7 @@ When a user edits a registration that they are allowed to cancel — their own, 
 #### Scenario: Registration manager unregisters another member from the edit dialog
 
 - **GIVEN** a member is registered for an event for which unregistering is still allowed
-- **WHEN** a user with EVENTS:REGISTRATIONS opens the edit dialog of that member's registration from the registrations list and chooses "Odhlásit"
+- **WHEN** a user with EVENTS:REGISTER_MEMBER opens the edit dialog of that member's registration from the registrations list and chooses "Odhlásit"
 - **THEN** they are asked to confirm unregistering
 - **AND** after confirming, the registration is cancelled and the registrations list no longer shows the member
 
