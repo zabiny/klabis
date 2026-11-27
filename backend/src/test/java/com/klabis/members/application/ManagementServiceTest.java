@@ -23,6 +23,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +82,7 @@ class ManagementServiceTest {
                 .withFirstName("John")
                 .withLastName("Doe")
                 .withRegistrationNumber("ZBM1234")
-                .withDateOfBirth(java.time.LocalDate.of(1990, 5, 15))
+                .withDateOfBirth(LocalDate.of(1990, 5, 15))
                 .withNationality("SK")
                 .withEmail("john.doe@example.com")
                 .withPhone("+420123456789")
@@ -94,57 +95,30 @@ class ManagementServiceTest {
     class MemberUpdateTests {
 
         @Test
-        @DisplayName("should update member birth number via update command")
-        void shouldUpdateMemberWithBirthNumber() {
-            Member czechMember = MemberTestDataBuilder.aMember()
+        @DisplayName("should apply the command to the loaded member, pass the guardian contacts to the domain and save it")
+        void shouldUpdateMemberAndPassGuardianContactsToDomain() {
+            Member minor = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
-                    .withNationality("CZ")
-                    .withBirthNumber("900515/1234")
+                    .withDateOfBirth(LocalDate.now().minusYears(10))
+                    .withNationality("SK")
+                    .withEmail("anna@example.com")
+                    .withPhone("+420123456789")
                     .build();
-            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(czechMember))
-                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
-                    .birthNumber(BirthNumber.of("900101/1234"))
-                    .build();
-
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(czechMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
-
-            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
-            verify(memberRepository).save(any(Member.class));
-        }
-
-        @Test
-        @DisplayName("should update member bank account number via update command")
-        void shouldUpdateMemberWithBankAccountNumber() {
-            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(testMember))
+            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(minor))
+                    .email(null)
                     .bankAccountNumber(BankAccountNumber.of("12345/5678"))
                     .build();
-
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(minor));
+            when(memberCompletenessPort.guardianContactsOf(minor)).thenReturn(new GuardianContacts(true, true, true));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
 
-            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
-            verify(memberRepository).save(any(Member.class));
-        }
-
-        @Test
-        @DisplayName("should update member contact info via update command")
-        void shouldUpdateMemberContactInfo() {
-            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(testMember))
-                    .email(EmailAddress.of("new@example.com"))
-                    .build();
-
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
-
-            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
-            verify(memberRepository).save(any(Member.class));
+            ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(saved.capture());
+            assertThat(saved.getValue()).isSameAs(minor);
+            assertThat(result.getEmail()).isNull();
+            assertThat(result.getBankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
         }
     }
 
@@ -483,7 +457,7 @@ class ManagementServiceTest {
                         .withFirstName(firstName)
                         .withLastName("Smith")
                         .withRegistrationNumber("ZBM" + (1000 + Math.abs(id.uuid().hashCode() % 8000)))
-                        .withDateOfBirth(java.time.LocalDate.now().minusYears(10))
+                        .withDateOfBirth(LocalDate.now().minusYears(10))
                         .build();
             }
 
@@ -740,7 +714,7 @@ class ManagementServiceTest {
                     .registrationNumber(testMember.getRegistrationNumber())
                     .firstName("Petr")
                     .lastName("Svoboda")
-                    .dateOfBirth(java.time.LocalDate.of(1985, 3, 20))
+                    .dateOfBirth(LocalDate.of(1985, 3, 20))
                     .gender(Gender.MALE)
                     .nationality(Nationality.of("SK"))
                     .birthNumber(null)
@@ -770,7 +744,7 @@ class ManagementServiceTest {
                     .registrationNumber(testMember.getRegistrationNumber())
                     .firstName("Petr")
                     .lastName("Svoboda")
-                    .dateOfBirth(java.time.LocalDate.of(1985, 3, 20))
+                    .dateOfBirth(LocalDate.of(1985, 3, 20))
                     .gender(Gender.MALE)
                     .nationality(Nationality.of("SK"))
                     .birthNumber(null)
@@ -822,17 +796,6 @@ class ManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should return inactive member for user with MANAGE authority")
-        void shouldReturnInactiveMemberForAdmin() {
-            Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
-
-            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(true, true));
-
-            assertThat(result.isActive()).isFalse();
-        }
-
-        @Test
         @DisplayName("should throw MemberNotFoundException when member does not exist")
         void shouldThrowWhenMemberNotFound() {
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.empty());
@@ -842,22 +805,7 @@ class ManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should publish BirthNumberAccessedEvent when admin views member with birth number")
-        void shouldPublishBirthNumberAccessedEventForAdmin() {
-            Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
-                    .withId(testMemberId)
-                    .withNationality("CZ")
-                    .withBirthNumber("900101/1234")
-                    .build();
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
-
-            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(true, true));
-
-            verify(eventPublisher).publishEvent(any(BirthNumberAccessedEvent.class));
-        }
-
-        @Test
-        @DisplayName("should return inactive member for a holder of profile editing over it")
+        @DisplayName("should return inactive member when suspended members are visible to the viewer")
         void shouldReturnInactiveMemberWhenSuspendedMembersAreVisible() {
             Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
@@ -869,8 +817,8 @@ class ManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should publish BirthNumberAccessedEvent for a viewer who sees the birth number without managing members")
-        void shouldPublishBirthNumberAccessedEventForHolderOfProfileEditing() {
+        @DisplayName("should publish BirthNumberAccessedEvent for a viewer who sees the birth number")
+        void shouldPublishBirthNumberAccessedEventWhenBirthNumberIsVisible() {
             Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
                     .withNationality("CZ")

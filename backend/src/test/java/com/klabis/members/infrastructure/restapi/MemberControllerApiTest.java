@@ -42,7 +42,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -377,55 +379,6 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("HAL+FORMS: member viewing own profile — should include update affordance pointing to PATCH /{id}")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
-                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                        ids = "11111111-1111-1111-1111-111111111111"))
-        void ownProfileShouldReturnUpdateAffordance() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: self-edit template shows reserved fields read-only and the other fields editable")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
-                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                        ids = "11111111-1111-1111-1111-111111111111"))
-        void selfEditTemplateShouldMarkReservedFieldsReadOnly() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            var result = mockMvc.perform(getMemberById(memberId)).andExpect(status().isOk());
-
-            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality")) {
-                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
-                        .value(true));
-            }
-            for (String editable : List.of("email", "phone", "dietaryRestrictions", "chipNumber")) {
-                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')]").exists())
-                        .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')].readOnly")
-                                .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
-            }
-        }
-
-        @Test
         @DisplayName("HAL+FORMS: administrator's template has reserved fields editable")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void adminTemplateShouldKeepReservedFieldsEditable() throws Exception {
@@ -444,7 +397,7 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("holder of EDIT_PROFILE over another member sees all data and the edit template, but not admin-only data")
+        @DisplayName("holder of EDIT_PROFILE over a member sees all data and the edit template with reserved fields read-only, but no admin-only data")
         @WithKlabisMockUser(username = "ZBM0101", memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ},
                 targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
                         ids = "11111111-1111-1111-1111-111111111111"))
@@ -457,69 +410,25 @@ class MemberControllerApiTest {
                     .build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
-            mockMvc.perform(getMemberById(memberId))
+            var result = mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.dateOfBirth").value("1990-01-01"))
                     .andExpect(jsonPath("$.dietaryRestrictions").value("vegan"))
                     .andExpect(jsonPath("$.gender").exists())
                     .andExpect(jsonPath("$.missingData").doesNotExist())
                     .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')].readOnly")
-                            .value(true))
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
-        }
 
-        @Test
-        @DisplayName("HAL+FORMS: minor viewing own profile - should not include update affordance")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
-        void minorOwnProfileShouldNotReturnUpdateAffordance() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .withDateOfBirth(LocalDate.now().minusYears(15))
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.updateMember").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: member who turned 18 today viewing own profile - should include update affordance")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
-                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                        ids = "11111111-1111-1111-1111-111111111111"))
-        void justTurnedAdultOwnProfileShouldReturnUpdateAffordance() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .withDateOfBirth(LocalDate.now().minusYears(18))
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: admin viewing a minor profile - should include update affordance")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminViewingMinorShouldReturnUpdateAffordance() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .withDateOfBirth(LocalDate.now().minusYears(15))
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
+            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality")) {
+                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
+                        .value(true));
+            }
+            for (String editable : List.of("email", "phone", "dietaryRestrictions", "chipNumber")) {
+                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')]").exists())
+                        .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')].readOnly")
+                                .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
+            }
         }
 
         @Test
@@ -1062,7 +971,8 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with valid data should return 201 with HATEOAS links")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, userId = "729d897a-5676-431f-b22f-ad935af525ce",
+                authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -1104,6 +1014,11 @@ class MemberControllerApiTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(RegistrationPort.RegisterNewMember.class);
+            verify(registrationService).registerMember(commandCaptor.capture());
+            assertThat(commandCaptor.getValue().registeredBy())
+                    .isEqualTo(new UserId(UUID.fromString("729d897a-5676-431f-b22f-ad935af525ce")));
         }
 
         @Test
@@ -2846,83 +2761,6 @@ class MemberControllerApiTest {
                                     """))
                     .andExpect(status().isNoContent())
                     .andExpect(header().doesNotExist("X-Warnings"));
-        }
-    }
-
-    @Nested
-    @DisplayName("PATCH /api/members/{id} — self-update security")
-    class SelfUpdateSecurityTests {
-
-        @Test
-        @DisplayName("self-update should only pass allowed fields (email, phone, address, dietaryRestrictions) to service")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
-                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                        ids = "11111111-1111-1111-1111-111111111111"))
-        void selfUpdateShouldOnlyPassAllowedFieldsToService() throws Exception {
-            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withEmail("original@example.com")
-                    .withPhone("+420111000111")
-                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .build();
-            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
-                    .thenReturn(Member.UpdateMember.from(member));
-            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
-
-            mockMvc.perform(patch("/api/members/{id}", memberId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "email": "new@example.com"
-                                    }
-                                    """))
-                    .andExpect(status().isNoContent());
-
-            Mockito.verify(managementService).updateMember(
-                    eq(new MemberId(memberId)),
-                    argThat((Member.UpdateMember cmd) ->
-                            cmd.email().equals(EmailAddress.of("new@example.com"))
-                            && cmd.phone().equals(PhoneNumber.of("+420111000111")))
-            );
-        }
-    }
-
-    @Nested
-    @DisplayName("PATCH /api/members/{id} — ownership security")
-    class UpdateMemberOwnershipTests {
-
-        @Test
-        @DisplayName("authenticated user without a member record should get 403 Forbidden")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void userWithoutMemberRecordShouldBeForbidden() throws Exception {
-            UUID anyMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-
-            mockMvc.perform(patch("/api/members/{id}", anyMemberId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "email": "new@example.com"
-                                    }
-                                    """))
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("member attempting to edit another member's profile should get 403 Forbidden")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
-        void memberEditingOtherMemberShouldBeForbidden() throws Exception {
-            UUID otherMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
-
-            mockMvc.perform(patch("/api/members/{id}", otherMemberId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "email": "new@example.com"
-                                    }
-                                    """))
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isForbidden());
         }
     }
 

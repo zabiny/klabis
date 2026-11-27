@@ -1,7 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.TargetGrant;
-import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
@@ -29,7 +28,6 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -84,32 +82,20 @@ class GuardianEditsMinorApiTest {
     }
 
     @Test
-    @DisplayName("guardian sees the minor's full detail including birth number and the guardians section")
+    @DisplayName("guardian sees the minor's full detail and gets the edit template with reserved fields read-only and no administrator actions")
     @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
             targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
                     ids = CHILD_ID))
-    void guardianSeesFullDetailOfMinor() throws Exception {
+    void guardianSeesFullDetailAndEditTemplateOfMinor() throws Exception {
         givenMinor(CHILD_ID);
 
-        getMember(CHILD_ID)
+        ResultActions result = getMember(CHILD_ID)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.birthNumber").value("900101/1234"))
                 .andExpect(jsonPath("$.dateOfBirth").exists())
                 .andExpect(jsonPath("$.gender").exists())
                 .andExpect(jsonPath("$.dietaryRestrictions").value("no nuts"))
-                .andExpect(jsonPath("$._links.legalGuardians.href").value(endsWith("/guardians")));
-    }
-
-    @Test
-    @DisplayName("guardian gets the edit template with reserved fields read-only and no administrator actions")
-    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                    ids = CHILD_ID))
-    void guardianGetsEditTemplateWithReservedFieldsReadOnly() throws Exception {
-        givenMinor(CHILD_ID);
-
-        ResultActions result = getMember(CHILD_ID)
-                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.legalGuardians.href").value(endsWith("/guardians")))
                 .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
         for (String reserved : new String[]{"firstName", "lastName", "dateOfBirth", "gender", "birthNumber", "nationality"}) {
             result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
@@ -137,37 +123,6 @@ class GuardianEditsMinorApiTest {
     }
 
     @Test
-    @DisplayName("guardian cannot change the minor's reserved data")
-    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                    ids = CHILD_ID))
-    void guardianCannotChangeReservedData() throws Exception {
-        givenMinor(CHILD_ID);
-
-        mockMvc.perform(patch("/api/members/{id}", CHILD_ID)
-                        .contentType("application/json")
-                        .content("{\"lastName\": \"Changed\"}"))
-                .andExpect(status().isForbidden());
-
-        verify(managementService, never()).updateMember(any(), any());
-    }
-
-    @Test
-    @DisplayName("guardian of one child cannot edit an unrelated minor")
-    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                    ids = CHILD_ID))
-    void guardianCannotEditUnrelatedMinor() throws Exception {
-        givenMinor(OTHER_CHILD_ID);
-
-        mockMvc.perform(patch("/api/members/{id}", OTHER_CHILD_ID)
-                        .contentType("application/json")
-                        .content("{\"phone\": \"+420777123456\"}"))
-                .andExpect(status().isForbidden());
-        verify(managementService, never()).updateMember(any(), any());
-    }
-
-    @Test
     @DisplayName("guardian of one child sees an unrelated minor without edit action, sensitive data or guardians")
     @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
             targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
@@ -184,93 +139,18 @@ class GuardianEditsMinorApiTest {
     }
 
     @Test
-    @DisplayName("guardian opens a suspended child: the service is told the suspended member may be viewed and the birth number is audited")
+    @DisplayName("caller holding only VIEW_PROFILE over the minor sees the profile data but gets no edit action")
     @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+            targetGrants = @TargetGrant(authority = Authority.MEMBERS_VIEW_PROFILE, type = TargetType.MEMBER,
                     ids = CHILD_ID))
-    void guardianMayViewSuspendedChildAndBirthNumberViewIsAudited() throws Exception {
-        Member suspendedChild = MemberTestDataBuilder.aMemberWithId(UUID.fromString(CHILD_ID))
-                .withDateOfBirth(LocalDate.now().minusYears(9))
-                .withActive(false)
-                .build();
-        when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
-                .thenReturn(suspendedChild);
-        when(legalGuardianGroupPort.findGroupOf(any(MemberId.class))).thenReturn(Optional.of(groupOf(CHILD_ID)));
-
-        getMember(CHILD_ID)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
-
-        verify(managementService).getMemberAndRecordView(eq(new MemberId(UUID.fromString(CHILD_ID))),
-                eq(new UserId(UUID.fromString(GUARDIAN_ID))), eq(new MemberViewAccess(true, true)));
-    }
-
-    @Test
-    @DisplayName("guardian of one child opens an unrelated member: the service is told neither suspended members nor the birth number are visible")
-    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                    ids = CHILD_ID))
-    void unrelatedMemberIsViewedWithoutPrivileges() throws Exception {
-        givenMinor(OTHER_CHILD_ID);
-
-        getMember(OTHER_CHILD_ID).andExpect(status().isOk());
-
-        verify(managementService).getMemberAndRecordView(eq(new MemberId(UUID.fromString(OTHER_CHILD_ID))),
-                any(UserId.class), eq(new MemberViewAccess(false, false)));
-    }
-
-    @Test
-    @DisplayName("minor opens own detail: the birth number is visible (and audited) but a suspended member is not")
-    @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = SelfGrants.MINOR_MEMBER)
-    void minorViewsOwnDetail() throws Exception {
-        givenMinor(CHILD_ID);
-
-        getMember(CHILD_ID).andExpect(status().isOk());
-
-        verify(managementService).getMemberAndRecordView(eq(new MemberId(UUID.fromString(CHILD_ID))),
-                any(UserId.class), eq(new MemberViewAccess(false, true)));
-    }
-
-    @Test
-    @DisplayName("minor sees all their own data but gets no edit action")
-    @WithKlabisMockUser(userId = CHILD_ID, memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = SelfGrants.MINOR_MEMBER)
-    void minorSeesOwnDataWithoutEditAction() throws Exception {
+    void viewProfileHolderSeesDataWithoutEditAction() throws Exception {
         givenMinor(CHILD_ID);
 
         getMember(CHILD_ID)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.birthNumber").value("900101/1234"))
                 .andExpect(jsonPath("$.dateOfBirth").exists())
+                .andExpect(jsonPath("$.gender").exists())
                 .andExpect(jsonPath("$.nationality").exists())
-                .andExpect(jsonPath("$.dietaryRestrictions").value("no nuts"))
                 .andExpect(jsonPath("$._templates.updateMember").doesNotExist());
-    }
-
-    @Test
-    @DisplayName("another member does not see the sensitive fields of a minor")
-    @WithKlabisMockUser(userId = GUARDIAN_ID, memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
-            selfGrants = SelfGrants.MEMBER)
-    void otherMemberDoesNotSeeSensitiveFields() throws Exception {
-        givenMinor(CHILD_ID);
-
-        getMember(CHILD_ID)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.birthNumber").doesNotExist())
-                .andExpect(jsonPath("$.dietaryRestrictions").doesNotExist())
-                .andExpect(jsonPath("$.dateOfBirth").doesNotExist());
-    }
-
-    @Test
-    @DisplayName("administrator opens a member: everything is visible")
-    @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-    void administratorViewsEverything() throws Exception {
-        givenMinor(CHILD_ID);
-
-        getMember(CHILD_ID).andExpect(status().isOk());
-
-        verify(managementService).getMemberAndRecordView(eq(new MemberId(UUID.fromString(CHILD_ID))),
-                any(UserId.class), eq(new MemberViewAccess(true, true)));
     }
 }

@@ -197,22 +197,19 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('SKI2601')).toBeInTheDocument();
     });
 
-    it('renders "Aktivní" badge when member is active', () => {
-        renderPage(createMockPageData(mockMemberDetailData({active: true})));
-        expect(screen.getByText('Aktivní')).toBeInTheDocument();
-    });
-
-    it('renders "Neaktivní" badge when member is inactive', () => {
-        renderPage(createMockPageData(mockMemberDetailData({active: false})));
-        expect(screen.getByText('Neaktivní')).toBeInTheDocument();
-    });
-
-    it('shows no active/inactive badge when caller lacks the field (active absent from response)', () => {
-        const data = mockMemberDetailData();
-        delete (data as Record<string, unknown>).active;
-        renderPage(createMockPageData(data));
-        expect(screen.queryByText('Aktivní')).not.toBeInTheDocument();
-        expect(screen.queryByText('Neaktivní')).not.toBeInTheDocument();
+    it.each([
+        ['active', true, 'Aktivní'],
+        ['inactive', false, 'Neaktivní'],
+        ['absent from the response', undefined, null],
+    ])('renders the active/inactive badge when member is %s', (_label, active, badge) => {
+        renderPage(createMockPageData(mockMemberDetailData({active})));
+        for (const text of ['Aktivní', 'Neaktivní']) {
+            if (text === badge) {
+                expect(screen.getByText(text)).toBeInTheDocument();
+            } else {
+                expect(screen.queryByText(text)).not.toBeInTheDocument();
+            }
+        }
     });
 
     it('shows contact section', () => {
@@ -222,61 +219,21 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('+420777123456')).toBeInTheDocument();
     });
 
-    describe('displayContact', () => {
-        const minorViaGuardian = {
+    it('minor via guardian as admin shows marker with guardian name per field', () => {
+        renderPage(createMockPageData(mockMemberDetailData({
             email: 'raw-should-not-show@email.cz',
             phone: undefined,
             displayContact: {
                 email: {value: 'jan.zastupce@email.cz', fromGuardian: true, guardianName: 'Jan Novák'},
                 phone: {value: '+420111222333', fromGuardian: true, guardianName: 'Eva Svobodová'},
             },
-        };
-
-        it('adult shows own contact without guardian marker', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
-        });
-
-        it('minor with own contact shows it without marker', () => {
-            renderPage(createMockPageData(mockMemberDetailData({
-                displayContact: {
-                    email: {value: 'maly@email.cz', fromGuardian: false},
-                    phone: {value: '+420999888777', fromGuardian: false},
-                },
-            })));
-            expect(screen.getByText('maly@email.cz')).toBeInTheDocument();
-            expect(screen.getByText('+420999888777')).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
-        });
-
-        it('minor via guardian as admin shows marker with guardian name per field', () => {
-            renderPage(createMockPageData(mockMemberDetailData(minorViaGuardian)));
-            expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
-            expect(screen.getByText('+420111222333')).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Jan Novák)'})).toBeInTheDocument();
-            expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Eva Svobodová)'})).toBeInTheDocument();
-            expect(screen.queryByText('raw-should-not-show@email.cz')).not.toBeInTheDocument();
-        });
-
-        it('minor via guardian as regular user shows only value', () => {
-            renderPage(createMockPageData(mockMemberDetailData({
-                ...minorViaGuardian,
-                displayContact: {
-                    email: {value: 'jan.zastupce@email.cz'},
-                    phone: {value: '+420111222333'},
-                },
-            })));
-            expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
-            expect(screen.getByText('+420111222333')).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
-        });
-
-        it('shows dash when no contact value exists', () => {
-            renderPage(createMockPageData(mockMemberDetailData({displayContact: {}})));
-            expect(screen.queryByText('jan.novak@email.cz')).not.toBeInTheDocument();
-        });
+        })));
+        expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
+        expect(screen.getByText('+420111222333')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Jan Novák)'})).toBeInTheDocument();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Eva Svobodová)'})).toBeInTheDocument();
+        expect(screen.queryByText('raw-should-not-show@email.cz')).not.toBeInTheDocument();
     });
 
     it('shows address section', () => {
@@ -320,8 +277,11 @@ describe('MemberDetailPage', () => {
     });
 
     describe('missing data warning', () => {
-        it('shows no warning for a complete member (missingData empty or absent)', () => {
-            renderPage(createMockPageData(mockMemberDetailData({missingData: []})));
+        it.each([
+            ['empty', []],
+            ['absent from the response', undefined],
+        ])('shows no warning when missingData is %s', (_label, missingData) => {
+            renderPage(createMockPageData(mockMemberDetailData({missingData})));
             expect(screen.queryByText(/^Chybí:/)).not.toBeInTheDocument();
         });
 
@@ -330,13 +290,6 @@ describe('MemberDetailPage', () => {
                 missingData: ['BIRTH_NUMBER', 'GUARDIAN'],
             })));
             expect(screen.getByText('Chybí: rodné číslo, zákonný zástupce')).toBeInTheDocument();
-        });
-
-        it('shows no warning when caller lacks the field (missingData absent from response)', () => {
-            const data = mockMemberDetailData();
-            delete (data as Record<string, unknown>).missingData;
-            renderPage(createMockPageData(data));
-            expect(screen.queryByText(/^Chybí:/)).not.toBeInTheDocument();
         });
     });
 
@@ -351,8 +304,9 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
     });
 
-    it('does NOT show the legal guardians section for an adult without the link', () => {
-        renderPage(createMockPageData(mockMemberDetailData()));
+    it('does NOT show the legal guardians section without the link, even for a minor', () => {
+        const minorBirthYear = new Date().getFullYear() - 10;
+        renderPage(createMockPageData(mockMemberDetailData({dateOfBirth: `${minorBirthYear}-01-01`})));
         expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
     });
 
@@ -367,17 +321,6 @@ describe('MemberDetailPage', () => {
         expect(screen.getByRole('button', {name: 'Upravit zástupce'})).toBeInTheDocument();
     });
 
-    it('does not derive the guardians section from the date of birth', () => {
-        const year = new Date().getFullYear() - 10;
-        renderPage(createMockPageData(mockMemberDetailData({dateOfBirth: `${year}-01-01`})));
-        expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
-    });
-
-    it('offers "Upravit zástupce" only with the setMemberLegalGuardians template', () => {
-        renderPage(createMockPageData(mockMemberDetailData()));
-        expect(screen.queryByRole('button', {name: 'Upravit zástupce'})).not.toBeInTheDocument();
-    });
-
     it('shows birth number masked when nationality is CZ (self view)', () => {
         const data = mockMemberDetailData({
             nationality: 'CZ',
@@ -389,14 +332,16 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText(/••••••\/••••/)).toBeInTheDocument();
     });
 
-    it('reveals birth number without double slash when backend already includes slash', async () => {
+    it.each([
+        ['backend already includes the slash', '900515/0123'],
+        ['backend returns it without the slash', '9005150123'],
+    ])('reveals birth number as 900515/0123 when %s', async (_label, birthNumber) => {
         const user = userEvent.setup();
-        const data = mockMemberDetailData({
+        renderPage(createMockPageData(mockMemberDetailData({
             nationality: 'CZ',
-            birthNumber: '900515/0123',
+            birthNumber,
             _templates: {updateMember: selfEditTemplate},
-        });
-        renderPage(createMockPageData(data));
+        })));
 
         await user.click(screen.getByRole('button', {name: /zobrazit/i}));
 
@@ -404,99 +349,48 @@ describe('MemberDetailPage', () => {
         expect(screen.queryByText('900515//0123')).not.toBeInTheDocument();
     });
 
-    it('reveals birth number with slash inserted when backend returns without slash', async () => {
-        const user = userEvent.setup();
-        const data = mockMemberDetailData({
-            nationality: 'CZ',
-            birthNumber: '9005150123',
+    it.each([
+        ['nationality is not CZ', 'SK', '9003151234'],
+        ['nationality is CZ but birthNumber is null', 'CZ', null],
+    ])('does NOT show birth number when %s (view mode)', (_label, nationality, birthNumber) => {
+        renderPage(createMockPageData(mockMemberDetailData({
+            nationality,
+            birthNumber,
             _templates: {updateMember: selfEditTemplate},
-        });
-        renderPage(createMockPageData(data));
-
-        await user.click(screen.getByRole('button', {name: /zobrazit/i}));
-
-        expect(screen.getByText('900515/0123')).toBeInTheDocument();
-    });
-
-    it('does NOT show birth number when nationality is not CZ (self view)', () => {
-        const data = mockMemberDetailData({
-            nationality: 'SK',
-            birthNumber: '9003151234',
-            _templates: {updateMember: selfEditTemplate},
-        });
-        renderPage(createMockPageData(data));
+        })));
         expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
     });
 
-    it('does NOT show birth number when nationality is CZ but birthNumber is null (view mode)', () => {
-        const data = mockMemberDetailData({
-            nationality: 'CZ',
-            birthNumber: null,
-            _templates: {updateMember: selfEditTemplate},
+    describe('deactivation section', () => {
+        it('shows reason, note and the deactivating user for an inactive member', () => {
+            const deactivatedByUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+            renderPage(createMockPageData(mockMemberDetailData({
+                active: false,
+                suspensionReason: 'ODHLASKA',
+                suspendedAt: '2025-06-15',
+                suspensionNote: 'Osobní důvody',
+                suspendedBy: deactivatedByUuid,
+            })));
+            expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
+            expect(screen.getByText('Odhlášení')).toBeInTheDocument();
+            expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
+            expect(screen.getByText('Deaktivoval/a')).toBeInTheDocument();
+            expect(screen.getByText(deactivatedByUuid)).toBeInTheDocument();
         });
-        renderPage(createMockPageData(data));
-        expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
-    });
 
-    it('shows deactivation section when member is inactive', () => {
-        const data = mockMemberDetailData({
-            active: false,
-            suspensionReason: 'ODHLASKA',
-            suspendedAt: '2025-06-15',
-            suspensionNote: 'Osobní důvody',
+        it.each([
+            ['inactive without note and deactivating user', {active: false, suspensionReason: 'PRESTUP', suspendedAt: '2025-06-15'}, true],
+            ['inactive without reason', {active: false, suspensionReason: undefined, suspendedAt: '2025-06-15'}, true],
+            ['active', {active: true}, false],
+        ])('shows the section only for an inactive member (%s)', (_label, overrides, visible) => {
+            renderPage(createMockPageData(mockMemberDetailData(overrides)));
+            if (visible) {
+                expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
+                expect(screen.queryByText('Deaktivoval/a')).not.toBeInTheDocument();
+            } else {
+                expect(screen.queryByText('DEAKTIVACE')).not.toBeInTheDocument();
+            }
         });
-        renderPage(createMockPageData(data));
-        expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
-        expect(screen.getByText('Odhlášení')).toBeInTheDocument();
-        expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
-    });
-
-    it('shows deactivatedBy when present for inactive member', () => {
-        const deactivatedByUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-        const data = mockMemberDetailData({
-            active: false,
-            suspendedAt: '2025-06-15',
-            suspendedBy: deactivatedByUuid,
-        });
-        renderPage(createMockPageData(data));
-        expect(screen.getByText('Deaktivoval/a')).toBeInTheDocument();
-        expect(screen.getByText(deactivatedByUuid)).toBeInTheDocument();
-    });
-
-    it('does NOT show deactivatedBy label when deactivatedBy is absent', () => {
-        const data = mockMemberDetailData({
-            active: false,
-            suspendedAt: '2025-06-15',
-            suspendedBy: undefined,
-        });
-        renderPage(createMockPageData(data));
-        expect(screen.queryByText('Deaktivoval/a')).not.toBeInTheDocument();
-    });
-
-    it('shows deactivation section when member is inactive even without deactivation note', () => {
-        const data = mockMemberDetailData({
-            active: false,
-            suspensionReason: 'PRESTUP',
-            suspendedAt: '2025-06-15',
-        });
-        renderPage(createMockPageData(data));
-        expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
-        expect(screen.getByText('Přestup')).toBeInTheDocument();
-    });
-
-    it('shows deactivation section when member is inactive even without deactivation reason', () => {
-        const data = mockMemberDetailData({
-            active: false,
-            suspensionReason: undefined,
-            suspendedAt: '2025-06-15',
-        });
-        renderPage(createMockPageData(data));
-        expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
-    });
-
-    it('does NOT show deactivation section when member is active', () => {
-        renderPage(createMockPageData(mockMemberDetailData({active: true})));
-        expect(screen.queryByText('DEAKTIVACE')).not.toBeInTheDocument();
     });
 
     describe('other member view (no template)', () => {
@@ -528,25 +422,6 @@ describe('MemberDetailPage', () => {
             expect(screen.getByText('ADRESA')).toBeInTheDocument();
             expect(screen.getByText('DOPLŇKOVÉ INFORMACE')).toBeInTheDocument();
             expect(screen.getByText('DOKLADY A LICENCE')).toBeInTheDocument();
-        });
-
-        it('shows "Upravit profil" button when template exists', () => {
-            const data = mockMemberDetailData({
-                _templates: {updateMember: selfEditTemplate},
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
-        });
-
-        it('shows "Ukončit členství" button when suspendMember template exists', () => {
-            const data = mockMemberDetailData({
-                _templates: {
-                    updateMember: adminEditTemplate,
-                    suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
         });
 
         it('tells in the suspension form that a guardian with another guardian is removed from the guardians', async () => {
@@ -608,34 +483,6 @@ describe('MemberDetailPage', () => {
             expect(screen.getByText(/aktivační odkaz/i)).toBeInTheDocument();
         });
 
-        it('does NOT show "Založit účet" button without sendMemberAccountActivation template', () => {
-            const data = mockMemberDetailData({_templates: {updateMember: adminEditTemplate}});
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('button', {name: /založit účet/i})).not.toBeInTheDocument();
-        });
-
-        it('shows "Oprávnění" button when permissions link exists', () => {
-            const data = mockMemberDetailData({
-                _templates: {updateMember: adminEditTemplate},
-                _links: {
-                    self: {href: '/api/members/123'},
-                    permissions: {href: '/api/members/123/permissions'},
-                },
-            });
-            const pageData = createMockPageData(data, {
-            });
-            renderPage(pageData);
-            expect(screen.getByRole('button', {name: /oprávnění/i})).toBeInTheDocument();
-        });
-
-        it('does NOT show "Oprávnění" button when permissions link missing', () => {
-            const data = mockMemberDetailData({
-                _templates: {updateMember: adminEditTemplate},
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
-        });
-
         it('shows "Reaktivace člena" as dialog title when resumeMember button is clicked', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
@@ -653,21 +500,80 @@ describe('MemberDetailPage', () => {
         });
     });
 
-    describe('edit mode', () => {
-        it('shows action bar at bottom of content with "Uložit změny" and "Zrušit"', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                _templates: {updateMember: adminEditTemplate},
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /zrušit/i})).toBeInTheDocument();
+    describe('action buttons are shown iff the resource offers the link or template', () => {
+        const selfHref = '/api/members/123e4567-e89b-12d3-a456-426614174000';
+        const withLink = (rel: string, overrides: Record<string, unknown> = {}) => mockMemberDetailData({
+            _links: {self: {href: selfHref}, [rel]: {href: `${selfHref}/${rel}`}},
+            ...overrides,
         });
 
-        it('switches fields to editable inputs when editing with admin template', async () => {
+        it.each<[string, () => HalResponse, string | RegExp, boolean]>([
+            ['Založit účet with the sendMemberAccountActivation template',
+                () => mockMemberDetailData({_templates: {sendMemberAccountActivation: mockHalFormsTemplate({title: 'x'})}}), /založit účet/i, true],
+            ['Založit účet without the template',
+                () => mockMemberDetailData({_templates: {updateMember: adminEditTemplate}}), /založit účet/i, false],
+            ['Oprávnění with the permissions link',
+                () => withLink('permissions', {_templates: {updateMember: adminEditTemplate}}), /oprávnění/i, true],
+            ['Oprávnění without the link',
+                () => mockMemberDetailData({_templates: {updateMember: adminEditTemplate}}), /oprávnění/i, false],
+            ['Změnit heslo with the changePassword link',
+                () => withLink('changePassword'), /změnit heslo/i, true],
+            ['Změnit heslo without the link',
+                () => mockMemberDetailData(), /změnit heslo/i, false],
+            ['Účet with the account link',
+                () => withLink('account'), labels.finance.openMemberAccount, true],
+            ['Účet without the link',
+                () => mockMemberDetailData(), labels.finance.openMemberAccount, false],
+            ['Členské příspěvky with the feeHistory link of an active member',
+                () => withLink('feeHistory', {active: true}), 'Členské příspěvky', true],
+            ['Členské příspěvky with the feeHistory link when active is absent',
+                () => withLink('feeHistory', {active: undefined}), 'Členské příspěvky', true],
+            ['Členské příspěvky without the link',
+                () => mockMemberDetailData({active: true}), 'Členské příspěvky', false],
+            ['Členské příspěvky for an inactive member',
+                () => withLink('feeHistory', {active: false}), 'Členské příspěvky', false],
+        ])('%s', (_title, buildData, name, visible) => {
+            renderPage(createMockPageData(buildData()));
+            const button = screen.queryByRole('button', {name});
+            if (visible) {
+                expect(button).toBeInTheDocument();
+            } else {
+                expect(button).not.toBeInTheDocument();
+            }
+        });
+
+        it.each([
+            ['the sync link is present', true],
+            ['the sync link is absent', false],
+        ])('mounts the sync status indicator only when %s', (_label, hasSync) => {
+            renderPage(createMockPageData(hasSync ? withLink('sync') : mockMemberDetailData()));
+            if (hasSync) {
+                expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+            } else {
+                expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            }
+        });
+
+        it('navigates to the fee history resource when clicked', async () => {
+            const feeHistoryLink = {href: '/api/members/123/fee-history'};
+            const data = mockMemberDetailData({
+                active: true,
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeHistory: feeHistoryLink,
+                },
+            });
+            const pageData = createMockPageData(data, {
+                getResourceLink: vi.fn().mockReturnValue(feeHistoryLink),
+            });
+            renderPage(pageData);
+            await userEvent.click(screen.getByRole('button', {name: 'Členské příspěvky'}));
+            expect(pageData.navigateToResource).toHaveBeenCalledWith(feeHistoryLink);
+        });
+    });
+
+    describe('edit mode', () => {
+        it('switches fields to editable inputs with the action bar and leaves edit mode on "Zrušit"', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
                 _templates: {updateMember: adminEditTemplate},
@@ -680,17 +586,7 @@ describe('MemberDetailPage', () => {
 
             expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Novák')).toBeInTheDocument();
-        });
-
-        it('clicking "Zrušit" exits edit mode', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                _templates: {updateMember: adminEditTemplate},
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', {name: /zrušit/i}));
 
@@ -724,47 +620,26 @@ describe('MemberDetailPage', () => {
             expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
         });
 
-        it('shows localized gender label "Muž" instead of raw "MALE" when editing', async () => {
+        it('renders address sub-fields as editable inputs when address is in template', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                gender: 'MALE',
-                _templates: {updateMember: selfEditTemplate},
+                _templates: {
+                    updateMember: {
+                        method: 'PUT' as const,
+                        properties: [
+                            {name: 'firstName', type: 'text'},
+                            {name: 'address', type: 'AddressRequest'},
+                        ],
+                    },
+                },
             });
             renderPage(createMockPageData(data));
 
             await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
-            expect(screen.getByText('Muž')).toBeInTheDocument();
-            expect(screen.queryByText('MALE')).not.toBeInTheDocument();
-        });
-
-        it('shows localized gender label "Žena" instead of raw "FEMALE" when editing', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                gender: 'FEMALE',
-                _templates: {updateMember: selfEditTemplate},
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            expect(screen.getByText('Žena')).toBeInTheDocument();
-            expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
-        });
-
-        it('shows a gender select when the edit template includes gender (admin)', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                gender: 'MALE',
-                _templates: {updateMember: adminEditTemplateWithGender},
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            const genderSelect = document.querySelector('select[name="gender"]');
-            expect(genderSelect).toBeInTheDocument();
-            expect(genderSelect).toHaveValue('MALE');
+            expect(screen.getByDisplayValue('Hlavní 15')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Praha')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('11000')).toBeInTheDocument();
         });
 
         describe('self-edit template with reserved fields marked readOnly', () => {
@@ -780,13 +655,12 @@ describe('MemberDetailPage', () => {
 
                 await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
+                expect(screen.getByLabelText('E-mail')).toBeInTheDocument();
                 expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
                 expect(screen.queryByDisplayValue('Novák')).not.toBeInTheDocument();
-                expect(document.querySelector('[name="firstName"]')).not.toBeInTheDocument();
-                expect(document.querySelector('[name="lastName"]')).not.toBeInTheDocument();
-                expect(document.querySelector('[name="dateOfBirth"]')).not.toBeInTheDocument();
-                expect(document.querySelector('[name="gender"]')).not.toBeInTheDocument();
-                expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+                for (const label of ['Jméno', 'Příjmení', 'Datum narození', 'Pohlaví', 'Rodné číslo']) {
+                    expect(screen.queryByLabelText(label)).not.toBeInTheDocument();
+                }
             });
 
             it('still displays the reserved values, localized, while editing', async () => {
@@ -861,12 +735,12 @@ describe('MemberDetailPage', () => {
 
                 await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
-                expect(document.querySelector('[name="nationality"]')).not.toBeInTheDocument();
+                expect(screen.queryByLabelText('Státní příslušnost')).not.toBeInTheDocument();
                 expect(screen.queryByDisplayValue('CZ')).not.toBeInTheDocument();
                 expect(screen.getAllByText('Česko').length).toBeGreaterThan(0);
                 expect(screen.queryByText('CZ')).not.toBeInTheDocument();
                 expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
-                expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+                expect(screen.queryByLabelText('Rodné číslo')).not.toBeInTheDocument();
             });
 
             it('hides birth number for a non-CZ nationality shown read-only', async () => {
@@ -908,7 +782,7 @@ describe('MemberDetailPage', () => {
         });
 
         describe('admin edit template', () => {
-            it('sends reserved fields in the body when they are editable', async () => {
+            it('shows a gender select and sends reserved fields in the body when they are editable', async () => {
                 const user = userEvent.setup();
                 const mutate = vi.fn();
                 vi.mocked(useAuthorizedMutation).mockReturnValue({
@@ -923,6 +797,7 @@ describe('MemberDetailPage', () => {
                 })));
 
                 await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+                expect(screen.getByRole('combobox', {name: 'Pohlaví'})).toHaveValue('MALE');
                 await user.click(screen.getByRole('button', {name: /uložit změny/i}));
 
                 await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
@@ -931,93 +806,31 @@ describe('MemberDetailPage', () => {
             });
         });
 
-        describe('birth number conditional on nationality in edit mode', () => {
-            it('shows birth number input when nationality is CZ in edit mode', async () => {
-                const user = userEvent.setup();
-                const data = mockMemberDetailData({
-                    nationality: 'CZ',
-                    birthNumber: '9003151234',
-                    _templates: {updateMember: adminEditTemplateWithNationality},
-                });
-                renderPage(createMockPageData(data));
-
-                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+        it('hides birth number field and clears value when nationality changes from CZ to non-CZ', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                nationality: 'CZ',
+                birthNumber: '9003151234',
+                _templates: {updateMember: adminEditTemplateWithNationality},
             });
+            renderPage(createMockPageData(data));
 
-            it('hides birth number input when nationality is non-CZ in edit mode', async () => {
-                const user = userEvent.setup();
-                const data = mockMemberDetailData({
-                    nationality: 'SK',
-                    birthNumber: null,
-                    _templates: {updateMember: adminEditTemplateWithNationality},
-                });
-                renderPage(createMockPageData(data));
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
-                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+            expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('9003151234')).toBeInTheDocument();
 
-                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
-            });
+            const nationalityInput = screen.getByDisplayValue('CZ');
+            await user.clear(nationalityInput);
+            await user.type(nationalityInput, 'SK');
 
-            it('hides birth number field and clears value when nationality changes from CZ to non-CZ', async () => {
-                const user = userEvent.setup();
-                const data = mockMemberDetailData({
-                    nationality: 'CZ',
-                    birthNumber: '9003151234',
-                    _templates: {updateMember: adminEditTemplateWithNationality},
-                });
-                renderPage(createMockPageData(data));
-
-                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
-                expect(screen.getByDisplayValue('9003151234')).toBeInTheDocument();
-
-                const nationalityInput = screen.getByDisplayValue('CZ');
-                await user.clear(nationalityInput);
-                await user.type(nationalityInput, 'SK');
-
-                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
-                expect(screen.queryByDisplayValue('9003151234')).not.toBeInTheDocument();
-            });
-
-            it('shows birth number field when nationality changes from non-CZ to CZ', async () => {
-                const user = userEvent.setup();
-                const data = mockMemberDetailData({
-                    nationality: 'SK',
-                    birthNumber: null,
-                    _templates: {updateMember: adminEditTemplateWithNationality},
-                });
-                renderPage(createMockPageData(data));
-
-                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
-
-                const nationalityInput = screen.getByDisplayValue('SK');
-                await user.clear(nationalityInput);
-                await user.type(nationalityInput, 'CZ');
-
-                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
-            });
+            expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+            expect(screen.queryByDisplayValue('9003151234')).not.toBeInTheDocument();
         });
     });
 
     describe('holder of profile editing over another member (legal guardian of a minor)', () => {
         const minorId = '223e4567-e89b-12d3-a456-426614174000';
-        const holderLinks = {
-            self: {href: `/api/members/${minorId}`},
-            legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
-        };
-        const holderData = () => mockMemberDetailData({
-            id: minorId,
-            firstName: 'Sofie',
-            lastName: 'Svobodová',
-            dateOfBirth: '2015-05-01',
-            _links: holderLinks,
-            _templates: {updateMember: selfEditTemplateWithReservedFields},
-        });
         const guardiansResponse = {
             _embedded: {
                 legalGuardianGroupGuardianResponseList: [{
@@ -1032,14 +845,11 @@ describe('MemberDetailPage', () => {
         };
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
-                const envelope = url.includes('/guardians') ? guardiansResponse : undefined;
-                return {
-                    data: envelope,
-                    isLoading: false,
-                    error: null,
-                };
-            }) as unknown as typeof useAuthorizedQuery);
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
+                data: url.includes('/guardians') ? guardiansResponse : undefined,
+                isLoading: false,
+                error: null,
+            })) as unknown as typeof useAuthorizedQuery);
         });
 
         afterEach(() => {
@@ -1050,225 +860,24 @@ describe('MemberDetailPage', () => {
             })) as unknown as typeof useAuthorizedQuery);
         });
 
-        it('shows the edit button and the full two-column layout driven by the update template', () => {
-            const {container} = renderPage(createMockPageData(holderData()));
+        it('offers editing and lists the guardians without the "Upravit zástupce" action', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                id: minorId,
+                firstName: 'Sofie',
+                lastName: 'Svobodová',
+                dateOfBirth: '2015-05-01',
+                _links: {
+                    self: {href: `/api/members/${minorId}`},
+                    legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
+                },
+                _templates: {updateMember: selfEditTemplateWithReservedFields},
+            })));
             expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
-            expect(container.querySelector('.grid.lg\\:grid-cols-2')).toBeInTheDocument();
-            expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
-        });
-
-        it('shows the account action when the detail carries the account link', () => {
-            const data = holderData();
-            data._links = {...holderLinks, account: {href: `/api/members/${minorId}/account`}};
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: labels.finance.openMemberAccount})).toBeInTheDocument();
-        });
-
-        it('shows no account action when the detail lacks the account link', () => {
-            renderPage(createMockPageData(holderData()));
-            expect(screen.queryByRole('button', {name: labels.finance.openMemberAccount})).not.toBeInTheDocument();
-        });
-
-        it('shows no fee, permissions, suspension or account actions', () => {
-            renderPage(createMockPageData(holderData()));
-            expect(screen.queryByRole('button', {name: /členské příspěvky/i})).not.toBeInTheDocument();
-            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /ukončit členství/i})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /založit účet/i})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /změnit heslo/i})).not.toBeInTheDocument();
-        });
-
-        it('lists the guardians without the "Upravit zástupce" action', () => {
-            renderPage(createMockPageData(holderData()));
             expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Eva Svobodová'})).toBeInTheDocument();
             expect(screen.getByText('eva@example.com')).toBeInTheDocument();
             expect(screen.getByText('+420777000111')).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: 'Upravit zástupce'})).not.toBeInTheDocument();
-        });
-
-        it('shows the birth number of the minor masked', () => {
-            const data = holderData();
-            data.birthNumber = '1505010012';
-            renderPage(createMockPageData(data));
-            expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
-        });
-
-        it('keeps reserved fields read-only and editable fields editable in the edit form', async () => {
-            const user = userEvent.setup();
-            renderPage(createMockPageData(holderData()));
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            expect(screen.getByDisplayValue('+420777123456')).toBeInTheDocument();
-            expect(document.querySelector('[name="firstName"]')).not.toBeInTheDocument();
-            expect(document.querySelector('[name="dateOfBirth"]')).not.toBeInTheDocument();
-            expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
-            expect(screen.getAllByText('Sofie').length).toBeGreaterThan(0);
-        });
-    });
-
-    describe('2-column layout', () => {
-        it('uses 2-column grid layout when template exists', () => {
-            const data = mockMemberDetailData({
-                _templates: {updateMember: adminEditTemplate},
-            });
-            const {container} = renderPage(createMockPageData(data));
-            const grid = container.querySelector('.grid.lg\\:grid-cols-2');
-            expect(grid).toBeInTheDocument();
-        });
-
-        it('uses 1-column layout for other member view (no template)', () => {
-            const {container} = renderPage(createMockPageData(mockMemberDetailData()));
-            const grid = container.querySelector('.grid.lg\\:grid-cols-2');
-            expect(grid).not.toBeInTheDocument();
-        });
-    });
-
-    describe('fee history button', () => {
-        const feeHistoryHref = '/api/members/123/fee-history';
-
-        it('shows "Členské příspěvky" button when feeHistory link is present and member is active', () => {
-            const data = mockMemberDetailData({
-                active: true,
-                _links: {
-                    self: {href: '/api/members/123'},
-                    feeHistory: {href: feeHistoryHref},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: 'Členské příspěvky'})).toBeInTheDocument();
-        });
-
-        it('shows the button when active is absent from response', () => {
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123'},
-                    feeHistory: {href: feeHistoryHref},
-                },
-            });
-            delete (data as Record<string, unknown>).active;
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: 'Členské příspěvky'})).toBeInTheDocument();
-        });
-
-        it('does NOT show the button without feeHistory link', () => {
-            renderPage(createMockPageData(mockMemberDetailData({active: true})));
-            expect(screen.queryByRole('button', {name: 'Členské příspěvky'})).not.toBeInTheDocument();
-        });
-
-        it('does NOT show the button for inactive member even with feeHistory link', () => {
-            const data = mockMemberDetailData({
-                active: false,
-                _links: {
-                    self: {href: '/api/members/123'},
-                    feeHistory: {href: feeHistoryHref},
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('button', {name: 'Členské příspěvky'})).not.toBeInTheDocument();
-        });
-
-        it('navigates to the fee history resource when clicked', async () => {
-            const feeHistoryLink = {href: feeHistoryHref};
-            const data = mockMemberDetailData({
-                active: true,
-                _links: {
-                    self: {href: '/api/members/123'},
-                    feeHistory: feeHistoryLink,
-                },
-            });
-            const pageData = createMockPageData(data, {
-                getResourceLink: vi.fn().mockReturnValue(feeHistoryLink),
-            });
-            renderPage(pageData);
-            await userEvent.click(screen.getByRole('button', {name: 'Členské příspěvky'}));
-            expect(pageData.navigateToResource).toHaveBeenCalledWith(feeHistoryLink);
-        });
-    });
-
-    describe('calendar feed', () => {
-        it('does not show a calendar feed section on the profile', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByRole('heading', {name: /Zpřístupnit kalendář/i})).not.toBeInTheDocument();
-        });
-    });
-
-    describe('own profile', () => {
-        it('shows "Změnit heslo" when the resource has the changePassword link', () => {
-            renderPage(createMockPageData(mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    changePassword: {href: '/api/me/password-change'},
-                },
-            })));
-            expect(screen.getByRole('button', {name: /změnit heslo/i})).toBeInTheDocument();
-        });
-
-        it('hides "Změnit heslo" when the resource has no changePassword link', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-            expect(screen.queryByRole('button', {name: /změnit heslo/i})).not.toBeInTheDocument();
-        });
-    });
-
-    describe('legacy compatibility', () => {
-        it('shows "Ukončit členství" button when terminate template exists (label overrides template title)', () => {
-            const data = mockMemberDetailData({
-                active: true,
-                _templates: {
-                    updateMember: adminEditTemplate,
-                    suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
-            expect(screen.queryByText('Terminate')).not.toBeInTheDocument();
-        });
-
-        it('renders address sub-fields as editable inputs when address is in template', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                _templates: {
-                    updateMember: {
-                        method: 'PUT' as const,
-                        properties: [
-                            {name: 'firstName', type: 'text'},
-                            {name: 'address', type: 'AddressRequest'},
-                        ],
-                    },
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
-
-            expect(screen.getByDisplayValue('Hlavní 15')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('Praha')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('11000')).toBeInTheDocument();
-        });
-    });
-
-    describe('sync status indicator (4.4)', () => {
-        it('renders SyncStatusIndicator when member._links.sync is present', () => {
-            const data = mockMemberDetailData({
-                _links: {
-                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
-                    sync: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000/sync'},
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            // Behavioural coverage of SyncStatusIndicator lives in SyncStatusIndicator.test.tsx;
-            // here we only assert the indicator is mounted when the sync link is present.
-            expect(screen.getByTestId('sync-error')).toBeInTheDocument();
-        });
-
-        it('does not render SyncStatusIndicator when member._links.sync is absent', () => {
-            renderPage(createMockPageData(mockMemberDetailData()));
-
-            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
-            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
         });
     });
 });

@@ -73,12 +73,6 @@ Given('the phone number of {persona} is {string}', async ({apiAs}, persona: Pers
     await member.patch(member.templateTarget(profile, 'updateMember'), {phone});
 });
 
-Given('the address of {persona} is in {string}', async ({apiAs}, persona: Persona, country: string) => {
-    const member = apiAs(personas[persona]);
-    const profile = await member.get((await member.root())._links!.profile.href) as Linked;
-    await member.patch(member.templateTarget(profile, 'updateMember'), {address: {...registrationBody('Eva').address, country}});
-});
-
 const addGuardianRow = async (page: Page) => {
     await click(page, 'Přidat');
     return page.getByTestId('collection-item').last();
@@ -180,21 +174,6 @@ When('{persona} changes the phone number in the profile to {string}', async ({pa
     await submit(page, 'Uložit změny');
 });
 
-When('{persona} opens the edit form of her profile', async ({page, actAs}, persona: Persona) => {
-    await actAs(persona);
-    await openOwnProfile(page);
-    await click(page, 'Upravit profil');
-    await expect(action(page, 'Uložit změny')).toBeVisible();
-});
-
-When('{persona} changes the country of her address to {string}', async ({page, actAs}, persona: Persona, code: string) => {
-    await actAs(persona);
-    await openOwnProfile(page);
-    await click(page, 'Upravit profil');
-    await chooseCountry(page, 'Stát', code);
-    await submit(page, 'Uložit změny');
-});
-
 When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await actAs(persona);
     await openMemberDetail(page, lastName);
@@ -213,28 +192,9 @@ Then('only member {name} is listed', async ({page}, lastName: string) => {
     await expect(page.getByText('1–1 z 1')).toBeVisible();
 });
 
-Then('the detail shows the personal data and address of member {name}', async ({page}, lastName: string) => {
-    const body = registrationBody(lastName);
-    await expect(page.getByText(lastName, {exact: true}).first()).toBeVisible();
-    await expect(page.getByText(body.address.city, {exact: true})).toBeVisible();
-    await expect(page.getByText(body.address.street, {exact: true})).toBeVisible();
-});
-
 Then('{persona}\'s profile shows the phone number {string}', async ({page, currentRole}, persona: Persona, phone: string) => {
     expectActing(currentRole, persona);
     await expect(page.getByText(phone, {exact: true}).first()).toBeVisible();
-});
-
-Then('{persona}\'s nationality {string} is shown read-only', async ({page, currentRole}, persona: Persona, nationality: string) => {
-    expectActing(currentRole, persona);
-    await expect(page.getByLabel('Telefon')).toBeVisible();
-    await expect(page.getByLabel(/^Státní příslušnost/)).toHaveCount(0);
-    await expect(page.getByText('Státní příslušnost', {exact: true}).locator('xpath=..').getByText(nationality, {exact: true})).toBeVisible();
-});
-
-Then('{persona}\'s address country is {string}', async ({page, currentRole}, persona: Persona, country: string) => {
-    expectActing(currentRole, persona);
-    await expect(page.getByText('Stát', {exact: true}).locator('xpath=..').getByText(country, {exact: true})).toBeVisible();
 });
 
 Then('member {name} is suspended', async ({page}, lastName: string) => {
@@ -262,12 +222,6 @@ Then('the detail of member {name} lists {name} as legal guardian', async ({page}
     await openMemberDetail(page, lastName, 'Vše');
     await expect(heading(page, 'ZÁKONNÍ ZÁSTUPCI')).toBeVisible();
     await expect(page.getByText(guardian).first()).toBeVisible();
-});
-
-Then('{persona} is not offered to edit the profile of member {name}', async ({page, currentRole}, persona: Persona, lastName: string) => {
-    expectActing(currentRole, persona);
-    await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
-    await expect(page.getByRole('button', {name: /^Upravit/})).toHaveCount(0);
 });
 
 Then('the suspension is blocked because member {name} is the last owner of training group {name}', async ({page}, lastName: string, groupName: string) => {

@@ -2,6 +2,10 @@
 # - "Adult registered with guardians is rejected": the registration form hides the guardian section of an adult, so only the API can send it (backend integration test).
 # - "A registration number already in use is refused": the registration form and API take no registration number, only the ORIS import does.
 # - "Minor cannot edit own profile": a registered minor has no password, so no session of a minor can be opened.
+# - "Authorized user views active member detail": the sections and values shown on the detail are asserted by `MemberDetailPage.test` (sections, address, contact, badge), the fields each viewer receives by the backend `BirthNumberAuditMatchesSerializationApiTest`; every other journey opens the detail.
+# - "Member cannot change their own nationality": the read-only reserved fields of the edit form are asserted by `MemberDetailPage.test` ("self-edit template with reserved fields marked readOnly", "nationality marked readOnly or absent in the edit template"), and the backend rejects them in `UpdateMemberApiTest`.
+# - "Member cannot edit another member's profile": the "Upravit profil" button is shown iff the updateMember template is offered (`MemberDetailPage.test` "other member view (no template)"), and the template is offered only to holders of the edit grant (backend `*RelationshipSource` tests, `UpdateMemberApiTest`).
+# - "Member enters a country outside the common list": the country picker reveals the code input and emits the entered code (`HalFormsCountry.test` "reveals the code input when other country is chosen", "emits upper-case code typed into the input and shows its name").
 @spec:members
 Feature: Members
   Club members are registered and maintained by member administrators, every member keeps their own profile up to date.
@@ -38,35 +42,12 @@ Feature: Members
       When Eva searches the member list for "Svoboda"
       Then only member "Svoboda" is listed
 
-  Rule: Authorized users see the member's detail
-
-    Scenario: Authorized user views active member detail
-      Given member "Dvorak" is registered
-      When Jan opens the detail of member "Dvorak"
-      Then the detail shows the personal data and address of member "Dvorak"
-
   Rule: An adult member updates their own information
 
     Scenario: Member updates their own information
       Given the phone number of Eva is "+420 600 000 000"
       When Eva changes the phone number in the profile to "+420 777 123 456"
       Then Eva's profile shows the phone number "+420 777 123 456"
-
-    Scenario: Member cannot change their own nationality
-      When Eva opens the edit form of her profile
-      Then Eva's nationality "Česko" is shown read-only
-
-    Scenario: Member enters a country outside the common list
-      Given the address of Eva is in "CZ"
-      When Eva changes the country of her address to "FR"
-      Then Eva's address country is "Francie"
-
-  Rule: A member cannot update another member's profile
-
-    Scenario: Member cannot edit another member's profile
-      Given member "Soused" is registered
-      When Eva opens the detail of member "Soused"
-      Then Eva is not offered to edit the profile of member "Soused"
 
   Rule: Membership is suspended with a reason and the suspension stays visible on the member
 

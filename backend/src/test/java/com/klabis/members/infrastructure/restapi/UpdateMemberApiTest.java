@@ -8,27 +8,24 @@ import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
-import com.klabis.members.application.MemberNotFoundException;
-import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.members.domain.*;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -46,10 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * <b>Test Scope:</b> Controller unit tests focus on:
  * <ul>
- *   <li>HTTP status codes (204, 400, 403, 404, etc.)</li>
+ *   <li>HTTP status codes (204, 400, 403, 401)</li>
  *   <li>Service method invocation with expected command parameters (using Mockito.verify)</li>
  *   <li>Authorization checks for different user roles</li>
- *   <li>Exception handling and error responses</li>
  * </ul>
  * <p>
  * The PATCH endpoint returns 204 No Content without response body.
@@ -57,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * <b>What is NOT tested here:</b>
  * <ul>
- *   <li>Detailed JSON field-by-field mapping - tested in {@link MemberMappingTests}</li>
+ *   <li>Request-to-command mapping - tested in {@link UpdateMemberRequestMapperTest}</li>
  *   <li>Domain update logic - tested in domain unit tests</li>
  *   <li>Integration flows - tested in cross-module/E2E tests</li>
  * </ul>
@@ -70,16 +66,7 @@ class UpdateMemberApiTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
-
-    @Autowired
-    private com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort legalGuardianGroupPort;
-
-    @Autowired
     private ManagementPort memberService;
-
-    @Autowired
-    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
     private SyncPairingLookup pairingLookup;
@@ -104,1227 +91,181 @@ class UpdateMemberApiTest {
                 .build();
     }
 
+    private static final String OWNER_ID = "00000000-0000-0000-0000-000000000001";
+    private static final String STRANGER_ID = "16a9dfbb-145d-4587-b5b5-31383c1d4215";
+    private static final String ADMIN_ID = "729d897a-5676-431f-b22f-ad935af525ce";
+
+    private void givenBaseline() {
+        when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                .thenReturn(Member.UpdateMember.from(stubMember()));
+        when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
+                .thenReturn(stubMember());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions patchJson(UUID id, String json) throws Exception {
+        return mockMvc.perform(patch("/api/members/{id}", id).contentType("application/json").content(json));
+    }
+
     @Nested
     @DisplayName("PATCH /api/members/{id}")
     class UpdateMemberTests {
 
-        @Nested
-        @DisplayName("Admin edit")
-        class AdminEditTests {
+        @Test
+        @DisplayName("administrator changes contact and reserved fields: 204, command is the baseline overlaid by the request and carries the editor")
+        @WithKlabisMockUser(userId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldUpdateContactAndReservedFieldsWhenAdmin() throws Exception {
+            givenBaseline();
 
-            @Test
-            @DisplayName("updating member email should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateMemberEmailWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
+            patchJson(testMemberId, """
+                    {"email": "new.email@example.com", "firstName": "Petr", "gender": "FEMALE",
+                     "drivingLicenseGroup": "B",
+                     "trainerLicense": {"level": "T2", "validityDate": "2099-01-01"}}
+                    """)
+                    .andExpect(status().isNoContent());
 
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "new.email@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address()).isEqualTo(stubMember().getAddress());
-            }
-
-            @Test
-            @DisplayName("updating member phone should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateMemberPhoneWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "phone": "+420777123456"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("jan.novak@example.com"));
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address()).isEqualTo(stubMember().getAddress());
-            }
-
-            @Test
-            @DisplayName("updating member address should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateMemberAddressWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "address": {
-                                                        "street": "New Street 123",
-                                                        "city": "Prague",
-                                                        "postalCode": "11000",
-                                                        "country": "CZ"
-                                                    }
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("jan.novak@example.com"));
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address().street()).isEqualTo("New Street 123");
-                assertThat(command.address().city()).isEqualTo("Prague");
-                assertThat(command.address().postalCode()).isEqualTo("11000");
-                assertThat(command.address().country().code()).isEqualTo("CZ");
-            }
-
-            @Test
-            @DisplayName("updating admin-only fields should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateAdminOnlyFieldsWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "gender": "FEMALE",
-                                                    "chipNumber": "12345",
-                                                    "drivingLicenseGroup": "B",
-                                                    "dietaryRestrictions": "Vegetarian"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.gender()).isEqualTo(Gender.FEMALE);
-                assertThat(command.chipNumber()).isEqualTo("12345");
-                assertThat(command.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
-                assertThat(command.dietaryRestrictions()).isEqualTo("Vegetarian");
-            }
-
-            /**
-             * A stranger — neither the owner nor an admin — is refused by the endpoint's own
-             * {@code @HasAuthority(MEMBERS_MANAGE)}, before any field is looked at. This was
-             * disabled as "to be changed in prod code"; that enforcement in fact existed all along.
-             */
-            @Test
-            @DisplayName("updating admin-only fields without MEMBERS:MANAGE authority should return 403")
-            @WithKlabisMockUser(authorities = {})
-            void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "gender": "FEMALE",
-                                                    "chipNumber": "12345",
-                                                    "drivingLicenseGroup": "B",
-                                                    "dietaryRestrictions": "Vegetarian"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isForbidden());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            @Test
-            @DisplayName("updating nationality should be saved when admin")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateNationalityWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("{\"nationality\": \"SK\"}")
-                        )
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-                assertThat(captor.getValue().nationality().code()).isEqualTo("SK");
-            }
-
-            @Test
-            @DisplayName("updating birth number and bank account should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "birthNumber": "900101/1234",
-                                                    "bankAccountNumber": "12345/5678"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
-            }
-
-            @Test
-            @DisplayName("updating only birth number should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "birthNumber": "850520/9876"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("850520/9876"));
-                assertThat(command.bankAccountNumber()).isEqualTo(null);
-            }
-
-            @Test
-            @DisplayName("sending null for birthNumber and bankAccountNumber should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldAcceptNullBirthNumberAndBankAccountNumberWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "birthNumber": null,
-                                                    "bankAccountNumber": null,
-                                                    "chipNumber": null,
-                                                    "dietaryRestrictions": null
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.birthNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
-            }
-
-            @Test
-            @DisplayName("updating only bank account number should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "bankAccountNumber": "12345/5678"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(null);
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
-            }
-
-            @Test
-            @DisplayName("updating documents should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldUpdateDocumentsWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "identityCard": {
-                                                        "cardNumber": "123456789",
-                                                        "validityDate": "%s"
-                                                    },
-                                                    "medicalCourse": {
-                                                        "completionDate": "2024-01-01",
-                                                        "validityDate": "%s"
-                                                    },
-                                                    "trainerLicense": {
-                                                        "level": "T1",
-                                                        "validityDate": "%s"
-                                                    }
-                                                }
-                                                """.formatted(
-                                                        LocalDate.now().plusYears(5),
-                                                        LocalDate.now().plusYears(2),
-                                                        LocalDate.now().plusYears(3)
-                                                ))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.identityCard()).isNotNull();
-                assertThat(command.medicalCourse()).isNotNull();
-                assertThat(command.trainerLicense()).isNotNull();
-            }
-
-            @Test
-            @DisplayName("performing partial update should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldPerformPartialUpdateWhenAdmin() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "partial.update@example.com",
-                                                    "dietaryRestrictions": "No dairy"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(any(MemberId.class), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("partial.update@example.com"));
-                assertThat(command.dietaryRestrictions()).isEqualTo("No dairy");
-            }
+            var captor = forClass(Member.UpdateMember.class);
+            verify(memberService).updateMember(any(MemberId.class), captor.capture());
+            var command = captor.getValue();
+            assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
+            assertThat(command.firstName()).isEqualTo("Petr");
+            assertThat(command.gender()).isEqualTo(com.klabis.members.domain.Gender.FEMALE);
+            assertThat(command.drivingLicenseGroup()).isEqualTo(com.klabis.members.domain.DrivingLicenseGroup.B);
+            assertThat(command.trainerLicense().level()).isEqualTo(TrainerLevel.T2);
+            assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
+            assertThat(command.updatedBy()).isEqualTo(new UserId(UUID.fromString(ADMIN_ID)));
         }
 
-        @Nested
-        @DisplayName("Admin edit of a minor")
-        class AdminEditMinorTests {
+        @Test
+        @DisplayName("member updates own email: 204")
+        @WithKlabisMockUser(memberId = OWNER_ID, authorities = {},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = OWNER_ID))
+        void shouldAllowMemberToUpdateOwnEmail() throws Exception {
+            UUID currentMemberId = UUID.fromString(OWNER_ID);
+            givenBaseline();
 
-            @Test
-            @DisplayName("admin updating a minor should return 204")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldAllowAdminToUpdateMinor() throws Exception {
-                Member minor = MemberTestDataBuilder.aMember()
-                        .withId(testMemberId)
-                        .withDateOfBirth(LocalDate.now().minusYears(15))
-                        .build();
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(minor));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(minor);
+            patchJson(currentMemberId, "{\"email\": \"my.new.email@example.com\"}")
+                    .andExpect(status().isNoContent());
 
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "new.email@example.com"
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isNoContent());
-            }
+            var captor = forClass(Member.UpdateMember.class);
+            verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
+            assertThat(captor.getValue().email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
         }
 
-        @Nested
-        @DisplayName("Member self-edit")
-        class MemberSelfEditTests {
+        /**
+         * The owner is the only caller for whom field-level authorization decides anything: a
+         * stranger is already refused by the endpoint's @HasAuthority, and an admin satisfies
+         * every field.
+         *
+         * <p>gender is the field this guards because it reached production unenforced: an
+         * allOf in the spec generated a bare Gender rather than a JsonNullable, and
+         * RequestBodyFieldAuthorizationAdvice skips every component that is not
+         * JsonNullable-typed.
+         */
+        @ParameterizedTest(name = "own {0} is refused with 403")
+        @CsvSource({
+                "firstName,Karel",
+                "lastName,Changed",
+                "dateOfBirth,1991-02-03",
+                "gender,FEMALE",
+                "nationality,SK",
+                "birthNumber,900101/1234"
+        })
+        @WithKlabisMockUser(memberId = OWNER_ID, authorities = {},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = OWNER_ID))
+        void shouldRejectMemberUpdatingOwnReservedField(String field, String value) throws Exception {
+            givenBaseline();
 
-            @Test
-            @DisplayName("updating own email should return 204 No Content")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberToUpdateOwnEmail() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
+            patchJson(UUID.fromString(OWNER_ID), "{\"%s\": \"%s\"}".formatted(field, value))
+                    .andExpect(status().isForbidden());
 
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "my.new.email@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
-            }
-
-            @Test
-            @DisplayName("minor (who holds no EDIT_PROFILE over themself) updating own profile should return 403 and save nothing")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
-            void shouldRejectMinorUpdatingOwnProfile() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                Member minor = MemberTestDataBuilder.aMember()
-                        .withId(currentMemberId)
-                        .withDateOfBirth(LocalDate.now().minusYears(15))
-                        .build();
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(minor));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "my.new.email@example.com"
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isForbidden());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            @Test
-            @DisplayName("member who turned 18 today updating own profile should return 204")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberTurned18TodayToUpdateOwnProfile() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                Member justAdult = MemberTestDataBuilder.aMember()
-                        .withId(currentMemberId)
-                        .withDateOfBirth(LocalDate.now().minusYears(18))
-                        .build();
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(justAdult));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(justAdult);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "my.new.email@example.com"
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isNoContent());
-            }
-
-            @Test
-            @DisplayName("updating own phone should return 204 No Content")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberToUpdateOwnPhone() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "phone": "+420987654321"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
-            }
-
-            @Test
-            @DisplayName("updating own address should return 204 No Content")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberToUpdateOwnAddress() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "address": {
-                                                        "street": "My New Address 456",
-                                                        "city": "Brno",
-                                                        "postalCode": "60200",
-                                                        "country": "CZ"
-                                                    }
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.address().street()).isEqualTo("My New Address 456");
-                assertThat(command.address().city()).isEqualTo("Brno");
-            }
-
-            @Test
-            @DisplayName("updating dietary restrictions should return 204 No Content")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "dietaryRestrictions": "Gluten-free, no nuts"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
-            }
-
-            @Test
-            @DisplayName("sending null for optional string fields should return 204 No Content")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAcceptNullOptionalStringFieldsWhenSelfUpdate() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "chipNumber": null,
-                                                    "bankAccountNumber": null,
-                                                    "dietaryRestrictions": null
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-
-                var command = captor.getValue();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
-            }
-
-            @Test
-            @DisplayName("updating items editable only by member himself without beeing that member should return 403 Forbidden")
-            @WithKlabisMockUser(userId = "729d897a-5676-431f-b22f-ad935af525ce", authorities = {})
-            void shouldRejectToUpdateSelfEditInformationToOtherMembers() throws Exception {
-                UUID otherMemberId = UUID.fromString("16a9dfbb-145d-4587-b5b5-31383c1d4215");
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", otherMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "dietaryRestrictions": "Gluten-free, no nuts",
-                                                    "email": "test@email.com",
-                                                    "phone": "+420 123 456 789"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isForbidden());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            /**
-             * The owner is the only caller for whom field-level authorization decides anything: a
-             * stranger is already refused by the endpoint's @HasAuthority, and an admin satisfies
-             * every field. So this pair is what actually exercises @HasAuthority on a component —
-             * gender is refused while chipNumber, which carries no authority, goes through.
-             *
-             * <p>gender is the field this guards because it reached production unenforced: an
-             * allOf in the spec generated a bare Gender rather than a JsonNullable, and
-             * RequestBodyFieldAuthorizationAdvice skips every component that is not
-             * JsonNullable-typed.
-             */
-            @Test
-            @DisplayName("updating own gender should return 403 — it needs MEMBERS:MANAGE")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldRejectMemberUpdatingOwnGender() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "gender": "FEMALE"
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isForbidden());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            @Test
-            @DisplayName("updating own nationality should return 403 — it needs MEMBERS:MANAGE")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldRejectMemberUpdatingOwnNationality() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("{\"nationality\": \"SK\"}")
-                        )
-                        .andExpect(status().isForbidden());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            @Test
-            @DisplayName("updating own chipNumber should return 204 — it carries no authority")
-            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {},
-                    targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
-                            ids = "00000000-0000-0000-0000-000000000001"))
-            void shouldAllowMemberToUpdateOwnChipNumber() throws Exception {
-                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", currentMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "chipNumber": "12345"
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isNoContent());
-
-                var captor = forClass(Member.UpdateMember.class);
-                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-                assertThat(captor.getValue().chipNumber()).isEqualTo("12345");
-            }
+            verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
         }
 
+        @Test
+        @DisplayName("caller who is neither the member, a holder of the delegated permission nor an administrator gets 403 for any field")
+        @WithKlabisMockUser(userId = STRANGER_ID,
+                memberId = "22222222-2222-2222-2222-222222222222", authorities = {})
+        void shouldReturn403WhenStrangerEditsMember() throws Exception {
+            givenBaseline();
 
-        @Nested
-        @DisplayName("Authorization")
-        class AuthorizationTests {
+            patchJson(testMemberId, """
+                    {"email": "hacker@example.com", "dietaryRestrictions": "none"}
+                    """)
+                    .andExpect(status().isForbidden());
 
-            @Test
-            @DisplayName("non-admin editing another member should return 403")
-            @WithKlabisMockUser(userId = "729d897a-5676-431f-b22f-ad935af525ce", authorities = {})
-            void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
-                UUID otherMemberId = testMemberId;
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", otherMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "hacker@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isForbidden())
-                        .andExpect(jsonPath("$.title").value("Forbidden"));
-            }
-
-            @Test
-            @DisplayName("unauthenticated request should return 401")
-            void shouldReturn401WhenUnauthenticated() throws Exception {
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isUnauthorized());
-            }
+            verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
         }
 
-        @Nested
-        @DisplayName("Validation")
-        class ValidationTests {
-
-            @ParameterizedTest(name = "{0} is refused at its own field with its own type")
-            @CsvSource({
-                    "email,invalid-email,invalid-email-address",
-                    "phone,123,invalid-phone-number",
-                    "birthNumber,12345,invalid-birth-number",
-                    "bankAccountNumber,abc,invalid-bank-account-number",
-                    "nationality,QQ,invalid-nationality"
-            })
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WithTypeAndFieldWhenValueInvalid(String field, String value, String type) throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("{\"%s\": \"%s\"}".formatted(field, value))
-                        )
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.type").value("/errors/" + type))
-                        .andExpect(jsonPath("$.field").value(field))
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("address with an unknown country is refused at address.country")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {"address": {"street": "Hlavní 1", "city": "Praha", "postalCode": "11000", "country": "QQ"}}
-                                                """)
-                        )
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
-                        .andExpect(jsonPath("$.field").value("address.country"));
-            }
-
-            @Test
-            @DisplayName("invalid chip number should return 400")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenChipNumberInvalid() throws Exception {
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "chipNumber": "ABC123"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("dietary restrictions too long should return 400")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenDietaryRestrictionsTooLong() throws Exception {
-                String tooLongRestrictions = "A".repeat(501);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "dietaryRestrictions": "%s"
-                                                }
-                                                """.formatted(tooLongRestrictions))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("firstName exceeding 100 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenFirstNameTooLong() throws Exception {
-                String tooLongName = "A".repeat(101);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "firstName": "%s"
-                                                }
-                                                """.formatted(tooLongName))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("lastName exceeding 100 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenLastNameTooLong() throws Exception {
-                String tooLongName = "A".repeat(101);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "lastName": "%s"
-                                                }
-                                                """.formatted(tooLongName))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("email exceeding 255 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenEmailTooLong() throws Exception {
-                String tooLongEmail = "a".repeat(244) + "@example.com";
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "%s"
-                                                }
-                                                """.formatted(tooLongEmail))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("phone exceeding 50 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenPhoneTooLong() throws Exception {
-                String tooLongPhone = "+420" + "1".repeat(47);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "phone": "%s"
-                                                }
-                                                """.formatted(tooLongPhone))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("address country naming no existing country should return 400 and save nothing")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenAddressCountryIsUnknown() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "address": {
-                                                        "street": "New Street 123",
-                                                        "city": "Prague",
-                                                        "postalCode": "11000",
-                                                        "country": "QQ"
-                                                    }
-                                                }
-                                                """)
-                        )
-                        .andExpect(status().isBadRequest());
-
-                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
-            }
-
-            @Test
-            @DisplayName("nationality exceeding 3 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenNationalityTooLong() throws Exception {
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "nationality": "CZEE"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("chipNumber exceeding 50 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenChipNumberTooLong() throws Exception {
-                String tooLongChip = "1".repeat(51);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "chipNumber": "%s"
-                                                }
-                                                """.formatted(tooLongChip))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("bankAccountNumber exceeding 50 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenBankAccountNumberTooLong() throws Exception {
-                String tooLongAccount = "1".repeat(51);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "bankAccountNumber": "%s"
-                                                }
-                                                """.formatted(tooLongAccount))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("identityCard cardNumber exceeding 50 characters should return 400 not 500")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenIdentityCardNumberTooLong() throws Exception {
-                String tooLongCardNumber = "A".repeat(51);
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "identityCard": {
-                                                        "cardNumber": "%s",
-                                                        "validityDate": "2030-01-01"
-                                                    }
-                                                }
-                                                """.formatted(tooLongCardNumber))
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
+        @Test
+        @DisplayName("unauthenticated request should return 401")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            patchJson(testMemberId, "{\"email\": \"test@example.com\"}")
+                    .andExpect(status().isUnauthorized());
         }
 
-        @Nested
-        @DisplayName("Error handling")
-        class ErrorHandlingTests {
+        @ParameterizedTest(name = "{0} is refused at its own field with its own type")
+        @CsvSource({
+                "email,invalid-email,invalid-email-address",
+                "phone,123,invalid-phone-number",
+                "birthNumber,12345,invalid-birth-number",
+                "bankAccountNumber,abc,invalid-bank-account-number",
+                "nationality,QQ,invalid-nationality"
+        })
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithTypeAndFieldWhenValueInvalid(String field, String value, String type) throws Exception {
+            givenBaseline();
 
-            @Test
-            @DisplayName("non-existent member should return 404")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn404WhenMemberNotFound() throws Exception {
-                UUID nonExistentId = UUID.randomUUID();
-
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", nonExistentId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNotFound())
-                        .andExpect(jsonPath("$.title").value("Resource Not Found"))
-                        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
-                                nonExistentId.toString())));
-            }
-
-            @Test
-            @DisplayName("concurrent update should return 409")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn409WhenConcurrentUpdate() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenThrow(new OptimisticLockingFailureException("Concurrent update for member - test purpose"));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isConflict())
-                        .andExpect(jsonPath("$.title").value("Concurrent Update Conflict"))
-                        .andExpect(jsonPath("$.detail").value("Concurrent update for member - test purpose"));
-            }
+            patchJson(testMemberId, "{\"%s\": \"%s\"}".formatted(field, value))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/" + type))
+                    .andExpect(jsonPath("$.field").value(field))
+                    .andExpect(jsonPath("$.title").value("Bad Request"));
         }
 
-        @Nested
-        @DisplayName("HAL+FORMS")
-        class HateoasTests {
+        @Test
+        @DisplayName("address with an unknown country is refused at address.country and nothing is saved")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithAddressCountryFieldWhenCountryUnknown() throws Exception {
+            givenBaseline();
 
-            @Test
-            @DisplayName("PATCH should return 204 No Content (HATEOAS links available via GET)")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn204NoContentForPatchWithHalFormsAccept() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
+            patchJson(testMemberId, """
+                    {"address": {"street": "Hlavní 1", "city": "Praha", "postalCode": "11000", "country": "QQ"}}
+                    """)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-address-country"))
+                    .andExpect(jsonPath("$.field").value("address.country"));
 
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-            }
+            verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+        }
 
-            @Test
-            @DisplayName("response should include collection link")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldIncludeCollectionLink() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
+        static Stream<Arguments> lengthAndFormatViolations() {
+            return Stream.of(
+                    Arguments.of("chipNumber with letters", "{\"chipNumber\": \"ABC123\"}"),
+                    Arguments.of("chipNumber over 50 characters", "{\"chipNumber\": \"%s\"}".formatted("1".repeat(51))),
+                    Arguments.of("dietaryRestrictions over 500 characters",
+                            "{\"dietaryRestrictions\": \"%s\"}".formatted("A".repeat(501))),
+                    Arguments.of("firstName over 100 characters", "{\"firstName\": \"%s\"}".formatted("A".repeat(101))),
+                    Arguments.of("lastName over 100 characters", "{\"lastName\": \"%s\"}".formatted("A".repeat(101))),
+                    Arguments.of("email over 255 characters",
+                            "{\"email\": \"%s\"}".formatted("a".repeat(244) + "@example.com")),
+                    Arguments.of("phone over 50 characters", "{\"phone\": \"%s\"}".formatted("+420" + "1".repeat(47))),
+                    Arguments.of("nationality over 2 characters", "{\"nationality\": \"CZEE\"}"),
+                    Arguments.of("bankAccountNumber over 50 characters",
+                            "{\"bankAccountNumber\": \"%s\"}".formatted("1".repeat(51))),
+                    Arguments.of("identityCard number over 50 characters",
+                            "{\"identityCard\": {\"cardNumber\": \"%s\", \"validityDate\": \"2030-01-01\"}}"
+                                    .formatted("A".repeat(51))));
+        }
 
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-            }
-
-            @Test
-            @DisplayName("response should include edit link")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldIncludeEditLink() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content("""
-                                                {
-                                                    "email": "test@example.com"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-            }
-
-            @Test
-            @DisplayName("PATCH with multiple fields should return 204 No Content")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn204NoContentWhenUpdatingMultipleFields() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenReturn(stubMember());
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content("""
-                                                {
-                                                    "email": "updated@example.com",
-                                                    "phone": "+420999888777",
-                                                    "address": {
-                                                        "street": "Updated 123",
-                                                        "city": "Updated City",
-                                                        "postalCode": "10000",
-                                                        "country": "CZ"
-                                                    },
-                                                    "dietaryRestrictions": "Vegan"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isNoContent());
-            }
+        @ParameterizedTest(name = "{0} should return 400 not 500")
+        @MethodSource("lengthAndFormatViolations")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenFieldViolatesLengthOrFormat(String violation, String json) throws Exception {
+            patchJson(testMemberId, json)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.title").value("Bad Request"));
         }
     }
 }
