@@ -9,6 +9,7 @@ import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {makePageData} from '../../__mocks__/pageData';
+import {buildMemberRow} from '../../__mocks__/membersPageTest';
 import {
     blocked409,
     blockingTrainingGroup,
@@ -67,17 +68,11 @@ const SUSPEND_URL = '/api/members/member-1/suspend';
 const membersResource = (): HalResponse => ({
     _links: {self: {href: 'http://localhost/api/members'}},
     _embedded: {
-        memberSummaryResponseList: [{
-            id: 'member-1',
-            registrationNumber: 'REG-001',
-            lastName: 'Novák',
-            firstName: 'Jan',
-            active: true,
-            _links: {self: {href: '/api/members/member-1'}},
+        memberSummaryResponseList: [buildMemberRow({
             _templates: {
                 suspendMember: mockHalFormsTemplate({method: 'POST', target: SUSPEND_URL, title: 'Ukončit členství člena', properties: []}),
             },
-        }],
+        })],
     },
     page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
 });

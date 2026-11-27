@@ -70,12 +70,12 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 6. Member list and filters
 
-- [ ] 6.1 Delete `MemberFilterCrossModuleTest` (precondition 1.5 sort assertion in place)
-- [ ] 6.2 `MemberControllerApiTest` list: parameterize the status-filter group (MANAGE / non-MANAGE), merge the four self-link tests, merge default sort into default pagination, delete custom-pagination test, merge list field visibility into two tests, delete summary-item template duplicates and `shouldReturnEmptyArrayWhenNoActiveMembers`
-- [ ] 6.3 `MemberRepositoryTest`: one table-driven test for fulltext, status, incomplete-only and bornOn filters; delete `shouldWithStatusPreserveFulltextQuery`, duplicate empty-page test, `shouldFindMemberByEmail` (after the case-insensitive variant asserts the e-mail)
-- [ ] 6.4 FE `MembersPage.test.tsx` and `MembersFilterBar.test.tsx`: delete duplicates of filter bar and `membersQuery` tests, the removed PiggyBank test; `it.each` for row icons, column headers, toolbar buttons, filter clicks; extract `manageResource` fixture
-- [ ] 6.5 E2E: remove "User can search members by last name"; list it under "Not automated"
-- [ ] 6.6 Coverage comparison, code review, commit
+- [x] 6.1 Delete `MemberFilterCrossModuleTest` (precondition 1.5 sort assertion in place)
+- [x] 6.2 `MemberControllerApiTest` list: parameterize the status-filter group (MANAGE / non-MANAGE), merge the four self-link tests, merge default sort into default pagination, delete custom-pagination test, merge list field visibility into two tests, delete summary-item template duplicates and `shouldReturnEmptyArrayWhenNoActiveMembers`. Explicit page/size binding merged into the sort pass-through test instead of deleted
+- [x] 6.3 `MemberRepositoryTest`: one table-driven test for fulltext, status, incomplete-only and bornOn filters; delete `shouldWithStatusPreserveFulltextQuery`, duplicate empty-page test, `shouldFindMemberByEmail` (after the case-insensitive variant asserts the e-mail). The table also replaces the bornOn filter tests of `MemberRepositoryBornOnTest`, whose last test moved into `MemberRepositoryTest`
+- [x] 6.4 FE `MembersPage.test.tsx` and `MembersFilterBar.test.tsx`: delete duplicates of filter bar and `membersQuery` tests, the removed PiggyBank test; `it.each` for row icons, column headers, toolbar buttons, filter clicks; extract `manageResource` fixture
+- [x] 6.5 E2E: remove "User can search members by last name"; list it under "Not automated"
+- [x] 6.6 Coverage comparison, code review, commit
 
 ## 7. Member persistence
 

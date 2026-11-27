@@ -6,9 +6,13 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -27,12 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @DisplayName("Member JDBC Repository Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -218,76 +225,89 @@ class MemberRepositoryTest {
     }
 
     @Nested
-    @DisplayName("MemberFilter.incompleteOnly")
-    class IncompleteOnlyFilterTest {
+    @DisplayName("findAll(filter)")
+    class FilterTests {
 
-        private Member completeActive;
-        private Member incompleteActive;
-        private Member incompleteInactive;
-
-        @org.junit.jupiter.api.BeforeEach
+        @BeforeEach
         void setUp() {
-            completeActive = aMember()
-                    .withRegistrationNumber("ZBM7101")
-                    .withName("Filip", "Kompletní")
-                    .withActive(true)
-                    .build();
-
-            incompleteActive = aMember()
-                    .withRegistrationNumber("ZBM7102")
-                    .withDataIncomplete(true)
-                    .withName("Ivana", "Nekompletní")
-                    .withActive(true)
-                    .build();
-
-            incompleteInactive = aMember()
-                    .withRegistrationNumber("ZBM7103")
-                    .withDataIncomplete(true)
-                    .withName("Karel", "Nekompletní")
-                    .withActive(false)
-                    .build();
-
-            memberRepository.save(completeActive);
-            memberRepository.save(incompleteActive);
-            memberRepository.save(incompleteInactive);
+            memberRepository.save(aMember().withRegistrationNumber("ZBM7001").withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1)).withActive(true).build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM7002").withName("Petr", "Čermák")
+                    .withDateOfBirth(LocalDate.of(2001, 2, 2)).withActive(true).withDataIncomplete(true).build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM7003").withName("Jana", "Nováková")
+                    .withDateOfBirth(LocalDate.of(2002, 3, 3)).withActive(false).build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM7004").withName("Karel", "Novak")
+                    .withDateOfBirth(LocalDate.of(2003, 4, 4)).withActive(false).withDataIncomplete(true).build());
         }
 
-        @Test
-        @DisplayName("returns only incomplete members when set")
-        void shouldReturnOnlyIncompleteMembers() {
-            MemberFilter filter = MemberFilter.all().withIncompleteOnly(true);
+        static Stream<Arguments> filters() {
+            return Stream.of(
+                    arguments("no restriction returns everybody", MemberFilter.all(),
+                            List.of("ZBM7001", "ZBM7002", "ZBM7003", "ZBM7004")),
+                    arguments("status ACTIVE", MemberFilter.activeOnly(), List.of("ZBM7001", "ZBM7002")),
+                    arguments("status INACTIVE", MemberFilter.all().withStatus(MemberFilter.StatusFilter.INACTIVE),
+                            List.of("ZBM7003", "ZBM7004")),
+                    arguments("fulltext matches first name substring", MemberFilter.all().withFulltext("Jan"),
+                            List.of("ZBM7001", "ZBM7003")),
+                    arguments("fulltext matches last name substring", MemberFilter.all().withFulltext("Nov"),
+                            List.of("ZBM7001", "ZBM7003", "ZBM7004")),
+                    arguments("fulltext matches registration number", MemberFilter.all().withFulltext("ZBM7004"),
+                            List.of("ZBM7004")),
+                    arguments("fulltext ignores case", MemberFilter.all().withFulltext("NOVAK"),
+                            List.of("ZBM7001", "ZBM7003", "ZBM7004")),
+                    arguments("fulltext without diacritics matches accented data", MemberFilter.all().withFulltext("cermak"),
+                            List.of("ZBM7002")),
+                    arguments("fulltext with diacritics matches unaccented data", MemberFilter.all().withFulltext("Novák"),
+                            List.of("ZBM7001", "ZBM7003", "ZBM7004")),
+                    arguments("fulltext tokens are ANDed", MemberFilter.all().withFulltext("karel novak"),
+                            List.of("ZBM7004")),
+                    arguments("fulltext with tokens matching different members finds nobody",
+                            MemberFilter.all().withFulltext("jan cermak"), List.of()),
+                    arguments("fulltext combined with status",
+                            MemberFilter.all().withFulltext("novak").withStatus(MemberFilter.StatusFilter.INACTIVE),
+                            List.of("ZBM7003", "ZBM7004")),
+                    arguments("incompleteOnly", MemberFilter.all().withIncompleteOnly(true),
+                            List.of("ZBM7002", "ZBM7004")),
+                    arguments("incompleteOnly combined with status", MemberFilter.activeOnly().withIncompleteOnly(true),
+                            List.of("ZBM7002")),
+                    arguments("incompleteOnly combined with fulltext",
+                            MemberFilter.all().withIncompleteOnly(true).withFulltext("Karel"), List.of("ZBM7004")),
+                    arguments("bornOn keeps members born on any of the dates regardless of status",
+                            MemberFilter.all().withBornOn(Set.of(LocalDate.of(2000, 1, 1), LocalDate.of(2002, 3, 3))),
+                            List.of("ZBM7001", "ZBM7003")),
+                    arguments("empty bornOn matches nobody", MemberFilter.all().withBornOn(Set.of()), List.of()),
+                    arguments("bornOnOrBefore includes the boundary date",
+                            MemberFilter.all().withBornOnOrBefore(LocalDate.of(2001, 2, 2)),
+                            List.of("ZBM7001", "ZBM7002"))
+            );
+        }
 
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("filters")
+        void shouldReturnOnlyMembersMatchingFilter(String description, MemberFilter filter, List<String> expected) {
+            Page<Member> page = memberRepository.findAll(filter, PageRequest.of(0, 10));
 
             assertThat(page.getContent())
                     .extracting(m -> m.getRegistrationNumber().getValue())
-                    .containsExactlyInAnyOrder("ZBM7102", "ZBM7103");
+                    .containsExactlyInAnyOrderElementsOf(expected);
+            assertThat(page.getTotalElements()).isEqualTo(expected.size());
+
+            assertThat(memberRepository.findAll(filter))
+                    .extracting(m -> m.getRegistrationNumber().getValue())
+                    .containsExactlyInAnyOrderElementsOf(expected);
+
+            Page<Member> unpaged = memberRepository.findAll(filter, Pageable.unpaged());
+            assertThat(unpaged.getTotalElements()).isEqualTo(expected.size());
         }
 
         @Test
-        @DisplayName("combines with status filter using AND semantics")
-        void shouldCombineWithStatusFilter() {
-            MemberFilter filter = MemberFilter.activeOnly().withIncompleteOnly(true);
+        @DisplayName("findDateOfBirth returns the date of birth of an existing member and empty for an unknown one")
+        void shouldFindDateOfBirthWithoutLoadingTheAggregate() {
+            Member saved = memberRepository.save(aMember().withRegistrationNumber("ZBM0801")
+                    .withDateOfBirth(LocalDate.of(2008, 3, 1)).build());
 
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent())
-                    .extracting(m -> m.getRegistrationNumber().getValue())
-                    .containsExactly("ZBM7102");
-        }
-
-        @Test
-        @DisplayName("combines with fulltext filter using AND semantics")
-        void shouldCombineWithFulltextFilter() {
-            MemberFilter filter = MemberFilter.all()
-                    .withIncompleteOnly(true)
-                    .withFulltext("Karel");
-
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent())
-                    .extracting(m -> m.getRegistrationNumber().getValue())
-                    .containsExactly("ZBM7103");
+            assertThat(memberRepository.findDateOfBirth(saved.getId())).contains(LocalDate.of(2008, 3, 1));
+            assertThat(memberRepository.findDateOfBirth(new MemberId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -421,31 +441,6 @@ class MemberRepositoryTest {
     class FindByEmailMethod {
 
         @Test
-        @DisplayName("should find member by email")
-        void shouldFindMemberByEmail() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .build();
-            memberRepository.save(member);
-
-            // When
-            Optional<Member> foundMember = memberRepository.findByEmail("jan.novak@example.com");
-
-            // Then
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getEmail().value()).isEqualTo("jan.novak@example.com");
-            assertThat(foundMember.get().getFirstName()).isEqualTo("Jan");
-        }
-
-        @Test
         @DisplayName("should return empty when email not found")
         void shouldReturnEmptyWhenEmailNotFound() {
             // When
@@ -474,10 +469,9 @@ class MemberRepositoryTest {
             // When - search with uppercase
             Optional<Member> foundMember = memberRepository.findByEmail("TEST@EXAMPLE.COM");
 
-            // Then
             // Email should be case-insensitive per RFC 5321
-            // This test documents current behavior
             assertThat(foundMember).isPresent();
+            assertThat(foundMember.get().getEmail().value()).isEqualTo("test@example.com");
         }
     }
 
@@ -605,20 +599,6 @@ class MemberRepositoryTest {
                             tuple("Novak", "Jan"),
                             tuple("Novak", "Karel"),
                             tuple("Svoboda", "Petra"));
-        }
-
-        @Test
-        @DisplayName("should return empty page when no members exist")
-        void shouldReturnEmptyPageWhenNoMembersExist() {
-            // Given
-            Pageable pageable = PageRequest.of(0, 10);
-
-            // When
-            Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
-
-            // Then
-            assertThat(page.getContent()).isEmpty();
-            assertThat(page.getTotalElements()).isZero();
         }
 
         @Test
@@ -750,121 +730,6 @@ class MemberRepositoryTest {
             // Then
             assertThat(savedMember).isNotNull();
             assertThat(savedMember.getLastModifiedAt()).isNotNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("findAll() with fulltext filter")
-    class FulltextFilter {
-
-        private Member jan;
-        private Member novak;
-        private Member cermak;
-
-        @org.junit.jupiter.api.BeforeEach
-        void setUp() {
-            jan = aMember()
-                    .withRegistrationNumber("ZBM0100")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420111111200")
-                    .build();
-
-            cermak = aMember()
-                    .withRegistrationNumber("ZBM0200")
-                    .withName("Petr", "Čermák")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("petr.cermak@example.com")
-                    .withPhone("+420111111201")
-                    .build();
-
-            memberRepository.save(jan);
-            memberRepository.save(cermak);
-        }
-
-        @Test
-        @DisplayName("should match by firstName substring")
-        void shouldMatchByFirstNameSubstring() {
-            MemberFilter filter = MemberFilter.all().withFulltext("Jan");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Jan");
-        }
-
-        @Test
-        @DisplayName("should match by lastName substring")
-        void shouldMatchByLastNameSubstring() {
-            MemberFilter filter = MemberFilter.all().withFulltext("Nov");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
-        }
-
-        @Test
-        @DisplayName("should match by registrationNumber substring")
-        void shouldMatchByRegistrationNumberSubstring() {
-            MemberFilter filter = MemberFilter.all().withFulltext("ZBM0200");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Čermák");
-        }
-
-        @Test
-        @DisplayName("should match case-insensitively")
-        void shouldMatchCaseInsensitively() {
-            MemberFilter filter = MemberFilter.all().withFulltext("NOVAK");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
-        }
-
-        @Test
-        @DisplayName("should match diacritics-insensitively")
-        void shouldMatchDiacriticsInsensitively() {
-            MemberFilter filter = MemberFilter.all().withFulltext("cermak");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Čermák");
-        }
-
-        @Test
-        @DisplayName("should AND across tokens — multi-word query matches only members satisfying all tokens")
-        void shouldAndAcrossTokens() {
-            MemberFilter filter = MemberFilter.all().withFulltext("jan novak");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Jan");
-            assertThat(page.getContent().get(0).getLastName()).isEqualTo("Novák");
-        }
-
-        @Test
-        @DisplayName("should not match when only one token matches across the columns")
-        void shouldNotMatchWhenOnlyOneTokenMatches() {
-            MemberFilter filter = MemberFilter.all().withFulltext("jan cermak");
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return all members when fulltextQuery is null")
-        void shouldReturnAllMembersWhenNoFulltext() {
-            Page<Member> page = memberRepository.findAll(MemberFilter.all(), Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(2);
         }
     }
 
@@ -1264,92 +1129,6 @@ class MemberRepositoryTest {
             assertThat(savedMember.getSuspendedAt()).isNull();
             assertThat(savedMember.getSuspensionNote()).isNull();
             assertThat(savedMember.getSuspendedBy()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("findAll() with StatusFilter")
-    class StatusFilterTest {
-
-        private Member activeMember;
-        private Member inactiveMember;
-
-        @org.junit.jupiter.api.BeforeEach
-        void setUp() {
-            activeMember = aMember()
-                    .withRegistrationNumber("ZBM9001")
-                    .withName("Active", "Member")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("active@example.com")
-                    .withPhone("+420111111900")
-                    .withActive(true)
-                    .build();
-
-            inactiveMember = aMember()
-                    .withRegistrationNumber("ZBM9002")
-                    .withName("Inactive", "Member")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("inactive@example.com")
-                    .withPhone("+420111111901")
-                    .withActive(false)
-                    .build();
-
-            memberRepository.save(activeMember);
-            memberRepository.save(inactiveMember);
-        }
-
-        @Test
-        @DisplayName("ACTIVE status returns only active members")
-        void shouldReturnOnlyActiveMembersForActiveStatus() {
-            MemberFilter filter = MemberFilter.activeOnly();
-
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getRegistrationNumber().getValue()).isEqualTo("ZBM9001");
-            assertThat(page.getContent()).allMatch(Member::isActive);
-        }
-
-        @Test
-        @DisplayName("INACTIVE status returns only deactivated members")
-        void shouldReturnOnlyInactiveMembersForInactiveStatus() {
-            MemberFilter filter = new MemberFilter(MemberFilter.StatusFilter.INACTIVE, null, false);
-
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getRegistrationNumber().getValue()).isEqualTo("ZBM9002");
-            assertThat(page.getContent()).noneMatch(Member::isActive);
-        }
-
-        @Test
-        @DisplayName("ALL status returns both active and inactive members")
-        void shouldReturnAllMembersForAllStatus() {
-            MemberFilter filter = MemberFilter.all();
-
-            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(2);
-            assertThat(page.getContent()).extracting(m -> m.getRegistrationNumber().getValue())
-                    .containsExactlyInAnyOrder("ZBM9001", "ZBM9002");
-        }
-
-        @Test
-        @DisplayName("withStatus wither preserves fulltextQuery and changes status")
-        void shouldWithStatusPreserveFulltextQuery() {
-            MemberFilter base = MemberFilter.all().withFulltext("Active");
-            MemberFilter withActive = base.withStatus(MemberFilter.StatusFilter.ACTIVE);
-
-            Page<Member> page = memberRepository.findAll(withActive, Pageable.unpaged());
-
-            assertThat(page.getContent()).hasSize(1);
-            assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Active");
         }
     }
 

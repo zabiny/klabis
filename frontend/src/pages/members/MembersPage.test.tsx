@@ -7,6 +7,13 @@ import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {makePageData} from '../../__mocks__/pageData';
+import {
+    buildMemberRow,
+    manageMembersResource,
+    MEMBERS_URL,
+    membersCollection,
+    plainMembersResource,
+} from '../../__mocks__/membersPageTest';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
 import {act} from '@testing-library/react';
@@ -82,46 +89,41 @@ vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
 const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
     makePageData({
         resourceData,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
+        getResourceLink: vi.fn().mockReturnValue({href: MEMBERS_URL}),
         ...overrides,
     });
 
-const membersListResource: HalResponse = {_links: {self: {href: 'http://localhost/api/members'}}};
+const queryReturning = (data: HalResponse | undefined) =>
+    vi.mocked(useAuthorizedQuery).mockReturnValue({data, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
 
-const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
+const renderPage = (pageData: ReturnType<typeof createMockPageData>, initialUrl = '/members') => {
     vi.mocked(useHalPageData).mockReturnValue(pageData);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/members']}>
+            <MemoryRouter initialEntries={[initialUrl]}>
+                <Link to="/members">menu-members</Link>
                 <ToastProvider>
                     <MembersPage/>
                 </ToastProvider>
+                <SearchReader/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
-const buildMemberRow = (overrides?: Record<string, unknown>) => ({
-    id: 'member-1',
-    registrationNumber: 'REG-001',
-    lastName: 'Novák',
-    firstName: 'Jan',
-    active: true,
-    _links: {self: {href: '/api/members/member-1'}},
-    ...overrides,
-});
+const SearchReader = () => {
+    const location = useLocation();
+    return <span data-testid="search-string">{location.search || '(none)'}</span>;
+};
 
 const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<ReturnType<typeof makePageData>>) => {
-    const resourceData: HalResponse = {
-        _links: {self: {href: 'http://localhost/api/members'}},
-        _embedded: {memberSummaryResponseList: members},
-        page: {size: 10, totalElements: members.length, totalPages: 1, number: 0},
-    };
-    vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-    const pageData = createMockPageData(resourceData, routeOverrides);
-    return renderPage(pageData);
+    const resourceData = membersCollection(members);
+    queryReturning(resourceData);
+    return renderPage(createMockPageData(resourceData, routeOverrides));
 };
+
+const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
 
 describe('MembersPage', () => {
     beforeEach(() => {
@@ -129,103 +131,55 @@ describe('MembersPage', () => {
     });
 
     it('renders page title "Členové"', () => {
-        renderPage(createMockPageData(membersListResource));
+        renderPage(createMockPageData(plainMembersResource));
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
-    it('renders "Registrovat člena" button when registerMember template exists', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.getByTestId('form-template-button-registerMember')).toBeInTheDocument();
-        expect(screen.getByText('Registrovat člena')).toBeInTheDocument();
+    it.each([
+        ['Registrační číslo'],
+        ['Příjmení'],
+        ['Jméno'],
+        ['Kontakt'],
+        ['Akce'],
+    ])('renders column header "%s"', (header) => {
+        renderPage(createMockPageData(plainMembersResource));
+        expect(screen.getByText(header)).toBeInTheDocument();
     });
 
-    it('does NOT render "Registrovat člena" button when only default template exists (MEMBERS:READ only user)', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-            },
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.queryByTestId('form-template-button-registerMember')).not.toBeInTheDocument();
-    });
+    const onlyDefaultTemplate: HalResponse = {
+        _links: {self: {href: '/api/members'}},
+        _templates: {default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'})},
+    };
 
-    it('does NOT render "Registrovat člena" button when no templates exist', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
+    it.each([
+        {
+            button: 'registerMember',
+            label: 'Registrovat člena',
+            template: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+        },
+        {
+            button: 'importFromOris',
+            label: 'Synchronizovat s ORIS',
+            template: mockHalFormsTemplate({
+                title: 'Synchronizovat s ORIS',
+                method: 'POST',
+                target: 'http://localhost/api/members/oris-import',
+                properties: [],
+            }),
+        },
+    ])('toolbar button "$label" is shown iff the $button template is offered', ({button, label, template}) => {
+        const withTemplate: HalResponse = {
+            ...onlyDefaultTemplate,
+            _templates: {...onlyDefaultTemplate._templates, [button]: template},
         };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.queryByTestId('form-template-button-registerMember')).not.toBeInTheDocument();
-    });
 
-    it('renders "Synchronizovat s ORIS" button when importFromOris template is present', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                importFromOris: mockHalFormsTemplate({
-                    title: 'Synchronizovat s ORIS',
-                    method: 'POST',
-                    target: 'http://localhost/api/members/oris-import',
-                    properties: [],
-                }),
-            },
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.getByTestId('form-template-button-importFromOris')).toBeInTheDocument();
-        expect(screen.getByText('Synchronizovat s ORIS')).toBeInTheDocument();
-    });
+        const {unmount} = renderPage(createMockPageData(withTemplate));
+        expect(screen.getByTestId(`form-template-button-${button}`)).toBeInTheDocument();
+        expect(screen.getByText(label)).toBeInTheDocument();
+        unmount();
 
-    it('does NOT render "Synchronizovat s ORIS" button when importFromOris template is absent', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-            },
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.queryByTestId('form-template-button-importFromOris')).not.toBeInTheDocument();
-    });
-
-    it('renders basic table columns: Registrační číslo, Příjmení, Jméno', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Registrační číslo')).toBeInTheDocument();
-        expect(screen.getByText('Příjmení')).toBeInTheDocument();
-        expect(screen.getByText('Jméno')).toBeInTheDocument();
-    });
-
-    it('renders Kontakt column', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Kontakt')).toBeInTheDocument();
-    });
-
-    it('does NOT render Status column header', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.queryByText('Status')).not.toBeInTheDocument();
-    });
-
-    it('renders Akce column header', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-        };
-        renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Akce')).toBeInTheDocument();
+        renderPage(createMockPageData(onlyDefaultTemplate));
+        expect(screen.queryByTestId(`form-template-button-${button}`)).not.toBeInTheDocument();
     });
 });
 
@@ -259,49 +213,59 @@ describe('MembersPage — row data rendering', () => {
         expect(screen.queryByText(labels.fields.contact)).not.toBeInTheDocument();
     });
 
-    it('shows edit icon when _templates.updateMember exists on member row', () => {
-        const member = buildMemberRow({
-            _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
-        });
-        renderPageWithMembers([member]);
-        expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+    const rowAffordances = [
+        {
+            icon: 'edit',
+            affordance: '_templates.updateMember',
+            row: () => buildMemberRow({_templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})}}),
+            query: () => screen.queryByRole('button', {name: /upravit/i}),
+        },
+        {
+            icon: 'shield',
+            affordance: '_links.permissions',
+            row: () => buildMemberRow({
+                _links: {self: {href: '/api/members/member-1'}, permissions: {href: '/api/members/member-1/permissions'}},
+            }),
+            query: () => screen.queryByRole('button', {name: /oprávnění/i}),
+        },
+        {
+            icon: 'suspend',
+            affordance: '_templates.suspendMember',
+            row: () => buildMemberRow({_templates: {suspendMember: mockHalFormsTemplate({method: 'POST'})}}),
+            query: () => screen.queryByRole('button', {name: /ukončit členství/i}),
+        },
+        {
+            icon: 'resume',
+            affordance: '_templates.resumeMember',
+            row: () => buildMemberRow({_templates: {resumeMember: mockHalFormsTemplate({method: 'POST'})}}),
+            query: () => screen.queryByRole('button', {name: /reaktivovat/i}),
+        },
+        {
+            icon: 'banknote',
+            affordance: '_links.account',
+            row: () => buildMemberRow({
+                _links: {self: {href: '/api/members/member-1'}, account: {href: '/api/members/member-1/account'}},
+            }),
+            query: () => screen.queryByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}),
+        },
+        {
+            icon: 'sync indicator',
+            affordance: '_links.sync',
+            row: () => buildMemberRow({
+                _links: {self: {href: '/api/members/member-1'}, sync: {href: '/api/members/member-1/sync'}},
+            }),
+            query: () => screen.queryByTestId('sync-error'),
+        },
+    ];
+
+    it.each(rowAffordances)('shows $icon icon when $affordance exists on the member row', ({row, query}) => {
+        renderPageWithMembers([row()]);
+        expect(query()).toBeInTheDocument();
     });
 
-    it('does not show edit icon when _templates.updateMember is absent on member row', () => {
+    it.each(rowAffordances)('does not show $icon icon when $affordance is absent on the member row', ({query}) => {
         renderPageWithMembers([buildMemberRow()]);
-        expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
-    });
-
-    it('shows shield icon when _links.permissions exists on member row', () => {
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                permissions: {href: '/api/members/member-1/permissions'},
-            },
-        });
-        renderPageWithMembers([member]);
-        expect(screen.getByRole('button', {name: /oprávnění/i})).toBeInTheDocument();
-    });
-
-    it('does not show shield icon when _links.permissions is absent', () => {
-        renderPageWithMembers([buildMemberRow()]);
-        expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
-    });
-
-    it('shows suspend icon when _templates.suspendMember exists on member row', () => {
-        const member = buildMemberRow({
-            _templates: {suspendMember: mockHalFormsTemplate({method: 'POST'})},
-        });
-        renderPageWithMembers([member]);
-        expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
-    });
-
-    it('shows resume icon when _templates.resumeMember exists on member row', () => {
-        const member = buildMemberRow({
-            _templates: {resumeMember: mockHalFormsTemplate({method: 'POST'})},
-        });
-        renderPageWithMembers([member]);
-        expect(screen.getByRole('button', {name: /reaktivovat/i})).toBeInTheDocument();
+        expect(query()).not.toBeInTheDocument();
     });
 
     describe('suspend / resume action dialog', () => {
@@ -309,11 +273,16 @@ describe('MembersPage — row data rendering', () => {
             _templates: {suspendMember: mockHalFormsTemplate({method: 'POST', title: 'Ukončit členství člena', properties: []})},
         });
 
-        it('opens suspend dialog titled by the template title', () => {
-            renderPageWithMembers([suspendRow()]);
-            fireEvent.click(screen.getByRole('button', {name: /ukončit členství/i}));
+        it.each([
+            {action: 'suspend', button: /ukončit členství/i, template: 'suspendMember', title: 'Ukončit členství člena'},
+            {action: 'resume', button: /reaktivovat/i, template: 'resumeMember', title: 'Reaktivace člena'},
+        ])('opens $action dialog titled by the template title', ({button, template, title}) => {
+            renderPageWithMembers([buildMemberRow({
+                _templates: {[template]: mockHalFormsTemplate({method: 'POST', title, properties: []})},
+            })]);
+            fireEvent.click(screen.getByRole('button', {name: button}));
 
-            expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Ukončit členství člena'})[0]).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: title})[0]).toBeInTheDocument();
         });
 
         it('tells in the suspension form that a guardian with another guardian is removed from the guardians', () => {
@@ -331,15 +300,6 @@ describe('MembersPage — row data rendering', () => {
 
             expect(screen.queryByText(labels.suspensionWarning.suspendFormGuardianNote)).not.toBeInTheDocument();
         });
-
-        it('opens resume dialog titled by the template title', () => {
-            renderPageWithMembers([buildMemberRow({
-                _templates: {resumeMember: mockHalFormsTemplate({method: 'POST', title: 'Reaktivace člena', properties: []})},
-            })]);
-            fireEvent.click(screen.getByRole('button', {name: /reaktivovat/i}));
-
-            expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Reaktivace člena'})[0]).toBeInTheDocument();
-        });
     });
 
     it('clicking edit icon navigates to member detail page', () => {
@@ -347,153 +307,45 @@ describe('MembersPage — row data rendering', () => {
         const member = buildMemberRow({
             _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
         });
-        renderPageWithMembers([member], {
-            navigateToResource,
-            refetch: async () => {},
-            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-        });
+        renderPageWithMembers([member], {navigateToResource, refetch: async () => {}});
 
-        const editButton = screen.getByRole('button', {name: /upravit/i});
-        fireEvent.click(editButton);
+        fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
         expect(navigateToResource).toHaveBeenCalledWith(member, {state: {editing: true}});
     });
 
     it('clicking shield icon opens PermissionsDialog', () => {
-        const member = buildMemberRow({
-            firstName: 'Jan',
-            lastName: 'Novák',
-            _links: {
-                self: {href: '/api/members/member-1'},
-                permissions: {href: '/api/members/member-1/permissions'},
-            },
-        });
-        renderPageWithMembers([member]);
+        renderPageWithMembers([buildMemberRow({
+            _links: {self: {href: '/api/members/member-1'}, permissions: {href: '/api/members/member-1/permissions'}},
+        })]);
 
-        const shieldButton = screen.getByRole('button', {name: /oprávnění/i});
-        fireEvent.click(shieldButton);
+        fireEvent.click(screen.getByRole('button', {name: /oprávnění/i}));
         expect(screen.getByTestId('permissions-dialog')).toBeInTheDocument();
     });
 
-    it('clicking action icons does not trigger row click', () => {
+    it('clicking Banknote button opens FinanceTransactionDialog with the account link', () => {
+        renderPageWithMembers([buildMemberRow({
+            _links: {self: {href: '/api/members/member-1'}, account: {href: '/api/members/member-1/account'}},
+        })]);
+
+        fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
+
+        const dialog = screen.getByTestId('finance-transaction-dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(dialog).toHaveAttribute('data-account-href', '/api/members/member-1/account');
+    });
+
+    it.each([
+        {icon: 'shield', name: /oprávnění/i, link: {permissions: {href: '/api/members/member-1/permissions'}}},
+        {icon: 'Banknote', name: labels.finance.openTransactionDialogAriaLabel, link: {account: {href: '/api/members/member-1/account'}}},
+    ])('clicking $icon icon does not trigger row click', ({name, link}) => {
         const navigateToResource = vi.fn();
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                permissions: {href: '/api/members/member-1/permissions'},
-            },
-        });
-        renderPageWithMembers([member], {
+        renderPageWithMembers([buildMemberRow({_links: {self: {href: '/api/members/member-1'}, ...link}})], {
             navigateToResource,
             refetch: async () => {},
-            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
         });
 
-        const shieldButton = screen.getByRole('button', {name: /oprávnění/i});
-        fireEvent.click(shieldButton);
+        fireEvent.click(screen.getByRole('button', {name}));
         expect(navigateToResource).not.toHaveBeenCalled();
-    });
-});
-
-// Reads the current search string from the URL and exposes it in a testid span.
-const SearchReader = () => {
-    const location = useLocation();
-    return <span data-testid="search-string">{location.search || '(none)'}</span>;
-};
-
-const renderPageWithSearchReader = (initialUrl: string, pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={[initialUrl]}>
-                <ToastProvider>
-                    <MembersPage/>
-                </ToastProvider>
-                <SearchReader/>
-            </MemoryRouter>
-        </QueryClientProvider>
-    );
-};
-
-describe('MembersPage — filter bar integration', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-    });
-
-    it('leaves a bare URL bare while requesting the active-only default', () => {
-        renderPageWithSearchReader('/members', createMockPageData(membersListResource));
-
-        expect(screen.getByTestId('search-string')).toHaveTextContent('(none)');
-        expect(vi.mocked(useAuthorizedQuery).mock.calls.every(([url]) => String(url).includes('status=ACTIVE'))).toBe(true);
-    });
-
-    it('does NOT overwrite an existing status param on mount', () => {
-        const pageData = createMockPageData(membersListResource);
-        renderPageWithSearchReader('/members?status=INACTIVE', pageData);
-        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
-    });
-
-    it('clicking Neaktivní pill updates the URL to ?status=INACTIVE when hasManageAuthority is true', async () => {
-        const user = userEvent.setup();
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        const pageData = createMockPageData(resourceData);
-        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
-
-        await user.click(screen.getByRole('button', {name: labels.membersFilter.statusInactive}));
-        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
-    });
-
-    it('clicking Vše pill updates the URL to ?status=ALL when hasManageAuthority is true', async () => {
-        const user = userEvent.setup();
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        const pageData = createMockPageData(resourceData);
-        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
-
-        await user.click(screen.getByRole('button', {name: labels.membersFilter.statusAll}));
-        expect(screen.getByTestId('search-string')).toHaveTextContent('status=ALL');
-    });
-
-    it('clicking "Jen neúplní" updates the URL to ?incomplete=true when hasManageAuthority is true', async () => {
-        const user = userEvent.setup();
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        const pageData = createMockPageData(resourceData);
-        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
-
-        await user.click(screen.getByRole('checkbox', {name: labels.membersFilter.incompleteOnly}));
-        expect(screen.getByTestId('search-string')).toHaveTextContent('incomplete=true');
-    });
-
-    it('does NOT render the "Jen neúplní" toggle when hasManageAuthority is false', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: '/api/members'}},
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        const pageData = createMockPageData(resourceData);
-        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
-
-        expect(screen.queryByRole('checkbox', {name: labels.membersFilter.incompleteOnly})).not.toBeInTheDocument();
     });
 });
 
@@ -503,21 +355,11 @@ describe('MembersPage — data-incomplete badge', () => {
     });
 
     it('shows badge on incomplete row and not on complete row, when hasManageAuthority is true', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: 'http://localhost/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
-            _embedded: {
-                memberSummaryResponseList: [
-                    buildMemberRow({id: 'm1', registrationNumber: 'REG-001', dataIncomplete: true}),
-                    buildMemberRow({id: 'm2', registrationNumber: 'REG-002', dataIncomplete: false}),
-                ],
-            },
-            page: {size: 10, totalElements: 2, totalPages: 1, number: 0},
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        const resourceData = membersCollection([
+            buildMemberRow({id: 'm1', registrationNumber: 'REG-001', dataIncomplete: true}),
+            buildMemberRow({id: 'm2', registrationNumber: 'REG-002', dataIncomplete: false}),
+        ], manageMembersResource);
+        queryReturning(resourceData);
         renderPage(createMockPageData(resourceData));
 
         const badges = screen.getAllByText(labels.membersFilter.incompleteBadge)
@@ -526,231 +368,94 @@ describe('MembersPage — data-incomplete badge', () => {
     });
 
     it('does NOT show the badge column when hasManageAuthority is false (field absent)', () => {
-        const resourceData: HalResponse = {
-            _links: {self: {href: 'http://localhost/api/members'}},
-            _embedded: {
-                memberSummaryResponseList: [
-                    buildMemberRow({id: 'm1', registrationNumber: 'REG-001'}),
-                ],
-            },
-            page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
-        };
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        renderPage(createMockPageData(resourceData));
+        renderPageWithMembers([buildMemberRow({id: 'm1', registrationNumber: 'REG-001'})]);
 
         expect(screen.queryByText(labels.membersFilter.incompleteBadge)).not.toBeInTheDocument();
     });
 });
 
-describe('MembersPage — Banknote (finance transaction) action', () => {
+describe('MembersPage — filters wired to the table request', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('shows Banknote button when _links.account exists on member row', () => {
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                account: {href: '/api/members/member-1/account'},
-            },
-        });
-        renderPageWithMembers([member]);
-        expect(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel})).toBeInTheDocument();
+    it('leaves a bare URL bare while requesting the active-only default', () => {
+        queryReturning(undefined);
+        renderPage(createMockPageData(plainMembersResource));
+
+        expect(screen.getByTestId('search-string')).toHaveTextContent('(none)');
+        expect(requestedUrlsOf().every(url => url.includes('status=ACTIVE'))).toBe(true);
     });
 
-    it('does not show Banknote button when _links.account is absent', () => {
-        renderPageWithMembers([buildMemberRow()]);
-        expect(screen.queryByRole('button', {name: labels.finance.openTransactionDialogAriaLabel})).not.toBeInTheDocument();
-    });
+    it('does NOT overwrite an existing status param on mount', () => {
+        queryReturning(undefined);
+        renderPage(createMockPageData(plainMembersResource), '/members?status=INACTIVE');
 
-    it('clicking Banknote button opens FinanceTransactionDialog with the account link', () => {
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                account: {href: '/api/members/member-1/account'},
-            },
-        });
-        renderPageWithMembers([member]);
-
-        fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
-
-        const dialog = screen.getByTestId('finance-transaction-dialog');
-        expect(dialog).toBeInTheDocument();
-        expect(dialog).toHaveAttribute('data-account-href', '/api/members/member-1/account');
-    });
-
-    it('clicking Banknote button does not navigate to member detail', () => {
-        const navigateToResource = vi.fn();
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                account: {href: '/api/members/member-1/account'},
-            },
-        });
-        renderPageWithMembers([member], {
-            navigateToResource,
-            refetch: async () => {},
-            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-        });
-
-        fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
-
-        expect(navigateToResource).not.toHaveBeenCalled();
-    });
-
-    it('does not show PiggyBank button (navigation to account page removed)', () => {
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                account: {href: '/api/members/member-1/account'},
-            },
-        });
-        renderPageWithMembers([member]);
-        expect(screen.queryByRole('button', {name: labels.finance.openMemberAccount})).not.toBeInTheDocument();
-    });
-});
-
-describe('MembersPage — sync status indicator in actions cell (4.3)', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
-    it('renders SyncStatusIndicator in the actions cell when row has _links.sync', () => {
-        const member = buildMemberRow({
-            _links: {
-                self: {href: '/api/members/member-1'},
-                sync: {href: '/api/members/member-1/sync'},
-            },
-        });
-        renderPageWithMembers([member]);
-        // Behavioural coverage of SyncStatusIndicator lives in SyncStatusIndicator.test.tsx;
-        // here we only assert the indicator is mounted when the sync link is present.
-        expect(screen.getByTestId('sync-error')).toBeInTheDocument();
-    });
-
-    it('does not render a sync indicator when row has no _links.sync', () => {
-        renderPageWithMembers([buildMemberRow()]);
-        expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
-        expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
-    });
-});
-
-describe('MembersPage — access-dependent filters', () => {
-    const manageResource: HalResponse = {
-        _links: {self: {href: '/api/members'}},
-        _templates: {
-            default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-            registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-        },
-    };
-    const plainResource: HalResponse = {_links: {self: {href: '/api/members'}}};
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
-    const renderFor = (resource: HalResponse) => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        renderPageWithSearchReader('/members?status=ACTIVE', createMockPageData(resource));
-    };
-
-    it('regular user sees neither status pills nor the incomplete toggle, but keeps the search', () => {
-        renderFor(plainResource);
-
-        expect(screen.queryByRole('button', {name: labels.membersFilter.statusInactive})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: labels.membersFilter.statusAll})).not.toBeInTheDocument();
-        expect(screen.queryByRole('checkbox', {name: labels.membersFilter.incompleteOnly})).not.toBeInTheDocument();
-        expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toBeInTheDocument();
+        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
     });
 
     it('manager sees status pills with Aktivní selected by default', () => {
-        renderFor(manageResource);
+        queryReturning(manageMembersResource);
+        renderPage(createMockPageData(manageMembersResource), '/members?status=ACTIVE');
 
         expect(screen.getByRole('button', {name: labels.membersFilter.statusActive})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByRole('button', {name: labels.membersFilter.statusInactive})).toHaveAttribute('aria-pressed', 'false');
     });
 
-    it('regular user does not see the registration button', () => {
-        renderFor(plainResource);
+    it('the incomplete URL param checks the toggle and reaches the table request', () => {
+        queryReturning(manageMembersResource);
+        renderPage(createMockPageData(manageMembersResource), '/members?status=ACTIVE&incomplete=true');
 
-        expect(screen.queryByRole('button', {name: labels.templates.registerMember})).not.toBeInTheDocument();
+        expect(screen.getByRole('checkbox', {name: labels.membersFilter.incompleteOnly})).toBeChecked();
+        expect(requestedUrlsOf().some(u => u.includes('incomplete=true'))).toBe(true);
     });
-});
 
-describe('MembersPage — search text and URL state', () => {
-    const resource: HalResponse = {_links: {self: {href: '/api/members'}}};
-    const requestedUrls = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
+    it('regular user keeps the search while the manager-only filters are hidden', () => {
+        queryReturning(plainMembersResource);
+        renderPage(createMockPageData(plainMembersResource), '/members?status=ACTIVE');
 
-    const renderWithMenuLink = (initialUrl: string) => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-        vi.mocked(useHalPageData).mockReturnValue(createMockPageData(resource));
-        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-        return render(
-            <QueryClientProvider client={queryClient}>
-                <MemoryRouter initialEntries={[initialUrl]}>
-                    <Link to="/members">menu-members</Link>
-                    <ToastProvider>
-                    <MembersPage/>
-                </ToastProvider>
-                    <SearchReader/>
-                </MemoryRouter>
-            </QueryClientProvider>
-        );
-    };
-
-    beforeEach(() => {
-        vi.clearAllMocks();
+        expect(screen.queryByRole('button', {name: labels.membersFilter.statusInactive})).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toBeInTheDocument();
     });
 
     it('prefills the search input from the q URL param and sends it with the table request', () => {
-        renderWithMenuLink('/members?status=ACTIVE&q=nov');
+        queryReturning(plainMembersResource);
+        renderPage(createMockPageData(plainMembersResource), '/members?status=ACTIVE&q=nov');
 
         expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toHaveValue('nov');
-        expect(requestedUrls().some(u => u.includes('q=nov') && u.includes('status=ACTIVE'))).toBe(true);
-    });
-
-    it('does not send a one-character q to the table request', () => {
-        renderWithMenuLink('/members?status=ACTIVE&q=n');
-
-        expect(requestedUrls().some(u => u.includes('q='))).toBe(false);
+        expect(requestedUrlsOf().some(u => u.includes('q=nov') && u.includes('status=ACTIVE'))).toBe(true);
     });
 
     it('clears the search input and drops q from the request when returning via the menu link', async () => {
-        renderWithMenuLink('/members?status=ACTIVE&q=nov');
+        queryReturning(plainMembersResource);
+        renderPage(createMockPageData(plainMembersResource), '/members?status=ACTIVE&q=nov');
         vi.mocked(useAuthorizedQuery).mockClear();
 
         await userEvent.click(screen.getByRole('link', {name: 'menu-members'}));
 
         expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toHaveValue('');
-        expect(requestedUrls().some(u => u.includes('q='))).toBe(false);
+        expect(requestedUrlsOf().some(u => u.includes('q='))).toBe(false);
     });
 
     it('keeps the default active-only filter in the request after returning via the menu link', async () => {
-        renderWithMenuLink('/members?status=INACTIVE');
+        queryReturning(plainMembersResource);
+        renderPage(createMockPageData(plainMembersResource), '/members?status=INACTIVE');
         vi.mocked(useAuthorizedQuery).mockClear();
 
         await userEvent.click(screen.getByRole('link', {name: 'menu-members'}));
 
-        const urls = requestedUrls();
+        const urls = requestedUrlsOf();
         expect(urls.length).toBeGreaterThan(0);
         expect(urls.every(u => u.includes('status=ACTIVE'))).toBe(true);
     });
-});
 
-describe('MembersPage — page reset on filter change', () => {
-    it('on page 2, a status change requests page=0', async () => {
+    it('on page 2, a status change reaches the query and requests page=0', async () => {
         const resource: HalResponse = {
-            _links: {self: {href: 'http://localhost/api/members'}},
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
-                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
-            },
+            ...manageMembersResource,
             _embedded: {memberSummaryResponseList: []},
             page: {size: 10, totalElements: 30, totalPages: 3, number: 0},
         };
-        vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        queryReturning(resource);
         renderPage(createMockPageData(resource));
 
         await userEvent.click(screen.getByRole('button', {name: /Další/}));
@@ -761,10 +466,9 @@ describe('MembersPage — page reset on filter change', () => {
         const last = requestedUrlsOf().at(-1)!;
         expect(last).toContain('status=INACTIVE');
         expect(last).toContain('page=0');
+        expect(screen.getByTestId('search-string')).toHaveTextContent('status=INACTIVE');
     });
 });
-
-const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
 
 describe('MembersPage opened from a legal guardian profile', () => {
     const registerResource = (): HalResponse => ({

@@ -10,6 +10,7 @@
 # - "Suspended member detail shows suspension info": the deactivation section (reason, note, deactivating user) is asserted by `MemberDetailPage.test` ("deactivation section"), and the reason and note returned on the detail of a suspended member by the backend `MemberControllerApiTest.suspendedMemberShouldReturnUpdateAndResumeAffordances`.
 # - Suspension blocked by the last owner of a training group, by a negative balance, by both, and the whole-group suspension blocked by a minor's negative balance: the blockers are asserted by the backend `ManagementServiceTest` (`shouldThrowWhenMemberIsLastGroupOwner`, `shouldThrowWhenMemberHasNegativeBalance`, `shouldReportBothBlockersWhenBothConditionsApply`, `shouldBlockEverybodyWhenMinorHasDebt`), their 409 bodies by `MemberControllerApiTest` (`shouldReturn409WhenMemberIsLastGroupOwner`, `shouldReturn409WhenMemberHasOutstandingDebt`, `shouldReturn409WithDependentMembers`), and the warning dialog with groups, balance and dependent members by the frontend `SuspensionWarningDialog.test` and `useSuspendMemberAction.test`; `MemberDetailPage.groups.test` and `MembersPage.groups.test` assert the wiring.
 # - "Admin designates a successor owner of a free group", "Admin dissolves a free group", "A free group without other members can only be dissolved": the actions offered per free group and the dissolving are asserted by `SuspensionWarningDialog.test` ("free group row"); the effect of designating a successor (resolved row, resubmitted suspension) by the `MemberDetailPage.groups` and `MembersPage.groups` flow tests, which share the row logic with training groups; the 409 listing of free groups by the backend `ManagementServiceTest.shouldThrowWhenMemberIsLastGroupOwner` and `MemberControllerApiTest.shouldReturn409WhenMemberIsLastGroupOwner`. The "successor trainer" journey below covers the successor flow through UI and API.
+# - "User can search members by last name": the search text filter is asserted by the backend `MemberRepositoryTest` (fulltext filter cases: first name, last name, registration number, case and diacritics, tokens) and its pass-through of the `q` parameter by `MemberControllerApiTest.shouldPassQParamAsFulltextQuery`; the search input and its request by the frontend `MembersFilterBar.test` ("calls onChange with updated q when user types 2+ chars") and `membersQuery.test` ("sends q only with at least 2 characters"). Every journey that registers a member finds it in the list through the same search ("the member list contains member").
 @spec:members
 Feature: Members
   Club members are registered and maintained by member administrators, every member keeps their own profile up to date.
@@ -33,13 +34,6 @@ Feature: Members
       When Jan registers a minor member with last name "Mladsi" and a new legal guardian "Rodic"
       Then the member list contains member "Mladsi"
       And the detail of member "Mladsi" lists "Rodic" as legal guardian
-
-  Rule: Users find members in the member list by a search text
-
-    Scenario: User can search members by last name
-      Given member "Svoboda" is registered
-      When Eva searches the member list for "Svoboda"
-      Then only member "Svoboda" is listed
 
   Rule: An adult member updates their own information
 

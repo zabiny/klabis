@@ -142,11 +142,6 @@ When('{persona} registers a minor member with last name {name} and a new legal g
     await expect(heading(page, `${body.firstName} ${lastName}`)).toBeVisible();
 });
 
-When('{persona} searches the member list for {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
-    await actAs(persona);
-    await searchMembers(page, lastName);
-});
-
 When('{persona} opens the detail of member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await openDetailAs(page, actAs, persona, lastName);
 });
@@ -170,11 +165,6 @@ When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona,
 Then('the member list contains member {name}', async ({page}, lastName: string) => {
     await searchMembers(page, lastName);
     await expect(memberRow(page, lastName).first()).toBeVisible();
-});
-
-Then('only member {name} is listed', async ({page}, lastName: string) => {
-    await expect(memberRow(page, lastName)).toHaveCount(1);
-    await expect(page.getByText('1–1 z 1')).toBeVisible();
 });
 
 Then('{persona}\'s profile shows the phone number {string}', async ({page, currentRole}, persona: Persona, phone: string) => {

@@ -57,83 +57,46 @@ describe('MembersFilterBar', () => {
     });
 
     describe('status pill group', () => {
-        it('renders three status pill buttons when hasManageAuthority is true', () => {
-            renderFilterBar({ hasManageAuthority: true });
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusActive }),
-            ).toBeInTheDocument();
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
-            ).toBeInTheDocument();
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusAll }),
-            ).toBeInTheDocument();
-        });
+        const pills = [
+            {label: labels.membersFilter.statusActive, status: 'ACTIVE'},
+            {label: labels.membersFilter.statusInactive, status: 'INACTIVE'},
+            {label: labels.membersFilter.statusAll, status: 'ALL'},
+        ] as const;
 
-        it('hides the pill group entirely when hasManageAuthority is false', () => {
+        it.each(pills)('shows the "$label" pill iff hasManageAuthority', ({label}) => {
+            const {unmount} = renderFilterBar({ hasManageAuthority: true });
+            expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+            unmount();
+
             renderFilterBar({ hasManageAuthority: false });
-            expect(
-                screen.queryByRole('button', { name: labels.membersFilter.statusActive }),
-            ).not.toBeInTheDocument();
-            expect(
-                screen.queryByRole('button', { name: labels.membersFilter.statusInactive }),
-            ).not.toBeInTheDocument();
-            expect(
-                screen.queryByRole('button', { name: labels.membersFilter.statusAll }),
-            ).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
         });
 
-        it('Aktivní pill is active (aria-pressed=true) when value.status is ACTIVE', () => {
-            renderFilterBar({ value: { ...defaultValue, status: 'ACTIVE' } });
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusActive }),
-            ).toHaveAttribute('aria-pressed', 'true');
+        it.each(pills)('only the pill for value.status $status is aria-pressed', ({status}) => {
+            renderFilterBar({ value: { ...defaultValue, status } });
+            pills.forEach(pill => {
+                expect(screen.getByRole('button', { name: pill.label }))
+                    .toHaveAttribute('aria-pressed', String(pill.status === status));
+            });
         });
 
-        it('Neaktivní pill is active (aria-pressed=true) when value.status is INACTIVE', () => {
-            renderFilterBar({ value: { ...defaultValue, status: 'INACTIVE' } });
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
-            ).toHaveAttribute('aria-pressed', 'true');
-        });
-
-        it('Neaktivní pill is not active when value.status is ACTIVE', () => {
-            renderFilterBar({ value: { ...defaultValue, status: 'ACTIVE' } });
-            expect(
-                screen.getByRole('button', { name: labels.membersFilter.statusInactive }),
-            ).toHaveAttribute('aria-pressed', 'false');
-        });
-
-        it('calls onChange with updated status when Neaktivní is clicked', async () => {
-            const onChange = vi.fn();
-            const user = userEvent.setup();
-            renderFilterBar({ onChange });
-            await user.click(screen.getByRole('button', { name: labels.membersFilter.statusInactive }));
-            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status: 'INACTIVE' });
-        });
-
-        it('calls onChange with updated status when Vše is clicked', async () => {
-            const onChange = vi.fn();
-            const user = userEvent.setup();
-            renderFilterBar({ onChange });
-            await user.click(screen.getByRole('button', { name: labels.membersFilter.statusAll }));
-            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status: 'ALL' });
-        });
+        it.each(pills.filter(pill => pill.status !== 'ACTIVE'))(
+            'calls onChange with status $status when "$label" is clicked',
+            async ({label, status}) => {
+                const onChange = vi.fn();
+                const user = userEvent.setup();
+                renderFilterBar({ onChange });
+                await user.click(screen.getByRole('button', { name: label }));
+                expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status });
+            },
+        );
     });
 
     describe('incomplete-only toggle', () => {
-        it('renders the toggle when hasManageAuthority is true', () => {
-            renderFilterBar({ hasManageAuthority: true });
-            expect(
-                screen.getByRole('checkbox', { name: labels.membersFilter.incompleteOnly }),
-            ).toBeInTheDocument();
-        });
-
-        it('hides the toggle when hasManageAuthority is false', () => {
-            renderFilterBar({ hasManageAuthority: false });
-            expect(
-                screen.queryByRole('checkbox', { name: labels.membersFilter.incompleteOnly }),
-            ).not.toBeInTheDocument();
+        it.each([[true], [false]])('toggle is shown iff hasManageAuthority (%s)', (hasManageAuthority) => {
+            renderFilterBar({ hasManageAuthority });
+            expect(screen.queryByRole('checkbox', { name: labels.membersFilter.incompleteOnly }) !== null)
+                .toBe(hasManageAuthority);
         });
 
         it('is checked when value.incomplete is true', () => {

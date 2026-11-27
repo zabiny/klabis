@@ -22,6 +22,7 @@ import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.*;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -313,6 +314,7 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
                     .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.resumeMember").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember.method").value("POST"))
                     .andExpect(jsonPath("$._templates.suspendMember.target").value(
                             "http://localhost/api/members/%s/suspend".formatted(memberId)));
@@ -331,10 +333,14 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"))
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[0]").value("AM"))
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[10]").value("T"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.hasItems("MALE", "FEMALE"))))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline.length()")
+                            .value(org.hamcrest.Matchers.hasItem(2)))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.hasItems("AM", "T"))))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline.length()")
+                            .value(org.hamcrest.Matchers.hasItem(11)))
                     // x-hal-input-type pins a codegen-independent type: without it this would be
                     // the generated inline enum class name (UpdateMemberRequestGender).
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].type").value("Gender"))
@@ -1194,47 +1200,78 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._links.self.href").exists());
         }
 
-        private void listMinorWithoutContact() {
+        private Member incompleteAdultWithEmail() {
+            return MemberTestDataBuilder.aMemberWithId(UUID.randomUUID())
+                    .withEmail("jan.novak@example.com")
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withPhone((PhoneNumber) null)
+                    .withDataIncomplete(true)
+                    .build();
+        }
+
+        private Member minorWithoutContact() {
             Member member = MemberTestDataBuilder.aMemberWithId(UUID.randomUUID())
                     .withDateOfBirth(LocalDate.now().minusYears(10))
                     .withEmail((EmailAddress) null)
                     .withPhone((PhoneNumber) null)
                     .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member)));
             when(memberContactPort.effectiveContactOf(eq(member))).thenReturn(new EffectiveContact(
                     new EffectiveContact.Value("jan@example.com", "Jan Novák"),
                     EffectiveContact.Value.EMPTY));
+            return member;
+        }
+
+        private void listReturns(Member... members) {
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(members), PageRequest.of(0, 10), members.length));
+        }
+
+        private static String item(Member member, String path) {
+            return "$._embedded.memberSummaryResponseList[?(@.id=='%s')].%s".formatted(member.getId().uuid(), path);
         }
 
         @Test
-        @DisplayName("displayContact — MEMBERS:MANAGE caller sees guardian fallback with marker")
+        @DisplayName("caller with MEMBERS:MANAGE sees email, active, dataIncomplete, guardian fallback contact and the suspend template in summary items")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void manageCallerSeesDisplayContactWithGuardianMarker() throws Exception {
-            listMinorWithoutContact();
+        void manageCallerSeesManagementFieldsInSummaryItems() throws Exception {
+            Member adult = incompleteAdultWithEmail();
+            Member minor = minorWithoutContact();
+            listReturns(adult, minor);
 
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.value").value("jan@example.com"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.fromGuardian").value(true))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.guardianName").value("Jan Novák"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.phone.value").doesNotExist());
+                    .andExpect(jsonPath(item(adult, "email")).value(org.hamcrest.Matchers.hasItem("jan.novak@example.com")))
+                    .andExpect(jsonPath(item(adult, "active")).value(org.hamcrest.Matchers.hasItem(true)))
+                    .andExpect(jsonPath(item(adult, "dataIncomplete")).value(org.hamcrest.Matchers.hasItem(true)))
+                    .andExpect(jsonPath(item(adult, "_templates.suspendMember.method")).value(org.hamcrest.Matchers.hasItem("POST")))
+                    .andExpect(jsonPath(item(minor, "displayContact.email.value")).value(org.hamcrest.Matchers.hasItem("jan@example.com")))
+                    .andExpect(jsonPath(item(minor, "displayContact.email.fromGuardian")).value(org.hamcrest.Matchers.hasItem(true)))
+                    .andExpect(jsonPath(item(minor, "displayContact.email.guardianName")).value(org.hamcrest.Matchers.hasItem("Jan Novák")))
+                    .andExpect(jsonPath(item(minor, "displayContact.phone.value")).doesNotExist());
         }
 
         @Test
-        @DisplayName("displayContact — caller without MEMBERS:MANAGE does not see it")
+        @DisplayName("caller without MEMBERS:MANAGE does not see email, active, dataIncomplete, displayContact or action templates in summary items")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void regularCallerDoesNotSeeDisplayContact() throws Exception {
-            listMinorWithoutContact();
+        void regularCallerDoesNotSeeManagementFieldsInSummaryItems() throws Exception {
+            Member adult = incompleteAdultWithEmail();
+            Member minor = minorWithoutContact();
+            listReturns(adult, minor);
 
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").exists())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact").doesNotExist());
+                    .andExpect(jsonPath(item(adult, "id")).value(org.hamcrest.Matchers.hasItem(adult.getId().uuid().toString())))
+                    .andExpect(jsonPath(item(adult, "email")).doesNotExist())
+                    .andExpect(jsonPath(item(adult, "active")).doesNotExist())
+                    .andExpect(jsonPath(item(adult, "dataIncomplete")).doesNotExist())
+                    .andExpect(jsonPath(item(adult, "_templates")).doesNotExist())
+                    .andExpect(jsonPath(item(minor, "id")).value(org.hamcrest.Matchers.hasItem(minor.getId().uuid().toString())))
+                    .andExpect(jsonPath(item(minor, "displayContact")).doesNotExist());
         }
 
         @Test
-        @DisplayName("should call repository with correct default pagination parameters")
+        @DisplayName("should call service with default page 0, size 10 and sort by lastName then firstName ascending")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldCallRepositoryWithDefaultPagination() throws Exception {
             when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
@@ -1246,39 +1283,28 @@ class MemberControllerApiTest {
                     pageable.getPageNumber() == 0 &&
                     pageable.getPageSize() == 10 &&
                     pageable.getSort().getOrderFor("lastName") != null &&
-                    pageable.getSort().getOrderFor("lastName").isAscending()
+                    pageable.getSort().getOrderFor("lastName").isAscending() &&
+                    pageable.getSort().getOrderFor("firstName") != null &&
+                    pageable.getSort().getOrderFor("firstName").isAscending()
             ));
         }
 
         @Test
-        @DisplayName("should call repository with custom page and size parameters")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldCallRepositoryWithCustomPagination() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(getApiMembers()
-                    .param("page", "2")
-                    .param("size", "20"));
-
-            Mockito.verify(managementService).listMembers(any(MemberFilter.class), argThat(pageable ->
-                    pageable.getPageNumber() == 2 &&
-                    pageable.getPageSize() == 20
-            ));
-        }
-
-        @Test
-        @DisplayName("should call repository with correct sort parameters")
+        @DisplayName("should pass explicit page, size and sort parameters to the service")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldCallRepositoryWithCorrectSortParameters() throws Exception {
             when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers()
+                    .param("page", "2")
+                    .param("size", "20")
                     .param("sort", "firstName,desc")
                     .param("sort", "registrationNumber,asc"));
 
             Mockito.verify(managementService).listMembers(any(MemberFilter.class), argThat(pageable ->
+                    pageable.getPageNumber() == 2 &&
+                    pageable.getPageSize() == 20 &&
                     pageable.getSort().getOrderFor("firstName") != null &&
                     pageable.getSort().getOrderFor("firstName").isDescending() &&
                     pageable.getSort().getOrderFor("registrationNumber") != null &&
@@ -1308,13 +1334,10 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
-                    // Assert only basic structure - detailed member field mapping is tested in MemberMappingTests
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList").isArray())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").value(memberId1.toString()))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.self.href").exists())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].id").value(memberId2.toString()))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[*].id")
+                            .value(org.hamcrest.Matchers.contains(memberId1.toString(), memberId2.toString())))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[*]._links.self.href")
+                            .value(org.hamcrest.Matchers.hasSize(2)))
                     // Assert page metadata
                     .andExpect(jsonPath("$.page.size").value(10))
                     .andExpect(jsonPath("$.page.totalElements").value(2))
@@ -1384,130 +1407,6 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("admin (MEMBERS:MANAGE) should see email and active in summary items")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminShouldSeeEmailAndActiveInSummaryItems() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withEmail("jan.novak@example.com")
-                    .withActive(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].email").value("jan.novak@example.com"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].active").value(true));
-        }
-
-        @Test
-        @DisplayName("7.2 — admin (MEMBERS:MANAGE) sees dataIncomplete in summary items")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminShouldSeeDataIncompleteInSummaryItems() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withPhone((PhoneNumber) null)
-                    .withDataIncomplete(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].dataIncomplete").value(true));
-        }
-
-        @Test
-        @DisplayName("7.2 — caller without MEMBERS:MANAGE does not see dataIncomplete in summary items")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void nonManageCallerShouldNotSeeDataIncompleteInSummaryItems() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withPhone((PhoneNumber) null)
-                    .withDataIncomplete(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].dataIncomplete").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("non-admin (only MEMBERS:READ) should not see email and active in summary items")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void nonAdminShouldNotSeeEmailAndActiveInSummaryItems() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withEmail("jan.novak@example.com")
-                    .withActive(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].email").doesNotExist())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].active").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: admin should see suspendMember template on active summary item")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminShouldSeeSuspendMemberTemplateOnActiveSummaryItem() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: admin should see resumeMember template on inactive summary item")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminShouldSeeResumeMemberTemplateOnInactiveSummaryItem() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(false)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("HAL+FORMS: non-admin should not see action templates on summary items")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void nonAdminShouldNotSeeActionTemplatesOnSummaryItems() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(true)
-                    .build();
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(getApiMembers())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates").doesNotExist());
-        }
-
-        @Test
         @DisplayName("HAL+FORMS: user with MEMBERS:PERMISSIONS should see permissions link on active summary item")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
         void userWithPermissionsAuthorityShouldSeePermissionsLinkOnActiveSummaryItem() throws Exception {
@@ -1556,62 +1455,6 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.permissions").doesNotExist());
         }
 
-        @Test
-        @DisplayName("non-admin user receives only active members in paginated list (status forced to ACTIVE)")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void nonAdminUserReceivesOnlyActiveMembers() throws Exception {
-            UUID activeMemberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
-
-            when(managementService.listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
-                    any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(activeMember)));
-
-            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(1))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").value(activeMemberId.toString()))
-                    .andExpect(jsonPath("$.page.totalElements").value(1));
-        }
-
-        @Test
-        @DisplayName("admin user with no status param defaults to ACTIVE filter")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminUserDefaultsToActiveFilter() throws Exception {
-            UUID activeMemberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
-
-            when(managementService.listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
-                    any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(activeMember)));
-
-            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(1))
-                    .andExpect(jsonPath("$.page.totalElements").value(1));
-        }
-
-        @Test
-        @DisplayName("admin user with status=ALL receives both active and inactive members")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void adminUserWithAllStatusReceivesBothActiveAndInactiveMembers() throws Exception {
-            UUID activeMemberId = UUID.randomUUID();
-            UUID inactiveMemberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
-            Member inactiveMember = MemberTestDataBuilder.aMemberWithId(inactiveMemberId).withActive(false).build();
-
-            when(managementService.listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
-                    any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(activeMember, inactiveMember)));
-
-            mockMvc.perform(get("/api/members").param("status", "ALL").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
-                    .andExpect(jsonPath("$.page.totalElements").value(2));
-        }
     }
 
     @Nested
@@ -1695,40 +1538,68 @@ class MemberControllerApiTest {
             );
         }
 
-        @Test
-        @DisplayName("3.3 — MANAGE caller with status=INACTIVE gets StatusFilter.INACTIVE in filter")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void shouldPassInactiveStatusForManageCaller() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("status", "INACTIVE")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk());
-
-            Mockito.verify(managementService).listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.INACTIVE),
-                    any(org.springframework.data.domain.Pageable.class)
-            );
+        static Stream<Arguments> manageCallerStatuses() {
+            return Stream.of(
+                    arguments(null, MemberFilter.StatusFilter.ACTIVE),
+                    arguments("ACTIVE", MemberFilter.StatusFilter.ACTIVE),
+                    arguments("INACTIVE", MemberFilter.StatusFilter.INACTIVE),
+                    arguments("ALL", MemberFilter.StatusFilter.ALL));
         }
 
-        @Test
-        @DisplayName("3.3 — MANAGE caller with status=ALL gets StatusFilter.ALL in filter")
+        @ParameterizedTest(name = "MANAGE caller sending status={0} gets {1} in the filter")
+        @MethodSource("manageCallerStatuses")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void shouldPassAllStatusForManageCaller() throws Exception {
+        void manageCallerStatusReachesService(String status, MemberFilter.StatusFilter expected) throws Exception {
+            assertStatusReachingService(status, expected);
+        }
+
+        static Stream<Arguments> regularCallerStatuses() {
+            return Stream.of(arguments((String) null), arguments("INACTIVE"), arguments("ALL"));
+        }
+
+        @ParameterizedTest(name = "caller without MANAGE sending status={0} is silently forced to ACTIVE")
+        @MethodSource("regularCallerStatuses")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void regularCallerIsForcedToActive(String status) throws Exception {
+            assertStatusReachingService(status, MemberFilter.StatusFilter.ACTIVE);
+        }
+
+        private void assertStatusReachingService(String status, MemberFilter.StatusFilter expected) throws Exception {
             when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            mockMvc.perform(get("/api/members")
-                    .param("status", "ALL")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk());
+            var request = get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE);
+            if (status != null) {
+                request.param("status", status);
+            }
+            mockMvc.perform(request).andExpect(status().isOk());
 
-            Mockito.verify(managementService).listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
-                    any(org.springframework.data.domain.Pageable.class)
-            );
+            ArgumentCaptor<MemberFilter> filter = ArgumentCaptor.forClass(MemberFilter.class);
+            verify(managementService).listMembers(filter.capture(), any(org.springframework.data.domain.Pageable.class));
+            assertThat(filter.getValue().status()).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> selfLinkQueries() {
+            return Stream.of(
+                    arguments("status and q", "status=ACTIVE&q=novak", List.of("status=ACTIVE", "q=novak")),
+                    arguments("only status", "status=ACTIVE", List.of("status=ACTIVE")),
+                    arguments("only q", "q=novak", List.of("q=novak")),
+                    arguments("incomplete", "incomplete=true", List.of("incomplete=true")));
+        }
+
+        @ParameterizedTest(name = "self link keeps applied filter params as a concrete URL: {0}")
+        @MethodSource("selfLinkQueries")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void selfLinkIsConcreteUrlWithAppliedFilterParams(String description, String query, List<String> expectedParams) throws Exception {
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            var response = mockMvc.perform(get("/api/members?" + query).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            String selfHref = JsonPath.read(response, "$._links.self.href");
+            assertThat(selfHref).contains(expectedParams).doesNotContain("{", "}", "%7B", "%7D");
         }
 
         @Test
@@ -1739,119 +1610,6 @@ class MemberControllerApiTest {
                     .param("status", "INVALID_VALUE")
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        @DisplayName("3.5 — non-MANAGE caller with status=INACTIVE is silently forced to ACTIVE")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldForceActiveStatusForNonManageCaller() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("status", "INACTIVE")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk());
-
-            Mockito.verify(managementService).listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
-                    any(org.springframework.data.domain.Pageable.class)
-            );
-        }
-
-        @Test
-        @DisplayName("3.5 — non-MANAGE caller with status=ALL is silently forced to ACTIVE")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldForceActiveStatusWhenNonManageCallerRequestsAll() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("status", "ALL")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk());
-
-            Mockito.verify(managementService).listMembers(
-                    argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
-                    any(org.springframework.data.domain.Pageable.class)
-            );
-        }
-
-        @Test
-        @DisplayName("3.7 — default sort includes firstName ASC as secondary tiebreak")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldHaveFirstNameAscAsSecondaryDefaultSort() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
-
-            Mockito.verify(managementService).listMembers(
-                    any(MemberFilter.class),
-                    argThat(pageable ->
-                            pageable.getSort().getOrderFor("lastName") != null &&
-                            pageable.getSort().getOrderFor("lastName").isAscending() &&
-                            pageable.getSort().getOrderFor("firstName") != null &&
-                            pageable.getSort().getOrderFor("firstName").isAscending()
-                    )
-            );
-        }
-
-        @Test
-        @DisplayName("3.8 — self link is a concrete URL with applied filter params, not a URI template")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void selfLinkMustBeConcreteUrlNotUriTemplate() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("status", "ACTIVE")
-                    .param("q", "novak")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("status=ACTIVE")))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("q=novak")))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
-        }
-
-        @Test
-        @DisplayName("3.9 — self link has no template variables when only status is provided (q absent)")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void selfLinkHasNoTemplateVarsWhenOnlyStatusProvided() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("status", "ACTIVE")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("status=ACTIVE")))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
-        }
-
-        @Test
-        @DisplayName("3.10 — self link has no template variables when only q is provided (status absent)")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void selfLinkHasNoTemplateVarsWhenOnlyQProvided() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("q", "novak")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("q=novak")))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("{"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
         }
 
         @Test
@@ -1890,19 +1648,6 @@ class MemberControllerApiTest {
             );
         }
 
-        @Test
-        @DisplayName("7.3 — incomplete=true is preserved in the collection's self link")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void incompleteParamPreservedInSelfLink() throws Exception {
-            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/members")
-                    .param("incomplete", "true")
-                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("incomplete=true")));
-        }
     }
 
     @Nested
@@ -2350,20 +2095,6 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$[0].prompt").value("Jan Novák (ZBM0001)"))
                     .andExpect(jsonPath("$[1].value").value(memberId2.toString()))
                     .andExpect(jsonPath("$[1].prompt").value("Eva Svobodová (ZBM0002)"));
-        }
-
-        @Test
-        @DisplayName("should return empty array when no active members")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldReturnEmptyArrayWhenNoActiveMembers() throws Exception {
-            when(managementService.listActiveMembers()).thenReturn(List.of());
-
-            mockMvc.perform(get("/api/members/options")
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(jsonPath("$").isArray())
-                    .andExpect(jsonPath("$.length()").value(0));
         }
 
         @Test
