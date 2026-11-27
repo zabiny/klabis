@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Unit tests for MemberMemento class.
@@ -383,27 +384,10 @@ class MemberMementoTest {
         @Test
         @DisplayName("should handle null member reference gracefully")
         void shouldHandleNullMemberReferenceGracefully() {
-            // Arrange - Create memento without member reference
             MemberMemento memento = new MemberMemento();
 
-            // Act
-            var events = memento.getDomainEvents();
-
-            // Assert - Returns empty list when member is null
-            assertThat(events).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should handle clearDomainEvents with null member reference")
-        void shouldHandleClearDomainEventsWithNullMemberReference() {
-            // Arrange - Create memento without member reference
-            MemberMemento memento = new MemberMemento();
-
-            // Act - Should not throw exception
-            memento.clearDomainEvents();
-
-            // Assert - No exception thrown
-            assertThat(true).isTrue();
+            assertThat(memento.getDomainEvents()).isEmpty();
+            assertThatCode(memento::clearDomainEvents).doesNotThrowAnyException();
         }
     }
 

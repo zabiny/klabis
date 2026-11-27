@@ -9,8 +9,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MembersWebMvcTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
@@ -45,21 +44,19 @@ class CurrentUserIntegrationTest {
 
     @DisplayName("should inject CurrentUserData with memberId in controller via @ActingUser")
     @WithKlabisMockUser(username = TEST_USERNAME, userId = TEST_USER_ID, memberId = TEST_MEMBER_ID)
-    @ParameterizedTest
-    @ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
-    void shouldInjectCurrentUserDataWithMemberIdInController(String acceptMediaType) throws Exception {
-        mockMvc.perform(get("/api/currentUser").accept(acceptMediaType))
+    @Test
+    void shouldInjectCurrentUserDataWithMemberIdInController() throws Exception {
+        mockMvc.perform(get("/api/currentUser"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(TEST_USER_ID.toString()))
                 .andExpect(jsonPath("$.memberId").value(TEST_MEMBER_ID.toString()));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    @Test
     @DisplayName("should inject CurrentUserData without memberId in controller via @ActingUser")
     @WithKlabisMockUser(username = TEST_USERNAME, userId = TEST_USER_ID)
-    void shouldInjectCurrentUserDataWithoutMemberIdInController(String acceptMediaType) throws Exception {
-        mockMvc.perform(get("/api/currentUser").accept(acceptMediaType))
+    void shouldInjectCurrentUserDataWithoutMemberIdInController() throws Exception {
+        mockMvc.perform(get("/api/currentUser"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(TEST_USER_ID.toString()))
                 .andExpect(jsonPath("$.memberId").isEmpty());
@@ -67,20 +64,18 @@ class CurrentUserIntegrationTest {
 
     @DisplayName("should inject MemberId in controller via @ActingMember when user has member profile")
     @WithKlabisMockUser(username = TEST_USERNAME, userId = TEST_USER_ID, memberId = TEST_MEMBER_ID)
-    @ParameterizedTest
-    @ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
-    void shouldInjectMemberIdViaActingMember(String acceptMediaType) throws Exception {
-        mockMvc.perform(get("/api/actingMember").accept(acceptMediaType))
+    @Test
+    void shouldInjectMemberIdViaActingMember() throws Exception {
+        mockMvc.perform(get("/api/actingMember"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.memberId").value(TEST_MEMBER_ID.toString()));
     }
 
     @DisplayName("should return 403 via @ActingMember when user has no member profile")
     @WithKlabisMockUser(username = TEST_USERNAME, userId = TEST_USER_ID)
-    @ParameterizedTest
-    @ValueSource(strings = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
-    void shouldReturn403WhenActingMemberHasNoMemberProfile(String acceptMediaType) throws Exception {
-        mockMvc.perform(get("/api/actingMember").accept(acceptMediaType))
+    @Test
+    void shouldReturn403WhenActingMemberHasNoMemberProfile() throws Exception {
+        mockMvc.perform(get("/api/actingMember"))
                 .andExpect(status().isForbidden());
     }
 

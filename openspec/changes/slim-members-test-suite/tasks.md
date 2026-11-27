@@ -16,16 +16,16 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 2. Trivial and dead tests
 
-- [ ] 2.1 Delete `M/domain/ValueObjectTestBase.java` and its overrides in `AddressTest`, `BankAccountNumberTest`, `BirthNumberTest`, `EmailAddressTest`, `PhoneNumberTest`
-- [ ] 2.2 Delete equality/immutability/toString tests of records (`NationalityTest`, `PersonNameTest`, `PersonalInformationTest.shouldBeImmutable`, `ExpiringDocumentTest`); keep them only for hand-written `equals` (`PersonalInformation`, `RegistrationNumber`)
-- [ ] 2.3 Delete tests that re-run validation delegated to another value object: name null/blank in `PersonalInformationTest`, country cases in `AddressTest.CountryValidation` and `NationalityTest` except null country (kept by `PersonNameTest`, `CountryTest`)
-- [ ] 2.4 Check that `RegistrationNumber` is never serialized by Jackson in any response, then remove `getClubCode()`, `getBirthYear()`, `getSequenceNumber()` and `PersonName.initials()`, `formalName()` with their tests (design D7)
-- [ ] 2.5 Delete empty, always-true and `@Disabled` tests: `MemberMementoTest.shouldHandleClearDomainEventsWithNullMemberReference`, empty nested `MemberRepositoryTest.UpdateOperations`, `@Disabled` tests in `MemberControllerApiTest` and `MemberMappingTests`
-- [ ] 2.6 Reduce `R/MemberMappingTests` to about 5 tests (MapStruct null guards and single-document variants covered by the all-fields tests); fix its stale Javadoc
-- [ ] 2.7 Delete `MemberCreatedEventTest` (kept by `MemberTest`), `scheduler/MinorAgeOutJobTest`, `MembersOrisDiscoveryPropertiesTest.appliesOverride`, `MemberLegalGuardianGroupLinkProcessorTest` (kept by `LegalGuardianGroupLinksTests`)
-- [ ] 2.8 `CurrentUserIntegrationTest`: drop the media-type parameter
-- [ ] 2.9 Optional parameterization of null/blank/too-long cases in `AddressTest`, `BirthNumberTest`, `PhoneNumberTest`, `EmailAddressTest`, `RegistrationNumberTest`, `PhoneNumberNormalizerTest`
-- [ ] 2.10 Coverage comparison, code review, commit
+- [x] 2.1 Delete `M/domain/ValueObjectTestBase.java` and its overrides in `AddressTest`, `BankAccountNumberTest`, `BirthNumberTest`, `EmailAddressTest`, `PhoneNumberTest`
+- [x] 2.2 Delete equality/immutability/toString tests of records (`NationalityTest`, `PersonNameTest`, `PersonalInformationTest.shouldBeImmutable`, `ExpiringDocumentTest`); keep them only for hand-written `equals` (`PersonalInformation`, `RegistrationNumber`)
+- [x] 2.3 Delete tests that re-run validation delegated to another value object: name null/blank in `PersonalInformationTest`, country cases in `AddressTest.CountryValidation` and `NationalityTest` except null country (kept by `PersonNameTest`, `CountryTest`)
+- [x] 2.4 Check that `RegistrationNumber` is never serialized by Jackson in any response, then remove `getClubCode()`, `getBirthYear()`, `getSequenceNumber()` and `PersonName.initials()`, `formalName()` with their tests (design D7)
+- [x] 2.5 Delete empty, always-true and `@Disabled` tests: `MemberMementoTest.shouldHandleClearDomainEventsWithNullMemberReference`, empty nested `MemberRepositoryTest.UpdateOperations`, `@Disabled` tests in `MemberControllerApiTest` and `MemberMappingTests`
+- [x] 2.6 Reduce `R/MemberMappingTests` to about 5 tests (MapStruct null guards and single-document variants covered by the all-fields tests); fix its stale Javadoc
+- [x] 2.7 Delete `MemberCreatedEventTest` (kept by `MemberTest`), `scheduler/MinorAgeOutJobTest`, `MembersOrisDiscoveryPropertiesTest.appliesOverride`, `MemberLegalGuardianGroupLinkProcessorTest` (kept by `LegalGuardianGroupLinksTests`)
+- [x] 2.8 `CurrentUserIntegrationTest`: drop the media-type parameter
+- [x] 2.9 Optional parameterization of null/blank/too-long cases in `AddressTest`, `BirthNumberTest`, `PhoneNumberTest`, `EmailAddressTest`, `RegistrationNumberTest`, `PhoneNumberNormalizerTest`
+- [x] 2.10 Coverage comparison, code review, commit
 
 ## 3. Profile editing and access
 

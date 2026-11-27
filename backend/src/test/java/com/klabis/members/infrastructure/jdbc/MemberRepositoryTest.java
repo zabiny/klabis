@@ -754,12 +754,6 @@ class MemberRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Update operations")
-    class UpdateOperations {
-
-    }
-
-    @Nested
     @DisplayName("findAll() with fulltext filter")
     class FulltextFilter {
 

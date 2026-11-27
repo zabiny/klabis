@@ -48,9 +48,6 @@ class RegistrationNumberGeneratorTest {
 
         // Assert
         assertThat(regNumber.getValue()).isEqualTo("ZBM0500");
-        assertThat(regNumber.getClubCode()).isEqualTo("ZBM");
-        assertThat(regNumber.getBirthYear()).isEqualTo(5);
-        assertThat(regNumber.getSequenceNumber()).isEqualTo(0);
         verify(memberRepositoryMock).countByBirthYear(2005);
     }
 
@@ -66,7 +63,6 @@ class RegistrationNumberGeneratorTest {
 
         // Assert
         assertThat(regNumber.getValue()).isEqualTo("ZBM0501");
-        assertThat(regNumber.getSequenceNumber()).isEqualTo(1);
     }
 
     @Test
@@ -100,7 +96,6 @@ class RegistrationNumberGeneratorTest {
 
         // Assert
         assertThat(regNumber.getValue()).isEqualTo("ZBM2300");
-        assertThat(regNumber.getBirthYear()).isEqualTo(23);
     }
 
     @Test
@@ -115,7 +110,6 @@ class RegistrationNumberGeneratorTest {
 
         // Assert
         assertThat(regNumber.getValue()).isEqualTo("ZBM9500");
-        assertThat(regNumber.getBirthYear()).isEqualTo(95);
     }
 
     @Test
@@ -130,7 +124,6 @@ class RegistrationNumberGeneratorTest {
 
         // Assert
         assertThat(regNumber.getValue()).isEqualTo("ZBM1099");
-        assertThat(regNumber.getSequenceNumber()).isEqualTo(99);
     }
 
     @Test
@@ -169,7 +162,7 @@ class RegistrationNumberGeneratorTest {
         RegistrationNumber regNumber = customGenerator.generate(dateOfBirth);
 
         // Assert
-        assertThat(regNumber.getClubCode()).isEqualTo("ABC");
+        assertThat(regNumber.getValue()).isEqualTo("ABC0500");
     }
 
     @Test

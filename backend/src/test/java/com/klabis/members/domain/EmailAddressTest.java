@@ -1,169 +1,72 @@
 package com.klabis.members.domain;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @DisplayName("EmailAddress Value Object Tests")
-class EmailAddressTest extends ValueObjectTestBase<EmailAddress> {
-
-    @Override
-    protected EmailAddress createValidValue() {
-        return EmailAddress.of("john@example.com");
-    }
-
-    @Override
-    protected EmailAddress createDifferentValue() {
-        return EmailAddress.of("jane@example.com");
-    }
-
-    @Override
-    protected String expectedToString() {
-        return "john@example.com";
-    }
+class EmailAddressTest {
 
     @Test
     @DisplayName("Should create valid email address")
     void shouldCreateValidEmailAddress() {
-        // Given
-        String email = "john@example.com";
+        EmailAddress emailAddress = EmailAddress.of("john@example.com");
 
-        // When
-        EmailAddress emailAddress = EmailAddress.of(email);
-
-        // Then
-        assertThat(emailAddress.value()).isEqualTo(email);
+        assertThat(emailAddress.value()).isEqualTo("john@example.com");
     }
 
-    @Nested
-    @DisplayName("Email Format Validation")
-    class EmailFormatValidation {
-
-        @Test
-        @DisplayName("Should throw exception when email is null")
-        void shouldThrowWhenEmailIsNull() {
-            assertThatThrownBy(() -> EmailAddress.of(null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Email address is required");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when email is blank")
-        void shouldThrowWhenEmailIsBlank() {
-            assertThatThrownBy(() -> EmailAddress.of("   "))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Email address is required");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when email has no @ symbol")
-        void shouldThrowWhenEmailHasNoAtSymbol() {
-            assertThatThrownBy(() -> EmailAddress.of("invalidemail.com"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-
-            assertThatThrownBy(() -> EmailAddress.of("invalidemail"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when email has no domain")
-        void shouldThrowWhenEmailHasNoDomain() {
-            assertThatThrownBy(() -> EmailAddress.of("user@"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-
-            assertThatThrownBy(() -> EmailAddress.of("@example.com"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-        }
+    static Stream<Arguments> invalidEmails() {
+        return Stream.of(
+                arguments(named("null", (String) null), "Email address is required"),
+                arguments(named("blank", "   "), "Email address is required"),
+                arguments(named("no @ symbol with dot", "invalidemail.com"), "Invalid email format"),
+                arguments(named("no @ symbol", "invalidemail"), "Invalid email format"),
+                arguments(named("plain address", "plainaddress"), "Invalid email format"),
+                arguments(named("no domain", "user@"), "Invalid email format"),
+                arguments(named("no local part", "@example.com"), "Invalid email format")
+        );
     }
 
-    @Nested
-    @DisplayName("Email Format Acceptance")
-    class EmailFormatAcceptance {
-
-        @Test
-        @DisplayName("Should accept valid email with subdomain")
-        void shouldAcceptValidEmailWithSubdomain() {
-            assertThatCode(() -> EmailAddress.of("user@mail.example.com"))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should accept valid email with numbers")
-        void shouldAcceptValidEmailWithNumbers() {
-            assertThatCode(() -> EmailAddress.of("user123@example123.com"))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should accept valid email with special characters")
-        void shouldAcceptValidEmailWithSpecialCharacters() {
-            assertThatCode(() -> EmailAddress.of("user.name+tag@example.com"))
-                    .doesNotThrowAnyException();
-
-            assertThatCode(() -> EmailAddress.of("user_name@example.com"))
-                    .doesNotThrowAnyException();
-
-            assertThatCode(() -> EmailAddress.of("user-name@example.com"))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should accept valid email with multiple dots")
-        void shouldAcceptValidEmailWithMultipleDots() {
-            assertThatCode(() -> EmailAddress.of("john.doe.smith@example.co.uk"))
-                    .doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should accept common email formats")
-        void shouldAcceptCommonEmailFormats() {
-            assertThatCode(() -> EmailAddress.of("test@example.com"))
-                    .doesNotThrowAnyException();
-            assertThatCode(() -> EmailAddress.of("first.last@example.co.uk"))
-                    .doesNotThrowAnyException();
-            assertThatCode(() -> EmailAddress.of("user+tag@example.org"))
-                    .doesNotThrowAnyException();
-            assertThatCode(() -> EmailAddress.of("user_name@example.net"))
-                    .doesNotThrowAnyException();
-        }
+    @ParameterizedTest
+    @MethodSource("invalidEmails")
+    @DisplayName("Should reject invalid email")
+    void shouldRejectInvalidEmail(String email, String expectedMessage) {
+        assertThatThrownBy(() -> EmailAddress.of(email))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(expectedMessage);
     }
 
-    @Nested
-    @DisplayName("Email Normalization")
-    class EmailNormalization {
-
-        @Test
-        @DisplayName("Should trim whitespace from email")
-        void shouldTrimWhitespaceFromEmail() {
-            EmailAddress emailAddress = EmailAddress.of("  john@example.com  ");
-            assertThat(emailAddress.value()).isEqualTo("john@example.com");
-        }
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {
+            "user@mail.example.com",
+            "user123@example123.com",
+            "user.name+tag@example.com",
+            "user_name@example.com",
+            "user-name@example.com",
+            "john.doe.smith@example.co.uk",
+            "test@example.com",
+            "first.last@example.co.uk",
+            "user+tag@example.org",
+            "user_name@example.net"
+    })
+    @DisplayName("Should accept valid email formats")
+    void shouldAcceptValidEmailFormats(String email) {
+        assertThatCode(() -> EmailAddress.of(email)).doesNotThrowAnyException();
     }
 
-    @Nested
-    @DisplayName("Invalid Email Formats")
-    class InvalidEmailFormats {
-
-        @Test
-        @DisplayName("Should reject invalid email formats")
-        void shouldRejectInvalidEmailFormats() {
-            assertThatThrownBy(() -> EmailAddress.of("plainaddress"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-
-            assertThatThrownBy(() -> EmailAddress.of("@example.com"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-
-            assertThatThrownBy(() -> EmailAddress.of("user@"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid email format");
-        }
+    @Test
+    @DisplayName("Should trim whitespace from email")
+    void shouldTrimWhitespaceFromEmail() {
+        EmailAddress emailAddress = EmailAddress.of("  john@example.com  ");
+        assertThat(emailAddress.value()).isEqualTo("john@example.com");
     }
 }

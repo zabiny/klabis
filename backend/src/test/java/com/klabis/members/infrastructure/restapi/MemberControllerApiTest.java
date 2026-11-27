@@ -253,38 +253,6 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_READ permission - should include only update affordance (no permissions neither terminate)")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
-        @Disabled("need to finish authorization for klabisAfford")
-        void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Address address = Address.of("Test Street", "Test City", "10000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("test@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420123456789");
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withName("Test", "Member")
-                    .withRegistrationNumber("ZBM1234")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withPhone(phone)
-                    .withEmail(email)
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.permissions").doesNotExist())
-                    .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
-                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
-        }
-
-        @Test
         @DisplayName("HAL+FORMS: user with MEMBERS_PERMISSIONS authority: should include permissions link")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
         void activeMemberShouldReturnPermissionsLink() throws Exception {

@@ -40,50 +40,6 @@ class PersonalInformationTest {
         }
 
         @Test
-        @DisplayName("Should throw exception when first name is null")
-        void shouldThrowWhenFirstNameIsNull() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of(
-                            null, "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
-                    )
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("First name");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when first name is blank")
-        void shouldThrowWhenFirstNameIsBlank() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of(
-                            "   ", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
-                    )
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("First name");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when last name is null")
-        void shouldThrowWhenLastNameIsNull() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of(
-                            "Jan", null, LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
-                    )
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Last name");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when last name is blank")
-        void shouldThrowWhenLastNameIsBlank() {
-            assertThatThrownBy(() ->
-                    PersonalInformation.of(
-                            "Jan", "", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE
-                    )
-            ).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Last name");
-        }
-
-        @Test
         @DisplayName("Should throw exception when date of birth is null")
         void shouldThrowWhenDateOfBirthIsNull() {
             assertThatThrownBy(() ->
@@ -233,39 +189,6 @@ class PersonalInformationTest {
     }
 
     @Nested
-    @DisplayName("Nationality code validation")
-    class NationalityCodeValidation {
-
-        @Test
-        @DisplayName("Should accept valid ISO 3166-1 alpha-2 nationality codes")
-        void shouldAcceptValidAlpha2NationalityCodes() {
-            assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("CZ"), Gender.MALE)
-            ).doesNotThrowAnyException();
-
-            assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("US"), Gender.MALE)
-            ).doesNotThrowAnyException();
-
-            assertThatCode(() ->
-                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("GB"), Gender.MALE)
-            ).doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("Should normalize nationality to uppercase")
-        void shouldNormalizeNationalityToUppercase() {
-            // Given
-            PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", LocalDate.of(2005, 3, 15), Nationality.of("cz"), Gender.MALE
-            );
-
-            // When & Then
-            assertThat(info.getNationality().code()).isEqualTo("CZ");
-        }
-    }
-
-    @Nested
     @DisplayName("Object methods (equals, hashCode, toString)")
     class ObjectMethods {
 
@@ -287,22 +210,6 @@ class PersonalInformationTest {
             assertThat(info1).isEqualTo(info2);
             assertThat(info1).isNotEqualTo(info3);
             assertThat(info1.hashCode()).isEqualTo(info2.hashCode());
-        }
-
-        @Test
-        @DisplayName("Should be immutable")
-        void shouldBeImmutable() {
-            // Given
-            LocalDate birthDate = LocalDate.of(2005, 3, 15);
-            PersonalInformation info = PersonalInformation.of(
-                    "Jan", "Novák", birthDate, Nationality.of("CZ"), Gender.MALE
-            );
-
-            // When - trying to modify returned values
-            LocalDate returnedDate = info.getDateOfBirth();
-
-            // Then - original object should be unaffected
-            assertThat(info.getDateOfBirth()).isEqualTo(birthDate);
         }
 
         @Test

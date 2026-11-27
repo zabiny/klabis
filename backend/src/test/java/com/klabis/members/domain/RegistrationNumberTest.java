@@ -3,18 +3,18 @@ package com.klabis.members.domain;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-/**
- * TDD Test for RegistrationNumber value object.
- * <p>
- * Tests business rules:
- * - Registration number format XXXYYDD (club code + birth year + sequence)
- * - Value object equality and immutability
- * - Valid format validation
- */
 @DisplayName("RegistrationNumber Value Object")
 class RegistrationNumberTest {
 
@@ -33,114 +33,36 @@ class RegistrationNumberTest {
             assertThat(regNumber.getValue()).isEqualTo("ZBM0501");
         }
 
-        @Test
-        @DisplayName("should fail when registration number is null")
-        void shouldFailWhenRegistrationNumberIsNull() {
-            assertThatThrownBy(() -> new RegistrationNumber(null))
+        static Stream<Arguments> invalidRegistrationNumbers() {
+            return Stream.of(
+                    arguments(named("null", (String) null), "Registration number is required"),
+                    arguments(named("blank", ""), "Registration number is required"),
+                    arguments(named("invalid format", "INVALID"), "Invalid registration number format"),
+                    arguments(named("too short", "ZBM05"), "Invalid registration number format"),
+                    arguments(named("too long", "ZBM05011"), "Invalid registration number format")
+            );
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidRegistrationNumbers")
+        @DisplayName("should reject invalid registration number")
+        void shouldRejectInvalidRegistrationNumber(String value, String expectedMessage) {
+            assertThatThrownBy(() -> new RegistrationNumber(value))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Registration number is required");
+                    .hasMessageContaining(expectedMessage);
         }
 
         @Test
-        @DisplayName("should fail when registration number is blank")
-        void shouldFailWhenRegistrationNumberIsBlank() {
-            assertThatThrownBy(() -> new RegistrationNumber(""))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Registration number is required");
+        @DisplayName("should normalize lowercase club code to uppercase")
+        void shouldNormalizeLowercaseClubCodeToUppercase() {
+            assertThat(new RegistrationNumber("zbm0501").getValue()).isEqualTo("ZBM0501");
         }
 
-        @Test
-        @DisplayName("should fail when registration number has invalid format")
-        void shouldFailWhenRegistrationNumberHasInvalidFormat() {
-            assertThatThrownBy(() -> new RegistrationNumber("INVALID"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid registration number format");
-        }
-
-        @Test
-        @DisplayName("should fail when registration number is too short")
-        void shouldFailWhenRegistrationNumberIsTooShort() {
-            assertThatThrownBy(() -> new RegistrationNumber("ZBM05"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid registration number format");
-        }
-
-        @Test
-        @DisplayName("should fail when registration number is too long")
-        void shouldFailWhenRegistrationNumberIsTooLong() {
-            assertThatThrownBy(() -> new RegistrationNumber("ZBM05011"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid registration number format");
-        }
-
-        @Test
-        @DisplayName("should handle uppercase and lowercase club codes")
-        void shouldHandleUppercaseAndLowercaseClubCodes() {
-            // Act
-            RegistrationNumber regNumber = new RegistrationNumber("zbm0501");
-
-            // Assert - should normalize to uppercase
-            assertThat(regNumber.getValue()).isEqualTo("ZBM0501");
-            assertThat(regNumber.getClubCode()).isEqualTo("ZBM");
-        }
-
-        @Test
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"ABC0501", "12A0501", "A1B0501"})
         @DisplayName("should support different club code formats")
-        void shouldSupportDifferentClubCodeFormats() {
-            // Act
-            RegistrationNumber regNumber1 = new RegistrationNumber("ABC0501");
-            RegistrationNumber regNumber2 = new RegistrationNumber("12A0501");
-            RegistrationNumber regNumber3 = new RegistrationNumber("A1B0501");
-
-            // Assert
-            assertThat(regNumber1.getClubCode()).isEqualTo("ABC");
-            assertThat(regNumber2.getClubCode()).isEqualTo("12A");
-            assertThat(regNumber3.getClubCode()).isEqualTo("A1B");
-        }
-    }
-
-    @Nested
-    @DisplayName("getClubCode() method")
-    class GetClubCodeMethod {
-
-        @Test
-        @DisplayName("should extract club code from registration number")
-        void shouldExtractClubCode() {
-            // Act
-            RegistrationNumber regNumber = new RegistrationNumber("ZBM0501");
-
-            // Assert
-            assertThat(regNumber.getClubCode()).isEqualTo("ZBM");
-        }
-    }
-
-    @Nested
-    @DisplayName("getBirthYear() method")
-    class GetBirthYearMethod {
-
-        @Test
-        @DisplayName("should extract birth year from registration number")
-        void shouldExtractBirthYear() {
-            // Act
-            RegistrationNumber regNumber = new RegistrationNumber("ZBM0501");
-
-            // Assert
-            assertThat(regNumber.getBirthYear()).isEqualTo(5); // Year 2005
-        }
-    }
-
-    @Nested
-    @DisplayName("getSequenceNumber() method")
-    class GetSequenceNumberMethod {
-
-        @Test
-        @DisplayName("should extract sequence number from registration number")
-        void shouldExtractSequenceNumber() {
-            // Act
-            RegistrationNumber regNumber = new RegistrationNumber("ZBM0501");
-
-            // Assert
-            assertThat(regNumber.getSequenceNumber()).isEqualTo(1);
+        void shouldSupportDifferentClubCodeFormats(String value) {
+            assertThat(new RegistrationNumber(value).getValue()).isEqualTo(value);
         }
     }
 

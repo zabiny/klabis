@@ -7,22 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("BankAccountNumber Value Object Tests")
-class BankAccountNumberTest extends ValueObjectTestBase<BankAccountNumber> {
-
-    @Override
-    protected BankAccountNumber createValidValue() {
-        return BankAccountNumber.of("CZ6508000000192000145399");
-    }
-
-    @Override
-    protected BankAccountNumber createDifferentValue() {
-        return BankAccountNumber.of("123456/0800");
-    }
-
-    @Override
-    protected String expectedToString() {
-        return "CZ6508000000192000145399";
-    }
+class BankAccountNumberTest {
 
     @Nested
     @DisplayName("Valid IBAN Format Acceptance")
