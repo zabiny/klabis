@@ -79,11 +79,11 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 7. Member persistence
 
-- [ ] 7.1 `MemberRepositoryTest`: delete the 8 save-only tests; merge the 10 round-trip tests into two (full and minimal member, `findById`, recursive comparison without audit fields); delete version and auditing duplicates; use `aMember()` defaults instead of copied builder chains
-- [ ] 7.2 `MemberMementoTest`: delete the 7 tests covered by `shouldCreateMementoFromMemberWithAllFields`; merge the null-member event tests
-- [ ] 7.3 `BirthNumberAuditServiceTest`: standard `includeFilters`, 3 tests → 1, rename after the repository it tests
-- [ ] 7.4 Delete `UpdateMemberPersistenceTest` (precondition Lifecycle `$.email` in place)
-- [ ] 7.5 Coverage comparison, code review, commit
+- [x] 7.1 `MemberRepositoryTest`: delete the 8 save-only tests; merge the 10 round-trip tests into two (full and minimal member, `findById`, recursive comparison without audit fields); delete version and auditing duplicates; use `aMember()` defaults instead of copied builder chains. There was no real optimistic-locking test to keep (only version 0 asserted); the two `DataIncompleteFlag` save tests also went, the update-path test stays
+- [x] 7.2 `MemberMementoTest`: delete the 7 tests covered by `shouldCreateMementoFromMemberWithAllFields`; merge the null-member event tests
+- [x] 7.3 `BirthNumberAuditServiceTest`: standard `includeFilters`, 3 tests → 1, rename after the repository it tests. Renamed to `BirthNumberAuditLogJdbcRepositoryTest`
+- [x] 7.4 Delete `UpdateMemberPersistenceTest` (precondition Lifecycle `$.email` in place)
+- [x] 7.5 Coverage comparison, code review, commit
 
 ## 8. ORIS sync
 

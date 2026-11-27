@@ -1,13 +1,12 @@
 package com.klabis.members.infrastructure.jdbc;
 
-import com.klabis.common.users.UserId;
-import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +27,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -56,115 +57,75 @@ class MemberRepositoryTest {
     private MemberRepository memberRepository;
 
     @Nested
-    @DisplayName("save() method")
-    class SaveMethod {
+    @DisplayName("round trip through the database")
+    class RoundTrip {
 
-        @Test
-        @DisplayName("should save new member with all required fields")
-        void shouldSaveNewMember() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
+        private RecursiveComparisonConfiguration persistedFields() {
+            return RecursiveComparisonConfiguration.builder()
+                    .withIgnoredFields("auditMetadata")
+                    .withEqualsForType((a, b) -> Duration.between(a, b).abs().compareTo(Duration.ofMillis(1)) < 0,
+                            Instant.class)
                     .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            MemberAssert.assertThat(savedMember)
-                    .hasFirstName("Jan")
-                    .hasLastName("Novák")
-                    .hasDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .hasNationality("CZ")
-                    .hasGender(Gender.MALE)
-                    .isActive();
-            assertThat(savedMember.getId()).isNotNull();
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0501");
-            assertThat(savedMember.getEmail()).isNotNull();
-            assertThat(savedMember.getEmail().value()).isEqualTo("jan.novak@example.com");
-            assertThat(savedMember.getPhone()).isNotNull();
-            assertThat(savedMember.getPhone().value()).isEqualTo("+420123456789");
         }
 
         @Test
-        @DisplayName("should populate createdAt and createdBy on save")
-        void shouldPopulateCreatedAtAndCreatedByOnSave() {
-            // Given
+        @DisplayName("member with every field filled is read back unchanged")
+        void shouldReadBackFullMemberUnchanged() {
             Member member = aMember()
-                    .withRegistrationNumber("ZBM0001")
-                    .withName("Test", "User")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withName("Petra", "Nováková")
+                    .withDateOfBirth(LocalDate.of(1995, 3, 1))
                     .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 5", "Ostrava", "70800", Country.of("CZ")))
-                    .withEmail("test@example.com")
-                    .withPhone("+420111111111")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")))
+                    .withEmail("petra.novakova@example.com")
+                    .withPhone("+420111222333")
+                    .withBirthNumber("950301/1234")
+                    .withBankAccountNumber("123456/0300")
+                    .withChipNumber("CHIP123")
+                    .withIdentityCard(IdentityCard.of("AB123456", LocalDate.of(2099, 1, 1)))
+                    .withMedicalCourse(MedicalCourse.of(LocalDate.of(2023, 1, 15), Optional.of(LocalDate.of(2025, 1, 15))))
+                    .withTrainerLicense(TrainerLicense.of(TrainerLevel.T2, LocalDate.of(2098, 1, 1)))
+                    .withRefereeLicense(RefereeLicense.of(RefereeLevel.R2, LocalDate.of(2097, 1, 1)))
+                    .withDrivingLicenseGroup(DrivingLicenseGroup.A)
+                    .withDietaryRestrictions("Vegetarian")
+                    .withDataIncomplete(true)
+                    .suspended(DeactivationReason.ODHLASKA, "Member requested termination")
                     .build();
+            memberRepository.save(member);
 
-            // When
-            Member savedMember = memberRepository.save(member);
+            Optional<Member> loaded = memberRepository.findById(member.getId());
 
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getCreatedAt()).isNotNull();
-            assertThat(savedMember.getCreatedBy()).isNotNull();
-            assertThat(savedMember.getLastModifiedAt()).isNotNull();
-            assertThat(savedMember.getLastModifiedBy()).isNotNull();
+            assertThat(loaded).get()
+                    .usingRecursiveComparison(persistedFields())
+                    .isEqualTo(member);
         }
 
         @Test
-        @DisplayName("should set version to zero on new member")
-        void shouldSetVersionToZeroOnNewMember() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0002")
-                    .withName("Version", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("version@example.com")
-                    .withPhone("+420111111112")
-                    .build();
+        @DisplayName("member without address, contacts and optional fields is read back unchanged")
+        void shouldReadBackMinimalMemberUnchanged() {
+            Member member = aMember().withAddress(null).withEmail((EmailAddress) null).withPhone((PhoneNumber) null).build();
+            memberRepository.save(member);
 
-            // When
-            Member savedMember = memberRepository.save(member);
+            Optional<Member> loaded = memberRepository.findById(member.getId());
 
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getVersion()).isNotNull();
-            assertThat(savedMember.getVersion()).isEqualTo(0L);
+            assertThat(loaded).get()
+                    .usingRecursiveComparison(persistedFields())
+                    .isEqualTo(member);
         }
 
         @Test
-        @DisplayName("should save member with all optional fields")
-        void shouldSaveMemberWithAllOptionalFields() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0003")
-                    .withName("Complete", "Member")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("complete@example.com")
-                    .withPhone("+420111111114")
-                    .build();
+        @DisplayName("audit fields are filled on save and version starts at zero")
+        void shouldFillAuditFieldsAndStartVersionAtZero() {
+            Member member = aMember().build();
+            memberRepository.save(member);
 
-            // When
-            Member savedMember = memberRepository.save(member);
+            Member loaded = memberRepository.findById(member.getId()).orElseThrow();
 
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getId()).isNotNull();
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0003");
+            assertThat(loaded.getCreatedAt()).isNotNull();
+            assertThat(loaded.getCreatedBy()).isNotNull();
+            assertThat(loaded.getLastModifiedAt()).isNotNull();
+            assertThat(loaded.getLastModifiedBy()).isNotNull();
+            assertThat(loaded.getVersion()).isZero();
         }
     }
 
@@ -183,31 +144,6 @@ class MemberRepositoryTest {
         }
 
         @Test
-        @DisplayName("stores true when saving an incomplete member")
-        void shouldStoreTrueWhenSavingIncompleteMember() {
-            Member incompleteMember = aMember()
-                    .withRegistrationNumber("ZBM7001")
-                    .withDataIncomplete(true)
-                    .build();
-
-            Member savedMember = memberRepository.save(incompleteMember);
-
-            assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isTrue();
-        }
-
-        @Test
-        @DisplayName("stores false when saving a complete member")
-        void shouldStoreFalseWhenSavingCompleteMember() {
-            Member completeMember = aMember()
-                    .withRegistrationNumber("ZBM7002")
-                    .build();
-
-            Member savedMember = memberRepository.save(completeMember);
-
-            assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isFalse();
-        }
-
-        @Test
         @DisplayName("flips to false once a previously incomplete member is completed and re-saved")
         void shouldUpdateStoredFlagToFalseAfterCompletion() {
             Member incompleteMember = aMember()
@@ -217,7 +153,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(incompleteMember);
             assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isTrue();
 
-            savedMember.recordMissingData(java.util.Set.of());
+            savedMember.recordMissingData(Set.of());
             Member resavedMember = memberRepository.save(savedMember);
 
             assertThat(dataIncompleteColumnFor(resavedMember.getId().uuid())).isFalse();
@@ -240,43 +176,47 @@ class MemberRepositoryTest {
                     .withDateOfBirth(LocalDate.of(2003, 4, 4)).withActive(false).withDataIncomplete(true).build());
         }
 
+        private static Arguments row(String description, MemberFilter filter, List<String> expected) {
+            return arguments(Named.of(description, filter), expected);
+        }
+
         static Stream<Arguments> filters() {
             return Stream.of(
-                    arguments("no restriction returns everybody", MemberFilter.all(),
+                    row("no restriction returns everybody", MemberFilter.all(),
                             List.of("ZBM7001", "ZBM7002", "ZBM7003", "ZBM7004")),
-                    arguments("status ACTIVE", MemberFilter.activeOnly(), List.of("ZBM7001", "ZBM7002")),
-                    arguments("status INACTIVE", MemberFilter.all().withStatus(MemberFilter.StatusFilter.INACTIVE),
+                    row("status ACTIVE", MemberFilter.activeOnly(), List.of("ZBM7001", "ZBM7002")),
+                    row("status INACTIVE", MemberFilter.all().withStatus(MemberFilter.StatusFilter.INACTIVE),
                             List.of("ZBM7003", "ZBM7004")),
-                    arguments("fulltext matches first name substring", MemberFilter.all().withFulltext("Jan"),
+                    row("fulltext matches first name substring", MemberFilter.all().withFulltext("Jan"),
                             List.of("ZBM7001", "ZBM7003")),
-                    arguments("fulltext matches last name substring", MemberFilter.all().withFulltext("Nov"),
+                    row("fulltext matches last name substring", MemberFilter.all().withFulltext("Nov"),
                             List.of("ZBM7001", "ZBM7003", "ZBM7004")),
-                    arguments("fulltext matches registration number", MemberFilter.all().withFulltext("ZBM7004"),
+                    row("fulltext matches registration number", MemberFilter.all().withFulltext("ZBM7004"),
                             List.of("ZBM7004")),
-                    arguments("fulltext ignores case", MemberFilter.all().withFulltext("NOVAK"),
+                    row("fulltext ignores case", MemberFilter.all().withFulltext("NOVAK"),
                             List.of("ZBM7001", "ZBM7003", "ZBM7004")),
-                    arguments("fulltext without diacritics matches accented data", MemberFilter.all().withFulltext("cermak"),
+                    row("fulltext without diacritics matches accented data", MemberFilter.all().withFulltext("cermak"),
                             List.of("ZBM7002")),
-                    arguments("fulltext with diacritics matches unaccented data", MemberFilter.all().withFulltext("Novák"),
+                    row("fulltext with diacritics matches unaccented data", MemberFilter.all().withFulltext("Novák"),
                             List.of("ZBM7001", "ZBM7003", "ZBM7004")),
-                    arguments("fulltext tokens are ANDed", MemberFilter.all().withFulltext("karel novak"),
+                    row("fulltext tokens are ANDed", MemberFilter.all().withFulltext("karel novak"),
                             List.of("ZBM7004")),
-                    arguments("fulltext with tokens matching different members finds nobody",
+                    row("fulltext with tokens matching different members finds nobody",
                             MemberFilter.all().withFulltext("jan cermak"), List.of()),
-                    arguments("fulltext combined with status",
+                    row("fulltext combined with status",
                             MemberFilter.all().withFulltext("novak").withStatus(MemberFilter.StatusFilter.INACTIVE),
                             List.of("ZBM7003", "ZBM7004")),
-                    arguments("incompleteOnly", MemberFilter.all().withIncompleteOnly(true),
+                    row("incompleteOnly", MemberFilter.all().withIncompleteOnly(true),
                             List.of("ZBM7002", "ZBM7004")),
-                    arguments("incompleteOnly combined with status", MemberFilter.activeOnly().withIncompleteOnly(true),
+                    row("incompleteOnly combined with status", MemberFilter.activeOnly().withIncompleteOnly(true),
                             List.of("ZBM7002")),
-                    arguments("incompleteOnly combined with fulltext",
+                    row("incompleteOnly combined with fulltext",
                             MemberFilter.all().withIncompleteOnly(true).withFulltext("Karel"), List.of("ZBM7004")),
-                    arguments("bornOn keeps members born on any of the dates regardless of status",
+                    row("bornOn keeps members born on any of the dates regardless of status",
                             MemberFilter.all().withBornOn(Set.of(LocalDate.of(2000, 1, 1), LocalDate.of(2002, 3, 3))),
                             List.of("ZBM7001", "ZBM7003")),
-                    arguments("empty bornOn matches nobody", MemberFilter.all().withBornOn(Set.of()), List.of()),
-                    arguments("bornOnOrBefore includes the boundary date",
+                    row("empty bornOn matches nobody", MemberFilter.all().withBornOn(Set.of()), List.of()),
+                    row("bornOnOrBefore includes the boundary date",
                             MemberFilter.all().withBornOnOrBefore(LocalDate.of(2001, 2, 2)),
                             List.of("ZBM7001", "ZBM7002"))
             );
@@ -284,7 +224,7 @@ class MemberRepositoryTest {
 
         @ParameterizedTest(name = "{0}")
         @MethodSource("filters")
-        void shouldReturnOnlyMembersMatchingFilter(String description, MemberFilter filter, List<String> expected) {
+        void shouldReturnOnlyMembersMatchingFilter(MemberFilter filter, List<String> expected) {
             Page<Member> page = memberRepository.findAll(filter, PageRequest.of(0, 10));
 
             assertThat(page.getContent())
@@ -316,70 +256,9 @@ class MemberRepositoryTest {
     class FindByIdMethod {
 
         @Test
-        @DisplayName("should find member by id")
-        void shouldFindMemberById() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .build();
-            Member savedMember = memberRepository.save(member);
-
-            // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
-
-            // Then
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getId()).isEqualTo(savedMember.getId());
-            assertThat(foundMember.get().getFirstName()).isEqualTo("Jan");
-            assertThat(foundMember.get().getLastName()).isEqualTo("Novák");
-        }
-
-        @Test
         @DisplayName("should return empty when member not found")
         void shouldReturnEmptyWhenMemberNotFound() {
-            // Given
-            MemberId nonExistentId = new MemberId(UUID.randomUUID());
-
-            // When
-            Optional<Member> foundMember = memberRepository.findById(nonExistentId);
-
-            // Then
-            assertThat(foundMember).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should load all member fields correctly")
-        void shouldLoadAllMemberFieldsCorrectly() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0004")
-                    .withName("Full", "Load")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Test", "11000", Country.of("CZ")))
-                    .withEmail("full@example.com")
-                    .withPhone("+420111111116")
-                    .build();
-            Member savedMember = memberRepository.save(member);
-
-            // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
-
-            // Then
-            assertThat(foundMember).isPresent();
-            Member loaded = foundMember.get();
-            assertThat(loaded.getFirstName()).isEqualTo("Full");
-            assertThat(loaded.getLastName()).isEqualTo("Load");
-            assertThat(loaded.getEmail().value()).isEqualTo("full@example.com");
-            assertThat(loaded.getPhone().value()).isEqualTo("+420111111116");
+            assertThat(memberRepository.findById(new MemberId(UUID.randomUUID()))).isEmpty();
         }
     }
 
@@ -391,9 +270,9 @@ class MemberRepositoryTest {
         @DisplayName("should reject saving a second member with an already used registration number")
         void shouldRejectDuplicateRegistrationNumber() {
             RegistrationNumber regNum = new RegistrationNumber("ZBM0502");
-            memberRepository.save(aMember().withRegistrationNumber(regNum).withEmail("first.dup@example.com").build());
+            memberRepository.save(aMember().withRegistrationNumber(regNum).build());
 
-            Member duplicate = aMember().withRegistrationNumber(regNum).withEmail("second.dup@example.com").build();
+            Member duplicate = aMember().withRegistrationNumber(regNum).build();
 
             assertThatThrownBy(() -> memberRepository.save(duplicate))
                     .isInstanceOf(DataIntegrityViolationException.class);
@@ -402,36 +281,20 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should find member by registration number")
         void shouldFindMemberByRegistrationNumber() {
-            // Given
             RegistrationNumber regNum = new RegistrationNumber("ZBM0501");
-            Member member = aMember()
-                    .withRegistrationNumber(regNum)
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .build();
+            Member member = aMember().withRegistrationNumber(regNum).build();
             memberRepository.save(member);
 
-            // When
             Optional<Member> foundMember = memberRepository.findByRegistrationNumber(regNum);
 
-            // Then
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getRegistrationNumber().getValue()).isEqualTo("ZBM0501");
-            assertThat(foundMember.get().getFirstName()).isEqualTo("Jan");
+            assertThat(foundMember).map(Member::getId).contains(member.getId());
         }
 
         @Test
         @DisplayName("should return empty when registration number not found")
         void shouldReturnEmptyWhenRegistrationNumberNotFound() {
-            // When
             Optional<Member> foundMember = memberRepository.findByRegistrationNumber(new RegistrationNumber("NON9999"));
 
-            // Then
             assertThat(foundMember).isEmpty();
         }
     }
@@ -443,35 +306,20 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should return empty when email not found")
         void shouldReturnEmptyWhenEmailNotFound() {
-            // When
             Optional<Member> foundMember = memberRepository.findByEmail("nonexistent@example.com");
 
-            // Then
             assertThat(foundMember).isEmpty();
         }
 
         @Test
         @DisplayName("should be case-insensitive for email")
         void shouldBeCaseInsensitiveForEmail() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0503")
-                    .withName("Test", "User")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Test", "11000", Country.of("CZ")))
-                    .withEmail("test@example.com")
-                    .withPhone("+420111111118")
-                    .build();
+            Member member = aMember().withEmail("test@example.com").build();
             memberRepository.save(member);
 
-            // When - search with uppercase
             Optional<Member> foundMember = memberRepository.findByEmail("TEST@EXAMPLE.COM");
 
-            // Email should be case-insensitive per RFC 5321
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getEmail().value()).isEqualTo("test@example.com");
+            assertThat(foundMember).map(Member::getId).contains(member.getId());
         }
     }
 
@@ -482,63 +330,22 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should count members by birth year correctly")
         void shouldCountMembersByBirthYear() {
-            // Given
-            Member member1 = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Test1")
-                    .withDateOfBirth(LocalDate.of(2005, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test1 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("test1@example.com")
-                    .withPhone("+420111111119")
-                    .build();
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0501")
+                    .withDateOfBirth(LocalDate.of(2005, 1, 1)).build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0502")
+                    .withDateOfBirth(LocalDate.of(2005, 12, 31)).build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0601")
+                    .withDateOfBirth(LocalDate.of(2006, 6, 15)).build());
 
-            Member member2 = aMember()
-                    .withRegistrationNumber("ZBM0502")
-                    .withName("Petra", "Test2")
-                    .withDateOfBirth(LocalDate.of(2005, 12, 31))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Test2 2", "Brno", "60200", Country.of("CZ")))
-                    .withEmail("test2@example.com")
-                    .withPhone("+420111111120")
-                    .build();
-
-            Member member3 = aMember()
-                    .withRegistrationNumber("ZBM0601")
-                    .withName("Karel", "Test3")
-                    .withDateOfBirth(LocalDate.of(2006, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test3 3", "Ostrava", "70800", Country.of("CZ")))
-                    .withEmail("test3@example.com")
-                    .withPhone("+420111111121")
-                    .build();
-
-            memberRepository.save(member1);
-            memberRepository.save(member2);
-            memberRepository.save(member3);
-
-            // When
-            int count2005 = memberRepository.countByBirthYear(2005);
-            int count2006 = memberRepository.countByBirthYear(2006);
-            int count2007 = memberRepository.countByBirthYear(2007);
-
-            // Then
-            assertThat(count2005).isEqualTo(2);
-            assertThat(count2006).isEqualTo(1);
-            assertThat(count2007).isEqualTo(0);
+            assertThat(memberRepository.countByBirthYear(2005)).isEqualTo(2);
+            assertThat(memberRepository.countByBirthYear(2006)).isEqualTo(1);
+            assertThat(memberRepository.countByBirthYear(2007)).isZero();
         }
 
         @Test
         @DisplayName("should return zero when no members exist")
         void shouldReturnZeroWhenNoMembersExist() {
-            // When
-            int count = memberRepository.countByBirthYear(2005);
-
-            // Then
-            assertThat(count).isZero();
+            assertThat(memberRepository.countByBirthYear(2005)).isZero();
         }
     }
 
@@ -549,27 +356,12 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should return paginated members")
         void shouldReturnPaginatedMembers() {
-            // Given - create 5 members
             for (int i = 1; i <= 5; i++) {
-                Member member = aMember()
-                        .withRegistrationNumber("ZBM000" + i)
-                        .withName("FirstName" + i, "LastName" + i)
-                        .withDateOfBirth(LocalDate.of(2000 + i, 1, 1))
-                        .withNationality("CZ")
-                        .withGender(Gender.MALE)
-                        .withAddress(Address.of("Street " + i, "City", "11000", Country.of("CZ")))
-                        .withEmail("user" + i + "@example.com")
-                        .withPhone("+420111111%03d".formatted(i))
-                        .build();
-                memberRepository.save(member);
+                memberRepository.save(aMember().withRegistrationNumber("ZBM000" + i).build());
             }
 
-            Pageable pageable = PageRequest.of(0, 2);
+            Page<Member> page = memberRepository.findAll(MemberFilter.all(), PageRequest.of(0, 2));
 
-            // When
-            Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
-
-            // Then
             assertThat(page.getContent()).hasSize(2);
             assertThat(page.getTotalElements()).isEqualTo(5);
             assertThat(page.getTotalPages()).isEqualTo(3);
@@ -579,14 +371,10 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should sort members by last name ascending, then by first name ascending")
         void shouldSortMembersByLastName() {
-            memberRepository.save(aMember().withRegistrationNumber("ZBM0501").withName("Karel", "Novak")
-                    .withEmail("karel@example.com").build());
-            memberRepository.save(aMember().withRegistrationNumber("ZBM0201").withName("Petra", "Svoboda")
-                    .withEmail("petra@example.com").build());
-            memberRepository.save(aMember().withRegistrationNumber("ZBM0001").withName("Jan", "Novak")
-                    .withEmail("jan@example.com").build());
-            memberRepository.save(aMember().withRegistrationNumber("ZBM0301").withName("Adam", "Cerny")
-                    .withEmail("adam@example.com").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0501").withName("Karel", "Novak").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0201").withName("Petra", "Svoboda").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0001").withName("Jan", "Novak").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0301").withName("Adam", "Cerny").build());
 
             Pageable pageable = PageRequest.of(0, 10, Sort.by("lastName", "firstName").ascending());
 
@@ -604,608 +392,17 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("should return all members without pagination")
         void shouldReturnAllMembersWithoutPagination() {
-            // Given
-            Member member1 = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 1, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan@example.com")
-                    .withPhone("+420111111125")
-                    .build();
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0501").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM1001").build());
 
-            Member member2 = aMember()
-                    .withRegistrationNumber("ZBM1001")
-                    .withName("Petra", "Nováková")
-                    .withDateOfBirth(LocalDate.of(2010, 6, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 2", "Brno", "60200", Country.of("CZ")))
-                    .withEmail("petra@example.com")
-                    .withPhone("+420111111126")
-                    .build();
-
-            memberRepository.save(member1);
-            memberRepository.save(member2);
-
-            // When
-            List<Member> allMembers = memberRepository.findAll();
-
-            // Then
-            assertThat(allMembers).hasSize(2);
-            assertThat(allMembers).extracting(m -> m.getRegistrationNumber().getValue())
+            assertThat(memberRepository.findAll()).extracting(m -> m.getRegistrationNumber().getValue())
                     .containsExactlyInAnyOrder("ZBM0501", "ZBM1001");
-            assertThat(allMembers).extracting(Member::getFirstName)
-                    .containsExactlyInAnyOrder("Jan", "Petra");
         }
 
         @Test
         @DisplayName("should return empty list when no members exist")
         void shouldReturnEmptyListWhenNoMembersExist() {
-            // When
-            List<Member> allMembers = memberRepository.findAll();
-
-            // Then
-            assertThat(allMembers).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("Optimistic locking")
-    class OptimisticLocking {
-
-        @Test
-        @DisplayName("should set version on save")
-        void shouldSetVersionOnSave() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0005")
-                    .withName("Version", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("version@example.com")
-                    .withPhone("+420111111127")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getVersion()).isNotNull();
-            assertThat(savedMember.getVersion()).isEqualTo(0L);
-        }
-
-    }
-
-    @Nested
-    @DisplayName("Auditing")
-    class Auditing {
-
-        @Test
-        @DisplayName("should populate createdAt on save")
-        void shouldPopulateCreatedAtOnSave() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0007")
-                    .withName("Audit", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("audit@example.com")
-                    .withPhone("+420111111129")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getCreatedAt()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("should populate modifiedAt on save")
-        void shouldPopulateModifiedAtOnSave() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0008")
-                    .withName("Modified", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("modified@example.com")
-                    .withPhone("+420111111130")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getLastModifiedAt()).isNotNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("Birth number and bank account")
-    class BirthNumberAndBankAccount {
-
-        @Test
-        @DisplayName("should save member with birth number for Czech nationality")
-        void shouldSaveMemberWithBirthNumberForCzechNationality() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    Country.of("CZ")
-            );
-            BirthNumber birthNumber = BirthNumber.of("900101/1234");
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .withBirthNumber("900101/1234")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getBirthNumber()).isNotNull();
-            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
-        }
-
-        @Test
-        @DisplayName("should load member with birth number and decrypt correctly")
-        void shouldLoadMemberWithBirthNumberAndDecryptCorrectly() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Petra",
-                    "Svobodová",
-                    LocalDate.of(1995, 6, 20),
-                    Nationality.of("CZ"),
-                    Gender.FEMALE
-            );
-            Address address = Address.of(
-                    "Dětská 1",
-                    "Brno",
-                    "60200",
-                    Country.of("CZ")
-            );
-            BirthNumber birthNumber = BirthNumber.of("950620/5678");
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM9501")
-                    .withName("Petra", "Svobodová")
-                    .withDateOfBirth(LocalDate.of(1995, 6, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(address)
-                    .withEmail("petra.svobodova@example.com")
-                    .withPhone("+420987654321")
-                    .withBirthNumber("950620/5678")
-                    .build();
-
-            Member savedMember = memberRepository.save(member);
-
-            // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
-
-            // Then
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getBirthNumber()).isNotNull();
-            assertThat(foundMember.get().getBirthNumber().value()).isEqualTo("950620/5678");
-        }
-
-        @Test
-        @DisplayName("should save member with IBAN bank account number")
-        void shouldSaveMemberWithIBANBankAccountNumber() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Karel",
-                    "Černý",
-                    LocalDate.of(2000, 1, 1),
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Svobodova 3",
-                    "Ostrava",
-                    "70800",
-                    Country.of("CZ")
-            );
-            BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0001")
-                    .withName("Karel", "Černý")
-                    .withDateOfBirth(LocalDate.of(1980, 1, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withEmail("karel.cerny@example.com")
-                    .withPhone("+420111111111")
-                    .withBankAccountNumber("CZ6508000000192000145399")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getBankAccountNumber()).isNotNull();
-            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
-            assertThat(savedMember.getBankAccountNumber().format()).isEqualTo(BankAccountNumber.AccountFormat.IBAN);
-        }
-
-        @Test
-        @DisplayName("should save member with domestic Czech bank account number")
-        void shouldSaveMemberWithDomesticBankAccountNumber() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jana",
-                    "Procházková",
-                    LocalDate.of(2002, 5, 10),
-                    Nationality.of("CZ"),
-                    Gender.FEMALE
-            );
-            Address address = Address.of(
-                    "Hlavní 5",
-                    "Plzeň",
-                    "30100",
-                    Country.of("CZ")
-            );
-            BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0201")
-                    .withName("Jana", "Procházková")
-                    .withDateOfBirth(LocalDate.of(1992, 2, 10))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(address)
-                    .withEmail("jana.prochazkova@example.com")
-                    .withPhone("+420222222222")
-                    .withBankAccountNumber("123456/0300")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getBankAccountNumber()).isNotNull();
-            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("123456/0300");
-            assertThat(savedMember.getBankAccountNumber().format()).isEqualTo(BankAccountNumber.AccountFormat.DOMESTIC);
-        }
-
-        @Test
-        @DisplayName("should save member with null birth number and bank account for backwards compatibility")
-        void shouldSaveMemberWithNullBirthNumberAndBankAccountForBackwardsCompatibility() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Martin",
-                    "Dvořák",
-                    LocalDate.of(2005, 3, 15),
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Náměstí 1",
-                    "Liberec",
-                    "46001",
-                    Country.of("CZ")
-            );
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0502")
-                    .withName("Martin", "Dvořák")
-                    .withDateOfBirth(LocalDate.of(1985, 5, 2))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withEmail("martin.dvorak@example.com")
-                    .withPhone("+420333333333")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getBirthNumber()).isNull();
-            assertThat(savedMember.getBankAccountNumber()).isNull();
-        }
-
-        @Test
-        @DisplayName("should load member with null birth number and bank account")
-        void shouldLoadMemberWithNullBirthNumberAndBankAccount() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Lucie",
-                    "Kučerová",
-                    LocalDate.of(2000, 8, 25),
-                    Nationality.of("CZ"),
-                    Gender.FEMALE
-            );
-            Address address = Address.of(
-                    "Mládí 1",
-                    "Hradec Králové",
-                    "50002",
-                    Country.of("CZ")
-            );
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM1001")
-                    .withName("Lucie", "Kučerová")
-                    .withDateOfBirth(LocalDate.of(1990, 10, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(address)
-                    .withEmail("lucie.kucerova@example.com")
-                    .withPhone("+420444444444")
-                    .build();
-
-            Member savedMember = memberRepository.save(member);
-
-            // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
-
-            // Then
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getBirthNumber()).isNull();
-            assertThat(foundMember.get().getBankAccountNumber()).isNull();
-        }
-
-        @Test
-        @DisplayName("should save member with both birth number and bank account")
-        void shouldSaveMemberWithBothBirthNumberAndBankAccount() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Tomáš",
-                    "Beneš",
-                    LocalDate.of(2005, 3, 15),
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Komenského 10",
-                    "Pardubice",
-                    "53002",
-                    Country.of("CZ")
-            );
-            BirthNumber birthNumber = BirthNumber.of("050315/1234");
-            BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0503")
-                    .withName("Tomáš", "Beneš")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withEmail("tomas.benes@example.com")
-                    .withPhone("+420555555555")
-                    .withBirthNumber("050315/1234")
-                    .withBankAccountNumber("CZ6508000000192000145399")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember).isNotNull();
-            assertThat(savedMember.getBirthNumber()).isNotNull();
-            assertThat(savedMember.getBirthNumber().value()).isEqualTo("050315/1234");
-            assertThat(savedMember.getBankAccountNumber()).isNotNull();
-            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
-        }
-    }
-
-    @Nested
-    @DisplayName("Member suspension")
-    class MemberSuspension {
-
-        @Test
-        @DisplayName("should save and load suspended member with all suspension fields")
-        void shouldSaveAndLoadSuspendedMember() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    Country.of("CZ")
-            );
-            UserId adminUserId = new UserId(UUID.randomUUID());
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .build();
-
-            // When - suspend the member
-            Member.SuspendMembership suspendCommand = MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(adminUserId)
-                    .reason(DeactivationReason.ODHLASKA)
-                    .note("Member requested termination")
-                    .build();
-            member.suspend(suspendCommand);
-
-            // And save to database
-            Member savedMember = memberRepository.save(member);
-
-            // And load from database
-            Optional<Member> loadedMember = memberRepository.findById(savedMember.getId());
-
-            // Then - verify suspension fields persisted correctly
-            assertThat(loadedMember).isPresent();
-            Member loaded = loadedMember.get();
-            assertThat(loaded.isActive()).isFalse();
-            assertThat(loaded.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
-            assertThat(loaded.getSuspendedAt()).isNotNull();
-            assertThat(loaded.getSuspensionNote()).isEqualTo("Member requested termination");
-            assertThat(loaded.getSuspendedBy()).isEqualTo(adminUserId);
-        }
-
-        @Test
-        @DisplayName("should save active member with null suspension fields")
-        void shouldSaveActiveMemberWithNullSuspensionFields() {
-            // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Petra",
-                    "Svobodová",
-                    LocalDate.of(1995, 7, 20),
-                    Nationality.of("CZ"),
-                    Gender.FEMALE
-            );
-            Address address = Address.of(
-                    "Nová 456",
-                    "Brno",
-                    "60200",
-                    Country.of("CZ")
-            );
-
-            Member member = MemberTestDataBuilder.aMember()
-                    .withId(UUID.randomUUID())
-                    .withRegistrationNumber("ZBM9501")
-                    .withName("Petra", "Svobodová")
-                    .withDateOfBirth(LocalDate.of(1995, 7, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(address)
-                    .withEmail("petra.svobodova@example.com")
-                    .withPhone("+420987654321")
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            assertThat(savedMember.isActive()).isTrue();
-            assertThat(savedMember.getSuspensionReason()).isNull();
-            assertThat(savedMember.getSuspendedAt()).isNull();
-            assertThat(savedMember.getSuspensionNote()).isNull();
-            assertThat(savedMember.getSuspendedBy()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("License persistence")
-    class LicensePersistence {
-
-        @Test
-        @DisplayName("should save and load TrainerLicense with level")
-        void shouldSaveAndLoadTrainerLicense() {
-            TrainerLicense trainerLicense = TrainerLicense.of(TrainerLevel.T2, LocalDate.now().plusYears(1));
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM8001")
-                    .withName("Trainer", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("trainer.test@example.com")
-                    .withPhone("+420111111200")
-                    .withTrainerLicense(trainerLicense)
-                    .build();
-
-            Member savedMember = memberRepository.save(member);
-            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
-
-            assertThat(loaded).isPresent();
-            assertThat(loaded.get().getTrainerLicense()).isNotNull();
-            assertThat(loaded.get().getTrainerLicense().level()).isEqualTo(TrainerLevel.T2);
-            assertThat(loaded.get().getTrainerLicense().validityDate()).isEqualTo(trainerLicense.validityDate());
-        }
-
-        @Test
-        @DisplayName("should save and load RefereeLicense")
-        void shouldSaveAndLoadRefereeLicense() {
-            RefereeLicense refereeLicense = RefereeLicense.of(RefereeLevel.R1, LocalDate.now().plusYears(2));
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM8002")
-                    .withName("Referee", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 2", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("referee.test@example.com")
-                    .withPhone("+420111111201")
-                    .withRefereeLicense(refereeLicense)
-                    .build();
-
-            Member savedMember = memberRepository.save(member);
-            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
-
-            assertThat(loaded).isPresent();
-            assertThat(loaded.get().getRefereeLicense()).isNotNull();
-            assertThat(loaded.get().getRefereeLicense().level()).isEqualTo(RefereeLevel.R1);
-            assertThat(loaded.get().getRefereeLicense().validityDate()).isEqualTo(refereeLicense.validityDate());
-        }
-
-        @Test
-        @DisplayName("should save member without licenses and load with null licenses")
-        void shouldSaveAndLoadWithNullLicenses() {
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM8003")
-                    .withName("NoLicense", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 3", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("nolicense.test@example.com")
-                    .withPhone("+420111111202")
-                    .build();
-
-            Member savedMember = memberRepository.save(member);
-            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
-
-            assertThat(loaded).isPresent();
-            assertThat(loaded.get().getTrainerLicense()).isNull();
-            assertThat(loaded.get().getRefereeLicense()).isNull();
+            assertThat(memberRepository.findAll()).isEmpty();
         }
     }
 }
