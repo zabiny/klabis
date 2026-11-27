@@ -7,6 +7,9 @@
 # - "Member cannot change their own nationality": the read-only reserved fields of the edit form are asserted by `MemberDetailPage.test` ("self-edit template with reserved fields marked readOnly", "nationality marked readOnly or absent in the edit template"), and the backend rejects them in `UpdateMemberApiTest`.
 # - "Member cannot edit another member's profile": the "Upravit profil" button is shown iff the updateMember template is offered (`MemberDetailPage.test` "other member view (no template)"), and the template is offered only to holders of the edit grant (backend `*RelationshipSource` tests, `UpdateMemberApiTest`).
 # - "Member enters a country outside the common list": the country picker reveals the code input and emits the entered code (`HalFormsCountry.test` "reveals the code input when other country is chosen", "emits upper-case code typed into the input and shows its name").
+# - "Suspended member detail shows suspension info": the deactivation section (reason, note, deactivating user) is asserted by `MemberDetailPage.test` ("deactivation section"), and the reason and note returned on the detail of a suspended member by the backend `MemberControllerApiTest.suspendedMemberShouldReturnUpdateAndResumeAffordances`.
+# - Suspension blocked by the last owner of a training group, by a negative balance, by both, and the whole-group suspension blocked by a minor's negative balance: the blockers are asserted by the backend `ManagementServiceTest` (`shouldThrowWhenMemberIsLastGroupOwner`, `shouldThrowWhenMemberHasNegativeBalance`, `shouldReportBothBlockersWhenBothConditionsApply`, `shouldBlockEverybodyWhenMinorHasDebt`), their 409 bodies by `MemberControllerApiTest` (`shouldReturn409WhenMemberIsLastGroupOwner`, `shouldReturn409WhenMemberHasOutstandingDebt`, `shouldReturn409WithDependentMembers`), and the warning dialog with groups, balance and dependent members by the frontend `SuspensionWarningDialog.test` and `useSuspendMemberAction.test`; `MemberDetailPage.groups.test` and `MembersPage.groups.test` assert the wiring.
+# - "Admin designates a successor owner of a free group", "Admin dissolves a free group", "A free group without other members can only be dissolved": the actions offered per free group and the dissolving are asserted by `SuspensionWarningDialog.test` ("free group row"); the effect of designating a successor (resolved row, resubmitted suspension) by the `MemberDetailPage.groups` and `MembersPage.groups` flow tests, which share the row logic with training groups; the 409 listing of free groups by the backend `ManagementServiceTest.shouldThrowWhenMemberIsLastGroupOwner` and `MemberControllerApiTest.shouldReturn409WhenMemberIsLastGroupOwner`. The "successor trainer" journey below covers the successor flow through UI and API.
 @spec:members
 Feature: Members
   Club members are registered and maintained by member administrators, every member keeps their own profile up to date.
@@ -52,57 +55,12 @@ Feature: Members
       When Jan suspends member "Prochazka"
       Then member "Prochazka" is suspended
 
-    Scenario: Suspended member detail shows suspension info
-      Given member "Kratochvil" is suspended because of "Transfer to Brno"
-      When Jan opens the detail of member "Kratochvil"
-      Then the detail of member "Kratochvil" shows the suspension with note "Transfer to Brno"
-
-    Scenario: Suspension blocked when member is last owner of a training group
-      Given member "Trener" is registered
-      And member "Trener" is the only trainer of training group "Dorost"
-      When Jan suspends member "Trener"
-      Then the suspension is blocked because member "Trener" is the last owner of training group "Dorost"
-      And member "Trener" is still active
-
     Scenario: Admin designates a successor trainer and finishes the suspension
       Given member "Trener" is registered
       And member "Trener" is the only trainer of training group "Dorost"
       And member "Nastupce" is registered
       When Jan suspends member "Trener" designating member "Nastupce" as successor of training group "Dorost"
       Then member "Trener" is suspended
-
-    Scenario: Suspension blocked by both a negative balance and group ownership
-      Given member "Trener" is registered
-      And member "Trener" is the only trainer of training group "Dorost"
-      And the account of member "Trener" is overdrawn by 150 CZK
-      When Jan suspends member "Trener"
-      Then the suspension is blocked by one warning showing the balance -150 CZK and training group "Dorost"
-      And member "Trener" is still active
-
-    Scenario: Suspension blocked when member has a negative financial account balance
-      Given member "Dluznik" is registered
-      And the account of member "Dluznik" is overdrawn by 150 CZK
-      When Jan suspends member "Dluznik"
-      Then the suspension is blocked because the balance is -150 CZK
-      And member "Dluznik" is still active
-
-  Rule: Suspending the last owner of a free group requires resolving the group first
-
-    Scenario: Admin designates a successor owner of a free group from the warning dialog
-      Given Tomáš is the only owner of the free group "Pratele"
-      And Eva is a member of the free group "Pratele" owned by Tomáš
-      When Jan suspends Tomáš designating Eva as successor owner of the free group "Pratele"
-      Then Tomáš is suspended
-
-    Scenario: Admin dissolves a free group from the warning dialog
-      Given Tomáš is the only owner of the free group "Zanikajici"
-      When Jan suspends Tomáš dissolving the free group "Zanikajici"
-      Then Tomáš is suspended
-
-    Scenario: A free group without other members can only be dissolved
-      Given Tomáš is the only owner of the free group "Samotari"
-      When Jan suspends Tomáš
-      Then the warning offers to dissolve the free group "Samotari" but not to designate a successor
 
   Rule: Suspending the sole legal guardian of minors can suspend the whole legal guardian group
 
@@ -114,12 +72,3 @@ Feature: Members
         | Zastupce |
         | Prvni    |
         | Druhy    |
-
-    Scenario: Whole-group suspension blocked by a minor's negative balance
-      Given member "Zastupce" is registered
-      And member "Zastupce" is the only legal guardian of minor "Dluznik"
-      And the account of member "Dluznik" is overdrawn by 150 CZK
-      When Jan attempts to suspend member "Zastupce" together with the whole legal guardian group
-      Then the whole-group suspension is blocked because member "Dluznik" has a negative balance of -150 CZK
-      And member "Zastupce" is still active
-      And member "Dluznik" is still active

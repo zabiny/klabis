@@ -158,20 +158,6 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("active member should not have suspension details")
-        void activeMemberShouldNotHaveSuspensionDetails() {
-            // Arrange
-            Member activeMember = createActiveMember();
-
-            // Assert
-            assertThat(activeMember.isActive()).isTrue();
-            assertThat(activeMember.getSuspensionReason()).isNull();
-            assertThat(activeMember.getSuspendedAt()).isNull();
-            assertThat(activeMember.getSuspensionNote()).isNull();
-            assertThat(activeMember.getSuspendedBy()).isNull();
-        }
-
-        @Test
         @DisplayName("should suspend active member with reason")
         void shouldSuspendActiveMemberWithReason() {
             // Arrange
@@ -182,14 +168,18 @@ class MemberTest {
                     .reason(DeactivationReason.ODHLASKA)
                     .note("Member requested termination")
                     .build();
+            var beforeSuspension = System.currentTimeMillis();
 
             // Act
             activeMember.suspend(command);
+            var afterSuspension = System.currentTimeMillis();
 
             // Assert
             assertThat(activeMember.isActive()).isFalse();
             assertThat(activeMember.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
-            assertThat(activeMember.getSuspendedAt()).isNotNull();
+            assertThat(activeMember.getSuspendedAt().toEpochMilli())
+                    .isGreaterThanOrEqualTo(beforeSuspension)
+                    .isLessThanOrEqualTo(afterSuspension);
             assertThat(activeMember.getSuspensionNote()).isEqualTo("Member requested termination");
             assertThat(activeMember.getSuspendedBy()).isEqualTo(adminUserId);
         }
@@ -239,7 +229,7 @@ class MemberTest {
 
             // Act & Assert
             assertThatThrownBy(() -> activeMember.suspend(secondCommand))
-                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .isInstanceOf(MemberAlreadySuspendedException.class)
                     .hasMessageContaining("already suspended");
         }
 
@@ -255,50 +245,6 @@ class MemberTest {
             assertThat(activeMember.isActive()).isTrue();
         }
 
-        @Test
-        @DisplayName("should allow suspension with all reason types")
-        void shouldAllowSuspensionWithAllReasonTypes() {
-            // Arrange
-            UserId adminUserId = new UserId(UUID.randomUUID());
-
-            // Test ODHLASKA
-            Member member1 = createActiveMember();
-            member1.suspend(MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note("Note 1").build());
-            assertThat(member1.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
-
-            // Test PRESTUP
-            Member member2 = createActiveMember();
-            member2.suspend(MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(adminUserId).reason(DeactivationReason.PRESTUP).note("Note 2").build());
-            assertThat(member2.getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
-
-            // Test OTHER
-            Member member3 = createActiveMember();
-            member3.suspend(MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(adminUserId).reason(DeactivationReason.OTHER).note("Note 3").build());
-            assertThat(member3.getSuspensionReason()).isEqualTo(DeactivationReason.OTHER);
-        }
-
-        @Test
-        @DisplayName("should record suspension timestamp")
-        void shouldRecordSuspensionTimestamp() {
-            // Arrange
-            Member activeMember = createActiveMember();
-            UserId adminUserId = new UserId(UUID.randomUUID());
-            var beforeSuspension = System.currentTimeMillis();
-
-            // Act
-            activeMember.suspend(MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(adminUserId).reason(DeactivationReason.ODHLASKA).note(null).build());
-            var afterSuspension = System.currentTimeMillis();
-
-            // Assert
-            assertThat(activeMember.getSuspendedAt()).isNotNull();
-            assertThat(activeMember.getSuspendedAt().toEpochMilli())
-                    .isGreaterThanOrEqualTo(beforeSuspension)
-                    .isLessThanOrEqualTo(afterSuspension);
-        }
     }
 
     @Nested

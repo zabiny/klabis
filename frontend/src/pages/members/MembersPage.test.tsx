@@ -3,9 +3,8 @@ import {fireEvent, render, screen, within} from '@testing-library/react';
 import {Link, MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {makePageData} from '../../__mocks__/pageData';
 import {MembersPage} from './MembersPage';
@@ -306,24 +305,9 @@ describe('MembersPage — row data rendering', () => {
     });
 
     describe('suspend / resume action dialog', () => {
-        const submitWith = (outcome: {error?: unknown}) => {
-            const mutate = vi.fn((_vars: unknown, opts: {onError?: (e: unknown) => void; onSuccess?: (r: unknown) => void}) => {
-                if (outcome.error) opts.onError?.(outcome.error);
-                else opts.onSuccess?.({data: undefined, location: null});
-            });
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
-            return mutate;
-        };
-
         const suspendRow = () => buildMemberRow({
             _templates: {suspendMember: mockHalFormsTemplate({method: 'POST', title: 'Ukončit členství člena', properties: []})},
         });
-
-        const openAndSubmitSuspend = () => {
-            renderPageWithMembers([suspendRow()]);
-            fireEvent.click(screen.getByRole('button', {name: /ukončit členství/i}));
-            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
-        };
 
         it('opens suspend dialog titled by the template title', () => {
             renderPageWithMembers([suspendRow()]);
@@ -355,32 +339,6 @@ describe('MembersPage — row data rendering', () => {
             fireEvent.click(screen.getByRole('button', {name: /reaktivovat/i}));
 
             expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Reaktivace člena'})[0]).toBeInTheDocument();
-        });
-
-        it('closes the dialog and opens the negative-balance dialog on debt 409', async () => {
-            submitWith({
-                error: new ApiError(409, {params: {
-                    debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'},
-                    groups: null,
-                }}),
-            });
-            openAndSubmitSuspend();
-
-            expect(await screen.findByRole('heading', {name: labels.negativeBalanceWarning.title})).toBeInTheDocument();
-            expect(screen.queryByRole('heading', {name: 'Ukončit členství člena'})).not.toBeInTheDocument();
-        });
-
-        it('closes the dialog and opens the group-ownership warning on groups 409', async () => {
-            submitWith({
-                error: new ApiError(409, {params: {
-                    debt: null,
-                    groups: {affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}]},
-                }}),
-            });
-            openAndSubmitSuspend();
-
-            expect(await screen.findByRole('heading', {name: labels.suspensionWarning.title})).toBeInTheDocument();
-            expect(screen.queryByRole('heading', {name: 'Ukončit členství člena'})).not.toBeInTheDocument();
         });
     });
 

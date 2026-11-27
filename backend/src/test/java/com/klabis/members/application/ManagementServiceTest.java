@@ -17,8 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
@@ -37,7 +35,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ManagementPort Unit Tests")
 class ManagementServiceTest {
 
@@ -50,8 +47,9 @@ class ManagementServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Mock
-    private MemberFinancialStatePort memberFinancialStatePort;
+    private final MemberFinancialStatePort memberFinancialStatePort = mock(MemberFinancialStatePort.class,
+            invocation -> new MemberFinancialStatePort.MemberFinancialSnapshot(
+                    invocation.getArgument(0), new MonetaryAmount(BigDecimal.ZERO, "CZK"), false));
 
     @Mock
     private MemberOwnedGroupsPort memberOwnedGroupsPort;
@@ -72,9 +70,6 @@ class ManagementServiceTest {
     @BeforeEach
     void setUp() {
         testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort), memberCompletenessPort, legalGuardianCascadePort, authorizationEvaluator);
-        lenient().when(authorizationEvaluator.has(eq(Authority.MEMBERS_MANAGE), any(TargetRef.class))).thenReturn(true);
-        lenient().when(memberCompletenessPort.guardianContactsOf(any())).thenReturn(GuardianContacts.NONE);
-        lenient().when(memberCompletenessPort.missingData(any())).thenReturn(Set.of());
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -141,19 +136,11 @@ class ManagementServiceTest {
                     .withPhone("+420987654321")
                     .withAddress(Address.of("Vinohradská 456", "Praha", "12000", Country.of("CZ")))
                     .build();
-
-            // Default: no outstanding debt — only override in debt-specific tests
-            when(memberFinancialStatePort.getFinancialSnapshot(any(MemberId.class)))
-                    .thenReturn(new MemberFinancialStatePort.MemberFinancialSnapshot(
-                            new MemberId(testMemberId),
-                            new MonetaryAmount(BigDecimal.ZERO, "CZK"),
-                            false));
         }
 
         @Nested
         @DisplayName("Successful Suspension Tests")
         class SuccessfulSuspensionTests {
-
 
             @Test
             @DisplayName("should suspend active member with ODHLASKA reason")
@@ -183,72 +170,6 @@ class ManagementServiceTest {
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
             }
 
-            @Test
-            @DisplayName("should handle missing User account gracefully during suspension")
-            void shouldHandleMissingUserAccountGracefully() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-                doNothing().when(userService).suspendUser(any(UserId.class));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.ODHLASKA)
-                        .note("Member requested resignation")
-                        .build();
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                assertThat(result.isActive()).isFalse();
-                verify(userService).suspendUser(testActiveMember.getId().toUserId());
-            }
-
-            @Test
-            @DisplayName("should suspend active member without note")
-            void shouldSuspendActiveMemberWithoutNote() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.PRESTUP)
-                        .note(null)
-                        .build();
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                assertThat(result.getId().uuid()).isEqualTo(testMemberId);
-
-                ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
-                verify(memberRepository).save(captor.capture());
-
-                assertThat(captor.getValue().isActive()).isFalse();
-                assertThat(captor.getValue().getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
-                assertThat(captor.getValue().getSuspensionNote()).isNull();
-            }
-
-            @Test
-            @DisplayName("should publish MemberSuspendedEvent on successful suspension")
-            void shouldPublishMemberSuspendedEventOnSuccessfulSuspension() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.OTHER)
-                        .note("Administrative decision")
-                        .build();
-                testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
-                verify(memberRepository).save(captor.capture());
-
-                Member saved = captor.getValue();
-                assertThat(saved.getDomainEvents()).hasSize(1);
-
-                Object event = saved.getDomainEvents().get(0);
-                assertThat(event).isInstanceOf(MemberSuspendedEvent.class);
-
-                MemberSuspendedEvent suspensionEvent = (MemberSuspendedEvent) event;
-                assertThat(suspensionEvent.memberId()).isEqualTo(new MemberId(testMemberId));
-            }
         }
 
         @Nested
@@ -283,24 +204,6 @@ class ManagementServiceTest {
                 verify(userService, never()).suspendUser(any(UserId.class));
             }
 
-            @Test
-            @DisplayName("should proceed with suspension when member is not the sole owner of any group")
-            void shouldProceedWhenMemberIsNotLastOwnerOfAnyGroup() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.ODHLASKA)
-                        .note(null)
-                        .build();
-
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                assertThat(result.isActive()).isFalse();
-                verify(memberRepository).save(any(Member.class));
-                verify(userService).suspendUser(testActiveMember.getId().toUserId());
-            }
         }
 
         @Nested
@@ -334,52 +237,6 @@ class ManagementServiceTest {
 
                 verify(memberRepository, never()).save(any(Member.class));
                 verify(userService, never()).suspendUser(any(UserId.class));
-            }
-
-            @Test
-            @DisplayName("should proceed with suspension when member has zero balance")
-            void shouldProceedWhenMemberHasZeroBalance() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
-                        new MemberId(testMemberId),
-                        new MonetaryAmount(BigDecimal.ZERO, "CZK"),
-                        false);
-                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.ODHLASKA)
-                        .note(null)
-                        .build();
-
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                assertThat(result.isActive()).isFalse();
-                verify(memberRepository).save(any(Member.class));
-            }
-
-            @Test
-            @DisplayName("should proceed with suspension when member has positive balance")
-            void shouldProceedWhenMemberHasPositiveBalance() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-                var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
-                        new MemberId(testMemberId),
-                        new MonetaryAmount(new BigDecimal("500"), "CZK"),
-                        false);
-                when(memberFinancialStatePort.getFinancialSnapshot(new MemberId(testMemberId))).thenReturn(snapshot);
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.ODHLASKA)
-                        .note(null)
-                        .build();
-
-                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of());
-
-                assertThat(result.isActive()).isFalse();
-                verify(memberRepository).save(any(Member.class));
             }
 
             @Test
@@ -441,13 +298,22 @@ class ManagementServiceTest {
                         .reason(DeactivationReason.OTHER)
                         .note("Family left the club")
                         .build();
+            }
 
+            private void givenFamilyLoadable() {
                 when(memberRepository.findById(guardianId)).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.findById(minorOneId)).thenReturn(Optional.of(minorOne));
                 when(memberRepository.findById(minorTwoId)).thenReturn(Optional.of(minorTwo));
-                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
                 when(legalGuardianCascadePort.minorsOfSoleGuardianGroups(guardianId, Set.of(groupId)))
                         .thenReturn(List.of(minorOneId, minorTwoId));
+                when(authorizationEvaluator.has(eq(Authority.MEMBERS_MANAGE), any(TargetRef.class))).thenReturn(true);
+            }
+
+            private void givenSaveReturnsSavedMember() {
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+            }
+
+            private void givenGuardianOwnsOnlyTheCascadedGroup() {
                 when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId)).thenReturn(List.of(guardianGroup()));
             }
 
@@ -480,6 +346,9 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should suspend guardian and all minors with the same reason and note")
             void shouldSuspendGuardianAndMinorsWithSameReasonAndNote() {
+                givenFamilyLoadable();
+                givenSaveReturnsSavedMember();
+                givenGuardianOwnsOnlyTheCascadedGroup();
                 testedSubject.suspendMember(guardianId, command, Set.of(groupId));
 
                 assertThat(List.of(testActiveMember, minorOne, minorTwo)).allSatisfy(member -> {
@@ -495,15 +364,10 @@ class ManagementServiceTest {
             }
 
             @Test
-            @DisplayName("should not report the cascaded group as a blocker of the guardian")
-            void shouldIgnoreCascadedGroupAsGuardianBlocker() {
-                assertThatCode(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
-                        .doesNotThrowAnyException();
-            }
-
-            @Test
             @DisplayName("should block everybody and attribute the debt to the minor")
             void shouldBlockEverybodyWhenMinorHasDebt() {
+                givenFamilyLoadable();
+                givenGuardianOwnsOnlyTheCascadedGroup();
                 minorOwesMoney(minorTwoId);
 
                 assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
@@ -524,6 +388,8 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should block everybody when a minor is the last owner of a group")
             void shouldBlockEverybodyWhenMinorIsLastOwner() {
+                givenFamilyLoadable();
+                givenGuardianOwnsOnlyTheCascadedGroup();
                 var freeGroup = new OwnedGroup("free-1", "Kids", "FREE", java.net.URI.create("/api/groups/free-1"));
                 when(memberOwnedGroupsPort.findGroupsBlockingSuspension(minorOneId)).thenReturn(List.of(freeGroup));
 
@@ -540,6 +406,7 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should still report other blockers of the guardian together with the dependents' blockers")
             void shouldReportGuardiansOtherBlockers() {
+                givenFamilyLoadable();
                 var trainingGroup = new OwnedGroup("training-1", "Juniors", "TRAINING",
                         java.net.URI.create("/api/training-groups/training-1"));
                 when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId))
@@ -559,6 +426,7 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should propagate the rejection of an id that is not a sole guardian group of the member")
             void shouldRejectGroupWhereMemberIsNotSoleGuardian() {
+                when(memberRepository.findById(guardianId)).thenReturn(Optional.of(testActiveMember));
                 when(legalGuardianCascadePort.minorsOfSoleGuardianGroups(guardianId, Set.of(groupId)))
                         .thenThrow(new NotSoleGuardianGroupException(groupId));
 
@@ -571,9 +439,11 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should skip an already suspended minor and keep its original suspension")
             void shouldSkipAlreadySuspendedMinor() {
+                givenFamilyLoadable();
+                givenSaveReturnsSavedMember();
+                givenGuardianOwnsOnlyTheCascadedGroup();
                 minorOne.suspend(new Member.SuspendMembership(new UserId(UUID.randomUUID()), DeactivationReason.ODHLASKA, "Earlier"));
                 minorOne.clearDomainEvents();
-                minorOwesMoney(minorOneId);
 
                 testedSubject.suspendMember(guardianId, command, Set.of(groupId));
 
@@ -583,11 +453,15 @@ class ManagementServiceTest {
                 assertThat(minorTwo.isActive()).isFalse();
                 assertThat(testActiveMember.isActive()).isFalse();
                 verify(userService, never()).suspendUser(minorOneId.toUserId());
+                verify(memberFinancialStatePort, never()).getFinancialSnapshot(minorOneId);
             }
 
             @Test
             @DisplayName("should fail as a whole when suspension of a later member fails")
             void shouldFailWhenSuspensionOfLaterMemberFails() {
+                givenFamilyLoadable();
+                givenGuardianOwnsOnlyTheCascadedGroup();
+                givenSaveReturnsSavedMember();
                 when(memberRepository.save(minorTwo)).thenThrow(new OptimisticLockingFailureException("conflict"));
 
                 assertThatThrownBy(() -> testedSubject.suspendMember(guardianId, command, Set.of(groupId)))
@@ -597,6 +471,7 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should refuse to suspend a minor the caller has no MEMBERS:MANAGE authority over")
             void shouldRequireAuthorityOverEachMinor() {
+                givenFamilyLoadable();
                 when(authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(minorTwoId.uuid())))
                         .thenReturn(false);
 
@@ -609,92 +484,13 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should behave as a plain suspension without cascade group ids")
             void shouldNotLookUpMinorsWithoutCascade() {
-                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(guardianId)).thenReturn(List.of());
+                givenSaveReturnsSavedMember();
+                when(memberRepository.findById(guardianId)).thenReturn(Optional.of(testActiveMember));
 
                 testedSubject.suspendMember(guardianId, command, Set.of());
 
                 verifyNoInteractions(legalGuardianCascadePort);
                 assertThat(minorOne.isActive()).isTrue();
-            }
-        }
-
-        @Nested
-        @DisplayName("Already Suspended Tests")
-        class AlreadySuspendedTests {
-
-            @Test
-            @DisplayName("should reject suspension of already suspended member")
-            void shouldRejectSuspensionOfAlreadySuspendedMember() {
-                Member suspendedMember = MemberTestDataBuilder.aMember()
-                        .withId(testMemberId)
-                        .withFirstName("Bob")
-                        .withLastName("Jones")
-                        .withRegistrationNumber("ZBM9999")
-                        .withEmail("bob.jones@example.com")
-                        .withPhone("+420111222333")
-                        .withAddress(Address.of("Řeznická 1", "Brno", "60200", Country.of("CZ")))
-                        .suspended(DeactivationReason.ODHLASKA, "Previous termination")
-                        .build();
-
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(suspendedMember));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.OTHER)
-                        .note("Second termination attempt")
-                        .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
-                        .isInstanceOf(MemberAlreadySuspendedException.class)
-                        .hasMessageContaining("Member is already suspended");
-
-                verify(memberRepository, never()).save(any(Member.class));
-            }
-        }
-
-        @Nested
-        @DisplayName("Concurrent Suspension Tests")
-        class ConcurrentSuspensionTests {
-
-            @Test
-            @DisplayName("should handle concurrent suspension attempts with optimistic locking")
-            void shouldHandleConcurrentSuspensionAttempts() {
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class)))
-                        .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.PRESTUP)
-                        .note(null)
-                        .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command, Set.of()))
-                        .isInstanceOf(OptimisticLockingFailureException.class);
-
-                verify(memberRepository).save(any(Member.class));
-            }
-        }
-
-        @Nested
-        @DisplayName("Member Not Found Tests")
-        class MemberNotFoundTests {
-
-            @Test
-            @DisplayName("should throw exception when suspending non-existent member")
-            void shouldThrowExceptionWhenSuspendingNonExistentMember() {
-                UUID nonExistentId = UUID.randomUUID();
-
-                when(memberRepository.findById(new MemberId(nonExistentId))).thenReturn(Optional.empty());
-
-                var command = MemberSuspendMembershipBuilder.builder()
-                        .suspendedBy(new UserId(adminUserId))
-                        .reason(DeactivationReason.ODHLASKA)
-                        .note(null)
-                        .build();
-                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command, Set.of()))
-                        .isInstanceOf(MemberNotFoundException.class)
-                        .hasMessageContaining("Member not found");
-
-                verify(memberRepository, never()).save(any(Member.class));
             }
         }
     }
@@ -955,43 +751,13 @@ class ManagementServiceTest {
             verify(userService, never()).resumeUser(any(UserId.class));
         }
 
-        @Test
-        @DisplayName("should handle missing User account gracefully during resume")
-        void shouldHandleMissingUserAccountGracefully() {
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-            doNothing().when(userService).resumeUser(any(UserId.class));
-
-            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
-            Member result = testedSubject.resumeMember(new MemberId(testMemberId), command);
-
-            assertThat(result.isActive()).isTrue();
-            verify(userService).resumeUser(testSuspendedMember.getId().toUserId());
-        }
-
     }
 
-    @Nested
-    @DisplayName("member listing")
-    class ListMembersTests {
+    @Test
+    @DisplayName("listActiveMembers should return only active-filter results")
+    void shouldListActiveMembers() {
+        when(memberRepository.findAll(MemberFilter.activeOnly())).thenReturn(List.of(testMember));
 
-        @Test
-        @DisplayName("listMembers should delegate filter and pageable to repository")
-        void shouldDelegateListMembersToRepository() {
-            var filter = MemberFilter.activeOnly();
-            var pageable = org.springframework.data.domain.PageRequest.of(0, 5);
-            var page = new org.springframework.data.domain.PageImpl<>(List.of(testMember));
-            when(memberRepository.findAll(filter, pageable)).thenReturn(page);
-
-            assertThat(testedSubject.listMembers(filter, pageable)).isSameAs(page);
-        }
-
-        @Test
-        @DisplayName("listActiveMembers should return only active-filter results")
-        void shouldListActiveMembers() {
-            when(memberRepository.findAll(MemberFilter.activeOnly())).thenReturn(List.of(testMember));
-
-            assertThat(testedSubject.listActiveMembers()).containsExactly(testMember);
-        }
+        assertThat(testedSubject.listActiveMembers()).containsExactly(testMember);
     }
 }

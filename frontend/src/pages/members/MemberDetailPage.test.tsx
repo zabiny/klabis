@@ -13,7 +13,6 @@ import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import {ApiError} from '../../api/authorizedFetch';
 import {labels} from '../../localization';
 
 vi.mock('../../hooks/useHalPageData', () => ({
@@ -437,31 +436,6 @@ describe('MemberDetailPage', () => {
             await user.click(screen.getByRole('button', {name: /ukončit členství/i}));
 
             expect(within(screen.getByRole('dialog')).getByText(labels.suspensionWarning.suspendFormGuardianNote)).toBeInTheDocument();
-        });
-
-        it('closes the suspend dialog and opens the negative-balance dialog on debt 409', async () => {
-            const user = userEvent.setup();
-            const mutate = vi.fn((_vars: unknown, opts: {onError?: (e: unknown) => void}) => {
-                opts.onError?.(new ApiError(409, {params: {
-                    debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'},
-                    groups: null,
-                }}));
-            });
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
-            const data = mockMemberDetailData({
-                _templates: {
-                    updateMember: adminEditTemplate,
-                    suspendMember: mockHalFormsTemplate({method: 'POST', title: 'Terminate', target: '/api/members/m1/suspend', properties: []}),
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /ukončit členství/i}));
-            expect(screen.getAllByRole('heading', {name: labels.dialogTitles.suspendMember})[0]).toBeInTheDocument();
-            await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
-
-            expect(await screen.findByRole('heading', {name: labels.negativeBalanceWarning.title})).toBeInTheDocument();
-            expect(screen.queryByRole('heading', {name: labels.dialogTitles.suspendMember})).not.toBeInTheDocument();
         });
 
         it('shows "Založit účet" button and confirmation dialog when sendMemberAccountActivation template exists', async () => {

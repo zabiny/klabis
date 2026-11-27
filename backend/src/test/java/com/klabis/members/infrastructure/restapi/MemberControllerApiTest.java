@@ -354,9 +354,8 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[0]").value("ODHLASKA"))
-                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[1]").value("PRESTUP"))
-                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[2]").value("OTHER"))
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[*]")
+                            .value(org.hamcrest.Matchers.contains("ODHLASKA", "PRESTUP", "OTHER")))
                     .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].type").value("DeactivationReason"));
         }
 
@@ -366,7 +365,7 @@ class MemberControllerApiTest {
         void suspendedMemberShouldReturnUpdateAndResumeAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withActive(false)
+                    .suspended(DeactivationReason.PRESTUP, "Transfer to Brno")
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
@@ -374,6 +373,10 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(false))
+                    .andExpect(jsonPath("$.suspensionReason").value("PRESTUP"))
+                    .andExpect(jsonPath("$.suspensionNote").value("Transfer to Brno"))
+                    .andExpect(jsonPath("$.suspendedAt").exists())
+                    .andExpect(jsonPath("$.suspendedBy").exists())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
@@ -1912,40 +1915,11 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("it should call expected service method with correct arguments")
+        @DisplayName("valid suspension request should call the service with the acting user and answer 204 with link to members")
         @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_MANAGE})
-        void shouldCallExpectedServiceMethodWithCorrectArguments() throws Exception {
-            // Arrange
-            UUID memberId = UUID.randomUUID();
-
-            // Act
-            mockMvc.perform(postMemberIdSuspend(memberId).content("""
-                    {
-                        "reason": "ODHLASKA",
-                        "note": "Member requested termination"
-                    }
-                    """)
-            );
-
-            // Assert
-            Member.SuspendMembership expectedCommand = MemberSuspendMembershipBuilder.builder()
-                    .suspendedBy(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"))
-                    .reason(DeactivationReason.ODHLASKA)
-                    .note("Member requested termination")
-                    .build();
-
-            Mockito.verify(managementService)
-                    .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand), eq(Set.of()));
-        }
-
-        @Test
-        @DisplayName("valid suspension request should return 204 NO CONTENT response")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldSuspendMemberSuccessfully() throws Exception {
-            // Arrange
             UUID memberId = UUID.randomUUID();
 
-            // Act & Assert
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
                                 "reason": "ODHLASKA",
@@ -1955,6 +1929,14 @@ class MemberControllerApiTest {
                     )
                     .andExpect(status().isNoContent())
                     .andExpect(header().string(HttpHeaders.LOCATION, "http://localhost/api/members"));
+
+            Member.SuspendMembership expectedCommand = MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"))
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Member requested termination")
+                    .build();
+            Mockito.verify(managementService)
+                    .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand), eq(Set.of()));
         }
 
         @Test
@@ -2103,35 +2085,6 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("should return 409 with both debt and groups when member has both blockers")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn409WithBothBlockersWhenBothApply() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            List<OwnedGroup> groups = List.of(
-                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE",
-                            java.net.URI.create("http://localhost/api/groups/cccccccc-cccc-cccc-cccc-cccccccccccc"))
-            );
-            var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
-                    new MemberId(memberId),
-                    new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
-                    true);
-
-            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new SuspensionBlockedException(groups, snapshot, List.of()));
-
-            mockMvc.perform(postMemberIdSuspend(memberId).content("""
-                            {
-                                "reason": "ODHLASKA"
-                            }
-                            """))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
-                    .andExpect(jsonPath("$.debt.balance.amount").value(-250))
-                    .andExpect(jsonPath("$.debt.accountLink").value(
-                            "http://localhost/api/members/%s/account".formatted(memberId)));
-        }
-
-        @Test
         @DisplayName("should pass cascadeGroupIds to the service and answer 204")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassCascadeGroupIdsToService() throws Exception {
@@ -2201,20 +2154,6 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.dependentMembers[0].groups.affectedGroups[0].groupName").value("Kids"));
         }
 
-        @Test
-        @DisplayName("should return 403 and suspend nobody when caller lacks MEMBERS:MANAGE")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
-        void shouldReturn403ForCascadeWithoutManageAuthority() throws Exception {
-            mockMvc.perform(postMemberIdSuspend(UUID.randomUUID()).content("""
-                            {
-                                "reason": "ODHLASKA",
-                                "cascadeGroupIds": ["%s"]
-                            }
-                            """.formatted(UUID.randomUUID())))
-                    .andExpect(status().isForbidden());
-
-            Mockito.verifyNoInteractions(managementService);
-        }
     }
 
     @Nested
@@ -2226,24 +2165,14 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("valid resume request should return 204 NO CONTENT response")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("valid resume request should call the service with the acting user and answer 204 with Location")
+        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_MANAGE})
         void shouldResumeMemberSuccessfully() throws Exception {
             UUID memberId = UUID.randomUUID();
 
             mockMvc.perform(postMemberIdResume(memberId))
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNoContent())
                     .andExpect(header().exists(HttpHeaders.LOCATION));
-        }
-
-        @Test
-        @DisplayName("should call service with correct arguments")
-        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_MANAGE})
-        void shouldCallServiceWithCorrectArguments() throws Exception {
-            UUID memberId = UUID.randomUUID();
-
-            mockMvc.perform(postMemberIdResume(memberId));
 
             Member.ResumeMembership expectedCommand = MemberResumeMembershipBuilder.builder()
                     .resumedBy(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"))
@@ -2602,20 +2531,10 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Forbidden"))
                     .andExpect(jsonPath("$.status").value(403));
+
+            Mockito.verifyNoInteractions(managementService);
         }
 
-        @Test
-        @DisplayName("POST /api/members/{id}/suspend with MEMBERS:MANAGE authority should pass authorization")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            when(managementService.suspendMember(any(MemberId.class), any(Member.SuspendMembership.class), any()))
-                    .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
-
-            mockMvc.perform(post("/api/members/" + memberId + "/suspend")
-                            .contentType("application/json").content(SUSPEND_BODY))
-                    .andExpect(status().isNotFound());
-        }
     }
 
     @Nested

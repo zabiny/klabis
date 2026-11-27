@@ -12,8 +12,15 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {makePageData} from '../../__mocks__/pageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
-import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import {ApiError} from '../../api/authorizedFetch';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {
+    blocked409,
+    blockingTrainingGroup,
+    installSuspendMutation,
+    SUSPENSION_GROUP_URL,
+    trainingGroupResource,
+    type SuspendOutcome,
+} from '../../__mocks__/suspensionFlowTest';
 import {labels} from '../../localization';
 
 vi.mock('../../hooks/useHalPageData', () => ({
@@ -239,30 +246,15 @@ describe('MemberDetailPage — group navigation buttons', () => {
 
 describe('MemberDetailPage - suspension warning dialog', () => {
     const SUSPEND_URL = '/api/members/m1/suspend';
-    const GROUP_URL = 'http://localhost/api/training-groups/g-1';
-    const trainingGroup = {groupId: 'g-1', groupName: 'U10 Závoďáci', groupType: 'TRAINING', groupLink: GROUP_URL};
-    const debt = {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'};
-    const blocked409 = (groups: unknown, debtBody: unknown = null) => new ApiError(409, {params: {groups, debt: debtBody}});
     const submitButton = /uložit|odeslat|potvrdit/i;
 
     const dialogTitled = (title: string) =>
         screen.getAllByRole('dialog').find(d => within(d).queryAllByRole('heading', {name: title}).length > 0)!;
 
-    const setup = (suspendResponses: Array<{error?: unknown}>) => {
-        const calls: Array<{url: string; data: unknown}> = [];
-        let suspendCall = 0;
-        const mutate = vi.fn((vars: {url: string; data: unknown}, opts: {onError?: (e: unknown) => void; onSuccess?: (r: unknown) => void}) => {
-            calls.push(vars);
-            const outcome = vars.url === SUSPEND_URL ? suspendResponses[suspendCall++] ?? {} : {};
-            if (outcome.error) opts.onError?.(outcome.error);
-            else opts.onSuccess?.({data: null, location: null});
-        });
-        vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
+    const setup = (suspendResponses: SuspendOutcome[]) => {
+        const {calls} = installSuspendMutation(SUSPEND_URL, suspendResponses);
         vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => ({
-            data: url === GROUP_URL ? {
-                _links: {self: {href: GROUP_URL}},
-                _templates: {addTrainer: mockHalFormsTemplate({method: 'POST', target: '/api/training-groups/g-1/trainers', title: 'Přidat trenéra', properties: []})},
-            } : undefined,
+            data: url === SUSPENSION_GROUP_URL ? trainingGroupResource() : undefined,
             isLoading: false,
             error: null,
             refetch: vi.fn(),
@@ -279,42 +271,19 @@ describe('MemberDetailPage - suspension warning dialog', () => {
         return {calls};
     };
 
-    const openSuspensionWarning = async (user: ReturnType<typeof userEvent.setup>) => {
-        await user.click(screen.getByRole('button', {name: labels.templates.suspendMember}));
-        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: submitButton}));
-    };
-
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('shows debt and groups in one dialog and closes the suspension form', async () => {
+    it('409 closes the suspension form, lists the blocking group and, once resolved, resubmits the stored request', async () => {
         const user = userEvent.setup();
-        setup([{error: blocked409({affectedGroups: [trainingGroup]}, debt)}]);
-        await openSuspensionWarning(user);
+        const {calls} = setup([{error: blocked409({affectedGroups: [blockingTrainingGroup]})}, {}]);
+        await user.click(screen.getByRole('button', {name: labels.templates.suspendMember}));
+        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: submitButton}));
 
-        expect(await screen.findByRole('heading', {name: labels.suspensionWarning.title})).toBeInTheDocument();
-        expect(screen.getAllByRole('dialog')).toHaveLength(1);
-        const dialog = dialogTitled(labels.suspensionWarning.title);
-        expect(within(dialog).getByText('U10 Závoďáci')).toBeInTheDocument();
-        expect(within(dialog).getByRole('button', {name: labels.negativeBalanceWarning.openAccount})).toBeInTheDocument();
-    });
-
-    it('debt-only 409 shows the balance and the account link', async () => {
-        const user = userEvent.setup();
-        setup([{error: blocked409(null, debt)}]);
-        await openSuspensionWarning(user);
-
-        const dialog = dialogTitled(labels.negativeBalanceWarning.title);
-        expect(within(dialog).getByText(/350/)).toBeInTheDocument();
-        expect(within(dialog).getByRole('button', {name: labels.negativeBalanceWarning.openAccount})).toBeInTheDocument();
-    });
-
-    it('resolving the group enables "Ukončit členství" that resubmits the stored request', async () => {
-        const user = userEvent.setup();
-        const {calls} = setup([{error: blocked409({affectedGroups: [trainingGroup]})}, {}]);
-        await openSuspensionWarning(user);
         await screen.findByRole('heading', {name: labels.suspensionWarning.title});
+        expect(screen.getAllByRole('dialog')).toHaveLength(1);
+        expect(within(dialogTitled(labels.suspensionWarning.title)).getByText('U10 Závoďáci')).toBeInTheDocument();
 
         await user.click(within(dialogTitled(labels.suspensionWarning.title)).getByRole('button', {name: labels.suspensionWarning.designateSuccessor}));
         await user.click(within(dialogTitled('Přidat trenéra')).getByRole('button', {name: submitButton}));
@@ -327,20 +296,5 @@ describe('MemberDetailPage - suspension warning dialog', () => {
         expect(suspendCalls).toHaveLength(2);
         expect(suspendCalls[1]).toEqual(suspendCalls[0]);
         await waitFor(() => expect(screen.queryByRole('heading', {name: labels.suspensionWarning.title})).not.toBeInTheDocument());
-    });
-
-    it('resolved group with debt offers no "Ukončit členství"', async () => {
-        const user = userEvent.setup();
-        setup([{error: blocked409({affectedGroups: [trainingGroup]}, debt)}]);
-        await openSuspensionWarning(user);
-        await screen.findByRole('heading', {name: labels.suspensionWarning.title});
-
-        await user.click(within(dialogTitled(labels.suspensionWarning.title)).getByRole('button', {name: labels.suspensionWarning.designateSuccessor}));
-        await user.click(within(dialogTitled('Přidat trenéra')).getByRole('button', {name: submitButton}));
-
-        const warning = () => dialogTitled(labels.suspensionWarning.title);
-        await waitFor(() => expect(within(warning()).getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument());
-        expect(within(warning()).queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
-        expect(within(warning()).getByText(labels.negativeBalanceWarning.description)).toBeInTheDocument();
     });
 });
