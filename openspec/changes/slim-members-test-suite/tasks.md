@@ -46,16 +46,16 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 4. Registration
 
-- [ ] 4.1 Delete `RegisterMemberAutoProvisioningTest` and `ImportMemberRegistrationNumberConflictTest`; add a unit test for the `DataIntegrityViolationException` branch of the registration-number conflict
-- [ ] 4.2 `RegisterMemberWithGuardiansIntegrationTest`: delete `rejectsMinorWithoutGuardian`, `rejectsUnknownGuardian`, `rejectedTakeOverLeavesLoginUnchanged`; keep the rollback tests and `rejectsTakeOverOfMember`; add `@CleanupTestData` (design D5)
-- [ ] 4.3 Move `ImportMemberUsualConsequencesTest` to the module root as `@CrossModuleTest` and drop its finance assertions (kept by `MemberAccountCreationIntegrationTest`)
-- [ ] 4.4 `RegistrationServiceTest`: `RegisterMemberMethod` 9 → 2; delete `RegisterAdult.shouldRequireOwnEmail/OwnPhone` and `shouldRegisterMinorWithNewGuardian`; use the real `RegistrationNumberGenerator` with a stubbed repository; drop `Strictness.LENIENT` and the stubs it hid
-- [ ] 4.5 `MemberTest`: delete the validation tests delegated to `PersonalInformation` and the contact tests twinned in `MemberErrorTypesTest` / `ContactInformationCrossValidation`
-- [ ] 4.6 Merge `domain/MemberErrorTypesTest` and root `MembersErrorTypesTest`; construct exceptions directly instead of re-running domain flows
-- [ ] 4.7 `MemberControllerApiTest` registration: merge the 7 identical-payload tests into one (201, Location, full command); parameterize the 7 bean-validation 400s asserting field keys; merge the two unknown-nationality tests; merge the three register template tests and replace fixed array positions
-- [ ] 4.8 FE `MemberRegistration.integration.test.tsx`: delete the generic form-validation block and duplicate guardian tests; move the e-mail format test to `HalFormsForm.test`
-- [ ] 4.9 E2E: remove "Minor registered without guardians is rejected" and `member-accounts` "Account is created together with a new member"; list them under "Not automated"
-- [ ] 4.10 Coverage comparison, code review, commit
+- [x] 4.1 Delete `RegisterMemberAutoProvisioningTest` and `ImportMemberRegistrationNumberConflictTest`; add a unit test for the `DataIntegrityViolationException` branch of the registration-number conflict
+- [x] 4.2 `RegisterMemberWithGuardiansIntegrationTest`: delete `rejectsMinorWithoutGuardian`, `rejectsUnknownGuardian`, `rejectedTakeOverLeavesLoginUnchanged`; keep the rollback tests and `rejectsTakeOverOfMember`; add `@CleanupTestData` (design D5)
+- [x] 4.3 Move `ImportMemberUsualConsequencesTest` to the module root as `@CrossModuleTest` and drop its finance assertions (kept by `MemberAccountCreationIntegrationTest`)
+- [x] 4.4 `RegistrationServiceTest`: `RegisterMemberMethod` 9 → 2; delete `RegisterAdult.shouldRequireOwnEmail/OwnPhone` and `shouldRegisterMinorWithNewGuardian`; use the real `RegistrationNumberGenerator` with a stubbed repository; drop `Strictness.LENIENT` and the stubs it hid
+- [x] 4.5 `MemberTest`: delete the validation tests delegated to `PersonalInformation` and the contact tests twinned in `MemberErrorTypesTest` / `ContactInformationCrossValidation`
+- [x] 4.6 Merge `domain/MemberErrorTypesTest` and root `MembersErrorTypesTest`; construct exceptions directly instead of re-running domain flows
+- [x] 4.7 `MemberControllerApiTest` registration: merge the 7 identical-payload tests into one (201, Location, full command); parameterize the 7 bean-validation 400s asserting field keys; merge the two unknown-nationality tests; merge the three register template tests and replace fixed array positions
+- [x] 4.8 FE `MemberRegistration.integration.test.tsx`: delete the generic form-validation block and duplicate guardian tests; move the e-mail format test to `HalFormsForm.test`
+- [x] 4.9 E2E: remove "Minor registered without guardians is rejected" and `member-accounts` "Account is created together with a new member"; list them under "Not automated"
+- [x] 4.10 Coverage comparison, code review, commit
 
 ## 5. Suspension and resume
 

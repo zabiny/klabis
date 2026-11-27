@@ -1,4 +1,5 @@
 # Not automated here:
+# - "Account is created together with a new member": the account created on member registration is asserted by `MemberAccountCreationIntegrationTest.registeringMemberResultsInFinanceAccountBeingCreated` (listener unit test `CreateAccountOnMemberRegisteredTest`); the registration journey is in `members.feature`.
 # - "Overdraft limit blocks a registration payment" and "... permits a registration payment that stays within it": no event registration charges the account yet
 #   (chargeForRegistration has no REST path) and the limit is a deployment setting (default -500 CZK) that a scenario cannot change.
 # - "Overdraft limit does not block a finance-manager charge" runs against that default limit of -500 CZK.
@@ -8,12 +9,6 @@ Feature: Member financial accounts
   finance managers record deposits and charges and reverse transactions on any account.
   Jan is a finance manager, Eva is a club member and the legal guardian of the minor member Sofie Svobodová,
   Ivana is not a member, she is the legal guardian of the minor members Adam Dlouhý and Klára Dlouhá.
-
-  Rule: Every member has a financial account that is created together with the member
-
-    Scenario: Account is created together with a new member
-      When Jan registers a minor member with last name "Mlady" and a new legal guardian "Zakonny"
-      Then the account of member "Mlady" shows the balance 0 CZK
 
   Rule: A member sees their own account and history
 

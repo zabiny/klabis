@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import com.klabis.common.users.UserId;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -242,27 +243,31 @@ class UpdateMemberApiTest {
 
         static Stream<Arguments> lengthAndFormatViolations() {
             return Stream.of(
-                    Arguments.of("chipNumber with letters", "{\"chipNumber\": \"ABC123\"}"),
-                    Arguments.of("chipNumber over 50 characters", "{\"chipNumber\": \"%s\"}".formatted("1".repeat(51))),
-                    Arguments.of("dietaryRestrictions over 500 characters",
+                    violation("chipNumber with letters", "{\"chipNumber\": \"ABC123\"}"),
+                    violation("chipNumber over 50 characters", "{\"chipNumber\": \"%s\"}".formatted("1".repeat(51))),
+                    violation("dietaryRestrictions over 500 characters",
                             "{\"dietaryRestrictions\": \"%s\"}".formatted("A".repeat(501))),
-                    Arguments.of("firstName over 100 characters", "{\"firstName\": \"%s\"}".formatted("A".repeat(101))),
-                    Arguments.of("lastName over 100 characters", "{\"lastName\": \"%s\"}".formatted("A".repeat(101))),
-                    Arguments.of("email over 255 characters",
+                    violation("firstName over 100 characters", "{\"firstName\": \"%s\"}".formatted("A".repeat(101))),
+                    violation("lastName over 100 characters", "{\"lastName\": \"%s\"}".formatted("A".repeat(101))),
+                    violation("email over 255 characters",
                             "{\"email\": \"%s\"}".formatted("a".repeat(244) + "@example.com")),
-                    Arguments.of("phone over 50 characters", "{\"phone\": \"%s\"}".formatted("+420" + "1".repeat(47))),
-                    Arguments.of("nationality over 2 characters", "{\"nationality\": \"CZEE\"}"),
-                    Arguments.of("bankAccountNumber over 50 characters",
+                    violation("phone over 50 characters", "{\"phone\": \"%s\"}".formatted("+420" + "1".repeat(47))),
+                    violation("nationality over 2 characters", "{\"nationality\": \"CZEE\"}"),
+                    violation("bankAccountNumber over 50 characters",
                             "{\"bankAccountNumber\": \"%s\"}".formatted("1".repeat(51))),
-                    Arguments.of("identityCard number over 50 characters",
+                    violation("identityCard number over 50 characters",
                             "{\"identityCard\": {\"cardNumber\": \"%s\", \"validityDate\": \"2030-01-01\"}}"
                                     .formatted("A".repeat(51))));
+        }
+
+        private static Arguments violation(String name, String json) {
+            return Arguments.of(Named.of(name, json));
         }
 
         @ParameterizedTest(name = "{0} should return 400 not 500")
         @MethodSource("lengthAndFormatViolations")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenFieldViolatesLengthOrFormat(String violation, String json) throws Exception {
+        void shouldReturn400WhenFieldViolatesLengthOrFormat(String json) throws Exception {
             patchJson(testMemberId, json)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.title").value("Bad Request"));

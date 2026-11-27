@@ -121,193 +121,6 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should fail when no contact information provided")
-        void shouldFailWhenNoContactInformationProvided() {
-            // Arrange
-            LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    dateOfBirth,
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            // Act & Assert
-            assertThatThrownBy(() -> {
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(MemberDataRequiredException.class)
-                    .hasMessageContaining("At least one email address is required (member or guardian)");
-        }
-
-        @Test
-        @DisplayName("should fail when email missing but phone provided")
-        void shouldFailWhenEmailMissing() {
-            // Arrange
-            LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            PhoneNumber phone = new PhoneNumber("+420123456789");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    dateOfBirth,
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            // Act & Assert
-            assertThatThrownBy(() -> {
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .phone(phone)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(MemberDataRequiredException.class)
-                    .hasMessageContaining("At least one email address is required (member or guardian)");
-        }
-
-        @Test
-        @DisplayName("should fail when phone missing but email provided")
-        void shouldFailWhenPhoneMissing() {
-            // Arrange
-            LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            EmailAddress email = new EmailAddress("jan@example.com");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    dateOfBirth,
-                    Nationality.of("CZ"),
-                    Gender.MALE
-            );
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            // Act & Assert
-            assertThatThrownBy(() -> {
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .email(email)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(MemberDataRequiredException.class)
-                    .hasMessageContaining("At least one phone number is required (member or guardian)");
-        }
-
-        @Test
-        @DisplayName("should fail when first name is blank")
-        void shouldFailWhenFirstNameIsBlank() {
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            EmailAddress email = new EmailAddress("test@example.com");
-            PhoneNumber phone = new PhoneNumber("+420123456789");
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            assertThatThrownBy(() -> {
-                PersonalInformation personalInformation = PersonalInformation.of(
-                        "",
-                        "Novák",
-                        LocalDate.of(1990, 5, 15),
-                        Nationality.of("CZ"),
-                        Gender.MALE
-                );
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .email(email)
-                        .phone(phone)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("First name");
-        }
-
-        @Test
-        @DisplayName("should fail when last name is blank")
-        void shouldFailWhenLastNameIsBlank() {
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            EmailAddress email = new EmailAddress("test@example.com");
-            PhoneNumber phone = new PhoneNumber("+420123456789");
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            assertThatThrownBy(() -> {
-                PersonalInformation personalInformation = PersonalInformation.of(
-                        "Jan",
-                        "",
-                        LocalDate.of(1990, 5, 15),
-                        Nationality.of("CZ"),
-                        Gender.MALE
-                );
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .email(email)
-                        .phone(phone)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Last name");
-        }
-
-        @Test
-        @DisplayName("should fail when nationality is missing")
-        void shouldFailWhenNationalityIsMissing() {
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            Address address = new Address("Ulice 1", "Město", "11000", Country.of("CZ"));
-            EmailAddress email = new EmailAddress("test@example.com");
-            PhoneNumber phone = new PhoneNumber("+420123456789");
-            MemberId memberId = new MemberId(UUID.randomUUID());
-
-            assertThatThrownBy(() -> {
-                PersonalInformation personalInformation = PersonalInformation.of(
-                        "Jan",
-                        "Novák",
-                        LocalDate.of(1990, 5, 15),
-                        null,
-                        Gender.MALE
-                );
-                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
-                        .id(memberId)
-                        .registrationNumber(registrationNumber)
-                        .personalInformation(personalInformation)
-                        .address(address)
-                        .email(email)
-                        .phone(phone)
-                        .build();
-                Member.register(command);
-            })
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Nationality");
-        }
-
-        @Test
         @DisplayName("should fail when registering CZ member without birth number")
         void shouldFailWhenRegisteringCzMemberWithoutBirthNumber() {
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -762,6 +575,23 @@ class MemberTest {
                     .withAddress(item == MissingDataItem.ADDRESS ? null
                             : Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")))
                     .build();
+        }
+
+        @Test
+        @DisplayName("adult member with neither email nor phone at creation should fail on the email first")
+        void adultMemberWithoutAnyContactAtCreationShouldFail() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            PersonalInformation personalInfo = PersonalInformation.of(
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of("CZ"), Gender.MALE);
+
+            assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(new RegistrationNumber("ZBM9001"))
+                    .personalInformation(personalInfo)
+                    .address(Address.of("Ulice 1", "Praha", "11000", Country.of("CZ")))
+                    .build()))
+                    .isInstanceOf(MemberDataRequiredException.class)
+                    .hasMessage("At least one email address is required (member or guardian)");
         }
 
         @Test

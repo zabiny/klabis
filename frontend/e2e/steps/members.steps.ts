@@ -8,7 +8,7 @@ import {minorDateOfBirth} from '../support/dates';
 import {createTrainingGroup, findMemberPath, guardianEmail, registerMember, REGISTERED_FIRST_NAME, registrationBody} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import type {Role} from '../support/roles';
-import {action, chooseCountry, click, czechAmount, dismissDialogs, expectRefused, fill, heading, openFromMenu, section, select, submit} from '../support/ui';
+import {action, chooseCountry, click, czechAmount, dismissDialogs, fill, heading, openFromMenu, section, select, submit} from '../support/ui';
 
 const {Given, When, Then, After} = createBdd(test);
 
@@ -150,13 +150,6 @@ When('{persona} registers a minor member with last name {name} and a new legal g
     await expect(heading(page, `${body.firstName} ${lastName}`)).toBeVisible();
 });
 
-When('{persona} registers a minor member with last name {name} without a legal guardian', async ({page, actAs}, persona: Persona, lastName: string) => {
-    await actAs(persona);
-    await openFromMenu(page, 'Členové');
-    await fillRegistrationForm(page, lastName, registrationBody(lastName, minorDateOfBirth()), false);
-    await submit(page);
-});
-
 When('{persona} searches the member list for {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
     await actAs(persona);
     await searchMembers(page, lastName);
@@ -206,16 +199,6 @@ Then('the detail of member {name} shows the suspension with note {string}', asyn
     await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
     await expect(heading(page, 'DEAKTIVACE')).toBeVisible();
     await expect(page.getByText(note, {exact: true})).toBeVisible();
-});
-
-Then('the registration is refused', async ({page}) => {
-    await expectRefused(page);
-});
-
-Then('member {name} is not registered', async ({page}, lastName: string) => {
-    await searchMembers(page, lastName);
-    await expect(page.getByText('Žádní členové neodpovídají zadaným filtrům.')).toBeVisible();
-    await expect(memberRow(page, lastName)).toHaveCount(0);
 });
 
 Then('the detail of member {name} lists {name} as legal guardian', async ({page}, lastName: string, guardian: string) => {

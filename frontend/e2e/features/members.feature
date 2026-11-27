@@ -1,6 +1,7 @@
 # Not automated here:
 # - "Adult registered with guardians is rejected": the registration form hides the guardian section of an adult, so only the API can send it (backend integration test).
 # - "A registration number already in use is refused": the registration form and API take no registration number, only the ORIS import does.
+# - "Minor registered without guardians is rejected": the rule is asserted by the backend `RegistrationServiceTest.shouldRejectMinorWithoutGuardian`.
 # - "Minor cannot edit own profile": a registered minor has no password, so no session of a minor can be opened.
 # - "Authorized user views active member detail": the sections and values shown on the detail are asserted by `MemberDetailPage.test` (sections, address, contact, badge), the fields each viewer receives by the backend `BirthNumberAuditMatchesSerializationApiTest`; every other journey opens the detail.
 # - "Member cannot change their own nationality": the read-only reserved fields of the edit form are asserted by `MemberDetailPage.test` ("self-edit template with reserved fields marked readOnly", "nationality marked readOnly or absent in the edit template"), and the backend rejects them in `UpdateMemberApiTest`.
@@ -29,11 +30,6 @@ Feature: Members
       When Jan registers a minor member with last name "Mladsi" and a new legal guardian "Rodic"
       Then the member list contains member "Mladsi"
       And the detail of member "Mladsi" lists "Rodic" as legal guardian
-
-    Scenario: Minor registered without guardians is rejected
-      When Jan registers a minor member with last name "Sam" without a legal guardian
-      Then the registration is refused
-      And member "Sam" is not registered
 
   Rule: Users find members in the member list by a search text
 
