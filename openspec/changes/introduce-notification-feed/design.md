@@ -106,9 +106,9 @@ The spec makes a minor's own settings read-only. Endpoint authorization lets the
 
 ### D8: A notification subtype per notification type, stored in one table
 
-`Notification` is an abstract aggregate root with the attributes every notification has (id, recipient, type, created and read time). The addressee is derived by the subtype from its source attributes (`addressee()`, D4), never stored. Each notification type has its own subtype carrying what that type needs to render its texts and its link, for example `NegativeBalanceNotification` with `accountId` (finance identifies an account by its owner's `MemberId`) and `newBalance` at the time of the change. A subtype maps to exactly one `NotificationType`. No title, text or link is stored: they are rendered when the notification is sent or shown (D11).
+`Notification` is an abstract aggregate root with the attributes every notification has (id, recipient, type, created and read time). The addressee is derived by the subtype from its source attributes (`addressee()`, D4), never stored. Each notification type has its own subtype carrying what that type needs for its texts and its link, for example `NegativeBalanceNotification` with `accountId` (finance identifies an account by its owner's `MemberId`) and `newBalance` at the time of the change. A subtype maps to exactly one `NotificationType`. No title, text or link is stored: they are rendered when the notification is sent or shown (D11).
 
-Each subtype renders its own link (`targetPath()`): `NegativeBalanceNotification` points the account owner to their account and, for a guardian's copy (`recipient` ≠ `addressee()`), to the child's detail page until [#451](https://github.com/zabiny/klabis/issues/451). The guardian copies are made by `copyFor(guardian)`, which keeps every attribute and changes only the recipient.
+The aggregate knows nothing about links; they are adapter-layer knowledge (D12). The guardian copies are made by `copyFor(guardian)`, which keeps every attribute and changes only the recipient.
 
 Persistence: one table `notifications` with the common columns, `type` as discriminator and `attributes` (JSON in a TEXT column) for the subtype's own attributes. The memento builds the right subtype by `type`.
 
@@ -139,10 +139,22 @@ Titles and texts depend on the channel, so they are rendered at the moment of se
 
 There is no shared e-mail layout and no fallback between channels; identical texts in two channels are duplicated on purpose.
 
-The template context holds the common attributes (`notificationId`, `type`, `createdAt`, `recipient` and the derived `addressee` with their names, `forGuardian`, `link`) plus the subtype's own attributes (`newBalance`, `accountId`, …). Names are read from members at rendering time, so the current name is always shown. `link` is the subtype's `targetPath()`, made absolute for e-mail from the configured base URL.
+The template context holds the common attributes (`notificationId`, `type`, `createdAt`, `recipient` and the derived `addressee` with their names, `forGuardian`, `link`) plus the subtype's own attributes (`newBalance`, `accountId`, …). Names are read from members at rendering time, so the current name is always shown. The context is assembled by the type's message builder, which also supplies `link` (D12).
 
 - **Why:** a new channel (for example Discord) adds a template pair per type and a delivery listener, nothing in the stored data; texts can be fixed without migrating data.
 - **Trade-off:** changing a template also changes how older notifications read in the feed. Accepted.
+
+### D12: Message builder per type builds the link with Spring HATEOAS `linkTo`
+
+Each notification type has a message builder in the notifications adapter layer (`notifications.infrastructure`), chosen by `NotificationType`, for example `NegativeBalanceMessageBuilder`. It assembles the template context (D11) for the feed, push and e-mail, including the link, which it builds itself with plain Spring HATEOAS `linkTo(methodOn(<generated *Api>)…)`. `klabisLinkTo` is not used: it adds an authorization check, and delivery runs in a listener with no logged-in user, so it would return nothing. The page the user lands on checks access itself.
+
+For `NEGATIVE_BALANCE`: the account owner gets `linkTo(methodOn(FinanceApi.class).getAccount(accountId, null))`; a guardian's copy gets the child's member detail (`linkTo(methodOn(MembersApi.class).getMember(childId, …))`) until [#451](https://github.com/zabiny/klabis/issues/451).
+
+Outside an HTTP request `linkTo` yields a relative path (`/api/members/{id}/account`; to be confirmed by a test in the implementation). The page path comes from it by the same rule the frontend applies in `toRoutePath`: drop the `/api` prefix. Push opens `/members/{id}/account`, e-mail prefixes the configured base URL, the feed returns the path as `targetPath`.
+
+- **Why:** no new URL engine and no change in the modules that own the resources; the generated `*Api` interfaces stay the single source of the paths.
+- **Consequence:** the notifications adapter layer depends on the owning module's generated `*Api`. `MembersApi` is already exposed (`members.rest` named interface); `finance.infrastructure.restapi` needs the same one-line `@NamedInterface("finance.rest")` so the Modulith structure test accepts the dependency. This is the only touch in finance's web layer.
+- **Alternatives rejected:** a link port in each owning module (like `FinanceAccountLinkSupport`), since a new notification would change that module; a link computed by the aggregate (domain layer must not know URLs); a link template part (logic in templates).
 
 
 ## Domain Model
@@ -161,14 +173,12 @@ classDiagram
         addressee() UserId
         isForGuardian()
         copyFor(recipient) Notification
-        targetPath() String
         templateAttributes() Map
     }
     class NegativeBalanceNotification {
         MemberId accountId
         BigDecimal newBalance
         addressee() UserId
-        targetPath() String
         templateAttributes() Map
     }
     class NotificationPreferences {
@@ -222,7 +232,7 @@ classDiagram
 | Element | Module | Status | Description |
 |---------|--------|--------|-------------|
 | `Notification` | notifications | added | Abstract aggregate root: one notification for one recipient with type and read state; `addressee()` is derived by the subtype (default: the recipient). A guardian's copy has `recipient` ≠ `addressee()`. No stored title, text or link (D8, D11). |
-| `NegativeBalanceNotification` | notifications | added | Subtype for `NEGATIVE_BALANCE`: `accountId`, `newBalance`; addressee = owner of `accountId`; renders the link to the account (owner) or the child's detail (guardian). |
+| `NegativeBalanceNotification` | notifications | added | Subtype for `NEGATIVE_BALANCE`: `accountId`, `newBalance`; addressee = owner of `accountId`. |
 | `NotificationId` | notifications | added | Identity of a notification. |
 | `NotificationCreated` | notifications (domain) | added | Registered on creation; consumed by the delivery listeners inside the module. |
 | `NotificationPreferences` | notifications | added | A user's changed channel settings; identity is the user's `UserId`. |
@@ -277,7 +287,7 @@ Existing device endpoints are unchanged. All endpoints resolve the feed through 
 
 **Preferences request body:** `{ "preferences": [ { "type": "NEGATIVE_BALANCE", "push": false, "email": true } ] }`. Unknown types are rejected with 400.
 
-**`NotificationFeed`** (paged collection): `_embedded.notifications[]` of `{ id, type, title, text, createdAt, read, targetPath }`, with `title` and `text` rendered from the `feed-*` templates and `targetPath` from the subtype when the page is read; each item has template `markNotificationRead` while unread. Collection links `self`, paging links, `notificationSettings`; template `markAllNotificationsRead` while any notification is unread.
+**`NotificationFeed`** (paged collection): `_embedded.notifications[]` of `{ id, type, title, text, createdAt, read, targetPath }`, with `title` and `text` rendered from the `feed-*` templates and `targetPath` from the type's message builder (D12) when the page is read; each item has template `markNotificationRead` while unread. Collection links `self`, paging links, `notificationSettings`; template `markAllNotificationsRead` while any notification is unread.
 
 **`UnreadNotificationCount`**: `{ "unreadCount": 3 }` with `self`.
 
