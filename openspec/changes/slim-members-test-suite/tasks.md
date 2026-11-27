@@ -7,12 +7,12 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 1. Safety net
 
-- [ ] 1.1 Record the coverage baseline: JaCoCo per-class missed lines/branches for `com.klabis.members`, Vitest coverage for `FE/pages/members` and `FE/components/members` (design D4); store the summary in `/mnt/ramdisk/klabis` for the later comparisons
-- [ ] 1.2 Make `MemberTestDataBuilder` default to an adult with a fixed date of birth; build minors relative to `now()`; fix tests that relied on the minor default to say so explicitly, incl. `MemberTest.updateClearingEmailOnCompleteMemberShouldFail` (design D8); separate commit
-- [ ] 1.3 Replace the fixed 2015 minor dates in `RegistrationServiceTest.minorCommand` and `RegisterMemberWithGuardiansIntegrationTest` with dates relative to `now()`
-- [ ] 1.4 Fix the duplicate UUID of `ADULT` and `CHILD_C` in `LegalGuardianGroupServiceTest`
-- [ ] 1.5 Add the five precondition assertions of design D3 (sort order, full-field memento builder, partial-address mapper test, completeness port assertion, Lifecycle step 8 `$.email`)
-- [ ] 1.6 Add the testing rules to `.claude/skills/backend-patterns/references/testing-guide.md` and the test-levels section of `frontend/CLAUDE.md`: what is not tested; relationship rules in `*RelationshipSource` tests, one slice test per grant shape; matrices (400 per field, 401 per endpoint, 403 per authority) parameterized and asserting field keys, not localized texts; test data independent of the date; a new Spring context only with a reason and `@DataJdbcTest` always with the standard `includeFilters`; page tests mock only the API; one E2E scenario per journey and removed spec scenarios listed under "Not automated"
+- [x] 1.1 Record the coverage baseline: JaCoCo per-class missed lines/branches for `com.klabis.members`, Vitest coverage for `FE/pages/members` and `FE/components/members` (design D4); store the summary in `/mnt/ramdisk/klabis` for the later comparisons
+- [x] 1.2 Make `MemberTestDataBuilder` default to an adult with a fixed date of birth; build minors relative to `now()`; fix tests that relied on the minor default to say so explicitly, incl. `MemberTest.updateClearingEmailOnCompleteMemberShouldFail` (design D8); separate commit
+- [x] 1.3 Replace the fixed 2015 minor dates in `RegistrationServiceTest.minorCommand` and `RegisterMemberWithGuardiansIntegrationTest` with dates relative to `now()`
+- [x] 1.4 Fix the duplicate UUID of `ADULT` and `CHILD_C` in `LegalGuardianGroupServiceTest`
+- [x] 1.5 Add the five precondition assertions of design D3 (sort order, full-field memento builder, partial-address mapper test, completeness port assertion, Lifecycle step 8 `$.email`)
+- [x] 1.6 Add the testing rules to `.claude/skills/backend-patterns/references/testing-guide.md` and the test-levels section of `frontend/CLAUDE.md`: what is not tested; relationship rules in `*RelationshipSource` tests, one slice test per grant shape; matrices (400 per field, 401 per endpoint, 403 per authority) parameterized and asserting field keys, not localized texts; test data independent of the date; a new Spring context only with a reason and `@DataJdbcTest` always with the standard `includeFilters`; page tests mock only the API; one E2E scenario per journey and removed spec scenarios listed under "Not automated"
 
 ## 2. Trivial and dead tests
 

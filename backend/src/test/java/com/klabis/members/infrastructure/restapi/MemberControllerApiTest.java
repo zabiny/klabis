@@ -1151,7 +1151,7 @@ class MemberControllerApiTest {
                             {
                                 "firstName": "Petra",
                                 "lastName": "Nováková",
-                                "dateOfBirth": "2010-06-20",
+                                "dateOfBirth": "%s",
                                 "nationality": "CZ",
                                 "gender": "FEMALE",
                                 "address": {
@@ -1166,7 +1166,7 @@ class MemberControllerApiTest {
                                      "email": "eva@example.com", "phone": "+420123456789"}
                                 ]
                             }
-                            """.formatted(existingGuardian))
+                            """.formatted(LocalDate.now().minusYears(10), existingGuardian))
                     )
                     .andExpect(status().isCreated())
                     .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
@@ -1396,13 +1396,13 @@ class MemberControllerApiTest {
                             {
                                 "firstName": "Jan",
                                 "lastName": "Novák",
-                                "dateOfBirth": "2015-05-15",
+                                "dateOfBirth": "%s",
                                 "nationality": "CZ",
                                 "gender": "MALE",
                                 "legalGuardianUserId": "%s",
                                 "address": {"street": "Hlavní 123", "city": "Praha", "postalCode": "11000", "country": "CZ"}
                             }
-                            """.formatted(UUID.randomUUID())))
+                            """.formatted(LocalDate.now().minusYears(10), UUID.randomUUID())))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("/errors/minor-cannot-take-over-guardian"))
                     .andExpect(jsonPath("$.field").value("legalGuardianUserId"));

@@ -24,6 +24,11 @@ Rules:
   - Integration test verifies only the cooperation between modules (event delivered and handled, call crossing the module boundary) — happy path only.
   - End-to-end verifies only that a user journey works through UI + API — no validation messages, authorization matrix or field-by-field checks.
 - Before writing a higher-level test, name what it verifies that no lower-level test can. If nothing, don't write it.
+- **Don't test what the compiler or a framework generates.** No tests of record `equals`/`hashCode`/`toString`, MapStruct null guards, Spring property binding, Spring `Pageable` handling or a one-line delegation. Keep equality tests only for a hand-written `equals`.
+- **Relationship rules live in `*RelationshipSource` tests.** In a `@<Module>WebMvcTest`, `@WithKlabisMockUser(targetGrants = …)` emulates the grant, so the slice cannot tell a guardian, a group owner or an adult editing themself apart, and it never reads the date of birth. Who gets which grant (minor, turning 18, guardian, group owner) is tested in the relationship source; the slice needs one test per grant shape.
+- **Matrices are one parameterized test.** 400 per invalid field, 401 per endpoint, 403 per required authority → one `@ParameterizedTest` with a readable `name`. Assert the error's field key, not the localized message text.
+- **Test data does not depend on the date.** Builder defaults are an adult with a fixed date of birth; build minors and age boundaries relative to `LocalDate.now()` (or a fixed clock where the code takes one). Never hard-code a birth year that makes someone a minor.
+- **A new Spring context needs a reason.** Every distinct combination of `@MockitoBean`, `@Import` or properties in a Spring test starts a new context. Prefer the shared ones; `@DataJdbcTest` always uses `includeFilters = @Filter(Repository.class)`. Don't `@MockitoBean` a class of the module under test in an integration test.
 
 | Test Type | Annotation | Level | Use for |
 |-----------|-----------|-------|---------|

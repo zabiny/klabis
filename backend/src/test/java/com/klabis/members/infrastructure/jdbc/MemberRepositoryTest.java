@@ -32,6 +32,7 @@ import java.util.UUID;
 import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DisplayName("Member JDBC Repository Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -582,57 +583,28 @@ class MemberRepositoryTest {
         }
 
         @Test
-        @DisplayName("should sort members by last name")
+        @DisplayName("should sort members by last name ascending, then by first name ascending")
         void shouldSortMembersByLastName() {
-            // Given
-            Member member1 = aMember()
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 1, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", Country.of("CZ")))
-                    .withEmail("jan@example.com")
-                    .withPhone("+420111111122")
-                    .build();
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0501").withName("Karel", "Novak")
+                    .withEmail("karel@example.com").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0201").withName("Petra", "Svoboda")
+                    .withEmail("petra@example.com").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0001").withName("Jan", "Novak")
+                    .withEmail("jan@example.com").build());
+            memberRepository.save(aMember().withRegistrationNumber("ZBM0301").withName("Adam", "Cerny")
+                    .withEmail("adam@example.com").build());
 
-            Member member2 = aMember()
-                    .withRegistrationNumber("ZBM0201")
-                    .withName("Petra", "Svobodová")
-                    .withDateOfBirth(LocalDate.of(2002, 6, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 2", "Brno", "60200", Country.of("CZ")))
-                    .withEmail("petra@example.com")
-                    .withPhone("+420111111123")
-                    .build();
+            Pageable pageable = PageRequest.of(0, 10, Sort.by("lastName", "firstName").ascending());
 
-            Member member3 = aMember()
-                    .withRegistrationNumber("ZBM0001")
-                    .withName("Karel", "Černý")
-                    .withDateOfBirth(LocalDate.of(2000, 12, 31))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Svobodova 3", "Ostrava", "70800", Country.of("CZ")))
-                    .withEmail("karel@example.com")
-                    .withPhone("+420111111124")
-                    .build();
-
-            memberRepository.save(member1);
-            memberRepository.save(member2);
-            memberRepository.save(member3);
-
-            Sort sort = Sort.by("lastName").ascending();
-            Pageable pageable = PageRequest.of(0, 10, sort);
-
-            // When
             Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
 
-            // Then
-            assertThat(page.getContent()).hasSize(3);
-            // Černý should come before Novák (C < N in Czech collation)
-            // However, this depends on database collation
-            assertThat(page.getContent().get(0).getLastName()).isNotNull();
+            assertThat(page.getContent())
+                    .extracting(Member::getLastName, Member::getFirstName)
+                    .containsExactly(
+                            tuple("Cerny", "Adam"),
+                            tuple("Novak", "Jan"),
+                            tuple("Novak", "Karel"),
+                            tuple("Svoboda", "Petra"));
         }
 
         @Test

@@ -97,6 +97,9 @@ class MemberMementoTest {
                 .withDietaryRestrictions("Vegetarian")
                 .withBirthNumber(birthNumber)
                 .withBankAccountNumber(bankAccountNumber)
+                .withRefereeLicense(RefereeLicense.of(RefereeLevel.R2, LocalDate.now().plusYears(2)))
+                .withDataIncomplete(true)
+                .suspended(DeactivationReason.PRESTUP, "Transferred to another club")
                 .build();
 
     }
@@ -201,7 +204,15 @@ class MemberMementoTest {
             assertThat(reconstructed.getChipNumber()).isEqualTo("CHIP123");
             assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
             assertThat(reconstructed.getDietaryRestrictions()).isEqualTo("Vegetarian");
-            assertThat(reconstructed.isActive()).isTrue();
+            assertThat(reconstructed.isActive()).isFalse();
+            assertThat(reconstructed.isDataIncomplete()).isTrue();
+
+            assertThat(reconstructed.getRefereeLicense()).isEqualTo(originalMember.getRefereeLicense());
+
+            assertThat(reconstructed.getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
+            assertThat(reconstructed.getSuspensionNote()).isEqualTo("Transferred to another club");
+            assertThat(reconstructed.getSuspendedAt()).isEqualTo(originalMember.getSuspendedAt());
+            assertThat(reconstructed.getSuspendedBy()).isEqualTo(originalMember.getSuspendedBy());
 
             // Assert - Birth number and bank account
             assertThat(reconstructed.getBirthNumber()).isNotNull();

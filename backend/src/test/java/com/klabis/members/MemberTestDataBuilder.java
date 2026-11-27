@@ -14,7 +14,7 @@ public class MemberTestDataBuilder {
     private RegistrationNumber registrationNumber = new RegistrationNumber("ZBM1234");
     private String firstName = "Jan";
     private String lastName = "Novák";
-    private LocalDate dateOfBirth = LocalDate.of(2010, 5, 15);
+    private LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
     private String nationality = "SK";
     private Gender gender = Gender.MALE;
     private Address address = Address.of("Hlavní 123", "Praha", "110 00", Country.of("CZ"));
@@ -101,6 +101,10 @@ public class MemberTestDataBuilder {
     public MemberTestDataBuilder withDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
         return this;
+    }
+
+    public MemberTestDataBuilder asMinor() {
+        return withDateOfBirth(LocalDate.now().minusYears(12));
     }
 
     public MemberTestDataBuilder withNationality(String nationality) {

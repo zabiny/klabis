@@ -274,6 +274,47 @@ class MemberProjectionMapperTest {
         }
 
         @Test
+        @DisplayName("a partial address is dropped as a whole, including postal code and country, and logged with the ORIS id")
+        void partialAddressIsClearedAsWhole(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).city(" "));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.city()).isNull();
+            assertThat(projection.postalCode()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(output).contains("33630").contains("dropping address");
+        }
+
+        @Test
+        @DisplayName("an address with only the country present is cleared, keeping nationality and phone prefix intact")
+        void addressWithOnlyCountryIsCleared() {
+            var clubMember = referenceClubMember(b -> b.street(null).city(null).zip(null));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.city()).isNull();
+            assertThat(projection.postalCode()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(projection.nationality()).isEqualTo("CZ");
+            assertThat(projection.phone()).isEqualTo("+420700000001");
+        }
+
+        @Test
+        @DisplayName("a fully absent address stays absent without any warning")
+        void absentAddressIsNullWithoutWarning(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.street(null).city(null).zip(null).country(null).phone(null));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(output).doesNotContain("dropping address");
+        }
+
+        @Test
         @DisplayName("a missing birth number is left null without any warning")
         void missingBirthNumberIsNullWithoutWarning(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.persNum(null));

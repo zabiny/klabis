@@ -274,7 +274,8 @@ class MemberLifecycleCrossModuleTest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()));
+                .andExpect(jsonPath("$.id").value(memberId.toString()))
+                .andExpect(jsonPath("$.email").value("jan.novy@example.com"));
 
         // ========================================================================
         // STEP 9: Suspend member

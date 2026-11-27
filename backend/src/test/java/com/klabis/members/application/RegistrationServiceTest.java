@@ -515,7 +515,7 @@ class RegistrationServiceTest {
         private RegistrationPort.RegisterNewMember minorCommand(EmailAddress email, PhoneNumber phone,
                                                                List<GuardianInput> guardians) {
             return new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    PersonalInformation.of("Child", "Minor", LocalDate.now().minusYears(10), Nationality.of("CZ"), Gender.MALE),
                     Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                     email,
                     phone,
@@ -621,7 +621,7 @@ class RegistrationServiceTest {
         @DisplayName("should reject taking over a legal guardian for a minor")
         void shouldRejectTakeOverForMinor() {
             var command = new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    PersonalInformation.of("Child", "Minor", LocalDate.now().minusYears(10), Nationality.of("CZ"), Gender.MALE),
                     Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")), null, null, null, null, null,
                     List.of(GuardianInput.existing(GUARDIAN_ID)), GUARDIAN_ID);
 

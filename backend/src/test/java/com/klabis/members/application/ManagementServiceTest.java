@@ -733,6 +733,7 @@ class ManagementServiceTest {
         @DisplayName("should load, apply and save member on successful sync")
         void shouldLoadApplyAndSaveOnSuccessfulSync() {
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberCompletenessPort.missingData(testMember)).thenReturn(Set.of(MissingDataItem.BIRTH_NUMBER));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
             var command = MemberSyncFromOrisBuilder.builder()
@@ -754,6 +755,8 @@ class ManagementServiceTest {
             assertThat(result.getFirstName()).isEqualTo("Petr");
             assertThat(result.getLastName()).isEqualTo("Svoboda");
             assertThat(result.getEmail()).isEqualTo(EmailAddress.of("petr.svoboda@example.com"));
+            verify(memberCompletenessPort).missingData(testMember);
+            assertThat(result.isDataIncomplete()).isTrue();
             verify(memberRepository).save(any(Member.class));
         }
 

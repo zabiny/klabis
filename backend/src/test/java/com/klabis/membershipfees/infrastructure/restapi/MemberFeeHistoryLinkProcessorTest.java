@@ -44,7 +44,7 @@ class MemberFeeHistoryLinkProcessorTest {
     @BeforeEach
     void stubMember() {
         when(memberManagementPort.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
-                .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
+                .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).asMinor().build());
     }
 
     @Test

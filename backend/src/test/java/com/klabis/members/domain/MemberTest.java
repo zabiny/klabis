@@ -965,6 +965,7 @@ class MemberTest {
                     .withEmail("jan@example.com")
                     .withPhone("+420123456789")
                     .build();
+            assertThat(missing(member)).isEmpty();
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(null).build()))
@@ -979,6 +980,7 @@ class MemberTest {
                     .withEmail("jan@example.com")
                     .withPhone("+420123456789")
                     .build();
+            assertThat(missing(member)).isEmpty();
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).phone(null).build()))

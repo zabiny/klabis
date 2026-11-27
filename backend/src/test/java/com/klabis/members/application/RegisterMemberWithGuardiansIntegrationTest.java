@@ -64,7 +64,7 @@ class RegisterMemberWithGuardiansIntegrationTest {
 
     private RegistrationPort.RegisterNewMember minor(String lastName, List<GuardianInput> guardians) {
         return new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", lastName, LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
+                PersonalInformation.of("Dítě", lastName, LocalDate.now().minusYears(10), Nationality.of("SK"), Gender.MALE),
                 Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, guardians, null);
     }
@@ -162,7 +162,7 @@ class RegisterMemberWithGuardiansIntegrationTest {
         LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("rej." + unique() + "@example.com"));
         UserId guardianId = profile.guardian().getId();
         var minorTakeOver = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
+                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.now().minusYears(10), Nationality.of("SK"), Gender.MALE),
                 Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, List.of(GuardianInput.existing(guardianId)), guardianId);
 

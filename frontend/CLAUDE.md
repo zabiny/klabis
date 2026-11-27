@@ -92,6 +92,11 @@ npm run preview
 - **Most tests are unit tests.**
 - **Mock only boundaries:** the data/API layer (`useHalPageData`, `useAuthorizedFetch`, `authorizedFetch`), auth (`klabisUserManager`) and browser/router infrastructure. Never mock the component's own child components, hooks or utils — render the real ones.
 - **Higher levels don't repeat lower levels.** Before writing a Page test or E2E scenario, name what it verifies that no lower-level test can. If nothing, don't write it. Behaviour already covered by backend tests (validation rules, authorization) is not re-tested in E2E.
+- **A page test doesn't re-test its child components.** What a component, hook or util test already covers (formatting, conditional fields, dialog states) is not asserted again on the page; the page test checks only that the parts are wired together.
+- **Matrices are one `it.each`.** "Button shown iff link/template", one test per icon, column or authority → one `it.each` with a title template.
+- **Query by role and label.** No `querySelector` by `name`, CSS class or layout class; no tests that assert a removed feature is absent.
+- **Share fixtures.** HAL payloads and harnesses used by more than one test file live in `src/__mocks__/`, not copied between files.
+- **One E2E scenario per user journey.** A spec scenario that is covered at a lower level is listed in the feature file's "Not automated" header with the test that covers it.
 
 ### E2E Tests
 
