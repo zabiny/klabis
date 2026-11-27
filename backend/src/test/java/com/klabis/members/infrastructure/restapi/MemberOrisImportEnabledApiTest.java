@@ -62,18 +62,6 @@ class MemberOrisImportEnabledApiTest {
         }
 
         @Test
-        @DisplayName("running twice invokes the discovery job twice, not a reimplementation")
-        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
-        void runningTwiceInvokesTheJobTwice() throws Exception {
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-
-            Mockito.verify(memberDiscoveryPort, Mockito.times(2)).discoverNewMembers();
-        }
-
-        @Test
         @DisplayName("user without SYNC:MANAGE -> 403, job never invoked")
         @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
         void withoutSyncManageAuthority_returns403() throws Exception {

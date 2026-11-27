@@ -529,32 +529,6 @@ class ManagementServiceTest {
             assertThat(result.isDataIncomplete()).isTrue();
             verify(memberRepository).save(any(Member.class));
         }
-
-        @Test
-        @DisplayName("should throw MemberNotFoundException for unknown member id")
-        void shouldThrowWhenMemberNotFound() {
-            UUID unknownId = UUID.randomUUID();
-            when(memberRepository.findById(new MemberId(unknownId))).thenReturn(Optional.empty());
-
-            var command = MemberSyncFromOrisBuilder.builder()
-                    .registrationNumber(testMember.getRegistrationNumber())
-                    .firstName("Petr")
-                    .lastName("Svoboda")
-                    .dateOfBirth(LocalDate.of(1985, 3, 20))
-                    .gender(Gender.MALE)
-                    .nationality(Nationality.of("SK"))
-                    .birthNumber(null)
-                    .email(EmailAddress.of("petr.svoboda@example.com"))
-                    .phone(PhoneNumber.of("+420999888777"))
-                    .address(Address.of("Nová 1", "Brno", "60200", Country.of("CZ")))
-                    .chipNumber("111")
-                    .build();
-
-            assertThatThrownBy(() -> testedSubject.syncMemberFromOris(new MemberId(unknownId), command))
-                    .isInstanceOf(MemberNotFoundException.class);
-
-            verify(memberRepository, never()).save(any(Member.class));
-        }
     }
 
     @Nested

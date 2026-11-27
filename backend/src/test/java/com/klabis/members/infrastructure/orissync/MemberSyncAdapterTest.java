@@ -3,12 +3,11 @@ package com.klabis.members.infrastructure.orissync;
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.dpolach.api.orisclient.dto.ClubMemberBuilder;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,13 +67,6 @@ class MemberSyncAdapterTest {
         assertThat(capabilities.containsSensitiveData()).isTrue();
     }
 
-    @Test
-    @DisplayName("entityType is MEMBER and system is ORIS")
-    void declaresEntityTypeAndSystem() {
-        assertThat(adapter.entityType()).isEqualTo(SyncEntityType.MEMBER);
-        assertThat(adapter.system()).isEqualTo(ExternalSystem.ORIS);
-    }
-
     @Nested
     @DisplayName("applyToExternal()")
     class ApplyToExternalMethod {
@@ -96,8 +89,7 @@ class MemberSyncAdapterTest {
         @DisplayName("imports a member via RegistrationPort using the ORIS registration number and returns the new id")
         void importsMemberAndReturnsId() {
             MemberProjection projection = referenceProjection();
-            Member imported = Mockito.mock(Member.class);
-            when(imported.getId()).thenReturn(MEMBER_ID);
+            Member imported = MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build();
             when(registrationPort.importMember(any(RegistrationPort.ImportMember.class))).thenReturn(imported);
 
             String entityId = adapter.createLocal(projection);
@@ -118,6 +110,25 @@ class MemberSyncAdapterTest {
 
             assertThat(entityId).isEqualTo(MEMBER_ID.value().toString());
         }
+
+        @Test
+        @DisplayName("imports a member whose ORIS record lacks address, e-mail, phone and birth number")
+        void importsMemberWithoutOptionalContactData() {
+            MemberProjection sparse = sparseProjection();
+            when(registrationPort.importMember(any(RegistrationPort.ImportMember.class)))
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
+
+            adapter.createLocal(sparse);
+
+            ArgumentCaptor<RegistrationPort.ImportMember> captor =
+                    ArgumentCaptor.forClass(RegistrationPort.ImportMember.class);
+            Mockito.verify(registrationPort).importMember(captor.capture());
+            RegistrationPort.RegisterNewMember details = captor.getValue().details();
+            assertThat(details.address()).isNull();
+            assertThat(details.email()).isNull();
+            assertThat(details.phone()).isNull();
+            assertThat(details.birthNumber()).isNull();
+        }
     }
 
     @Nested
@@ -128,14 +139,14 @@ class MemberSyncAdapterTest {
         @DisplayName("builds a Member.SyncFromOris from the projection and calls ManagementPort.syncMemberFromOris")
         void buildsSyncFromOrisAndCallsManagementPort() {
             MemberProjection projection = referenceProjection();
-            Member updated = Mockito.mock(Member.class);
+            Member updated = MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build();
             when(managementPort.syncMemberFromOris(any(MemberId.class), any(Member.SyncFromOris.class)))
                     .thenReturn(updated);
 
             adapter.applyToLocal(MEMBER_UUID.toString(), projection);
 
             ArgumentCaptor<Member.SyncFromOris> captor = ArgumentCaptor.forClass(Member.SyncFromOris.class);
-            Mockito.verify(managementPort).syncMemberFromOris(org.mockito.ArgumentMatchers.eq(MEMBER_ID), captor.capture());
+            Mockito.verify(managementPort).syncMemberFromOris(eq(MEMBER_ID), captor.capture());
 
             Member.SyncFromOris command = captor.getValue();
             assertThat(command.registrationNumber()).isEqualTo(new RegistrationNumber(projection.registrationNumber()));
@@ -148,23 +159,22 @@ class MemberSyncAdapterTest {
         }
 
         @Test
-        @DisplayName("regression: syncing does not touch trainer licence, which SyncFromOris never carries")
-        void doesNotTouchTrainerLicence() {
-            MemberProjection projection = referenceProjection();
-
-            Member realMember = registeredMemberWithLicence();
-            TrainerLicense licenceBefore = realMember.getTrainerLicense();
-
+        @DisplayName("passes absent address, e-mail, phone, birth number and chip number through as null, letting ORIS clear them")
+        void passesAbsentOptionalDataThroughAsNull() {
+            MemberProjection sparse = sparseProjection();
             when(managementPort.syncMemberFromOris(any(MemberId.class), any(Member.SyncFromOris.class)))
-                    .thenAnswer(invocation -> {
-                        Member.SyncFromOris command = invocation.getArgument(1);
-                        realMember.syncFromOris(command);
-                        return realMember;
-                    });
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
 
-            adapter.applyToLocal(realMember.getId().value().toString(), projection);
+            adapter.applyToLocal(MEMBER_UUID.toString(), sparse);
 
-            assertThat(realMember.getTrainerLicense()).isEqualTo(licenceBefore);
+            ArgumentCaptor<Member.SyncFromOris> captor = ArgumentCaptor.forClass(Member.SyncFromOris.class);
+            Mockito.verify(managementPort).syncMemberFromOris(eq(MEMBER_ID), captor.capture());
+            Member.SyncFromOris command = captor.getValue();
+            assertThat(command.address()).isNull();
+            assertThat(command.email()).isNull();
+            assertThat(command.phone()).isNull();
+            assertThat(command.birthNumber()).isNull();
+            assertThat(command.chipNumber()).isNull();
         }
     }
 
@@ -175,7 +185,7 @@ class MemberSyncAdapterTest {
         @Test
         @DisplayName("maps the local Member read through ManagementPort into the canonical projection")
         void mapsMemberIntoProjection() {
-            Member realMember = registeredMemberWithLicence();
+            Member realMember = MemberTestDataBuilder.aMember().build();
             when(managementPort.getMember(any(MemberId.class))).thenReturn(realMember);
 
             SyncProjection projection = adapter.readLocal(realMember.getId().value().toString());
@@ -184,16 +194,6 @@ class MemberSyncAdapterTest {
             assertThat(((MemberProjection) projection).firstName()).isEqualTo(realMember.getFirstName());
             assertThat(((MemberProjection) projection).registrationNumber())
                     .isEqualTo(realMember.getRegistrationNumber().getValue());
-        }
-
-        @Test
-        @DisplayName("throws MemberNotFoundException when the member does not exist")
-        void throwsWhenMemberNotFound() {
-            when(managementPort.getMember(any(MemberId.class)))
-                    .thenThrow(new MemberNotFoundException(MEMBER_ID));
-
-            assertThatThrownBy(() -> adapter.readLocal(MEMBER_UUID.toString()))
-                    .isInstanceOf(MemberNotFoundException.class);
         }
     }
 
@@ -225,6 +225,13 @@ class MemberSyncAdapterTest {
         }
     }
 
+    private static MemberProjection sparseProjection() {
+        MemberProjection full = referenceProjection();
+        return new MemberProjection(
+                full.registrationNumber(), full.firstName(), full.lastName(), full.dateOfBirth(),
+                full.gender(), full.nationality(), null, null, null, null, null, null, null, null);
+    }
+
     private static MemberProjection referenceProjection() {
         return new MemberProjection(
                 "ZBM0001",
@@ -242,43 +249,6 @@ class MemberSyncAdapterTest {
                 "CZ",
                 "12345"
         );
-    }
-
-    private static Member registeredMemberWithLicence() {
-        Member member = Member.register(new Member.RegisterMember(
-                MEMBER_ID,
-                new RegistrationNumber("ZBM0001"),
-                PersonalInformation.of("Jan", "Novák", LocalDate.of(1990, 1, 15), Nationality.of("CZ"), Gender.MALE),
-                new Address("Testovací 1", "Brno", "60000", Country.of("CZ")),
-                EmailAddress.of("jan@example.com"),
-                PhoneNumber.of("+420123456789"),
-                BirthNumber.of("9001151234"),
-                null,
-                null
-        ));
-
-        Member.UpdateMember baseline = Member.UpdateMember.from(member);
-        member.update(new Member.UpdateMember(
-                baseline.email(),
-                baseline.phone(),
-                baseline.address(),
-                baseline.chipNumber(),
-                baseline.nationality(),
-                baseline.bankAccountNumber(),
-                baseline.identityCard(),
-                baseline.drivingLicenseGroup(),
-                baseline.medicalCourse(),
-                new TrainerLicense(TrainerLevel.values()[0], LocalDate.now().plusYears(1)),
-                baseline.refereeLicense(),
-                baseline.dietaryRestrictions(),
-                baseline.firstName(),
-                baseline.lastName(),
-                baseline.dateOfBirth(),
-                baseline.gender(),
-                baseline.birthNumber(),
-                null
-        ), GuardianContacts.NONE);
-        return member;
     }
 
     private static ClubMember orisClubMember(String id, String regNum, String firstName, String lastName) {

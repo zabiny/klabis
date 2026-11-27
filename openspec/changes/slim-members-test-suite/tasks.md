@@ -87,13 +87,13 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 8. ORIS sync
 
-- [ ] 8.1 Merge the four ORIS integration classes into `MemberOrisSyncScenarioIntegrationTest` with 3 tests (discovery incl. PENDING_ACTIVATION and no e-mail, later ORIS change, chip number conflict); one id sequence
-- [ ] 8.2 Delete `noClubKeyMeansNoOrisCallAndNothingEnrolled`, `losingPhoneInOris…`, `orisSupplyingMissingBirthNumber…`, `klabisOwnedFieldSurvivesSubsequentSyncPass`, `MemberOrisImportIncompleteMemberIntegrationTest` (preconditions 1.5 in place)
-- [ ] 8.3 `ManagementServiceTest`: delete `SyncMemberFromOrisTests` not-found variant
-- [ ] 8.4 Parameterize `MemberProjectionMapperTest` dropped-and-logged cases and gender/SI variants
-- [ ] 8.5 `MemberSyncAdapterTest`: delete `declaresEntityTypeAndSystem`, `readLocal.throwsWhenMemberNotFound`, `doesNotTouchTrainerLicence`; replace `Mockito.mock(Member.class)` with the builder
-- [ ] 8.6 Delete `MemberOrisImportEnabledApiTest.runningTwiceInvokesTheJobTwice`
-- [ ] 8.7 Coverage comparison, code review, commit
+- [x] 8.1 Merge the four ORIS integration classes into `MemberOrisSyncScenarioIntegrationTest` with 3 tests (discovery incl. PENDING_ACTIVATION and no e-mail, later ORIS change, chip number conflict); one id sequence
+- [x] 8.2 Delete `noClubKeyMeansNoOrisCallAndNothingEnrolled`, `losingPhoneInOris…`, `orisSupplyingMissingBirthNumber…`, `klabisOwnedFieldSurvivesSubsequentSyncPass`, `MemberOrisImportIncompleteMemberIntegrationTest` (preconditions 1.5 in place). Import completeness had no lower-level test, so `MemberTest.ImportFromOris` was added and the scenario test asserts the flag; two `MemberSyncAdapterTest` null-field tests keep the adapter branches the integration classes covered
+- [x] 8.3 `ManagementServiceTest`: delete `SyncMemberFromOrisTests` not-found variant
+- [x] 8.4 Parameterize `MemberProjectionMapperTest` dropped-and-logged cases and gender/SI variants
+- [x] 8.5 `MemberSyncAdapterTest`: delete `declaresEntityTypeAndSystem`, `readLocal.throwsWhenMemberNotFound`, `doesNotTouchTrainerLicence`; replace `Mockito.mock(Member.class)` with the builder
+- [x] 8.6 Delete `MemberOrisImportEnabledApiTest.runningTwiceInvokesTheJobTwice`
+- [x] 8.7 Coverage comparison, code review, commit
 
 ## 9. Permissions, legal guardian groups and finance journeys
 

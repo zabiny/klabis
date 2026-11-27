@@ -940,6 +940,44 @@ class MemberTest {
         member.update(command, GuardianContacts.NONE);
     }
 
+    @Nested
+    @DisplayName("importFromOris")
+    class ImportFromOris {
+
+        private Member.RegisterMember command(LocalDate dateOfBirth, PhoneNumber phone, BirthNumber birthNumber) {
+            return new Member.RegisterMember(
+                    new MemberId(UUID.randomUUID()),
+                    RegistrationNumber.of("ZBM9100"),
+                    PersonalInformation.of("Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                    Address.of("Testovací 1", "Brno", "60000", Country.of("CZ")),
+                    EmailAddress.of("jan@example.com"),
+                    phone,
+                    birthNumber,
+                    null,
+                    null);
+        }
+
+        @Test
+        @DisplayName("imports a minor without phone, birth number and guardian, flagging it incomplete")
+        void importsIncompleteMinorAndFlagsItIncomplete() {
+            Member member = Member.importFromOris(command(LocalDate.now().minusYears(12), null, null));
+
+            assertThat(member.isDataIncomplete()).isTrue();
+            assertThat(missing(member)).containsExactlyInAnyOrder(
+                    MissingDataItem.GUARDIAN, MissingDataItem.PHONE, MissingDataItem.BIRTH_NUMBER);
+        }
+
+        @Test
+        @DisplayName("imports a complete adult without flagging it incomplete")
+        void importsCompleteAdultAsComplete() {
+            Member member = Member.importFromOris(command(
+                    LocalDate.of(1990, 1, 15), PhoneNumber.of("+420700000001"), BirthNumber.of("900115/0000")));
+
+            assertThat(member.isDataIncomplete()).isFalse();
+            assertThat(missing(member)).isEmpty();
+        }
+    }
+
     private static Set<MissingDataItem> missing(Member member) {
         return MemberCompleteness.missingData(member, GuardianContacts.NONE);
     }
