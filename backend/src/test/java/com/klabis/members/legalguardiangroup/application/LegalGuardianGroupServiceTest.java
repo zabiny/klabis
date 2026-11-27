@@ -485,15 +485,6 @@ class LegalGuardianGroupServiceTest {
     class Queries {
 
         @Test
-        @DisplayName("lists all groups")
-        void lists() {
-            groupOf(Set.of(NOVAK), CHILD_A);
-            groupOf(Set.of(SVOBODOVA), CHILD_B);
-
-            assertThat(service.listGroups()).hasSize(2);
-        }
-
-        @Test
         @DisplayName("lists groups ordered by name in Czech alphabet")
         void listsOrderedByName() {
             groupOf(Set.of(SVOBODOVA), CHILD_A);

@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * ORIS-enabled variant: {@link MemberDiscoveryPort} exists only under the {@code oris} profile, so the mock is
  * declared here (own Spring context) while the "disabled" behaviour is covered by
- * {@code MemberControllerApiTest.OrisImportDisabledTests} in the shared context.
+ * {@code MemberOrisImportDisabledApiTest} in the shared context.
  */
 @MembersWebMvcTest
 @MockitoBean(types = MemberDiscoveryPort.class)

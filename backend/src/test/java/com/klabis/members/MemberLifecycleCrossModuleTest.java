@@ -62,7 +62,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * <b>What is NOT tested here:</b>
  * <ul>
- *   <li>Response JSON structure and field validation - tested in {@link com.klabis.members.infrastructure.restapi.MemberControllerApiTest}</li>
+ *   <li>Response JSON structure and field validation - tested in member controller API tests</li>
  *   <li>Domain events - tested in module integration tests</li>
  *   <li>Validation error messages - tested in controller unit tests</li>
  * </ul>

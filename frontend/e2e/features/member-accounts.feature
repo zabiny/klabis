@@ -2,7 +2,20 @@
 # - "Account is created together with a new member": the account created on member registration is asserted by `MemberAccountCreationIntegrationTest.registeringMemberResultsInFinanceAccountBeingCreated` (listener unit test `CreateAccountOnMemberRegisteredTest`); the registration journey is in `members.feature`.
 # - "Overdraft limit blocks a registration payment" and "... permits a registration payment that stays within it": no event registration charges the account yet
 #   (chargeForRegistration has no REST path) and the limit is a deployment setting (default -500 CZK) that a scenario cannot change.
-# - "Overdraft limit does not block a finance-manager charge" runs against that default limit of -500 CZK.
+# - "Overdraft limit does not block a finance-manager charge": `MemberAccountTest.chargeRecordsTransactionBelowOverdraftLimit` (domain rule).
+# - "Member cannot view another member's account": `AccountOwnerAccessIntegrationTest.memberIsDeniedOtherAccount` (403 on account and transactions) and
+#   `MemberAccountControllerTest.AccountLinkOnForeignResponses.memberDetailHasNoAccountLinkWithoutFinanceManage` (no account link on the detail), and `MemberDetailPage.test` "Účet without the link".
+# - "Member cannot record any transaction on their own account": `MemberAccountControllerTest` (`shouldReturn403WithoutFinanceManage` on deposit, charge and reverse,
+#   `shouldReturnAccountWithoutDepositAffordanceForRegularMember` / `...WithoutChargeAffordanceForRegularMember`, `shouldNotIncludeReverseAffordanceForRegularMember`) and
+#   `MemberAccountManagePage.test` "Without FINANCE:MANAGE affordances (own account view)" (no "Vložit / Vybrat", no reverse action).
+# - "Guardian cannot record any transaction on the child's account": `GuardianAccountAccessIntegrationTest` (read-only minor account: no deposit, charge or reverse template, for member and non-member guardian) and
+#   `MemberAccountManagePage.test` "Guardian view of a minor account (read-only)".
+# - "Member guardian opens Finance and sees their own account first": `MemberAccountControllerTest.ViewableAccountLinks.shouldListOwnThenChildrenOnOwnAccount` and
+#   `MemberAccountManagePage.test` "Account switcher" "lists options in link order with the current account selected".
+# - "Non-member guardian switches to the other child's account": `MemberAccountManagePage.test` "Account switcher" "navigates to the chosen account" and
+#   `MemberAccountControllerTest.ViewableAccountLinks.shouldListChildrenByNameForExtGuardian`; the switch itself stays journey-tested by "Member guardian switches to a child's account".
+# - "Deposit with non-positive amount is rejected" and "Charge with non-positive amount is rejected": `MemberAccountTest` (`depositWithZeroAmountThrows`, `depositWithNegativeAmountThrows`, `chargeWithZeroAmountThrows`, `chargeWithNegativeAmountThrows`),
+#   `MemberAccountControllerTest` (`shouldMapIllegalArgumentFromDepositPortTo400`, `shouldMapIllegalArgumentFromChargePortTo400`) and `FinanceTransactionDialog.test` "amount validation" (deposit tab; the check is shared by both tabs: confirm stays disabled for empty, zero and negative amounts).
 @spec:member-accounts
 Feature: Member financial accounts
   Every member has a prepaid financial account in CZK. Members see their own account,
@@ -16,16 +29,6 @@ Feature: Member financial accounts
       When Eva opens Finance from the main menu
       Then Eva sees the balance and the transaction history
 
-    Scenario: Member cannot view another member's account
-      Given member "Cizi" is registered
-      When Eva opens the detail of member "Cizi"
-      Then Eva is not offered to open the account of member "Cizi"
-
-    Scenario: Member cannot record any transaction on their own account
-      Given a deposit of 100 CZK is recorded on the account of Eva
-      When Eva opens Finance from the main menu
-      Then Eva is not offered to record or reverse transactions
-
   Rule: A legal guardian views their minor child's account but cannot change it
 
     Scenario: Guardian opens their child's account from the child's detail page
@@ -33,16 +36,7 @@ Feature: Member financial accounts
       Then the account of member "Sofie Svobodová" is shown with the owner's name and registration number
       And Eva sees the balance and the transaction history
 
-    Scenario: Guardian cannot record any transaction on the child's account
-      Given a deposit of 100 CZK is recorded on the account of member "Sofie Svobodová"
-      When Eva opens the account of the minor member "Sofie Svobodová" from the minor's detail
-      Then Eva is not offered to record or reverse transactions
-
   Rule: The Finance page lets a user switch between the accounts they may view
-
-    Scenario: Member guardian opens Finance and sees their own account first
-      When Eva opens Finance from the main menu
-      Then the account switcher offers the accounts of "Eva Svobodová" and "Sofie Svobodová"
 
     Scenario: Member guardian switches to a child's account
       Given Eva has Finance open
@@ -54,12 +48,6 @@ Feature: Member financial accounts
       When Ivana opens Finance from the main menu
       Then the account of member "Klára Dlouhá" is shown with the owner's name and registration number
       And the account switcher offers the accounts of "Klára Dlouhá" and "Adam Dlouhý"
-
-    Scenario: Non-member guardian switches to the other child's account
-      Given Ivana has Finance open
-      When Ivana switches to the account of "Adam Dlouhý"
-      Then the account of member "Adam Dlouhý" is shown with the owner's name and registration number
-      And Ivana sees the balance and the transaction history
 
     Scenario: Member without minor children sees no account switcher
       When Tomáš opens Finance from the main menu
@@ -73,12 +61,6 @@ Feature: Member financial accounts
       Then the account of member "Horak" shows the balance 300 CZK
       And the history of member "Horak" lists the deposit of 300 CZK
 
-    Scenario: Deposit with non-positive amount is rejected
-      Given member "Nulovy" is registered
-      When Jan attempts to record a deposit of 0 CZK for member "Nulovy"
-      Then the transaction cannot be confirmed
-      And the account of member "Nulovy" shows the balance 0 CZK
-
   Rule: A finance manager records a charge that decreases the balance
 
     Scenario: Finance manager records a charge
@@ -87,21 +69,6 @@ Feature: Member financial accounts
       When Jan records a charge of 200 CZK for member "Benes"
       Then the account of member "Benes" shows the balance 300 CZK
       And the history of member "Benes" lists the charge of 200 CZK
-
-    Scenario: Charge with non-positive amount is rejected
-      Given member "Nulty" is registered
-      And the account of member "Nulty" holds 100 CZK
-      When Jan attempts to record a charge of 0 CZK for member "Nulty"
-      Then the transaction cannot be confirmed
-      And the account of member "Nulty" shows the balance 100 CZK
-
-  Rule: A finance manager charge is not constrained by the overdraft limit
-
-    Scenario: Overdraft limit does not block a finance-manager charge
-      Given member "Prekroceny" is registered
-      And the account of member "Prekroceny" is overdrawn by 400 CZK
-      When Jan records a charge of 200 CZK for member "Prekroceny"
-      Then the account of member "Prekroceny" shows the balance -600 CZK
 
   Rule: A reversal appends an opposite transaction and keeps the original in the history
 

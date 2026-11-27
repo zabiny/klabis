@@ -97,13 +97,13 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 ## 9. Permissions, legal guardian groups and finance journeys
 
-- [ ] 9.1 FE `PermissionsDialog.test.tsx`: one `it.each` instead of the 13 per-authority tests; merge saving-state tests; delete error-text duplicates of `usePermissionsEditor.test`
-- [ ] 9.2 FE `MembersPage.test.tsx`: stop stubbing `PermissionsDialog` and `usePermissionsEditor`; mock the API instead
-- [ ] 9.3 Fold `LegalGuardianGroupDetailHalParityTest` into `LegalGuardianGroupControllerTest.GetGroup`; parameterize `LegalGuardianControllerTest` validation and stranger cases; delete `LegalGuardianGroupServiceTest.Queries.lists`
-- [ ] 9.4 `MemberControllerApiTest`: delete the legal guardian group link duplicates of `LegalGuardianGroupLinksTests`, replace `Mockito.mock` of aggregates in the remaining training-group test; parameterize all 401s of members endpoints into one test and 403s by required authority; then split the class per nested group
-- [ ] 9.5 E2E `member-accounts.feature`: remove "Member cannot view another member's account", the two "cannot record any transaction" scenarios, "Member guardian opens Finance and sees their own account first", "Non-member guardian switches to the other child's account", the two non-positive amount scenarios, "Overdraft limit does not block a finance-manager charge"; move "Member without minor children sees no account switcher" down; list them under "Not automated"
-- [ ] 9.6 E2E steps: replace the `'1–1 z 1'` pagination assertion, the 20 s `toPass` poll and module-level mutable state in `members.steps.ts` where the removals leave them unused or obsolete
-- [ ] 9.7 Coverage comparison, code review, commit
+- [x] 9.1 FE `PermissionsDialog.test.tsx`: one `it.each` instead of the 13 per-authority tests; merge saving-state tests; delete error-text duplicates of `usePermissionsEditor.test`
+- [x] 9.2 FE `MembersPage.test.tsx`: stop stubbing `PermissionsDialog` and `usePermissionsEditor`; mock the API instead
+- [x] 9.3 Fold `LegalGuardianGroupDetailHalParityTest` into `LegalGuardianGroupControllerTest.GetGroup`; parameterize `LegalGuardianControllerTest` validation and stranger cases; delete `LegalGuardianGroupServiceTest.Queries.lists`
+- [x] 9.4 `MemberControllerApiTest`: delete the legal guardian group link duplicates of `LegalGuardianGroupLinksTests`, replace `Mockito.mock` of aggregates in the remaining training-group test; parameterize all 401s of members endpoints into one test and 403s by required authority; then split the class per nested group. Split into one class per area sharing the `@MembersWebMvcTest` context and a small `MemberApiTestBase`; 401/403 live in `MemberEndpointSecurityApiTest`
+- [x] 9.5 E2E `member-accounts.feature`: remove "Member cannot view another member's account", the two "cannot record any transaction" scenarios, "Member guardian opens Finance and sees their own account first", "Non-member guardian switches to the other child's account", the two non-positive amount scenarios, "Overdraft limit does not block a finance-manager charge"; move "Member without minor children sees no account switcher" down; list them under "Not automated". The switcher scenario was already last in its Rule, so the move was moot
+- [x] 9.6 E2E steps: replace the `'1–1 z 1'` pagination assertion, the 20 s `toPass` poll and module-level mutable state in `members.steps.ts` where the removals leave them unused or obsolete. Nothing left to do: earlier phases had already removed these; only unused member-accounts steps and `chargeFrom` went
+- [x] 9.7 Coverage comparison, code review, commit
 
 ## 10. Missing tests
 

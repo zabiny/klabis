@@ -140,18 +140,20 @@ public @interface MembersWebMvcTest {}
   - application/domain internals (repositories, `@Port` secondary ports, domain readers). A controller or postprocessor that needs one is bypassing the primary port — extend the primary port instead of mocking the repository.
   An external client (e.g. `OrisApiClient`) is a justified exception only when the adapter calls it directly.
 - `<Module>WebMvcMockitoBeans` (test source of the owning module, e.g. `com.klabis.groups.GroupsWebMvcMockitoBeans`) bundles `@MockitoBean(types=...)` for all ports/repositories the module's web beans need. Consumers compose it without knowing the ports. Each type is mocked in exactly one such annotation — the module that defines it (`common` owns `UserService`, `UserDetailsService`, `PasswordChangePort`, `PermissionService`, `OrisClubKeyPort`). When a web bean of the module gains a dependency, add it there, not in a test.
-- Optional / feature-flag / profile-gated beans (injected as `Optional<T>`, e.g. `MemberDiscoveryPort`, `OrisEventImportPort`) never go into a `*WebMvcMockitoBeans` or the `@<Module>WebMvcTest`. The test that needs the feature declares the mock itself (`@MockitoBean` on a dedicated test class, e.g. `MemberOrisImportEnabledApiTest`); the shared-context test class keeps a `...DisabledTests` nested class verifying the "feature off" behaviour (endpoint 404, affordance absent). A required dependency must not be `Optional<T>` just for test convenience.
+- Optional / feature-flag / profile-gated beans (injected as `Optional<T>`, e.g. `MemberDiscoveryPort`, `OrisEventImportPort`) never go into a `*WebMvcMockitoBeans` or the `@<Module>WebMvcTest`. The test that needs the feature declares the mock itself (`@MockitoBean` on a dedicated test class, e.g. `MemberOrisImportEnabledApiTest`); a shared-context class such as `MemberOrisImportDisabledApiTest` verifies the "feature off" behaviour (endpoint 404, affordance absent). A required dependency must not be `Optional<T>` just for test convenience.
 
 ```java
 @MembersWebMvcTest
-class MemberControllerApiTest {
+class MemberDetailApiTest {
 
     @Autowired ManagementPort managementService;      // mocks are injected with @Autowired, never @MockitoBean
     @Autowired MockMvc mockMvc;
 
-    @Nested class EndpointSecurityTests { ... }       // 401/403 + merged security tests
-    @Nested class LegalGuardianGroupLinksTests { ... } // postprocessor links asserted on the controller response
 }
+
+// one top-level class per endpoint group, all with the same @MembersWebMvcTest (one shared context):
+// MemberEndpointSecurityApiTest              - 401/403 matrix as parameterized tests
+// MemberLegalGuardianGroupLinksApiTest       - postprocessor links asserted on the controller response
 ```
 
 Slice-context rules:

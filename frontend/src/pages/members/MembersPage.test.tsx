@@ -4,6 +4,7 @@ import {Link, MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {authorizedFetch} from '../../api/authorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {makePageData} from '../../__mocks__/pageData';
@@ -38,20 +39,6 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
-vi.mock('../../components/members/PermissionsDialog', () => ({
-    PermissionsDialog: ({isOpen, memberName}: {isOpen: boolean; memberName: string}) =>
-        isOpen ? <div data-testid="permissions-dialog">{memberName}</div> : null,
-}));
-
-vi.mock('../../hooks/useHalFormData', () => ({
-    useHalFormData: (_template: unknown, resourceData: Record<string, unknown>) => ({
-        formData: resourceData ?? {},
-        isLoadingTargetData: false,
-        targetFetchError: null,
-        refetchTargetData: vi.fn(),
-    }),
-}));
-
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
         getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
@@ -67,23 +54,9 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
-vi.mock('../../hooks/usePermissionsEditor', () => ({
-    usePermissionsEditor: vi.fn().mockReturnValue({
-        permissions: undefined,
-        isLoading: false,
-        onSave: vi.fn(),
-        isSaving: false,
-        error: null,
-    }),
-}));
-
-vi.mock('../../components/finance/FinanceTransactionDialog', () => ({
-    FinanceTransactionDialog: ({isOpen, accountLink, onClose}: {isOpen: boolean; accountLink: {href: string}; onClose: () => void}) =>
-        isOpen ? (
-            <div data-testid="finance-transaction-dialog" data-account-href={accountLink.href}>
-                <button onClick={onClose}>close-dialog</button>
-            </div>
-        ) : null,
+vi.mock('../../api/authorizedFetch', async (importOriginal) => ({
+    ...await importOriginal<typeof import('../../api/authorizedFetch')>(),
+    authorizedFetch: vi.fn(),
 }));
 
 const createMockPageData = (resourceData: HalResponse | null, overrides: Partial<ReturnType<typeof makePageData>> = {}) =>
@@ -123,7 +96,7 @@ const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<Retu
     return renderPage(createMockPageData(resourceData, routeOverrides));
 };
 
-const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
+const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.flatMap(([url]) => url ? [String(url)] : []);
 
 describe('MembersPage', () => {
     beforeEach(() => {
@@ -313,25 +286,63 @@ describe('MembersPage — row data rendering', () => {
         expect(navigateToResource).toHaveBeenCalledWith(member, {state: {editing: true}});
     });
 
-    it('clicking shield icon opens PermissionsDialog', () => {
-        renderPageWithMembers([buildMemberRow({
-            _links: {self: {href: '/api/members/member-1'}, permissions: {href: '/api/members/member-1/permissions'}},
+    it('clicking shield icon opens the permissions dialog of that member with the permissions loaded from the permissions link', () => {
+        const permissionsUrl = '/api/members/member-1/permissions';
+        const memberResource = membersCollection([buildMemberRow({
+            _links: {self: {href: '/api/members/member-1'}, permissions: {href: permissionsUrl}},
         })]);
+        const permissionsResource = {
+            authorities: ['MEMBERS:MANAGE'],
+            _links: {self: {href: permissionsUrl}},
+            _templates: {
+                updatePermissions: mockHalFormsTemplate({
+                    method: 'PUT',
+                    properties: [{name: 'authorities', type: 'text', options: {inline: ['MEMBERS:MANAGE', 'FINANCE:MANAGE']}}],
+                }),
+            },
+        } as unknown as HalResponse;
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
+            data: url === permissionsUrl ? permissionsResource : memberResource,
+            error: null,
+        })) as unknown as typeof useAuthorizedQuery);
+        renderPage(createMockPageData(memberResource));
 
         fireEvent.click(screen.getByRole('button', {name: /oprávnění/i}));
-        expect(screen.getByTestId('permissions-dialog')).toBeInTheDocument();
+
+        const dialog = within(screen.getByRole('dialog'));
+        expect(dialog.getByText('Jan Novák – REG-001')).toBeInTheDocument();
+        expect(dialog.getByRole('switch', {name: 'Správa členů'})).toHaveAttribute('aria-checked', 'true');
+        expect(dialog.getByRole('switch', {name: 'Správa financí'})).toHaveAttribute('aria-checked', 'false');
     });
 
-    it('clicking Banknote button opens FinanceTransactionDialog with the account link', () => {
+    it('clicking Banknote button opens the transaction dialog of the member account', async () => {
+        const accountUrl = '/api/members/member-1/account';
+        const ownerUrl = '/api/members/member-1';
+        const respond = (body: unknown) => ({json: async () => body}) as unknown as Response;
+        vi.mocked(authorizedFetch).mockImplementation(async (url) => url === accountUrl
+            ? respond({
+                balance: 750,
+                currency: 'CZK',
+                _links: {self: {href: accountUrl}, accountOwner: {href: ownerUrl}},
+                _templates: {
+                    deposit: {
+                        method: 'POST',
+                        target: `${accountUrl}/transactions`,
+                        title: 'Vložit',
+                        properties: [{name: 'amount', type: 'number', required: true}],
+                    },
+                },
+            })
+            : respond({firstName: 'Jan', lastName: 'Novák', registrationNumber: 'REG-001'}));
         renderPageWithMembers([buildMemberRow({
-            _links: {self: {href: '/api/members/member-1'}, account: {href: '/api/members/member-1/account'}},
+            _links: {self: {href: '/api/members/member-1'}, account: {href: accountUrl}},
         })]);
 
         fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
 
-        const dialog = screen.getByTestId('finance-transaction-dialog');
-        expect(dialog).toBeInTheDocument();
-        expect(dialog).toHaveAttribute('data-account-href', '/api/members/member-1/account');
+        const dialog = within(await screen.findByRole('dialog'));
+        expect(await dialog.findByText('Připsání vkladu')).toBeInTheDocument();
+        expect(await dialog.findByText(/Jan Novák/)).toBeInTheDocument();
     });
 
     it.each([
