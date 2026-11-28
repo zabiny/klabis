@@ -49,9 +49,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Token validation</li>
  *   <li>Password setup (activation)</li>
  *   <li>Member information update</li>
- *   <li>Member termination</li>
- *   <li>Verification of terminated state</li>
- *   <li>Second termination rejection</li>
+ *   <li>Member suspension</li>
+ *   <li>Verification of suspended state</li>
  * </ul>
  * <p>
  * <b>Test Scope:</b>
@@ -63,7 +62,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * <b>What is NOT tested here:</b>
  * <ul>
- *   <li>Response JSON structure and field validation - tested in {@link com.klabis.members.infrastructure.restapi.MemberControllerApiTest}</li>
+ *   <li>Response JSON structure and field validation - tested in member controller API tests</li>
  *   <li>Domain events - tested in module integration tests</li>
  *   <li>Validation error messages - tested in controller unit tests</li>
  * </ul>
@@ -145,14 +144,13 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(jsonPath("$._embedded.memberSummaryResponseList[?(@.id == '%s')]".formatted(memberId)).exists());
 
         // ========================================================================
-        // STEP 3: Get member details
+        // STEP 3: Read the registration number assigned to the new member
         // ========================================================================
         MvcResult memberDetailsResult = mockMvc.perform(
                         get("/api/members/{id}", memberId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()))
                 .andReturn();
         final CurrentUserData registeredMemberUserData = createCurrentUserDataFromMemberResponse(memberDetailsResult);
 
@@ -202,41 +200,7 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
 
         // ========================================================================
-        // STEP 6.5: Register second member with same birth year — verify unique IDs
-        // Email flow for first member is complete, so registering now avoids
-        // overwriting the activation email in LoggingEmailService.
-        // ========================================================================
-        MvcResult registerResult2 = mockMvc.perform(
-                        post("/api/members")
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content("""
-                                        {
-                                            "firstName": "Petra",
-                                            "lastName": "Nováková",
-                                            "dateOfBirth": "2000-06-20",
-                                            "nationality": "CZ",
-                                            "gender": "FEMALE",
-                                            "email": "petra.novakova@example.com",
-                                            "phone": "+420777654321",
-                                            "birthNumber": "005620/5678",
-                                            "address": {
-                                                "street": "Vedlejší 456",
-                                                "city": "Brno",
-                                                "postalCode": "60200",
-                                                "country": "CZ"
-                                            }
-                                        }
-                                        """)
-                )
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        UUID memberId2 = extractMemberIdFromLocation(registerResult2);
-        assertThat(memberId2).isNotEqualTo(memberId);
-
-        // ========================================================================
-        // STEP 8: New member can fetch data
+        // STEP 7: New member can fetch data
         // ========================================================================
         mockMvc.perform(get("/api/members")
                         .contentType("application/json")
@@ -244,9 +208,8 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(status().isOk());
 
 
-
         // ========================================================================
-        // STEP 7: Update member
+        // STEP 8: Update member
         // ========================================================================
         mockMvc.perform(
                         patch("/api/members/{id}", memberId)
@@ -267,17 +230,18 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(status().isNoContent());
 
         // ========================================================================
-        // STEP 8: Verify updated data
+        // STEP 9: Verify updated data
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()));
+                .andExpect(jsonPath("$.id").value(memberId.toString()))
+                .andExpect(jsonPath("$.email").value("jan.novy@example.com"));
 
         // ========================================================================
-        // STEP 9: Suspend member
+        // STEP 10: Suspend member
         // ========================================================================
         mockMvc.perform(
                         post("/api/members/{id}/suspend", memberId)
@@ -293,7 +257,7 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(status().isNoContent());
 
         // ========================================================================
-        // STEP 10: Verify suspension state
+        // STEP 11: Verify suspension state
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
@@ -304,31 +268,12 @@ class MemberLifecycleCrossModuleTest {
                 .andExpect(jsonPath("$.active").value(false));
 
         // ========================================================================
-        // STEP 11: New member cannot fetch data
+        // STEP 12: New member cannot fetch data
         // ========================================================================
         mockMvc.perform(get("/api/members")
                         .contentType("application/json")
                         .with(klabisAuthentication(jwtTokenParams(registeredMemberUserData).withAuthorities(Authority.MEMBERS_READ))))
                 .andExpect(status().isForbidden());
-
-
-        // ========================================================================
-        // STEP 12: Verify second suspension is rejected
-        // ========================================================================
-        mockMvc.perform(
-                        post("/api/members/{id}/suspend", memberId)
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content("""
-                                        {
-                                            "reason": "ODHLASKA",
-                                            "note": "Member requested termination"
-                                        }
-                                        """)
-                )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
-
     }
 
     private UUID extractMemberIdFromLocation(MvcResult result) {

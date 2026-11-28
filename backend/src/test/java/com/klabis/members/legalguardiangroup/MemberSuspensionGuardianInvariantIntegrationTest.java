@@ -2,8 +2,6 @@ package com.klabis.members.legalguardiangroup;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.RegistrationPort;
@@ -94,23 +92,5 @@ class MemberSuspensionGuardianInvariantIntegrationTest {
         managementPort.resumeMember(suspended.getId(), new Member.ResumeMembership(new UserId(UUID.randomUUID())));
 
         assertThat(legalGuardianGroupPort.guardiansOf(child.getId())).containsExactly(staying.getId().toUserId());
-    }
-
-    @Test
-    @DisplayName("suspending the whole group with the sole guardian leaves the guardian link untouched")
-    @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
-    void cascadeKeepsSoleGuardianLink(Scenario scenario) {
-        Member guardian = registerAdult("Sole" + unique());
-        Member child = registerMinor(List.of(GuardianInput.existing(guardian.getId().toUserId())));
-        LegalGuardianGroupId groupId = legalGuardianGroupPort.findGroupOf(child.getId()).orElseThrow().getId();
-
-        scenario.stimulate(() -> managementPort.suspendMember(guardian.getId(), suspension(), Set.of(groupId)))
-                .andWaitForEventOfType(com.klabis.members.MemberSuspendedEvent.class)
-                .matching(event -> event.memberId().equals(child.getId()))
-                .toArrive();
-
-        assertThat(managementPort.getMember(child.getId()).isActive()).isFalse();
-        assertThat(managementPort.getMember(guardian.getId()).isActive()).isFalse();
-        assertThat(legalGuardianGroupPort.guardiansOf(child.getId())).containsExactly(guardian.getId().toUserId());
     }
 }

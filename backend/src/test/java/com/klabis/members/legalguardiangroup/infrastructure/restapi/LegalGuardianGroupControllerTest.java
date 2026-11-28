@@ -1,5 +1,6 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
+import com.klabis.common.HalShape;
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.TargetGrant;
 import com.klabis.common.SelfGrants;
@@ -147,7 +148,7 @@ class LegalGuardianGroupControllerTest {
             when(legalGuardianGroupService.getGroup(new LegalGuardianGroupId(GROUP_UUID)))
                     .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
 
-            mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+            String body = mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(GROUP_UUID.toString()))
                     .andExpect(jsonPath("$.name").value("Novák"))
@@ -159,8 +160,9 @@ class LegalGuardianGroupControllerTest {
                     .andExpect(jsonPath("$.minors[0].lastName").value("Novák"))
                     .andExpect(jsonPath("$.minors[0].registrationNumber").value("ZBM1501"))
                     .andExpect(jsonPath("$.minors[0].joinedAt").exists())
-                    .andExpect(jsonPath("$.minors[0]._links.member.href")
-                            .value(containsString("/api/members/" + MINOR_ID)));
+                    .andReturn().getResponse().getContentAsString();
+
+            assertThat(HalShape.of(body, "$.minors[0]")).isEqualTo(List.of("link member -> /api/members/" + MINOR_ID));
         }
 
         @Test
@@ -191,6 +193,20 @@ class LegalGuardianGroupControllerTest {
                     .andExpect(jsonPath("$._templates.default").doesNotExist())
                     .andExpect(jsonPath("$._links.collection.href").exists())
                     .andExpect(jsonPath("$._links.self.href").exists());
+        }
+
+        @Test
+        @DisplayName("admin without MEMBERS:READ: minor rows carry no links")
+        @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void minorRowsWithoutMembersRead() throws Exception {
+            when(legalGuardianGroupService.getGroup(new LegalGuardianGroupId(GROUP_UUID)))
+                    .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
+
+            String body = mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            assertThat(HalShape.of(body, "$.minors[0]")).isEmpty();
         }
 
         @Test

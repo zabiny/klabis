@@ -4,6 +4,7 @@ import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.SelfGrants;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.UserId;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.PersonName;
@@ -15,20 +16,30 @@ import com.klabis.members.legalguardian.domain.LegalGuardian;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.endsWith;
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisMemberWithSelfGrants;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -107,22 +118,6 @@ class LegalGuardianControllerTest {
         }
 
         @Test
-        @DisplayName("returns 403 for a stranger")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
-        void forbiddenForStranger() throws Exception {
-            mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("returns 403 for a member reading another guardian's profile")
-        @WithKlabisMockUser(memberId = "33333333-3333-3333-3333-333333333333", authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MEMBER)
-        void forbiddenForMemberReadingOtherGuardian() throws Exception {
-            mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isForbidden());
-        }
-
-        @Test
         @DisplayName("returns 401 when unauthenticated")
         void unauthorized() throws Exception {
             mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -161,62 +156,52 @@ class LegalGuardianControllerTest {
             assertThat(captor.getValue().email()).isEqualTo("petr@example.com");
         }
 
-        @Test
-        @DisplayName("returns 403 for a stranger")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
-        void forbiddenForStranger() throws Exception {
-            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
-                    .andExpect(status().isForbidden());
-
-            verifyNoInteractions(legalGuardianService);
+        static Stream<Arguments> invalidBodies() {
+            return Stream.of(
+                    argumentSet("blank e-mail", "{\"email\":\"\"}"),
+                    argumentSet("explicit null e-mail",
+                            "{\"email\":null,\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":\"+420777888999\"}"),
+                    argumentSet("explicit null phone",
+                            "{\"email\":\"a@b.cz\",\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":null}"));
         }
 
-        @Test
-        @DisplayName("returns 403 for a member updating another guardian's profile")
-        @WithKlabisMockUser(memberId = "33333333-3333-3333-3333-333333333333", authorities = {Authority.MEMBERS_READ}, selfGrants = SelfGrants.MEMBER)
-        void forbiddenForMemberUpdatingOtherGuardian() throws Exception {
-            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
-                    .andExpect(status().isForbidden());
-
-            verifyNoInteractions(legalGuardianService);
-        }
-
-        @Test
-        @DisplayName("returns 400 when e-mail is blank")
+        @ParameterizedTest
+        @MethodSource("invalidBodies")
+        @DisplayName("returns 400 and saves nothing for an invalid body")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        void rejectsBlankEmail() throws Exception {
+        void returns400AndSavesNothingForInvalidBody(String body) throws Exception {
             mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"\"}"))
-                    .andExpect(status().isBadRequest());
-        }
-    
-        @Test
-        @DisplayName("returns 400 and saves nothing when e-mail is explicitly null")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        void rejectsNullEmail() throws Exception {
-            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"email\":null,\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":\"+420777888999\"}"))
+                            .content(body))
                     .andExpect(status().isBadRequest());
 
             verifyNoInteractions(legalGuardianService);
         }
+    }
 
-        @Test
-        @DisplayName("returns 400 and saves nothing when phone is explicitly null")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        void rejectsNullPhone() throws Exception {
-            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"email\":\"a@b.cz\",\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":null}"))
-                    .andExpect(status().isBadRequest());
+    static Stream<Arguments> forbiddenRequests() {
+        RequestPostProcessor stranger = klabisAuthentication(
+                JwtParams.jwtTokenParams("ZBM8001", UUID.randomUUID()).withAuthorities(Authority.MEMBERS_READ));
+        RequestPostProcessor otherMember = klabisMemberWithSelfGrants(
+                UUID.fromString("33333333-3333-3333-3333-333333333333"), Authority.MEMBERS_READ);
+        return Stream.of(
+                argumentSet("GET by a stranger", HttpMethod.GET, stranger),
+                argumentSet("GET by a member reading another guardian", HttpMethod.GET, otherMember),
+                argumentSet("PATCH by a stranger", HttpMethod.PATCH, stranger),
+                argumentSet("PATCH by a member updating another guardian", HttpMethod.PATCH, otherMember));
+    }
 
-            verifyNoInteractions(legalGuardianService);
-        }
+    @ParameterizedTest
+    @MethodSource("forbiddenRequests")
+    @DisplayName("returns 403 and reaches no service without access to the guardian")
+    void returns403WithoutAccessToTheGuardian(HttpMethod method, RequestPostProcessor user) throws Exception {
+        mockMvc.perform(request(method, "/api/legal-guardians/{id}", GUARDIAN_ID)
+                        .with(user)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                        .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(legalGuardianService);
     }
 }

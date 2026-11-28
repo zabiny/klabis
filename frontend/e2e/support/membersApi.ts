@@ -66,11 +66,6 @@ export const depositTo = async (admin: ApiClient, memberPath: string, amount: nu
     await admin.post(admin.templateTarget(account, 'deposit'), {amount});
 };
 
-export const chargeFrom = async (admin: ApiClient, memberPath: string, amount: number) => {
-    const account = await memberAccount(admin, memberPath);
-    await admin.post(admin.templateTarget(account, 'charge'), {amount});
-};
-
 // Age ranges of training groups must not overlap and nothing is cleaned up, so every group gets a one-year range
 // no real age reaches that is unique per call.
 let ageSequence = 0;

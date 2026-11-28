@@ -3,28 +3,19 @@ package com.klabis.members.domain;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @DisplayName("BirthNumber Value Object Tests")
-class BirthNumberTest extends ValueObjectTestBase<BirthNumber> {
-
-    @Override
-    protected BirthNumber createValidValue() {
-        return BirthNumber.of("900101/1235");  // 9001011235 % 11 = 0
-    }
-
-    @Override
-    protected BirthNumber createDifferentValue() {
-        return BirthNumber.of("851231/5679");  // 8512315679 % 11 = 0
-    }
-
-    @Override
-    protected String expectedToString() {
-        return "900101/1235";
-    }
+class BirthNumberTest {
 
     @Nested
     @DisplayName("Valid Format Acceptance")
@@ -77,81 +68,29 @@ class BirthNumberTest extends ValueObjectTestBase<BirthNumber> {
     @DisplayName("Invalid Format Rejection")
     class InvalidFormatRejection {
 
-        @Test
-        @DisplayName("Should throw exception when birth number is null")
-        void shouldThrowWhenBirthNumberIsNull() {
-            assertThatThrownBy(() -> BirthNumber.of(null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Birth number is required");
+        static Stream<Arguments> invalidBirthNumbers() {
+            return Stream.of(
+                    arguments(named("null", (String) null), "Birth number is required"),
+                    arguments(named("blank", "   "), "Birth number is required"),
+                    arguments(named("too short", "90101/123"), "Invalid birth number format"),
+                    arguments(named("too long", "90010112/345"), "Invalid birth number format"),
+                    arguments(named("invalid characters", "90O1O1/1234"), "Invalid birth number format"),
+                    arguments(named("slash after 5 digits", "90010/11235"), "Invalid birth number format"),
+                    arguments(named("slash after 7 digits", "9001011/236"), "Invalid birth number format"),
+                    arguments(named("month 13", "901301/1235"), "Invalid month"),
+                    arguments(named("month 83 outside all valid ranges", "908301/1236"), "Invalid month"),
+                    arguments(named("day 00", "900100/1237"), "Invalid day"),
+                    arguments(named("day 32", "900132/1238"), "Invalid day")
+            );
         }
 
-        @Test
-        @DisplayName("Should throw exception when birth number is blank")
-        void shouldThrowWhenBirthNumberIsBlank() {
-            assertThatThrownBy(() -> BirthNumber.of("   "))
+        @ParameterizedTest
+        @MethodSource("invalidBirthNumbers")
+        @DisplayName("Should reject invalid birth number")
+        void shouldRejectInvalidBirthNumber(String value, String expectedMessage) {
+            assertThatThrownBy(() -> BirthNumber.of(value))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Birth number is required");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when birth number is too short")
-        void shouldThrowWhenBirthNumberIsTooShort() {
-            assertThatThrownBy(() -> BirthNumber.of("90101/123"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid birth number format");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when birth number is too long")
-        void shouldThrowWhenBirthNumberIsTooLong() {
-            assertThatThrownBy(() -> BirthNumber.of("90010112/345"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid birth number format");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when birth number contains invalid characters")
-        void shouldThrowWhenBirthNumberContainsInvalidCharacters() {
-            assertThatThrownBy(() -> BirthNumber.of("90O1O1/1234"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid birth number format");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when month is invalid")
-        void shouldThrowWhenMonthIsInvalid() {
-            assertThatThrownBy(() -> BirthNumber.of("901301/1235"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid month");
-
-            // month 83 is outside all valid ranges (01-12, 21-32, 51-62, 71-82)
-            assertThatThrownBy(() -> BirthNumber.of("908301/1236"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid month");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when day is invalid")
-        void shouldThrowWhenDayIsInvalid() {
-            assertThatThrownBy(() -> BirthNumber.of("900100/1237"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid day");
-
-            assertThatThrownBy(() -> BirthNumber.of("900132/1238"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid day");
-        }
-
-        @Test
-        @DisplayName("Should throw exception when slash is in wrong position")
-        void shouldThrowWhenSlashIsInWrongPosition() {
-            assertThatThrownBy(() -> BirthNumber.of("90010/11235"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid birth number format");
-
-            assertThatThrownBy(() -> BirthNumber.of("9001011/236"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid birth number format");
+                    .hasMessageContaining(expectedMessage);
         }
     }
 

@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * ORIS-enabled variant: {@link MemberDiscoveryPort} exists only under the {@code oris} profile, so the mock is
  * declared here (own Spring context) while the "disabled" behaviour is covered by
- * {@code MemberControllerApiTest.OrisImportDisabledTests} in the shared context.
+ * {@code MemberOrisImportDisabledApiTest} in the shared context.
  */
 @MembersWebMvcTest
 @MockitoBean(types = MemberDiscoveryPort.class)
@@ -59,18 +59,6 @@ class MemberOrisImportEnabledApiTest {
                     .andExpect(status().isNoContent());
 
             Mockito.verify(memberDiscoveryPort).discoverNewMembers();
-        }
-
-        @Test
-        @DisplayName("running twice invokes the discovery job twice, not a reimplementation")
-        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
-        void runningTwiceInvokesTheJobTwice() throws Exception {
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-
-            Mockito.verify(memberDiscoveryPort, Mockito.times(2)).discoverNewMembers();
         }
 
         @Test

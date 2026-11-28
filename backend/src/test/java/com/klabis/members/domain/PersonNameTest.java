@@ -102,62 +102,6 @@ class PersonNameTest {
     }
 
     @Test
-    @DisplayName("Should return initials in uppercase")
-    void shouldReturnInitials() {
-        // Given
-        PersonName name = PersonName.of("Jan", "Novák");
-
-        // When
-        String initials = name.initials();
-
-        // Then
-        assertThat(initials).isEqualTo("JN");
-    }
-
-    @Test
-    @DisplayName("Should return initials from lowercase names")
-    void shouldReturnInitialsFromLowercase() {
-        // Given
-        PersonName name = PersonName.of("jan", "novák");
-
-        // When
-        String initials = name.initials();
-
-        // Then - should be uppercase
-        assertThat(initials).isEqualTo("JN");
-    }
-
-    @Test
-    @DisplayName("Should return formal name format")
-    void shouldReturnFormalName() {
-        // Given
-        PersonName name = PersonName.of("Jan", "Novák");
-
-        // When
-        String formalName = name.formalName();
-
-        // Then
-        assertThat(formalName).isEqualTo("Novák, Jan");
-    }
-
-    @Test
-    @DisplayName("Should implement equality correctly")
-    void shouldImplementEqualityCorrectly() {
-        // Given
-        PersonName name1 = PersonName.of("Jan", "Novák");
-        PersonName name2 = PersonName.of("Jan", "Novák");
-        PersonName name3 = PersonName.of("Petr", "Novák");
-        PersonName name4 = PersonName.of("  Jan  ", "  Novák  "); // same after trimming
-
-        // Then
-        assertThat(name1).isEqualTo(name2);
-        assertThat(name1).isEqualTo(name4); // same after trimming
-        assertThat(name1).isNotEqualTo(name3);
-        assertThat(name1.hashCode()).isEqualTo(name2.hashCode());
-        assertThat(name1.hashCode()).isEqualTo(name4.hashCode());
-    }
-
-    @Test
     @DisplayName("Should have proper toString")
     void shouldHaveProperToString() {
         // Given
@@ -196,18 +140,6 @@ class PersonNameTest {
     }
 
     @Test
-    @DisplayName("Should be immutable as a record")
-    void shouldBeImmutable() {
-        // Given
-        PersonName name = PersonName.of("Jan", "Novák");
-
-        // When & Then - records are immutable by design
-        assertThat(name.firstName()).isEqualTo("Jan");
-        assertThat(name.lastName()).isEqualTo("Novák");
-        // No setters available
-    }
-
-    @Test
     @DisplayName("Should handle single character names")
     void shouldHandleSingleCharacterNames() {
         // Given
@@ -216,7 +148,6 @@ class PersonNameTest {
         // When & Then
         assertThat(name.firstName()).isEqualTo("J");
         assertThat(name.lastName()).isEqualTo("N");
-        assertThat(name.initials()).isEqualTo("JN");
     }
 
     @Test

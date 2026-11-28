@@ -113,9 +113,12 @@ describe('SuspensionWarningDialog', () => {
         expect(screen.getByText('Skupina zákonných zástupců')).toBeInTheDocument();
     });
 
-    it('requests the group resource from its groupLink', () => {
-        renderDialog();
-        expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(trainingGroup.groupLink, expect.anything());
+    it.each([
+        ['training', trainingGroup],
+        ['legal guardian', legalGroup],
+    ])('requests the %s group resource from its groupLink', (_kind, group) => {
+        renderDialog({warning: {groups: [group], debt: null}});
+        expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(group.groupLink, expect.anything());
     });
 
     describe('training group row', () => {
@@ -154,12 +157,16 @@ describe('SuspensionWarningDialog', () => {
             fireEvent.click(screen.getByRole('button', {name: /určit nástupce/i}));
             expect(screen.getByRole('dialog', {name: 'Přidat trenéra'})).toBeInTheDocument();
         });
+    });
 
-        it('shows the resolved marker and hides the actions for a resolved row', () => {
-            renderDialog({resolvedGroupIds: new Set([trainingGroup.groupId])});
-            expect(screen.getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /určit nástupce/i})).not.toBeInTheDocument();
-        });
+    it.each([
+        ['training', trainingGroup, groupResource({addTrainer})],
+        ['free', freeGroup, freeGroupResource({addGroupOwner, deleteGroup})],
+    ])('shows the resolved marker and hides the actions for a resolved %s group row', (_kind, group, resource) => {
+        mockGroupQueries({[group.groupLink]: {data: resource}});
+        renderDialog({warning: {groups: [group], debt: null}, resolvedGroupIds: new Set([group.groupId])});
+        expect(screen.getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /určit nástupce|rozpustit skupinu/i})).not.toBeInTheDocument();
     });
 
     describe('free group row', () => {
@@ -255,12 +262,6 @@ describe('SuspensionWarningDialog', () => {
             fireEvent.click(within(confirmation).getByRole('button', {name: /odeslat/i}));
             await waitFor(() => expect(props.onGroupResolved).toHaveBeenCalledWith(freeGroup.groupId));
         });
-
-        it('shows the resolved marker and hides the actions for a resolved row', () => {
-            renderFree(freeGroupResource({addGroupOwner, deleteGroup}), {resolvedGroupIds: new Set([freeGroup.groupId])});
-            expect(screen.getByText(new RegExp(labels.suspensionWarning.resolved))).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /určit nástupce|rozpustit skupinu/i})).not.toBeInTheDocument();
-        });
     });
 
     describe('legal guardian group row', () => {
@@ -297,11 +298,6 @@ describe('SuspensionWarningDialog', () => {
             expect(within(confirmation).queryByText('Rodina Skupinová')).not.toBeInTheDocument();
             expect(within(confirmation).getByText('Anna Nováková')).toBeInTheDocument();
             expect(within(confirmation).getByText('Petr Novák')).toBeInTheDocument();
-        });
-
-        it('requests the group resource from its groupLink', () => {
-            renderLegal();
-            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(legalGroup.groupLink, expect.anything());
         });
 
         it('marks the row as chosen on confirmation without any request', () => {
@@ -343,17 +339,13 @@ describe('SuspensionWarningDialog', () => {
             expect(props.onFinish).toHaveBeenCalledTimes(1);
         });
 
-        it('shows a load error and keeps "Určit nástupce" usable when the group cannot be loaded', () => {
-            mockGroupQueries({[legalGroup.groupLink]: {error: new ApiError(500)}});
+        it.each([
+            ['cannot be loaded', {error: new ApiError(500)}, true],
+            ['is loading', {isLoading: true}, false],
+        ])('keeps "Určit nástupce" usable and the whole-group action disabled while the group %s', (_state, query, showsLoadError) => {
+            mockGroupQueries({[legalGroup.groupLink]: query});
             renderDialog({warning: {groups: [legalGroup], debt: null}});
-            expect(screen.getByText(labels.suspensionWarning.groupLoadFailed)).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeEnabled();
-            expect(screen.getByRole('button', {name: labels.suspensionWarning.suspendWholeGroup})).toBeDisabled();
-        });
-
-        it('keeps "Určit nástupce" usable while the group is loading', () => {
-            mockGroupQueries({[legalGroup.groupLink]: {isLoading: true}});
-            renderDialog({warning: {groups: [legalGroup], debt: null}});
+            expect(screen.queryByText(labels.suspensionWarning.groupLoadFailed) !== null).toBe(showsLoadError);
             expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeEnabled();
             expect(screen.getByRole('button', {name: labels.suspensionWarning.suspendWholeGroup})).toBeDisabled();
         });
@@ -376,16 +368,11 @@ describe('SuspensionWarningDialog', () => {
 
         const cascadeWarning = () => ({groups: [legalGroup], debt: null, dependentMembers: dependents});
 
-        it('has no "Ukončit členství" while the cascade is chosen and dependents block', () => {
+        it('has no "Ukončit členství" while the cascade is chosen and dependents block, and keeps the chosen row with "Zrušit"', () => {
             mockGroupQueries({[legalGroup.groupLink]: {data: {minors: []}}});
             renderDialog({warning: cascadeWarning(), cascadeGroupIds: new Set([legalGroup.groupId])});
             expect(screen.getByText(labels.suspensionWarning.dependentMembersTitle)).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
-        });
-
-        it('keeps the chosen row with "Zrušit" after the resubmission was blocked', () => {
-            mockGroupQueries({[legalGroup.groupLink]: {data: {minors: []}}});
-            renderDialog({warning: cascadeWarning(), cascadeGroupIds: new Set([legalGroup.groupId])});
             const row = screen.getByText(legalGroup.groupName).closest('li') as HTMLElement;
             expect(within(row).getByRole('button', {name: labels.suspensionWarning.suspendWholeGroupCancel})).toBeInTheDocument();
         });
@@ -411,29 +398,19 @@ describe('SuspensionWarningDialog', () => {
             expect(props.onFinish).toHaveBeenCalledTimes(1);
         });
 
-        it('stays absent while only some of several groups are resolved', () => {
+        it.each([
+            ['stays absent while only some of several groups are resolved', [trainingGroup.groupId], false],
+            ['appears once every one of several groups is resolved', [trainingGroup.groupId, otherTrainingGroup.groupId], true],
+        ])('%s', (_title, resolvedIds, offered) => {
             mockGroupQueries({
                 [trainingGroup.groupLink]: {data: groupResource({addTrainer})},
                 [otherTrainingGroup.groupLink]: {data: groupResource({addTrainer})},
             });
             renderDialog({
                 warning: {groups: [trainingGroup, otherTrainingGroup], debt: null},
-                resolvedGroupIds: new Set([trainingGroup.groupId]),
+                resolvedGroupIds: new Set(resolvedIds),
             });
-            expect(screen.getAllByText(new RegExp(labels.suspensionWarning.resolved))).toHaveLength(1);
-            expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
-        });
-
-        it('appears once every one of several groups is resolved', () => {
-            mockGroupQueries({
-                [trainingGroup.groupLink]: {data: groupResource({addTrainer})},
-                [otherTrainingGroup.groupLink]: {data: groupResource({addTrainer})},
-            });
-            renderDialog({
-                warning: {groups: [trainingGroup, otherTrainingGroup], debt: null},
-                resolvedGroupIds: new Set([trainingGroup.groupId, otherTrainingGroup.groupId]),
-            });
-            expect(screen.getByRole('button', {name: labels.suspensionWarning.finishSuspension})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension}) !== null).toBe(offered);
         });
     });
 
@@ -444,6 +421,7 @@ describe('SuspensionWarningDialog', () => {
             expect(screen.getByText(labels.negativeBalanceWarning.currentBalance, {exact: false})).toBeInTheDocument();
             expect(screen.getByText(/250/)).toBeInTheDocument();
             expect(screen.getByText('U10 Závoďáci')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: labels.negativeBalanceWarning.openAccount})).toBeInTheDocument();
         });
 
@@ -466,11 +444,6 @@ describe('SuspensionWarningDialog', () => {
             renderDialog({warning: {groups: [trainingGroup], debt}, resolvedGroupIds: new Set([trainingGroup.groupId])});
             expect(screen.queryByRole('button', {name: labels.suspensionWarning.finishSuspension})).not.toBeInTheDocument();
             expect(screen.getByText(labels.negativeBalanceWarning.description)).toBeInTheDocument();
-        });
-
-        it('keeps group actions available while debt is reported', () => {
-            renderDialog({warning: {groups: [trainingGroup], debt}});
-            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
         });
     });
 

@@ -65,24 +65,6 @@ public record PersonName(String firstName, String lastName) {
         return (firstName + " " + lastName).replaceAll("\\s+", " ").trim();
     }
 
-    /**
-     * Returns the initials (first letter of first and last name).
-     *
-     * @return initials in uppercase (e.g., "JN" for John Novak)
-     */
-    public String initials() {
-        return (firstName.charAt(0) + "" + lastName.charAt(0)).toUpperCase();
-    }
-
-    /**
-     * Returns a formal name as "LastName, FirstName".
-     *
-     * @return formal name format
-     */
-    public String formalName() {
-        return lastName + ", " + firstName;
-    }
-
     @Override
     public String toString() {
         return fullName();

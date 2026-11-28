@@ -9,6 +9,8 @@ import com.klabis.members.domain.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -49,11 +51,35 @@ class SelfRelationshipSourceTest {
     }
 
     @Test
-    @DisplayName("grants a minor no profile editing")
-    void shouldGrantMinorNoEditProfile() {
+    @DisplayName("grants a minor only profile viewing and event registering over themself")
+    void shouldGrantMinorOnlyViewAndRegister() {
         UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
 
-        assertThat(source().grantsOf(userId)).doesNotContainKey(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.EVENTS_REGISTER_MEMBER,
+                Authority.MEMBERS_VIEW_PROFILE);
+    }
+
+    @ParameterizedTest(name = "{0}-year-old member: {1} over themself is granted = {2}")
+    @CsvSource({
+            "30, MEMBERS_EDIT_PROFILE, true",
+            "30, MEMBERS_VIEW_PROFILE, true",
+            "30, EVENTS_REGISTER_MEMBER, true",
+            "30, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, true",
+            "15, MEMBERS_EDIT_PROFILE, false",
+            "15, MEMBERS_VIEW_PROFILE, true",
+            "15, EVENTS_REGISTER_MEMBER, true",
+            "15, MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE, false"
+    })
+    void shouldGrantMemberAuthorityOverSelfByAge(int age, Authority authority, boolean granted) {
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(age));
+
+        var grants = source().grantsOf(userId);
+
+        if (granted) {
+            assertThat(grants.get(authority)).containsExactly(TargetRef.member(userId.uuid()));
+        } else {
+            assertThat(grants).doesNotContainKey(authority);
+        }
     }
 
     @Test
@@ -73,14 +99,6 @@ class SelfRelationshipSourceTest {
     }
 
     @Test
-    @DisplayName("grants an adult profile editing even when their membership is suspended")
-    void shouldGrantSuspendedAdult() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
-
-        assertThat(source().grantsOf(userId)).containsKey(Authority.MEMBERS_EDIT_PROFILE);
-    }
-
-    @Test
     @DisplayName("grants a user who is not a member profile viewing and editing over themself, but no event registering")
     void shouldGrantNonMemberProfileViewAndEdit() {
         UUID id = UUID.randomUUID();
@@ -91,70 +109,6 @@ class SelfRelationshipSourceTest {
         assertThat(grants).containsOnlyKeys(Authority.MEMBERS_VIEW_PROFILE, Authority.MEMBERS_EDIT_PROFILE);
         assertThat(grants.get(Authority.MEMBERS_VIEW_PROFILE)).containsExactly(TargetRef.member(id));
         assertThat(grants.get(Authority.MEMBERS_EDIT_PROFILE)).containsExactly(TargetRef.member(id));
-    }
-
-    @Test
-    @DisplayName("grants an adult member profile viewing over themself")
-    void shouldGrantAdultViewProfileOverSelf() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
-
-        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_VIEW_PROFILE))
-                .containsExactly(TargetRef.member(userId.uuid()));
-    }
-
-    @Test
-    @DisplayName("grants a minor member profile viewing over themself")
-    void shouldGrantMinorViewProfileOverSelf() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
-
-        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_VIEW_PROFILE))
-                .containsExactly(TargetRef.member(userId.uuid()));
-    }
-
-    @Test
-    @DisplayName("grants an adult member registering over themself")
-    void shouldGrantAdultRegisterMemberOverSelf() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
-
-        assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
-                .containsExactly(TargetRef.member(userId.uuid()));
-    }
-
-    @Test
-    @DisplayName("grants a minor member registering over themself")
-    void shouldGrantMinorRegisterMemberOverSelf() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
-
-        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.EVENTS_REGISTER_MEMBER,
-                Authority.MEMBERS_VIEW_PROFILE);
-        assertThat(source().grantsOf(userId).get(Authority.EVENTS_REGISTER_MEMBER))
-                .containsExactly(TargetRef.member(userId.uuid()));
-    }
-
-    @Test
-    @DisplayName("grants an adult member fee type selection over themself")
-    void shouldGrantAdultSelectFeeTypeOverSelf() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
-
-        assertThat(source().grantsOf(userId).get(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE))
-                .containsExactly(TargetRef.member(userId.uuid()));
-    }
-
-    @Test
-    @DisplayName("grants a minor member no fee type selection")
-    void shouldGrantMinorNoSelectFeeType() {
-        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(15));
-
-        assertThat(source().grantsOf(userId)).doesNotContainKey(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
-    }
-
-    @Test
-    @DisplayName("grants a user who is not a member no fee type selection")
-    void shouldGrantNonMemberNoSelectFeeType() {
-        UUID id = UUID.randomUUID();
-        when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
-
-        assertThat(source().grantsOf(new UserId(id))).doesNotContainKey(Authority.MEMBERS_SELECT_MEMBERSHIP_FEE_TYPE);
     }
 
     @Test

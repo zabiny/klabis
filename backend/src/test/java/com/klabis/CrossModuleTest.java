@@ -2,6 +2,7 @@ package com.klabis;
 
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
 import java.lang.annotation.ElementType;
@@ -23,4 +24,6 @@ import java.lang.annotation.Target;
 @Import(TestApplicationConfiguration.class)
 public @interface CrossModuleTest {
 
+    @AliasFor(annotation = KlabisModuleTest.class, attribute = "extraIncludes")
+    String[] extraIncludes() default {};
 }

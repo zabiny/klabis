@@ -36,23 +36,3 @@ Given('member {name} is the only legal guardian of minors {name} and {name}', as
     await registerMinorWithGuardians(admin, first, [guardianPath]);
     await registerMinorWithGuardians(admin, second, [guardianPath]);
 });
-
-Given('member {name} is the only legal guardian of minor {name}', async ({apiAs}, guardian: string, minor: string) => {
-    const admin = apiAs('admin');
-    await registerMinorWithGuardians(admin, minor, [await findMemberPath(admin, guardian)]);
-});
-
-Given('members {name} and {name} are legal guardians of minor {name}', async ({apiAs}, first: string, second: string, minor: string) => {
-    const admin = apiAs('admin');
-    await registerMinorWithGuardians(admin, minor, [await findMemberPath(admin, first), await findMemberPath(admin, second)]);
-});
-
-// The suspended guardian is removed by a listener shortly after the suspension, so the detail is reloaded until it shows the outcome.
-Then('the detail of member {name} lists only {name} as legal guardian', async ({page}, minor: string, guardian: string) => {
-    await expect(async () => {
-        await openMemberDetail(page, minor, 'Vše');
-        const guardians = heading(page, 'ZÁKONNÍ ZÁSTUPCI').locator('xpath=../..');
-        await expect(guardians.getByRole('button', {name: `${REGISTERED_FIRST_NAME} ${guardian}`, exact: true})).toBeVisible({timeout: 2_000});
-        await expect(guardians.getByRole('button', {name: new RegExp(`^${REGISTERED_FIRST_NAME} `)})).toHaveCount(1, {timeout: 2_000});
-    }).toPass({timeout: 20_000});
-});

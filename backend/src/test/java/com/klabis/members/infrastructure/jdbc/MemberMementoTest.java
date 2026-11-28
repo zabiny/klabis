@@ -1,7 +1,6 @@
 package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
@@ -15,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Unit tests for MemberMemento class.
@@ -97,151 +97,11 @@ class MemberMementoTest {
                 .withDietaryRestrictions("Vegetarian")
                 .withBirthNumber(birthNumber)
                 .withBankAccountNumber(bankAccountNumber)
+                .withRefereeLicense(RefereeLicense.of(RefereeLevel.R2, LocalDate.now().plusYears(2)))
+                .withDataIncomplete(true)
+                .suspended(DeactivationReason.PRESTUP, "Transferred to another club")
                 .build();
 
-    }
-
-    @Nested
-    @DisplayName("from(Member) method")
-    class FromMemberMethod {
-
-        @Test
-        @DisplayName("should create memento from member with basic fields")
-        void shouldCreateMementoFromMemberWithBasicFields() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            MemberMemento memento = MemberMemento.from(member);
-
-            // Assert - convert back to domain to verify
-            Member reconstructed = memento.toMember();
-            MemberAssert.assertThat(reconstructed)
-                    .hasFirstName("Jan")
-                    .hasLastName("Novák")
-                    .hasDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .hasNationality("CZ")
-                    .hasGender(Gender.MALE);
-            assertThat(memento.getId()).isEqualTo(member.getId().uuid());
-            assertThat(reconstructed.getRegistrationNumber().getValue()).isEqualTo("ZBM9001");
-        }
-
-        @Test
-        @DisplayName("should create memento from member with all fields")
-        void shouldCreateMementoFromMemberWithAllFields() {
-            // Arrange
-            Member member = createMemberWithAllFields();
-
-            // Act
-            MemberMemento memento = MemberMemento.from(member);
-
-            // Assert - convert back to domain to verify
-            Member reconstructed = memento.toMember();
-            assertThat(reconstructed).usingRecursiveComparison().isEqualTo(member);
-        }
-    }
-
-    @Nested
-    @DisplayName("toMember() method")
-    class ToMemberMethod {
-
-        @Test
-        @DisplayName("should reconstruct member from memento with basic fields")
-        void shouldReconstructMemberFromMementoWithBasicFields() {
-            // Arrange
-            Member originalMember = createTestMember();
-            MemberMemento memento = MemberMemento.from(originalMember);
-
-            // Act
-            Member reconstructed = memento.toMember();
-
-            // Assert
-            assertThat(reconstructed.getId()).isEqualTo(originalMember.getId());
-            assertThat(reconstructed.getRegistrationNumber()).isEqualTo(originalMember.getRegistrationNumber());
-            assertThat(reconstructed.getFirstName()).isEqualTo("Jan");
-            assertThat(reconstructed.getLastName()).isEqualTo("Novák");
-            assertThat(reconstructed.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 15));
-            assertThat(reconstructed.getNationality().code()).isEqualTo("CZ");
-            assertThat(reconstructed.getGender()).isEqualTo(Gender.MALE);
-        }
-
-        @Test
-        @DisplayName("should reconstruct member from memento with all fields")
-        void shouldReconstructMemberFromMementoWithAllFields() {
-            // Arrange
-            Member originalMember = createMemberWithAllFields();
-            MemberMemento memento = MemberMemento.from(originalMember);
-
-            // Act
-            Member reconstructed = memento.toMember();
-
-            // Assert - Personal info
-            assertThat(reconstructed.getFirstName()).isEqualTo("Petra");
-            assertThat(reconstructed.getLastName()).isEqualTo("Nováková");
-
-            // Assert - Address
-            assertThat(reconstructed.getAddress().street()).isEqualTo("Dětská 1");
-            assertThat(reconstructed.getAddress().city()).isEqualTo("Brno");
-            assertThat(reconstructed.getAddress().postalCode()).isEqualTo("60200");
-            assertThat(reconstructed.getAddress().country().code()).isEqualTo("CZ");
-
-            // Assert - Contact
-            assertThat(reconstructed.getEmail().value()).isEqualTo("petra.novakova@example.com");
-            assertThat(reconstructed.getPhone().value()).isEqualTo("+420111222333");
-
-            // Assert - Documents
-            assertThat(reconstructed.getIdentityCard()).isNotNull();
-            assertThat(reconstructed.getIdentityCard().cardNumber()).isEqualTo("AB123456");
-            assertThat(reconstructed.getMedicalCourse()).isNotNull();
-            assertThat(reconstructed.getMedicalCourse().completionDate()).isEqualTo(LocalDate.of(2023, 1, 15));
-            assertThat(reconstructed.getTrainerLicense()).isNotNull();
-            assertThat(reconstructed.getTrainerLicense().level()).isEqualTo(TrainerLevel.T2);
-
-            // Assert - Other fields
-            assertThat(reconstructed.getChipNumber()).isEqualTo("CHIP123");
-            assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
-            assertThat(reconstructed.getDietaryRestrictions()).isEqualTo("Vegetarian");
-            assertThat(reconstructed.isActive()).isTrue();
-
-            // Assert - Birth number and bank account
-            assertThat(reconstructed.getBirthNumber()).isNotNull();
-            assertThat(reconstructed.getBirthNumber().value()).isEqualTo("950301/1234");
-            assertThat(reconstructed.getBankAccountNumber()).isNotNull();
-            assertThat(reconstructed.getBankAccountNumber().value()).isEqualTo("123456/0300");
-
-            // Assert - Audit metadata
-            assertThat(reconstructed.getCreatedAt()).isNotNull();
-            assertThat(reconstructed.getCreatedBy()).isEqualTo("test-user");
-            assertThat(reconstructed.getVersion()).isEqualTo(1L);
-        }
-
-        @Test
-        @DisplayName("should reconstruct member with null optional fields")
-        void shouldReconstructMemberWithNullOptionalFields() {
-            // Arrange
-            Member member = buildTestMember()
-                    .withIdentityCard(null)
-                    .withMedicalCourse(null)
-                    .withChipNumber(null)
-                    .withDrivingLicenseGroup(null)
-                    .withDietaryRestrictions(null)
-                    .withBirthNumber((BirthNumber) null)
-                    .build();
-            MemberMemento memento = MemberMemento.from(member);
-
-            // Act
-            Member reconstructed = memento.toMember();
-
-            // Assert - Null fields are preserved
-            assertThat(reconstructed.getIdentityCard()).isNull();
-            assertThat(reconstructed.getMedicalCourse()).isNull();
-            assertThat(reconstructed.getTrainerLicense()).isNull();
-            assertThat(reconstructed.getChipNumber()).isNull();
-            assertThat(reconstructed.getDrivingLicenseGroup()).isNull();
-            assertThat(reconstructed.getDietaryRestrictions()).isNull();
-            assertThat(reconstructed.getBirthNumber()).isNull();
-            assertThat(reconstructed.getBankAccountNumber()).isNull();
-        }
     }
 
     @Nested
@@ -249,35 +109,18 @@ class MemberMementoTest {
     class RoundTripConversion {
 
         @Test
-        @DisplayName("should preserve all data in round-trip conversion")
-        void shouldPreserveAllDataInRoundTripConversion() {
-            // Arrange
-            Member original = createMemberWithAllFields();
+        @DisplayName("should preserve every field in round-trip conversion")
+        void shouldPreserveEveryFieldInRoundTrip() {
+            Member member = createMemberWithAllFields();
 
-            // Act - Convert to memento and back
-            MemberMemento memento = MemberMemento.from(original);
-            Member reconstructed = memento.toMember();
+            Member reconstructed = MemberMemento.from(member).toMember();
 
-            // Assert - All fields preserved
-            assertThat(reconstructed.getId()).isEqualTo(original.getId());
-            assertThat(reconstructed.getRegistrationNumber()).isEqualTo(original.getRegistrationNumber());
-            assertThat(reconstructed.getFirstName()).isEqualTo(original.getFirstName());
-            assertThat(reconstructed.getLastName()).isEqualTo(original.getLastName());
-            assertThat(reconstructed.getDateOfBirth()).isEqualTo(original.getDateOfBirth());
-            assertThat(reconstructed.getNationality()).isEqualTo(original.getNationality());
-            assertThat(reconstructed.getGender()).isEqualTo(original.getGender());
-            assertThat(reconstructed.getEmail()).isEqualTo(original.getEmail());
-            assertThat(reconstructed.getPhone()).isEqualTo(original.getPhone());
-            assertThat(reconstructed.getAddress()).isEqualTo(original.getAddress());
-            assertThat(reconstructed.isActive()).isEqualTo(original.isActive());
-            assertThat(reconstructed.getChipNumber()).isEqualTo(original.getChipNumber());
-            assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(original.getDrivingLicenseGroup());
-            assertThat(reconstructed.getDietaryRestrictions()).isEqualTo(original.getDietaryRestrictions());
+            assertThat(reconstructed).usingRecursiveComparison().isEqualTo(member);
         }
 
         @Test
-        @DisplayName("should preserve a null address in round-trip conversion")
-        void shouldPreserveNullAddressInRoundTripConversion() {
+        @DisplayName("should preserve a null address and unset optional fields in round-trip conversion")
+        void shouldPreserveNullAddressAndUnsetOptionalFields() {
             // Arrange - an ORIS-imported member whose address was incomplete has no address at all
             Member original = MemberTestDataBuilder.aMember()
                     .withAddress(null)
@@ -290,49 +133,7 @@ class MemberMementoTest {
 
             // Assert
             assertThat(reconstructed.getAddress()).isNull();
-            assertThat(reconstructed.isDataIncomplete()).isTrue();
-        }
-
-        @Test
-        @DisplayName("should preserve audit metadata in round-trip conversion")
-        void shouldPreserveAuditMetadataInRoundTripConversion() {
-            // Arrange
-            Member original = createTestMember();
-
-            // Act - Convert to memento and back
-            MemberMemento memento = MemberMemento.from(original);
-            Member reconstructed = memento.toMember();
-
-            // Assert - Audit metadata preserved
-            assertThat(reconstructed.getCreatedAt()).isEqualTo(original.getCreatedAt());
-            assertThat(reconstructed.getCreatedBy()).isEqualTo(original.getCreatedBy());
-            assertThat(reconstructed.getLastModifiedAt()).isEqualTo(original.getLastModifiedAt());
-            assertThat(reconstructed.getLastModifiedBy()).isEqualTo(original.getLastModifiedBy());
-            assertThat(reconstructed.getVersion()).isEqualTo(original.getVersion());
-        }
-    }
-
-    @Nested
-    @DisplayName("getAuditMetadata() method")
-    class GetAuditMetadataMethod {
-
-        @Test
-        @DisplayName("should return audit metadata value object")
-        void shouldReturnAuditMetadataValueObject() {
-            // Arrange
-            Member member = createTestMember();
-            MemberMemento memento = MemberMemento.from(member);
-
-            // Act
-            AuditMetadata auditMetadata = memento.getAuditMetadata();
-
-            // Assert
-            assertThat(auditMetadata).isNotNull();
-            assertThat(auditMetadata.createdAt()).isEqualTo(member.getCreatedAt());
-            assertThat(auditMetadata.createdBy()).isEqualTo(member.getCreatedBy());
-            assertThat(auditMetadata.lastModifiedAt()).isEqualTo(member.getLastModifiedAt());
-            assertThat(auditMetadata.lastModifiedBy()).isEqualTo(member.getLastModifiedBy());
-            assertThat(auditMetadata.version()).isEqualTo(member.getVersion());
+            assertThat(reconstructed).usingRecursiveComparison().isEqualTo(original);
         }
     }
 
@@ -372,27 +173,10 @@ class MemberMementoTest {
         @Test
         @DisplayName("should handle null member reference gracefully")
         void shouldHandleNullMemberReferenceGracefully() {
-            // Arrange - Create memento without member reference
             MemberMemento memento = new MemberMemento();
 
-            // Act
-            var events = memento.getDomainEvents();
-
-            // Assert - Returns empty list when member is null
-            assertThat(events).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should handle clearDomainEvents with null member reference")
-        void shouldHandleClearDomainEventsWithNullMemberReference() {
-            // Arrange - Create memento without member reference
-            MemberMemento memento = new MemberMemento();
-
-            // Act - Should not throw exception
-            memento.clearDomainEvents();
-
-            // Assert - No exception thrown
-            assertThat(true).isTrue();
+            assertThat(memento.getDomainEvents()).isEmpty();
+            assertThatCode(memento::clearDomainEvents).doesNotThrowAnyException();
         }
     }
 

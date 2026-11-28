@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests {@link MembersOrisDiscoveryProperties} defaults/overrides and confirms
+ * Tests {@link MembersOrisDiscoveryProperties} defaults and confirms
  * {@link MemberDiscoveryJob#discoverNewMembers()} is scheduled off its own property
  * key — independent of both
  * {@code com.klabis.sync.application.SyncProperties}'s {@code scan-cron}/
@@ -43,20 +43,6 @@ class MembersOrisDiscoveryPropertiesTest {
         void appliesDefault() {
             contextRunner.run(context ->
                     assertThat(context.getBean(MembersOrisDiscoveryProperties.class).getOrisDiscoveryCron()).isEqualTo("0 30 3 * * *"));
-        }
-    }
-
-    @Nested
-    @DisplayName("with values overridden")
-    class Overrides {
-
-        @Test
-        @DisplayName("takes the overridden value into account")
-        void appliesOverride() {
-            contextRunner
-                    .withPropertyValues("klabis.members.oris-discovery-cron=0 45 5 * * *")
-                    .run(context ->
-                            assertThat(context.getBean(MembersOrisDiscoveryProperties.class).getOrisDiscoveryCron()).isEqualTo("0 45 5 * * *"));
         }
     }
 

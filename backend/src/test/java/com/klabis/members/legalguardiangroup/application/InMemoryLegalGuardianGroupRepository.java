@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-class InMemoryLegalGuardianGroupRepository implements LegalGuardianGroupRepository {
+public class InMemoryLegalGuardianGroupRepository implements LegalGuardianGroupRepository {
 
     private final Map<LegalGuardianGroupId, LegalGuardianGroup> groups = new LinkedHashMap<>();
 

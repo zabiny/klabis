@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DisplayName("Birth number view audit agrees with the serialized detail (API)")
+@DisplayName("Detail visibility, edit action and birth number audit per viewer (API)")
 @MembersWebMvcTest
 class BirthNumberAuditMatchesSerializationApiTest {
 
@@ -44,27 +45,38 @@ class BirthNumberAuditMatchesSerializationApiTest {
     @Autowired
     private ManagementPort managementService;
 
-    private void assertAuditDecisionMatchesSerializedField(String viewedId, boolean expectedVisible) throws Exception {
-        MemberId memberId = new MemberId(UUID.fromString(viewedId));
-        Member member = MemberTestDataBuilder.aMemberWithId(UUID.fromString(viewedId))
+    private void assertViewerSees(LocalDate dateOfBirth, boolean memberActive, MemberViewAccess expectedAccess,
+                                  boolean expectedCanEdit) throws Exception {
+        MemberId memberId = new MemberId(UUID.fromString(MEMBER_ID));
+        Member member = MemberTestDataBuilder.aMemberWithId(memberId.uuid())
+                .withDateOfBirth(dateOfBirth)
                 .withNationality("CZ")
                 .withBirthNumber("900101/1234")
-                .withActive(true)
+                .withActive(memberActive)
                 .build();
         when(managementService.getMemberAndRecordView(eq(memberId), any(UserId.class), any(MemberViewAccess.class)))
                 .thenReturn(member);
 
-        String body = mockMvc.perform(get("/api/members/{id}", viewedId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        String body = mockMvc.perform(get("/api/members/{id}", MEMBER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         ArgumentCaptor<MemberViewAccess> access = ArgumentCaptor.forClass(MemberViewAccess.class);
         verify(managementService).getMemberAndRecordView(eq(memberId), any(UserId.class), access.capture());
-        boolean serialized = ((Map<?, ?>) JsonPath.read(body, "$")).containsKey("birthNumber");
-        assertThat(access.getValue().birthNumberVisible())
+        Map<?, ?> json = JsonPath.read(body, "$");
+        boolean serialized = json.containsKey("birthNumber");
+        assertThat(access.getValue()).isEqualTo(expectedAccess);
+        assertThat(serialized)
                 .as("audit decision vs birthNumber serialized")
-                .isEqualTo(serialized)
-                .isEqualTo(expectedVisible);
+                .isEqualTo(access.getValue().birthNumberVisible());
+        boolean canEdit = json.get("_templates") instanceof Map<?, ?> templates && templates.containsKey("updateMember");
+        assertThat(canEdit).as("edit action offered").isEqualTo(expectedCanEdit);
+    }
+
+    private static final LocalDate ADULT = LocalDate.of(1990, 1, 1);
+
+    private static LocalDate minor() {
+        return LocalDate.now().minusYears(10);
     }
 
     @Test
@@ -72,7 +84,7 @@ class BirthNumberAuditMatchesSerializationApiTest {
     @WithKlabisMockUser(userId = VIEWER_ID, memberId = VIEWER_ID,
             authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     void administrator() throws Exception {
-        assertAuditDecisionMatchesSerializedField(MEMBER_ID, true);
+        assertViewerSees(ADULT, true, new MemberViewAccess(true, true), true);
     }
 
     @Test
@@ -81,7 +93,16 @@ class BirthNumberAuditMatchesSerializationApiTest {
             targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
                     ids = MEMBER_ID))
     void holder() throws Exception {
-        assertAuditDecisionMatchesSerializedField(MEMBER_ID, true);
+        assertViewerSees(ADULT, true, new MemberViewAccess(true, true), true);
+    }
+
+    @Test
+    @DisplayName("holder of the delegated permission over a suspended minor")
+    @WithKlabisMockUser(userId = VIEWER_ID, memberId = VIEWER_ID, authorities = {Authority.MEMBERS_READ},
+            targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                    ids = MEMBER_ID))
+    void holderOverSuspendedMinor() throws Exception {
+        assertViewerSees(minor(), false, new MemberViewAccess(true, true), true);
     }
 
     @Test
@@ -90,7 +111,7 @@ class BirthNumberAuditMatchesSerializationApiTest {
             targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
                     ids = VIEWER_ID))
     void holderOverSomebodyElse() throws Exception {
-        assertAuditDecisionMatchesSerializedField(MEMBER_ID, false);
+        assertViewerSees(ADULT, true, new MemberViewAccess(false, false), false);
     }
 
     @Test
@@ -98,13 +119,21 @@ class BirthNumberAuditMatchesSerializationApiTest {
     @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ},
             selfGrants = SelfGrants.MEMBER)
     void self() throws Exception {
-        assertAuditDecisionMatchesSerializedField(MEMBER_ID, true);
+        assertViewerSees(ADULT, true, new MemberViewAccess(true, true), true);
+    }
+
+    @Test
+    @DisplayName("the minor themself")
+    @WithKlabisMockUser(userId = MEMBER_ID, memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ},
+            selfGrants = SelfGrants.MINOR_MEMBER)
+    void minorSelf() throws Exception {
+        assertViewerSees(minor(), true, new MemberViewAccess(false, true), false);
     }
 
     @Test
     @DisplayName("another club member")
     @WithKlabisMockUser(userId = VIEWER_ID, memberId = VIEWER_ID, authorities = {Authority.MEMBERS_READ})
     void otherMember() throws Exception {
-        assertAuditDecisionMatchesSerializedField(MEMBER_ID, false);
+        assertViewerSees(ADULT, true, new MemberViewAccess(false, false), false);
     }
 }

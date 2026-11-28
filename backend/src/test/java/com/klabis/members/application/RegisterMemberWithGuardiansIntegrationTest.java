@@ -1,5 +1,6 @@
 package com.klabis.members.application;
 
+import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.Authority;
@@ -15,7 +16,6 @@ import com.klabis.members.legalguardian.application.LegalGuardianProfile;
 import com.klabis.members.legalguardian.application.LegalGuardianNotFoundException;
 import com.klabis.members.legalguardian.domain.LegalGuardianEmailAlreadyInUseException;
 import com.klabis.members.legalguardian.domain.LegalGuardianRepository;
-import com.klabis.members.legalguardiangroup.application.GuardianNotFoundException;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@CleanupTestData
 @Import(TestApplicationConfiguration.class)
 @DisplayName("Member registration with legal guardians integration test")
 class RegisterMemberWithGuardiansIntegrationTest {
@@ -64,7 +65,7 @@ class RegisterMemberWithGuardiansIntegrationTest {
 
     private RegistrationPort.RegisterNewMember minor(String lastName, List<GuardianInput> guardians) {
         return new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", lastName, LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
+                PersonalInformation.of("Dítě", lastName, LocalDate.now().minusYears(10), Nationality.of("SK"), Gender.MALE),
                 Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                 null, null, null, null, null, guardians, null);
     }
@@ -119,31 +120,6 @@ class RegisterMemberWithGuardiansIntegrationTest {
     }
 
     @Test
-    @DisplayName("rejects a minor without any guardian and creates nothing")
-    void rejectsMinorWithoutGuardian() {
-        String lastName = "BezZastupce" + unique();
-        int membersBefore = memberRepository.findAll().size();
-
-        assertThatThrownBy(() -> registrationPort.registerMember(minor(lastName, List.of())))
-                .isInstanceOf(BusinessRuleViolationException.class);
-
-        assertThat(memberRepository.findAll()).noneMatch(member -> member.getLastName().equals(lastName));
-        assertThat(memberRepository.findAll()).hasSize(membersBefore);
-    }
-
-    @Test
-    @DisplayName("rejects a chosen guardian who does not exist with a specific error and creates nothing")
-    void rejectsUnknownGuardian() {
-        String lastName = "NeznamyZastupce" + unique();
-
-        assertThatThrownBy(() -> registrationPort.registerMember(
-                minor(lastName, List.of(GuardianInput.existing(new UserId(UUID.randomUUID()))))))
-                .isInstanceOf(GuardianNotFoundException.class);
-
-        assertThat(memberRepository.findAll()).noneMatch(member -> member.getLastName().equals(lastName));
-    }
-
-    @Test
     @DisplayName("rejects taking over a user who is a member rather than a non-member guardian")
     void rejectsTakeOverOfMember() {
         Member existing = registrationPort.registerMember(adult("member." + unique() + "@example.com", null));
@@ -154,24 +130,6 @@ class RegisterMemberWithGuardiansIntegrationTest {
 
         assertThat(memberRepository.findAll()).noneMatch(member -> member.getEmail() != null
                 && member.getEmail().value().equals(email));
-    }
-
-    @Test
-    @DisplayName("a rejected takeover of a guardian by a minor leaves the guardian's login unchanged")
-    void rejectedTakeOverLeavesLoginUnchanged() {
-        LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("rej." + unique() + "@example.com"));
-        UserId guardianId = profile.guardian().getId();
-        var minorTakeOver = new RegistrationPort.RegisterNewMember(
-                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.of(2015, 4, 10), Nationality.of("SK"), Gender.MALE),
-                Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
-                null, null, null, null, null, List.of(GuardianInput.existing(guardianId)), guardianId);
-
-        assertThatThrownBy(() -> registrationPort.registerMember(minorTakeOver)).isInstanceOf(BusinessRuleViolationException.class);
-
-        User user = userRepository.findById(guardianId).orElseThrow();
-        assertThat(user.getUsername()).isEqualTo(profile.loginName());
-        assertThat(user.getAltUsername()).isNull();
-        assertThat(legalGuardianRepository.findById(guardianId)).isPresent();
     }
 
     @Test

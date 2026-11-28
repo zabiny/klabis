@@ -6,6 +6,7 @@ import {HalFormsForm} from './HalFormsForm.tsx';
 import {vi} from 'vitest';
 import type {HalFormFieldFactory, HalFormsInputProps} from './types.ts';
 import {ApiError} from '../../../api/authorizedFetch.ts';
+import {labels} from '../../../localization';
 
 const createProperty = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty => ({
     name: 'testField',
@@ -155,6 +156,40 @@ describe('createValidationSchema — required field validation', () => {
         await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
 
         expect(onSubmit).toHaveBeenCalled();
+    });
+
+    it('shows a required-field error under a mandatory field left empty after leaving it', async () => {
+        const template = createTemplate([createProperty({name: 'firstName', required: true, prompt: 'Jméno'})]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={vi.fn()} />);
+        await userEvent.click(screen.getByRole('textbox'));
+        await userEvent.tab();
+
+        expect(await screen.findByText(labels.validation.requiredField)).toBeInTheDocument();
+    });
+
+    it('shows required-field errors for every empty mandatory field after a submit attempt', async () => {
+        const template = createTemplate([
+            createProperty({name: 'firstName', required: true, prompt: 'Jméno'}),
+            createProperty({name: 'lastName', required: true, prompt: 'Příjmení'}),
+        ]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={vi.fn()} />);
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(await screen.findAllByText(labels.validation.requiredField)).toHaveLength(2);
+    });
+
+    it('rejects a malformed e-mail', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const template = createTemplate([createProperty({name: 'email', type: 'email', prompt: 'E-mail'})]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+        await userEvent.type(screen.getByRole('textbox'), 'not-an-email');
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(await screen.findByText(labels.validation.invalidEmail)).toBeInTheDocument();
+        expect(onSubmit).not.toHaveBeenCalled();
     });
 
     it('does not require optional text field', async () => {

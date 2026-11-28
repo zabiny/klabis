@@ -70,27 +70,6 @@ public final class RegistrationNumber {
         return value;
     }
 
-    /**
-     * Extracts the club code (first 3 characters).
-     */
-    public String getClubCode() {
-        return value.substring(0, 3);
-    }
-
-    /**
-     * Extracts the birth year (2 digits).
-     */
-    public int getBirthYear() {
-        return Integer.parseInt(value.substring(3, 5));
-    }
-
-    /**
-     * Extracts the sequence number (last 2 digits).
-     */
-    public int getSequenceNumber() {
-        return Integer.parseInt(value.substring(5, 7));
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

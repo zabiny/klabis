@@ -8,14 +8,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 @DisplayName("MemberProjectionMapper")
 @ExtendWith(OutputCaptureExtension.class)
@@ -104,44 +111,25 @@ class MemberProjectionMapperTest {
             assertThat(projection.chipNumber()).isEqualTo("1000001");
         }
 
-        @Test
-        @DisplayName("gender \"F\" maps to FEMALE")
-        void mapsFemaleGender() {
-            var clubMember = referenceClubMember(b -> b.gender("F"));
+        @DisplayName("ORIS gender code maps to the Gender enum, unrecognised codes to null")
+        @ParameterizedTest(name = "gender \"{0}\" maps to {1}")
+        @CsvSource(value = {"F,FEMALE", "X,null"}, nullValues = "null")
+        void mapsGender(String orisGender, Gender expected) {
+            var clubMember = referenceClubMember(b -> b.gender(orisGender));
 
             MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
 
-            assertThat(projection.gender()).isEqualTo(Gender.FEMALE);
+            assertThat(projection.gender()).isEqualTo(expected);
         }
 
         @Test
-        @DisplayName("an unrecognised gender value maps to null")
-        void mapsUnknownGenderToNull() {
-            var clubMember = referenceClubMember(b -> b.gender("X"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.gender()).isNull();
-        }
-
-        @Test
-        @DisplayName("si == 0 maps chip number to null, not \"0\"")
-        void mapsZeroSiToNullChipNumber() {
+        @DisplayName("si == 0 maps to no chip number, not \"0\"")
+        void mapsZeroSiToNoChipNumber() {
             var clubMember = referenceClubMember(b -> b.si("0"));
 
             MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
 
             assertThat(projection.chipNumber()).isNull();
-        }
-
-        @Test
-        @DisplayName("a non-zero si maps to its decimal string form")
-        void mapsNonZeroSiToDecimalString() {
-            var clubMember = referenceClubMember(b -> b.si("1000001"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.chipNumber()).isEqualTo("1000001");
         }
 
         @Test
@@ -198,64 +186,41 @@ class MemberProjectionMapperTest {
             assertThat(projection.phone()).isEqualTo("+420700000001");
         }
 
-        @Test
-        @DisplayName("a malformed birth number is dropped, logging the ORIS id and field but not the value")
-        void malformedBirthNumberIsDroppedAndLogged(CapturedOutput output) {
-            var clubMember = referenceClubMember(b -> b.id(33630).persNum("not-a-birth-number"));
+        @DisplayName("an invalid ORIS value is dropped, logging the ORIS id and field but not the value")
+        @ParameterizedTest(name = "{argumentSetName}")
+        @MethodSource("invalidValuesDroppedAndLogged")
+        void invalidValueIsDroppedAndLogged(UnaryOperator<ClubMemberBuilder> customizer,
+                                            Function<MemberProjection, Object> droppedField,
+                                            String loggedField,
+                                            String rawValue,
+                                            CapturedOutput output) {
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(referenceClubMember(b -> customizer.apply(b.id(33630))));
 
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.birthNumber()).isNull();
-            assertThat(output).contains("33630").contains("birthNumber");
-            assertThat(output).doesNotContain("not-a-birth-number");
+            assertThat(droppedField.apply(projection)).isNull();
+            assertThat(output).contains("33630").contains(loggedField);
+            assertThat(output).doesNotContain(rawValue);
         }
 
-        @Test
-        @DisplayName("a birth number for a non-Czech national is dropped, logging the ORIS id and field but not the value")
-        void birthNumberForNonCzechNationalIsDroppedAndLogged(CapturedOutput output) {
-            var clubMember = referenceClubMember(b -> b.id(33630).nationality("SK").persNum("900115/0000"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.birthNumber()).isNull();
-            assertThat(output).contains("33630").contains("birthNumber");
-            assertThat(output).doesNotContain("900115/0000");
+        static Stream<Arguments> invalidValuesDroppedAndLogged() {
+            return Stream.of(
+                    dropped("malformed birth number", b -> b.persNum("not-a-birth-number"),
+                            MemberProjection::birthNumber, "birthNumber", "not-a-birth-number"),
+                    dropped("birth number of a non-Czech national", b -> b.nationality("SK").persNum("900115/0000"),
+                            MemberProjection::birthNumber, "birthNumber", "900115/0000"),
+                    dropped("unparsable phone number", b -> b.phone("+420abc123"),
+                            MemberProjection::phone, "phone", "+420abc123"),
+                    dropped("malformed e-mail", b -> b.email("not-an-email"),
+                            MemberProjection::email, "email", "not-an-email"),
+                    dropped("unknown nationality", b -> b.nationality("QQ"),
+                            MemberProjection::nationality, "nationality", "QQ"));
         }
 
-        @Test
-        @DisplayName("an unparsable ORIS phone number is dropped, logging the ORIS id and field but not the value")
-        void invalidPhoneIsDroppedAndLogged(CapturedOutput output) {
-            var clubMember = referenceClubMember(b -> b.id(33630).phone("+420abc123"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.phone()).isNull();
-            assertThat(output).contains("33630").contains("phone");
-            assertThat(output).doesNotContain("+420abc123");
-        }
-
-        @Test
-        @DisplayName("a malformed ORIS e-mail is dropped, logging the ORIS id and field but not the value")
-        void invalidEmailIsDroppedAndLogged(CapturedOutput output) {
-            var clubMember = referenceClubMember(b -> b.id(33630).email("not-an-email"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.email()).isNull();
-            assertThat(output).contains("33630").contains("email");
-            assertThat(output).doesNotContain("not-an-email");
-        }
-
-        @Test
-        @DisplayName("an unknown nationality is dropped, logging the ORIS id and field but not the value")
-        void unknownNationalityIsDroppedAndLogged(CapturedOutput output) {
-            var clubMember = referenceClubMember(b -> b.id(33630).nationality("QQ"));
-
-            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
-
-            assertThat(projection.nationality()).isNull();
-            assertThat(output).contains("33630").contains("nationality");
-            assertThat(output).doesNotContain("QQ");
+        private static Arguments dropped(String label,
+                                         UnaryOperator<ClubMemberBuilder> customizer,
+                                         Function<MemberProjection, Object> droppedField,
+                                         String loggedField,
+                                         String rawValue) {
+            return argumentSet(label, customizer, droppedField, loggedField, rawValue);
         }
 
         @Test
@@ -271,6 +236,47 @@ class MemberProjectionMapperTest {
             assertThat(projection.postalCode()).isNull();
             assertThat(output).contains("33630").contains("country");
             assertThat(output).doesNotContain("QQ");
+        }
+
+        @Test
+        @DisplayName("a partial address is dropped as a whole, including postal code and country, and logged with the ORIS id")
+        void partialAddressIsClearedAsWhole(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).city(" "));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.city()).isNull();
+            assertThat(projection.postalCode()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(output).contains("33630").contains("dropping address");
+        }
+
+        @Test
+        @DisplayName("an address with only the country present is cleared, keeping nationality and phone prefix intact")
+        void addressWithOnlyCountryIsCleared() {
+            var clubMember = referenceClubMember(b -> b.street(null).city(null).zip(null));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.city()).isNull();
+            assertThat(projection.postalCode()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(projection.nationality()).isEqualTo("CZ");
+            assertThat(projection.phone()).isEqualTo("+420700000001");
+        }
+
+        @Test
+        @DisplayName("a fully absent address stays absent without any warning")
+        void absentAddressIsNullWithoutWarning(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.street(null).city(null).zip(null).country(null).phone(null));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.street()).isNull();
+            assertThat(projection.country()).isNull();
+            assertThat(output).doesNotContain("dropping address");
         }
 
         @Test

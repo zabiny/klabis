@@ -2,9 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +16,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for MemberController DTO mapping methods.
- * <p>
- * Tests direct mapping functionality for all 5 mapping methods to ensure
- * correct field-by-field transformation and null handling before migrating to MapStruct.
- * <p>
- * Uses reflection to access private mapping methods for testing purposes.
+ * Tests of the MapStruct converters {@link MemberSummaryConverter} and {@link MemberDetailsConverter},
+ * run against the generated implementations without a Spring web context.
  */
-@DisplayName("Member Controller Mapping Tests")
+@DisplayName("Member MapStruct converters")
 @ExtendWith(SpringExtension.class)
 @Import({MemberSummaryConverterImpl.class, MemberDetailsConverterImpl.class})
 class MemberMappingTests {
@@ -36,347 +30,116 @@ class MemberMappingTests {
     @Autowired
     private MemberDetailsConverter detailsConverter;
 
-    @Nested
-    @DisplayName("mapToIdentityCardDto()")
-    class IdentityCardDtoMappingTests {
+    @Test
+    @DisplayName("should map member to summary response correctly")
+    void shouldMapToSummaryResponseCorrectly() {
+        UUID memberId = UUID.randomUUID();
+        Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-        @Test
-        @DisplayName("should map valid identity card correctly")
-        void shouldMapValidIdentityCardCorrectly() {
-            IdentityCard card = new IdentityCard("ABC123", LocalDate.of(2026, 12, 31));
-            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
+        MemberSummaryResponse dto = summaryConverter.convert(member);
 
-            assertThat(dto).isNotNull();
-            assertThat(dto.cardNumber()).isEqualTo("ABC123");
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
-        }
-
-        @Test
-        @DisplayName("should return null when identity card is null")
-        void shouldReturnNullWhenIdentityCardIsNull() {
-            IdentityCardDto dto = detailsConverter.identityCardToDto(null);
-            assertThat(dto).isNull();
-        }
-
-        // TODO: this needs to be corrected - value object must be possible to create with date in past. That validation must be in places where editation happens (validity date must not be in past when value is edited)
-        @Disabled
-        @Test
-        @DisplayName("should map identity card with past validity date")
-        void shouldMapIdentityCardWithPastValidityDate() {
-            IdentityCard card = new IdentityCard("XYZ789", LocalDate.of(2020, 1, 1));
-            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
-
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2020, 1, 1));
-        }
-
-        @Test
-        @DisplayName("should map identity card with today as validity date")
-        void shouldMapIdentityCardWithTodayValidityDate() {
-            LocalDate today = LocalDate.now();
-            IdentityCard card = new IdentityCard("TODAY01", today);
-            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
-
-            assertThat(dto.validityDate()).isEqualTo(today);
-        }
+        assertThat(dto).isNotNull();
+        assertThat(dto.id()).isEqualTo(memberId);
+        assertThat(dto.firstName()).isEqualTo("Jan");
+        assertThat(dto.lastName()).isEqualTo("Novák");
+        assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
     }
 
-    @Nested
-    @DisplayName("mapToMedicalCourseDto()")
-    class MedicalCourseDtoMappingTests {
+    @Test
+    @DisplayName("should map member with all fields to details response")
+    void shouldMapMemberWithAllFieldsToDetailsResponse() {
+        UUID memberId = UUID.randomUUID();
+        IdentityCard identityCard = new IdentityCard("IC123", LocalDate.of(2026, 12, 31));
+        MedicalCourse medicalCourse = new MedicalCourse(
+                LocalDate.of(2024, 1, 1),
+                Optional.of(LocalDate.of(2026, 1, 1))
+        );
+        TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T2, LocalDate.of(2026, 6, 30));
+        RefereeLicense refereeLicense = new RefereeLicense(RefereeLevel.R2, LocalDate.of(2026, 9, 30));
 
-        @Test
-        @DisplayName("should map valid medical course correctly")
-        void shouldMapValidMedicalCourseCorrectly() {
-            MedicalCourse course = new MedicalCourse(
-                    LocalDate.of(2024, 6, 15),
-                    Optional.of(LocalDate.of(2026, 6, 15))
-            );
-            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
+        Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                .withName("Jan", "Novák")
+                .withIdentityCard(identityCard)
+                .withMedicalCourse(medicalCourse)
+                .withTrainerLicense(trainerLicense)
+                .withRefereeLicense(refereeLicense)
+                .withChipNumber("CHIP123")
+                .withDrivingLicenseGroup(com.klabis.members.domain.DrivingLicenseGroup.B)
+                .withDietaryRestrictions("No restrictions")
+                .build();
 
+        MemberDetailsResponse dto = detailsConverter.convert(member);
 
-            assertThat(dto).isNotNull();
-            assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 6, 15));
-        }
-
-        @Test
-        @DisplayName("should return null when medical course is null")
-        void shouldReturnNullWhenMedicalCourseIsNull() {
-            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(null);
-
-            assertThat(dto).isNull();
-        }
-
-        @Test
-        @DisplayName("should map medical course with null validity date (indefinite)")
-        void shouldMapMedicalCourseWithNullValidityDate() {
-            MedicalCourse course = new MedicalCourse(LocalDate.of(2024, 6, 15), null);
-            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
-
-            assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).isNull();
-        }
-
-        @Test
-        @DisplayName("should map medical course with past completion date")
-        void shouldMapMedicalCourseWithPastCompletionDate() {
-            MedicalCourse course = new MedicalCourse(
-                    LocalDate.of(2020, 1, 1),
-                    Optional.of(LocalDate.of(2025, 1, 1))
-            );
-            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
-
-            assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2020, 1, 1));
-        }
+        assertThat(dto).isNotNull();
+        assertThat(dto.id()).isEqualTo(memberId);
+        assertThat(dto.firstName()).isEqualTo("Jan");
+        assertThat(dto.lastName()).isEqualTo("Novák");
+        assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
+        assertThat(dto.email()).isEqualTo("jan.novak@example.com");
+        assertThat(dto.phone()).isEqualTo("+420 123 456 789");
+        assertThat(dto.address()).isNotNull();
+        assertThat(dto.chipNumber()).isEqualTo("CHIP123");
+        assertThat(dto.identityCard().cardNumber()).isEqualTo("IC123");
+        assertThat(dto.identityCard().validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
+        assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 1, 1));
+        assertThat(dto.medicalCourse().validityDate()).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T2);
+        assertThat(dto.trainerLicense().validityDate()).isEqualTo(LocalDate.of(2026, 6, 30));
+        assertThat(dto.refereeLicense().level()).isEqualTo(RefereeLicenseDtoLevel.R2);
+        assertThat(dto.refereeLicense().validityDate()).isEqualTo(LocalDate.of(2026, 9, 30));
+        assertThat(dto.drivingLicenseGroup()).isEqualTo(
+                com.klabis.members.infrastructure.restapi.DrivingLicenseGroup.B);
+        assertThat(dto.dietaryRestrictions()).isEqualTo("No restrictions");
     }
 
-    @Nested
-    @DisplayName("mapToTrainerLicenseDto()")
-    class TrainerLicenseDtoMappingTests {
+    @Test
+    @DisplayName("should map member with null optional fields")
+    void shouldMapMemberWithNullOptionalFields() {
+        Member member = MemberTestDataBuilder.aMemberWithId(UUID.randomUUID()).build();
 
-        @Test
-        @DisplayName("should map valid trainer license correctly")
-        void shouldMapValidTrainerLicenseCorrectly() {
-            TrainerLicense license = new TrainerLicense(TrainerLevel.T1, LocalDate.of(2026, 12, 31));
-            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(license);
+        MemberDetailsResponse dto = detailsConverter.convert(member);
 
-            assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T1);
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
-        }
-
-        @Test
-        @DisplayName("should return null when trainer license is null")
-        void shouldReturnNullWhenTrainerLicenseIsNull() {
-            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(null);
-            assertThat(dto).isNull();
-        }
-
-        @Test
-        @DisplayName("should map trainer license with today as validity date")
-        void shouldMapTrainerLicenseWithTodayValidityDate() {
-            LocalDate today = LocalDate.now();
-            TrainerLicense license = new TrainerLicense(TrainerLevel.T3, today);
-            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(license);
-
-            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T3);
-            assertThat(dto.validityDate()).isEqualTo(today);
-        }
+        assertThat(dto).isNotNull();
+        assertThat(dto.chipNumber()).isNull();
+        assertThat(dto.identityCard()).isNull();
+        assertThat(dto.medicalCourse()).isNull();
+        assertThat(dto.trainerLicense()).isNull();
+        assertThat(dto.refereeLicense()).isNull();
+        assertThat(dto.drivingLicenseGroup()).isNull();
+        assertThat(dto.dietaryRestrictions()).isNull();
     }
 
-    @Nested
-    @DisplayName("mapToRefereeLicenseDto()")
-    class RefereeLicenseDtoMappingTests {
+    @Test
+    @DisplayName("should map member with all documents")
+    void shouldMapMemberWithAllDocuments() {
+        IdentityCard identityCard = new IdentityCard("IC-ALL", LocalDate.of(2026, 12, 31));
+        MedicalCourse medicalCourse = new MedicalCourse(
+                LocalDate.of(2024, 1, 1),
+                Optional.of(LocalDate.of(2026, 1, 1))
+        );
+        TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T3, LocalDate.of(2026, 6, 30));
 
-        @Test
-        @DisplayName("should map valid referee license correctly")
-        void shouldMapValidRefereeLicenseCorrectly() {
-            RefereeLicense license = new RefereeLicense(RefereeLevel.R2, LocalDate.of(2026, 12, 31));
-            RefereeLicenseDto dto = detailsConverter.refereeLicenseToDto(license);
+        Member member = MemberTestDataBuilder.aMemberWithId(UUID.randomUUID())
+                .withIdentityCard(identityCard)
+                .withMedicalCourse(medicalCourse)
+                .withTrainerLicense(trainerLicense)
+                .build();
 
-            assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(RefereeLicenseDtoLevel.R2);
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
-        }
+        MemberDetailsResponse dto = detailsConverter.convert(member);
 
-        @Test
-        @DisplayName("should return null when referee license is null")
-        void shouldReturnNullWhenRefereeLicenseIsNull() {
-            RefereeLicenseDto dto = detailsConverter.refereeLicenseToDto(null);
-            assertThat(dto).isNull();
-        }
+        assertThat(dto.identityCard()).isNotNull();
+        assertThat(dto.medicalCourse()).isNotNull();
+        assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T3);
     }
 
-    @Nested
-    @DisplayName("toSummaryResponse()")
-    class MemberSummaryResponseMappingTests {
+    @Test
+    @DisplayName("should map medical course without validity date (indefinite)")
+    void shouldMapMedicalCourseWithNullValidityDate() {
+        MedicalCourse course = new MedicalCourse(LocalDate.of(2024, 6, 15), null);
 
-        @Test
-        @DisplayName("should map member to summary response correctly")
-        void shouldMapToSummaryResponseCorrectly() {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+        MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
 
-            MemberSummaryResponse dto = summaryConverter.convert(member);
-
-            assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(memberId);
-            assertThat(dto.firstName()).isEqualTo("Jan");
-            assertThat(dto.lastName()).isEqualTo("Novák");
-            assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
-        }
-
-        @Test
-        @DisplayName("should map member with different name")
-        void shouldMapMemberWithDifferentName() {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withName("Petra", "Nováková")
-                    .build();
-
-            MemberSummaryResponse dto = summaryConverter.convert(member);
-
-            assertThat(dto.firstName()).isEqualTo("Petra");
-            assertThat(dto.lastName()).isEqualTo("Nováková");
-        }
-
-        @Test
-        @DisplayName("should map member with different registration number")
-        void shouldMapMemberWithDifferentRegistrationNumber() {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM9999")
-                    .build();
-
-            MemberSummaryResponse dto = summaryConverter.convert(member);
-
-            assertThat(dto.registrationNumber()).isEqualTo("ZBM9999");
-        }
-    }
-
-    @Nested
-    @DisplayName("mapToDetailsResponse()")
-    class MemberDetailsResponseMappingTests {
-
-        @Test
-        @DisplayName("should map member with all fields to details response")
-        void shouldMapMemberWithAllFieldsToDetailsResponse() {
-            UUID memberId = UUID.randomUUID();
-            IdentityCard identityCard = new IdentityCard("IC123", LocalDate.of(2026, 12, 31));
-            MedicalCourse medicalCourse = new MedicalCourse(
-                    LocalDate.of(2024, 1, 1),
-                    Optional.of(LocalDate.of(2026, 1, 1))
-            );
-            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T2, LocalDate.of(2026, 6, 30));
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withName("Jan", "Novák")
-                    .withIdentityCard(identityCard)
-                    .withMedicalCourse(medicalCourse)
-                    .withTrainerLicense(trainerLicense)
-                    .withChipNumber("CHIP123")
-                    .withDrivingLicenseGroup(com.klabis.members.domain.DrivingLicenseGroup.B)
-                    .withDietaryRestrictions("No restrictions")
-                    .build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(memberId);
-            assertThat(dto.firstName()).isEqualTo("Jan");
-            assertThat(dto.lastName()).isEqualTo("Novák");
-            assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
-            assertThat(dto.email()).isEqualTo("jan.novak@example.com");
-            assertThat(dto.phone()).isEqualTo("+420 123 456 789");
-            assertThat(dto.address()).isNotNull();
-            assertThat(dto.chipNumber()).isEqualTo("CHIP123");
-            assertThat(dto.identityCard()).isNotNull();
-            assertThat(dto.identityCard().cardNumber()).isEqualTo("IC123");
-            assertThat(dto.medicalCourse()).isNotNull();
-            assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 1, 1));
-            assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T2);
-            assertThat(dto.drivingLicenseGroup()).isEqualTo(
-                    com.klabis.members.infrastructure.restapi.DrivingLicenseGroup.B);
-            assertThat(dto.dietaryRestrictions()).isEqualTo("No restrictions");
-        }
-
-        @Test
-        @DisplayName("should map member with null optional fields")
-        void shouldMapMemberWithNullOptionalFields() {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto).isNotNull();
-            assertThat(dto.chipNumber()).isNull();
-            assertThat(dto.identityCard()).isNull();
-            assertThat(dto.medicalCourse()).isNull();
-            assertThat(dto.trainerLicense()).isNull();
-            assertThat(dto.drivingLicenseGroup()).isNull();
-            assertThat(dto.dietaryRestrictions()).isNull();
-        }
-
-        @Test
-        @DisplayName("should map member with only identity card")
-        void shouldMapMemberWithOnlyIdentityCard() {
-            UUID memberId = UUID.randomUUID();
-            IdentityCard identityCard = new IdentityCard("ONLY-IC", LocalDate.of(2026, 12, 31));
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withIdentityCard(identityCard)
-                    .build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto.identityCard()).isNotNull();
-            assertThat(dto.identityCard().cardNumber()).isEqualTo("ONLY-IC");
-            assertThat(dto.medicalCourse()).isNull();
-            assertThat(dto.trainerLicense()).isNull();
-        }
-
-        @Test
-        @DisplayName("should map member with only medical course")
-        void shouldMapMemberWithOnlyMedicalCourse() {
-            UUID memberId = UUID.randomUUID();
-            MedicalCourse medicalCourse = new MedicalCourse(
-                    LocalDate.of(2024, 6, 15),
-                    Optional.of(LocalDate.of(2026, 6, 15))
-            );
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withMedicalCourse(medicalCourse)
-                    .build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto.identityCard()).isNull();
-            assertThat(dto.medicalCourse()).isNotNull();
-            assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.trainerLicense()).isNull();
-        }
-
-        @Test
-        @DisplayName("should map member with only trainer license")
-        void shouldMapMemberWithOnlyTrainerLicense() {
-            UUID memberId = UUID.randomUUID();
-            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T1, LocalDate.of(2026, 12, 31));
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withTrainerLicense(trainerLicense)
-                    .build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto.identityCard()).isNull();
-            assertThat(dto.medicalCourse()).isNull();
-            assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T1);
-        }
-
-        @Test
-        @DisplayName("should map member with all documents")
-        void shouldMapMemberWithAllDocuments() {
-            UUID memberId = UUID.randomUUID();
-            IdentityCard identityCard = new IdentityCard("IC-ALL", LocalDate.of(2026, 12, 31));
-            MedicalCourse medicalCourse = new MedicalCourse(
-                    LocalDate.of(2024, 1, 1),
-                    Optional.of(LocalDate.of(2026, 1, 1))
-            );
-            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T3, LocalDate.of(2026, 6, 30));
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withIdentityCard(identityCard)
-                    .withMedicalCourse(medicalCourse)
-                    .withTrainerLicense(trainerLicense)
-                    .build();
-
-            MemberDetailsResponse dto = detailsConverter.convert(member);
-
-            assertThat(dto.identityCard()).isNotNull();
-            assertThat(dto.medicalCourse()).isNotNull();
-            assertThat(dto.trainerLicense()).isNotNull();
-        }
+        assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
+        assertThat(dto.validityDate()).isNull();
     }
 }

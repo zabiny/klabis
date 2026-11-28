@@ -1,9 +1,10 @@
 package com.klabis.members.application;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.users.UsernameAlreadyInUseException;
 import com.klabis.common.users.application.PermissionService;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberId;
@@ -21,8 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,35 +32,26 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for {@link RegistrationService}.
- * <p>
- * Tests cover the member registration functionality including:
- * <ul>
- *   <li>User account creation with pending activation status</li>
- *   <li>Transactional integrity of member and user creation</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("RegistrationPort Unit Tests")
 class RegistrationServiceTest {
+
+    private static final UserId SHARED_ID = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
 
     @Mock
     private MemberRepository memberRepository;
 
     @Mock
     private UserService userService;
-
-    @Mock
-    private RegistrationNumberGenerator registrationNumberGenerator;
 
     @Mock
     private LegalGuardianPort legalGuardianPort;
@@ -81,62 +72,20 @@ class RegistrationServiceTest {
         service = new RegistrationService(
                 memberRepository,
                 userService,
-                registrationNumberGenerator,
+                new RegistrationNumberGenerator("ZBM", memberRepository),
                 legalGuardianPort,
                 legalGuardianGroupPort,
                 memberCompletenessPort,
                 permissionService
         );
-
-        // Setup default mock behavior that can be overridden in individual tests
-        // Use a fixed shared ID for all tests by default
-        UserId defaultSharedId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
-        mockUserCreation(defaultSharedId);
-        mockMemberCreation(defaultSharedId);
-
-        // Setup default registration number generator
-        when(registrationNumberGenerator.generate(any(LocalDate.class)))
-                .thenAnswer(invocation -> {
-                    LocalDate date = invocation.getArgument(0);
-                    // Return different registration numbers based on date for testing
-                    if (date.equals(LocalDate.of(2005, 3, 20))) {
-                        return new RegistrationNumber("ZBM0501");
-                    } else if (date.equals(LocalDate.of(2005, 7, 20))) {
-                        return new RegistrationNumber("ZBM0502");
-                    } else {
-                        return new RegistrationNumber("ZBM0500");
-                    }
-                });
     }
 
-    /**
-     * Helper method to configure mock behavior for member creation.
-     * <p>
-     * <b>Critical:</b> Must use the same shared ID as User mock to satisfy
-     * the invariant: Member ID must equal User ID.
-     *
-     * @param sharedId the shared ID to use for both User and Member
-     */
-    private void mockMemberCreation(UserId sharedId) {
-        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> {
-            Member member = invocation.getArgument(0);
-            // Return the member as-is (it already has the shared ID from User)
-            return member;
-        });
+    private void stubUserCreation(UserId userId) {
+        when(userService.createUser(anyString(), any(Set.class))).thenReturn(userId);
     }
 
-    /**
-     * Helper method to configure mock behavior for user creation.
-     * Can be called from individual tests to override defaults.
-     * <p>
-     * <b>Critical:</b> UserService must return the same shared ID as Member mock
-     * to satisfy the invariant: Member ID must equal User ID.
-     *
-     * @param hashedPassword the hashed password to return
-     * @param sharedId       the shared ID to use for both User and Member
-     */
-    private void mockUserCreation(UserId sharedId) {
-        when(userService.createUser(anyString(), any(Set.class))).thenReturn(sharedId);
+    private void stubMemberSave() {
+        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Nested
@@ -144,364 +93,63 @@ class RegistrationServiceTest {
     class RegisterMemberMethod {
 
         @Test
-        @DisplayName("should create member with provided registration number")
-        void shouldCreateMemberWithProvidedRegistrationNumber() {
-            // Given
+        @DisplayName("should create member and user with generated registration number and all optional fields")
+        void shouldCreateMemberWithGeneratedRegistrationNumber() {
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId userId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
+            when(memberRepository.countByBirthYear(2005)).thenReturn(7);
+            stubUserCreation(SHARED_ID);
+            stubMemberSave();
 
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(
+                    PersonalInformation.of("Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE),
+                    Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")),
+                    EmailAddress.of("jan.novak@example.com"),
+                    PhoneNumber.of("+420777888999"),
                     BirthNumber.of("050615/1234"),
-                    null,
+                    BankAccountNumber.of("CZ6508000000192000145399"),
                     null
             );
 
-            // When
             Member result = service.registerMember(command);
 
-            // Then - verify that a Member is returned
-            assertThat(result).isNotNull();
-
-            // Verify member repository interactions
             ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
             verify(memberRepository).save(memberCaptor.capture());
-
             Member savedMember = memberCaptor.getValue();
             MemberAssert.assertThat(savedMember)
                     .hasFirstName("Jan")
                     .hasLastName("Novák")
                     .hasDateOfBirth(dateOfBirth)
                     .hasGender(Gender.MALE);
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
-
-            // Verify user creation via UserService with correct arguments
-            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
-            verify(userService).createUser(usernameCaptor.capture(), authoritiesCaptor.capture());
-
-            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0500");
-            assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
-
-            // CRITICAL: Verify returned Member has the shared ID
-            assertThat(result.getId().toUserId().uuid()).isEqualTo(userId.uuid());
-        }
-
-        @Test
-        @DisplayName("should create user account with provided registration number")
-        void shouldCreateUserAccountWithProvidedRegistrationNumber() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 3, 20);
-            UserId testSharedId = new UserId(UUID.fromString("87654321-4321-4321-4321-210987654321"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-            Address address = Address.of("Štúrova 45", "Bratislava", "81101", Country.of("SK"));
-            EmailAddress email = EmailAddress.of("eva@example.com");
-            PhoneNumber phone = PhoneNumber.of("+421777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Eva", "Svobodová", dateOfBirth, Nationality.of("SK"), Gender.FEMALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    null,
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            service.registerMember(command);
-
-            // Then
-            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
-            verify(userService).createUser(usernameCaptor.capture(), authoritiesCaptor.capture());
-
-            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0501");
-            assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
-        }
-
-        @Test
-        @DisplayName("should create member with provided registration number for different year")
-        void shouldCreateMemberWithProvidedRegistrationNumberForDifferentYear() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 7, 20);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0502");
-            Address address = Address.of("Testovací 5", "Plzeň", "30100", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("test@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777777777");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Test", "Member", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    BirthNumber.of("050720/1234"),
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            service.registerMember(command);
-
-            // Then
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0502");
-        }
-
-        @Test
-        @DisplayName("should create user and member in same transaction")
-        void shouldCreateUserAndMemberInSameTransaction() {
-            // Given
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0000");
-            Address address = Address.of("Transakční 10", "Liberec", "46001", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("transaction@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777000000");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Transaction", "Test", LocalDate.of(2000, 1, 1), Nationality.of("CZ"), Gender.MALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    BirthNumber.of("000101/1234"),
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            service.registerMember(command);
-
-            // Then - verify member repository and user service were called
-            verify(memberRepository).save(any(Member.class));
-            verify(userService).createUser(anyString(), any(Set.class));
-        }
-
-        @Test
-        @DisplayName("should register member with birth number for Czech nationality")
-        void shouldRegisterMemberWithBirthNumberForCzechNationality() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
-            BirthNumber birthNumber = BirthNumber.of("900101/1234");
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    birthNumber,
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            Member result = service.registerMember(command);
-
-            // Then
-            assertThat(result.getId().toUserId().uuid()).isEqualTo(testSharedId.uuid());
-
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getBirthNumber()).isNotNull();
-            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
-        }
-
-        @Test
-        @DisplayName("should register member with bank account number")
-        void shouldRegisterMemberWithBankAccountNumber() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("SK"), Gender.MALE
-            );
-            BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    null,
-                    bankAccountNumber,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            Member result = service.registerMember(command);
-
-            // Then
-            assertThat(result.getId().toUserId().uuid()).isEqualTo(testSharedId.uuid());
-
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0507");
+            assertThat(savedMember.getBirthNumber().value()).isEqualTo("050615/1234");
             assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
+
+            verify(userService).createUser("ZBM0507", Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
+            assertThat(result.getId().toUserId()).isEqualTo(SHARED_ID);
         }
 
         @Test
-        @DisplayName("should register member with both birth number and bank account")
-        void shouldRegisterMemberWithBothBirthNumberAndBankAccount() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
-            BirthNumber birthNumber = BirthNumber.of("900101/1234");
-            BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
+        @DisplayName("should register non-CZ member without birth number and bank account")
+        void shouldRegisterNonCzechMemberWithoutOptionalFields() {
+            stubUserCreation(SHARED_ID);
+            stubMemberSave();
 
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    birthNumber,
-                    bankAccountNumber,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            Member result = service.registerMember(command);
-
-            // Then
-            assertThat(result.getId().toUserId().uuid()).isEqualTo(testSharedId.uuid());
-
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getBirthNumber()).isNotNull();
-            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
-            assertThat(savedMember.getBankAccountNumber()).isNotNull();
-            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("123456/0300");
-        }
-
-        @Test
-        @DisplayName("should register non-CZ member with null birth number and bank account")
-        void shouldRegisterMemberWithNullBirthNumberAndBankAccount() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0500");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("SK"), Gender.MALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(
+                    PersonalInformation.of("Eva", "Svobodová", LocalDate.of(2005, 3, 20), Nationality.of("SK"), Gender.FEMALE),
+                    Address.of("Štúrova 45", "Bratislava", "81101", Country.of("SK")),
+                    EmailAddress.of("eva@example.com"),
+                    PhoneNumber.of("+421777888999"),
                     null,
                     null,
                     null
             );
 
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
             Member result = service.registerMember(command);
 
-            // Then
-            assertThat(result.getId().toUserId().uuid()).isEqualTo(testSharedId.uuid());
-
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getBirthNumber()).isNull();
-            assertThat(savedMember.getBankAccountNumber()).isNull();
-        }
-
-        @Test
-        @DisplayName("should generate a registration number as before (regression guard)")
-        void shouldStillGenerateRegistrationNumber() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
-
-            // RegisterNewMember carries no registration number field - it must stay this shape
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    BirthNumber.of("050615/1234"),
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            Member result = service.registerMember(command);
-
-            // Then
-            verify(registrationNumberGenerator).generate(dateOfBirth);
-            assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
+            assertThat(result.getId().toUserId()).isEqualTo(SHARED_ID);
+            assertThat(result.getBirthNumber()).isNull();
+            assertThat(result.getBankAccountNumber()).isNull();
+            verify(userService).createUser(eq("ZBM0500"), any(Set.class));
         }
     }
 
@@ -515,7 +163,7 @@ class RegistrationServiceTest {
         private RegistrationPort.RegisterNewMember minorCommand(EmailAddress email, PhoneNumber phone,
                                                                List<GuardianInput> guardians) {
             return new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    PersonalInformation.of("Child", "Minor", LocalDate.now().minusYears(10), Nationality.of("CZ"), Gender.MALE),
                     Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")),
                     email,
                     phone,
@@ -526,12 +174,6 @@ class RegistrationServiceTest {
                     null);
         }
 
-        @BeforeEach
-        void setUpMinor() {
-            mockUserCreation(MINOR_ID);
-            mockMemberCreation(MINOR_ID);
-        }
-
         @Test
         @DisplayName("should register a minor without own contacts when a guardian covers them")
         void shouldRegisterMinorWithoutOwnContactsWhenGuardianCoversThem() {
@@ -540,11 +182,15 @@ class RegistrationServiceTest {
             when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, true, true));
 
+            stubUserCreation(MINOR_ID);
+            stubMemberSave();
+
             Member result = service.registerMember(minorCommand(null, null, guardians));
 
             assertThat(result.getEmail()).isNull();
             assertThat(result.isDataIncomplete()).isFalse();
-            verify(userService).createUser(eq("ZBM0500"), eq(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)));
+            verify(userService).createUser(result.getRegistrationNumber().getValue(),
+                    Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
         }
 
         @Test
@@ -554,6 +200,8 @@ class RegistrationServiceTest {
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
             when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, true, true));
+            stubUserCreation(MINOR_ID);
+            stubMemberSave();
 
             service.registerMember(minorCommand(null, null, guardians));
 
@@ -563,22 +211,10 @@ class RegistrationServiceTest {
         }
 
         @Test
-        @DisplayName("should register a minor with a new guardian resolved together with the registration")
-        void shouldRegisterMinorWithNewGuardian() {
-            List<GuardianInput> guardians = List.of(GuardianInput.created(
-                    new NewLegalGuardian("Eva", "Svobodová", "eva@example.com", "+420777111222")));
-            when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
-                    .thenReturn(new GuardianContacts(true, true, true));
+        @DisplayName("should reject a minor without any guardian and save no member")
+        void shouldRejectMinorWithoutGuardianAndSaveNoMember() {
+            stubUserCreation(MINOR_ID);
 
-            service.registerMember(minorCommand(null, null, guardians));
-
-            verify(legalGuardianGroupPort).setGuardiansOf(MemberId.fromUserId(MINOR_ID), Set.of(GUARDIAN_ID));
-        }
-
-        @Test
-        @DisplayName("should reject a minor without any guardian and create nothing")
-        void shouldRejectMinorWithoutGuardian() {
             assertThatThrownBy(() -> service.registerMember(
                     minorCommand(EmailAddress.of("child@example.com"), PhoneNumber.of("+420777333444"), List.of())))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -595,6 +231,7 @@ class RegistrationServiceTest {
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
             when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, false, false));
+            stubUserCreation(MINOR_ID);
 
             assertThatThrownBy(() -> service.registerMember(minorCommand(null, null, guardians)))
                     .isInstanceOf(MemberDataRequiredException.class);
@@ -621,7 +258,7 @@ class RegistrationServiceTest {
         @DisplayName("should reject taking over a legal guardian for a minor")
         void shouldRejectTakeOverForMinor() {
             var command = new RegistrationPort.RegisterNewMember(
-                    PersonalInformation.of("Child", "Minor", LocalDate.of(2015, 4, 10), Nationality.of("CZ"), Gender.MALE),
+                    PersonalInformation.of("Child", "Minor", LocalDate.now().minusYears(10), Nationality.of("CZ"), Gender.MALE),
                     Address.of("Dětská 1", "Brno", "60200", Country.of("CZ")), null, null, null, null, null,
                     List.of(GuardianInput.existing(GUARDIAN_ID)), GUARDIAN_ID);
 
@@ -675,28 +312,10 @@ class RegistrationServiceTest {
         }
 
         @Test
-        @DisplayName("should require own e-mail of an adult")
-        void shouldRequireOwnEmail() {
-            assertThatThrownBy(() -> service.registerMember(
-                    adultCommand(null, PhoneNumber.of("+420777111222"), List.of(), null)))
-                    .isInstanceOf(MemberDataRequiredException.class);
-
-            verify(memberRepository, never()).save(any(Member.class));
-        }
-
-        @Test
-        @DisplayName("should require own phone of an adult")
-        void shouldRequireOwnPhone() {
-            assertThatThrownBy(() -> service.registerMember(
-                    adultCommand(EmailAddress.of("eva@example.com"), null, List.of(), null)))
-                    .isInstanceOf(MemberDataRequiredException.class);
-
-            verify(memberRepository, never()).save(any(Member.class));
-        }
-
-        @Test
         @DisplayName("should not touch legal guardian groups when registering an adult")
         void shouldNotTouchGroupsForAdult() {
+            stubUserCreation(SHARED_ID);
+            stubMemberSave();
             service.registerMember(adultCommand(EmailAddress.of("eva@example.com"),
                     PhoneNumber.of("+420777111222"), List.of(), null));
 
@@ -726,26 +345,28 @@ class RegistrationServiceTest {
         @Test
         @DisplayName("should register the member under the user id of the guardian without creating a new user")
         void shouldReuseUserOfGuardian() {
+            stubMemberSave();
             Member result = service.registerMember(takeOverCommand());
 
             assertThat(result.getId()).isEqualTo(MemberId.fromUserId(GUARDIAN_ID));
-            assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
+            assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM8500");
             verify(userService, never()).createUser(anyString(), any(Set.class));
         }
 
         @Test
         @DisplayName("should make the generated registration number the username of the guardian's user")
         void shouldReplaceUsernameWithRegistrationNumber() {
+            stubMemberSave();
             service.registerMember(takeOverCommand());
 
-            verify(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
+            verify(userService).replaceUsername(GUARDIAN_ID, "ZBM8500");
         }
 
         @Test
         @DisplayName("should report a registration number already used as someone's login as registration number in use")
         void shouldMapLoginCollisionToRegistrationNumberInUse() {
-            org.mockito.Mockito.doThrow(new com.klabis.common.users.UsernameAlreadyInUseException("ZBM0500"))
-                    .when(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
+            doThrow(new UsernameAlreadyInUseException("ZBM8500"))
+                    .when(userService).replaceUsername(GUARDIAN_ID, "ZBM8500");
 
             assertThatThrownBy(() -> service.registerMember(takeOverCommand()))
                     .isInstanceOf(RegistrationNumberAlreadyInUseException.class);
@@ -755,6 +376,7 @@ class RegistrationServiceTest {
         @Test
         @DisplayName("should remove the guardian profile before the member is saved")
         void shouldReleaseGuardianProfileBeforeSavingMember() {
+            stubMemberSave();
             service.registerMember(takeOverCommand());
 
             var order = inOrder(legalGuardianPort, memberRepository);
@@ -765,6 +387,7 @@ class RegistrationServiceTest {
         @Test
         @DisplayName("should grant the standard member authorities to the guardian's user")
         void shouldGrantMemberAuthorities() {
+            stubMemberSave();
             service.registerMember(takeOverCommand());
 
             verify(permissionService).updateUserPermissions(GUARDIAN_ID, Authority.getStandardUserAuthorities());
@@ -773,6 +396,7 @@ class RegistrationServiceTest {
         @Test
         @DisplayName("should leave the legal guardian groups untouched")
         void shouldLeaveGroupsUntouched() {
+            stubMemberSave();
             service.registerMember(takeOverCommand());
 
             verify(legalGuardianGroupPort, never()).setGuardiansOf(any(MemberId.class), any(Set.class));
@@ -784,43 +408,41 @@ class RegistrationServiceTest {
     @DisplayName("importMember() method")
     class ImportMemberMethod {
 
-        @Test
-        @DisplayName("should create member with the given registration number and never call the generator")
-        void shouldCreateMemberWithGivenRegistrationNumberAndNeverGenerate() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            Address address = Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ"));
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777888999");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, Nationality.of("CZ"), Gender.MALE
-            );
-            RegistrationNumber importedRegistrationNumber = RegistrationNumber.of("ZBM0099");
-
-            RegistrationPort.RegisterNewMember details = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
+        private RegistrationPort.ImportMember importCommand() {
+            RegistrationPort.RegisterNewMember details = new RegistrationPort.RegisterNewMember(
+                    PersonalInformation.of("Jan", "Novák", LocalDate.of(2005, 6, 15), Nationality.of("CZ"), Gender.MALE),
+                    Address.of("Hlavní 123", "Praha", "11000", Country.of("CZ")),
+                    EmailAddress.of("jan.novak@example.com"),
+                    PhoneNumber.of("+420777888999"),
                     BirthNumber.of("050615/1234"),
                     null,
                     null
             );
-            RegistrationPort.ImportMember command = new RegistrationPort.ImportMember(details, importedRegistrationNumber);
+            return new RegistrationPort.ImportMember(details, RegistrationNumber.of("ZBM0099"));
+        }
 
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
+        @Test
+        @DisplayName("should create member and user with the given registration number instead of a generated one")
+        void shouldCreateMemberWithGivenRegistrationNumber() {
+            stubUserCreation(SHARED_ID);
+            stubMemberSave();
 
-            // When
-            Member result = service.importMember(command);
+            Member result = service.importMember(importCommand());
 
-            // Then
-            assertThat(result.getRegistrationNumber()).isEqualTo(importedRegistrationNumber);
-            verify(registrationNumberGenerator, never()).generate(any(LocalDate.class));
+            assertThat(result.getRegistrationNumber()).isEqualTo(RegistrationNumber.of("ZBM0099"));
+            verify(userService).createUser(eq("ZBM0099"), any(Set.class));
+            verify(memberRepository, never()).countByBirthYear(anyInt());
+        }
 
-            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(userService).createUser(usernameCaptor.capture(), any(Set.class));
-            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0099");
+        @Test
+        @DisplayName("should report a database uniqueness violation as registration number in use")
+        void shouldMapUniqueConstraintViolationToRegistrationNumberInUse() {
+            stubUserCreation(SHARED_ID);
+            when(memberRepository.save(any(Member.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+            assertThatThrownBy(() -> service.importMember(importCommand()))
+                    .isInstanceOf(RegistrationNumberAlreadyInUseException.class)
+                    .hasCauseInstanceOf(DataIntegrityViolationException.class);
         }
     }
 }

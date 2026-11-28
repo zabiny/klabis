@@ -50,7 +50,7 @@ class LegalGuardianGroupServiceTest {
     private static final MemberId CHILD_A = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final MemberId CHILD_C = new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
     private static final MemberId CHILD_B = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-    private static final MemberId ADULT = new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+    private static final MemberId ADULT = new MemberId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
 
     private final InMemoryLegalGuardianGroupRepository groups = new InMemoryLegalGuardianGroupRepository();
 
@@ -483,15 +483,6 @@ class LegalGuardianGroupServiceTest {
     @Nested
     @DisplayName("getGroup() / listGroups()")
     class Queries {
-
-        @Test
-        @DisplayName("lists all groups")
-        void lists() {
-            groupOf(Set.of(NOVAK), CHILD_A);
-            groupOf(Set.of(SVOBODOVA), CHILD_B);
-
-            assertThat(service.listGroups()).hasSize(2);
-        }
 
         @Test
         @DisplayName("lists groups ordered by name in Czech alphabet")
