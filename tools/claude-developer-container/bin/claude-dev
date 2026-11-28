@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Container command dispatcher. Usage: claude-dev [rc|login|shell|claude ...|<command>]
+set -euo pipefail
+
+[[ $EUID -eq 0 ]] && exec gosu dev "$0" "$@"
+
+SEED=/opt/claude-dev/seed
+CLAUDE_DIR="$HOME/.claude"
+SSH_KEY="$HOME/.ssh/id_ed25519"
+DAVIDOVO_MARKETPLACE=https://gitlab.polach.cloud/davca/claude-marketplace.git
+PLAYWRIGHT_PLUGIN=playwright@claude-plugins-official
+PLUGINS=(developer@davidovo openspec-ext@davidovo hookify@claude-plugins-official)
+[[ "$WITH_E2E" == true ]] && PLUGINS+=("$PLAYWRIGHT_PLUGIN")
+
+install_claude() {
+    command -v claude >/dev/null && return
+    echo "Installing Claude Code (native installer, auto-updates inside the home volume)..."
+    curl -fsSL https://claude.ai/install.sh | bash
+}
+
+seed_claude_config() {
+    [[ -f "$CLAUDE_DIR/.seeded" ]] && return
+    mkdir -p "$CLAUDE_DIR/hooks"
+    cp "$SEED"/hooks/* "$CLAUDE_DIR/hooks/"
+    {
+        cat "$SEED/CLAUDE.md"
+        echo "- Installed toolsets: base (Node, openspec, gh), java: $WITH_JAVA, e2e: $WITH_E2E."
+        [[ "$WITH_JAVA" == true ]] && echo "- Container memory is limited. Stop the running application (\`./stopLocalEnvironment.sh\`) before running the full backend test suite."
+        [[ "$WITH_E2E" == true ]] && echo "- Use Playwright MCP (headless Chrome) for UI testing."
+        true
+    } > "$CLAUDE_DIR/CLAUDE.md"
+    jq --argjson java "$WITH_JAVA" --argjson e2e "$WITH_E2E" --arg pw "$PLAYWRIGHT_PLUGIN" '
+        (if $java then . else del(.hooks) end)
+        | (if $e2e then . else del(.enabledPlugins[$pw]) end)' \
+        "$SEED/settings.json" > "$CLAUDE_DIR/settings.json"
+    touch "$CLAUDE_DIR/.seeded"
+}
+
+# RC has no terminal to answer the workspace trust dialog on
+trust_workspace() {
+    local cfg="$HOME/.claude.json"
+    [[ -f "$cfg" ]] || echo '{}' > "$cfg"
+    jq --arg dir "$KLABIS_DIR" \
+        '.hasCompletedOnboarding = true | .projects[$dir].hasTrustDialogAccepted = true' \
+        "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+}
+
+# Best-effort: a marketplace outage must not crash-loop the container; the next start retries
+install_plugins() {
+    [[ -f "$CLAUDE_DIR/.plugins-installed" ]] && return
+    local marketplaces failed=0
+    marketplaces=$(claude plugin marketplace list 2>/dev/null || true)
+    grep -q claude-plugins-official <<<"$marketplaces" || claude plugin marketplace add anthropics/claude-plugins-official || failed=1
+    grep -q davidovo <<<"$marketplaces" || claude plugin marketplace add "$DAVIDOVO_MARKETPLACE" || failed=1
+    for plugin in "${PLUGINS[@]}"; do
+        claude plugin install "$plugin" || failed=1
+    done
+    if [[ $failed -eq 0 ]]; then
+        touch "$CLAUDE_DIR/.plugins-installed"
+    else
+        echo "WARNING: plugin installation incomplete, retrying on next start" >&2
+    fi
+}
+
+configure_ssh() {
+    install -d -m 700 "$HOME/.ssh"
+    if [[ ! -f "$SSH_KEY" ]]; then
+        ssh-keygen -q -t ed25519 -N '' -C "claude-dev@$(hostname)" -f "$SSH_KEY"
+        echo "Generated SSH key $SSH_KEY.pub (register it on GitHub as auth + signing key and on GitLab)."
+    fi
+    [[ -f "$HOME/.ssh/config" ]] || printf 'Host *\n    StrictHostKeyChecking accept-new\n' > "$HOME/.ssh/config"
+}
+
+configure_git() {
+    git config --global user.name "${GIT_AUTHOR_NAME:?set GIT_AUTHOR_NAME in .env}"
+    git config --global user.email "${GIT_AUTHOR_EMAIL:?set GIT_AUTHOR_EMAIL in .env}"
+    git config --global gpg.format ssh
+    git config --global user.signingkey "$SSH_KEY.pub"
+    git config --global commit.gpgsign true
+    git config --global tag.gpgsign true
+    if gh auth status >/dev/null 2>&1; then
+        gh auth setup-git
+    fi
+}
+
+# Daemon heap capped so one test fork (-Xmx2g) still fits into the 4 GB container limit
+configure_gradle() {
+    [[ "$WITH_JAVA" == true ]] || return 0
+    [[ -n "${GITLAB_ZBM_TOKEN:-}" ]] || echo "WARNING: GITLAB_ZBM_TOKEN is not set; the backend build cannot resolve dependencies from gitlab-zbm." >&2
+    local props="$HOME/.gradle/gradle.properties"
+    [[ -f "$props" ]] && return
+    mkdir -p "$HOME/.gradle"
+    echo 'org.gradle.jvmargs=-Xmx768m -Dfile.encoding=UTF-8' > "$props"
+}
+
+# Serialized: `login` via docker exec can run while the main process is still in its first setup
+setup() {
+    exec 9>"$HOME/.claude-dev-setup.lock"
+    flock 9
+    install_claude
+    seed_claude_config
+    trust_workspace
+    configure_ssh
+    configure_git
+    configure_gradle
+    install_plugins
+    flock -u 9
+}
+
+logged_in() {
+    claude auth status 2>/dev/null | jq -e '.loggedIn == true' >/dev/null
+}
+
+run_login() {
+    logged_in || claude auth login --claudeai
+    gh auth status >/dev/null 2>&1 || gh auth login --hostname github.com --git-protocol https --web
+    configure_git
+    echo
+    echo "Container SSH public key (GitHub: Settings > SSH keys, add as Authentication AND Signing key; GitLab: SSH keys):"
+    cat "$SSH_KEY.pub"
+}
+
+run_rc() {
+    until logged_in; do
+        echo "Not logged in to claude.ai. Run: docker compose exec claude-dev claude-dev login"
+        sleep 30
+    done
+    cd "$KLABIS_DIR"
+    local pid=""
+    trap '[[ -n "$pid" ]] && kill -TERM "$pid" 2>/dev/null && wait "$pid"; exit 0' TERM INT
+    # --spawn session exits when its session ends; start a fresh one
+    while true; do
+        claude remote-control --spawn session --permission-mode auto --name "${RC_SESSION_NAME:-klabis}" &
+        pid=$!
+        wait "$pid" || true
+        sleep 5
+    done
+}
+
+setup
+cmd="${1:-rc}"
+[[ $# -gt 0 ]] && shift
+case "$cmd" in
+    rc) run_rc ;;
+    login) run_login ;;
+    shell) cd "$KLABIS_DIR" && exec bash -l ;;
+    claude) cd "$KLABIS_DIR" && exec claude "$@" ;;
+    *) exec "$cmd" "$@" ;;
+esac
