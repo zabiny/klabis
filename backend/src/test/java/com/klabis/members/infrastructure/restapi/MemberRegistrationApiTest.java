@@ -230,7 +230,6 @@ class MemberRegistrationApiTest extends MemberApiTestBase {
     @DisplayName("with blank email should leave the requirement of own contacts to the service")
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
     void shouldPassBlankEmailAsAbsentToService() throws Exception {
-        UUID memberId = UUID.randomUUID();
         when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
                 .thenThrow(new MemberDataRequiredException(MissingDataItem.EMAIL));
 

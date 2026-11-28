@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -933,6 +934,107 @@ class MemberTest {
             assertThat(member.birthNumberConsistencyWarnings())
                     .hasSize(1)
                     .first().asString().contains("does not match member's date of birth");
+        }
+    }
+
+    @Nested
+    @DisplayName("birth number modification audit event")
+    class BirthNumberModificationAudit {
+
+        private final UserId actingUser = new UserId(UUID.randomUUID());
+
+        private Member.RegisterMember registrationWithBirthNumber(
+                String nationality, BirthNumber birthNumber, UserId registeredBy) {
+            return MemberRegisterMemberBuilder.builder()
+                    .id(new MemberId(UUID.randomUUID()))
+                    .registrationNumber(new RegistrationNumber("ZBM9001"))
+                    .personalInformation(PersonalInformation.of(
+                            "Jan", "Novák", LocalDate.of(1990, 5, 15), Nationality.of(nationality), Gender.MALE))
+                    .address(new Address("Hlavní 123", "Praha", "11000", Country.of("CZ")))
+                    .email(new EmailAddress("jan.novak@example.com"))
+                    .phone(new PhoneNumber("+420123456789"))
+                    .birthNumber(birthNumber)
+                    .registeredBy(registeredBy)
+                    .build();
+        }
+
+        private List<BirthNumberAccessedEvent> birthNumberEventsOf(Member member) {
+            return member.getDomainEvents().stream()
+                    .filter(BirthNumberAccessedEvent.class::isInstance)
+                    .map(BirthNumberAccessedEvent.class::cast)
+                    .toList();
+        }
+
+        @Test
+        @DisplayName("registration by a user with a birth number publishes a modification event for that user and member")
+        void registrationWithRegisteredByPublishesModificationEvent() {
+            Member member = Member.register(registrationWithBirthNumber("CZ", BirthNumber.of("900515/1234"), actingUser));
+
+            assertThat(birthNumberEventsOf(member)).singleElement().satisfies(event -> {
+                assertThat(event.action()).isEqualTo(BirthNumberAccessedEvent.BirthNumberAction.MODIFY_BIRTH_NUMBER);
+                assertThat(event.actingUserId()).isEqualTo(actingUser);
+                assertThat(event.memberId()).isEqualTo(member.getId());
+            });
+        }
+
+        @Test
+        @DisplayName("registration without a registering user publishes no birth number event")
+        void registrationWithoutRegisteredByPublishesNoEvent() {
+            Member member = Member.register(registrationWithBirthNumber("CZ", BirthNumber.of("900515/1234"), null));
+
+            assertThat(birthNumberEventsOf(member)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("registration without a birth number publishes no birth number event")
+        void registrationWithoutBirthNumberPublishesNoEvent() {
+            Member member = Member.register(registrationWithBirthNumber("SK", null, actingUser));
+
+            assertThat(birthNumberEventsOf(member)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("update by a user that changes the birth number publishes a modification event for that user and member")
+        void updateChangingBirthNumberPublishesModificationEvent() {
+            Member member = aMember().withNationality("CZ").withBirthNumber("900515/1234").build();
+
+            update(member, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .birthNumber(BirthNumber.of("900515/1235"))
+                    .updatedBy(actingUser)
+                    .build());
+
+            assertThat(birthNumberEventsOf(member)).singleElement().satisfies(event -> {
+                assertThat(event.action()).isEqualTo(BirthNumberAccessedEvent.BirthNumberAction.MODIFY_BIRTH_NUMBER);
+                assertThat(event.actingUserId()).isEqualTo(actingUser);
+                assertThat(event.memberId()).isEqualTo(member.getId());
+            });
+        }
+
+        @Test
+        @DisplayName("update by a user that leaves the birth number unchanged publishes no event")
+        void updateKeepingBirthNumberPublishesNoEvent() {
+            Member member = aMember().withNationality("CZ").withBirthNumber("900515/1234").build();
+
+            update(member, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .chipNumber("999")
+                    .updatedBy(actingUser)
+                    .build());
+
+            assertThat(birthNumberEventsOf(member)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("update without an updating user publishes no event even when the birth number changes")
+        void updateWithoutUpdatedByPublishesNoEvent() {
+            Member member = aMember().withNationality("CZ").withBirthNumber("900515/1234").build();
+
+            update(member, MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .birthNumber(BirthNumber.of("900515/1235"))
+                    .updatedBy(null)
+                    .build());
+
+            assertThat(member.getBirthNumber()).isEqualTo(BirthNumber.of("900515/1235"));
+            assertThat(birthNumberEventsOf(member)).isEmpty();
         }
     }
 

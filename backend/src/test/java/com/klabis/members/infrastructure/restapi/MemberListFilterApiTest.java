@@ -8,6 +8,7 @@ import com.klabis.members.domain.MemberFilter;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -106,16 +107,16 @@ class MemberListFilterApiTest extends MemberApiTestBase {
 
     static Stream<Arguments> selfLinkQueries() {
         return Stream.of(
-                arguments("status and q", "status=ACTIVE&q=novak", List.of("status=ACTIVE", "q=novak")),
-                arguments("only status", "status=ACTIVE", List.of("status=ACTIVE")),
-                arguments("only q", "q=novak", List.of("q=novak")),
-                arguments("incomplete", "incomplete=true", List.of("incomplete=true")));
+                arguments(Named.of("status and q", "status=ACTIVE&q=novak"), List.of("status=ACTIVE", "q=novak")),
+                arguments(Named.of("only status", "status=ACTIVE"), List.of("status=ACTIVE")),
+                arguments(Named.of("only q", "q=novak"), List.of("q=novak")),
+                arguments(Named.of("incomplete", "incomplete=true"), List.of("incomplete=true")));
     }
 
     @ParameterizedTest(name = "self link keeps applied filter params as a concrete URL: {0}")
     @MethodSource("selfLinkQueries")
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-    void selfLinkIsConcreteUrlWithAppliedFilterParams(String description, String query, List<String> expectedParams) throws Exception {
+    void selfLinkIsConcreteUrlWithAppliedFilterParams(String query, List<String> expectedParams) throws Exception {
         when(managementService.listMembers(any(MemberFilter.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 

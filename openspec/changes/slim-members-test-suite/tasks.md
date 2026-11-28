@@ -109,8 +109,8 @@ the test that keeps the assertion (design D1, D2). Paths: `M/` =
 
 A failing new test is not committed and not fixed here; file an issue in milestone `review-6` with the test as the reproduction (design D6).
 
-- [ ] 10.1 Domain test: `Member.register` and `Member.update` publish the birth number modification audit event when `registeredBy` / `updatedBy` is set and, for update, only when the number changes
-- [ ] 10.2 `MemberRepositoryTest`: birth number is stored encrypted at rest (raw column differs from the plain value, round-trip decrypts), following `SyncRecordJdbcRepositoryTest.EncryptionAtRest`
-- [ ] 10.3 FE: saving the permissions dialog sends the update and closes the dialog
-- [ ] 10.4 `MemberSyncAdapterTest`: import and sync of an ORIS member with unknown nationality and with unknown gender
-- [ ] 10.5 Final comparison against the 1.1 baseline: report removed test methods, lines, Spring contexts, E2E scenarios and any accepted coverage difference in the PR description
+- [x] 10.1 Domain test: `Member.register` and `Member.update` publish the birth number modification audit event when `registeredBy` / `updatedBy` is set and, for update, only when the number changes
+- [x] 10.2 `MemberRepositoryTest`: birth number is stored encrypted at rest (raw column differs from the plain value, round-trip decrypts), following `SyncRecordJdbcRepositoryTest.EncryptionAtRest`
+- [x] 10.3 FE: saving the permissions dialog sends the update and closes the dialog
+- [x] 10.4 `MemberSyncAdapterTest`: import and sync of an ORIS member with unknown nationality and with unknown gender. All four cases (import and sync, nationality and gender) fail as D6 expected; not committed, filed as [#457](https://github.com/zabiny/klabis/issues/457)
+- [x] 10.5 Final comparison against the 1.1 baseline: report removed test methods, lines, Spring contexts, E2E scenarios and any accepted coverage difference in the PR description

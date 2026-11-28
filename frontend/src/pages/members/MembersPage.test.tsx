@@ -1,9 +1,10 @@
 import '@testing-library/jest-dom';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {Link, MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {createMockResponse} from '../../__mocks__/mockFetch';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
@@ -97,6 +98,16 @@ const renderPageWithMembers = (members: unknown[], routeOverrides?: Partial<Retu
 };
 
 const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.flatMap(([url]) => url ? [String(url)] : []);
+
+beforeEach(() => {
+    vi.mocked(useAuthorizedQuery).mockReset().mockReturnValue({data: undefined, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+    vi.mocked(useAuthorizedMutation).mockReset().mockReturnValue({
+        mutate: vi.fn(),
+        isPending: false,
+        error: null,
+    } as unknown as ReturnType<typeof useAuthorizedMutation>);
+    vi.mocked(authorizedFetch).mockReset();
+});
 
 describe('MembersPage', () => {
     beforeEach(() => {
@@ -313,6 +324,43 @@ describe('MembersPage — row data rendering', () => {
         expect(dialog.getByText('Jan Novák – REG-001')).toBeInTheDocument();
         expect(dialog.getByRole('switch', {name: 'Správa členů'})).toHaveAttribute('aria-checked', 'true');
         expect(dialog.getByRole('switch', {name: 'Správa financí'})).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('saving the permissions dialog PUTs the chosen authorities to the permissions resource and closes the dialog', async () => {
+        const permissionsUrl = '/api/members/member-1/permissions';
+        const memberResource = membersCollection([buildMemberRow({
+            _links: {self: {href: '/api/members/member-1'}, permissions: {href: permissionsUrl}},
+        })]);
+        const permissionsResource = {
+            authorities: ['MEMBERS:MANAGE'],
+            _links: {self: {href: permissionsUrl}},
+            _templates: {
+                updatePermissions: mockHalFormsTemplate({
+                    method: 'PUT',
+                    properties: [{name: 'authorities', type: 'text', options: {inline: ['MEMBERS:MANAGE', 'FINANCE:MANAGE']}}],
+                }),
+            },
+        } as unknown as HalResponse;
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
+            data: url === permissionsUrl ? permissionsResource : memberResource,
+            error: null,
+        })) as unknown as typeof useAuthorizedQuery);
+        const actualFetchHooks = await vi.importActual<typeof import('../../hooks/useAuthorizedFetch')>('../../hooks/useAuthorizedFetch');
+        vi.mocked(useAuthorizedMutation).mockImplementation(actualFetchHooks.useAuthorizedMutation);
+        vi.mocked(authorizedFetch).mockResolvedValue(createMockResponse(null, 204));
+        renderPage(createMockPageData(memberResource));
+
+        fireEvent.click(screen.getByRole('button', {name: /oprávnění/i}));
+        const dialog = within(screen.getByRole('dialog'));
+        fireEvent.click(dialog.getByRole('switch', {name: 'Správa financí'}));
+        fireEvent.click(dialog.getByRole('button', {name: labels.buttons.savePermissions}));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(authorizedFetch).toHaveBeenCalledTimes(1);
+        const [url, init] = vi.mocked(authorizedFetch).mock.calls[0];
+        expect(url).toBe(permissionsUrl);
+        expect(init?.method).toBe('PUT');
+        expect(JSON.parse(String(init?.body))).toEqual({authorities: ['MEMBERS:MANAGE', 'FINANCE:MANAGE']});
     });
 
     it('clicking Banknote button opens the transaction dialog of the member account', async () => {

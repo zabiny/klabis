@@ -161,6 +161,43 @@ class MemberRepositoryTest {
     }
 
     @Nested
+    @DisplayName("birth number encryption at rest")
+    class BirthNumberEncryptionAtRest {
+
+        private static final String PLAIN_BIRTH_NUMBER = "950301/1234";
+
+        @Autowired
+        private JdbcTemplate jdbcTemplate;
+
+        private String rawBirthNumberColumnFor(UUID memberId) {
+            return jdbcTemplate.queryForObject(
+                    "SELECT birth_number FROM members.members WHERE id = ?",
+                    String.class, memberId);
+        }
+
+        @Test
+        @DisplayName("stored column value differs from the plain birth number and does not contain it")
+        void storedColumnIsNotPlaintext() {
+            Member member = memberRepository.save(aMember().withBirthNumber(PLAIN_BIRTH_NUMBER).build());
+
+            String rawColumn = rawBirthNumberColumnFor(member.getId().uuid());
+
+            assertThat(rawColumn)
+                    .isNotNull()
+                    .doesNotContain(PLAIN_BIRTH_NUMBER)
+                    .doesNotContain("950301");
+        }
+
+        @Test
+        @DisplayName("member without a birth number stores null")
+        void absentBirthNumberStoresNull() {
+            Member member = memberRepository.save(aMember().build());
+
+            assertThat(rawBirthNumberColumnFor(member.getId().uuid())).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("findAll(filter)")
     class FilterTests {
 
